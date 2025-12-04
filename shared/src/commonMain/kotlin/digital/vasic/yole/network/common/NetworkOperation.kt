@@ -217,17 +217,40 @@ data class NetworkOperation(
     
     companion object {
         /**
+         * Create a new error operation
+         */
+        fun error(
+            id: Long,
+            operationType: Type,
+            remotePath: String,
+            localPath: String? = null,
+            error: String
+        ): NetworkOperation {
+            return NetworkOperation(
+                id = id,
+                type = operationType,
+                remotePath = remotePath,
+                localPath = localPath,
+                status = Status.FAILED,
+                error = error,
+                createdAt = kotlinx.datetime.Clock.System.now(),
+                startedAt = kotlinx.datetime.Clock.System.now(),
+                completedAt = kotlinx.datetime.Clock.System.now()
+            )
+        }
+        
+        /**
          * Create a new upload operation
          */
         fun createUpload(
-            id: Long,
+            id: String,
             localPath: String,
             remotePath: String,
             totalSize: Long = 0L,
             priority: Int = 100
         ): NetworkOperation {
             return NetworkOperation(
-                id = id,
+                id = id.hashCode().toLong(),
                 type = Type.UPLOAD,
                 remotePath = remotePath,
                 localPath = localPath,
@@ -241,14 +264,14 @@ data class NetworkOperation(
          * Create a new download operation
          */
         fun createDownload(
-            id: Long,
+            id: String,
             remotePath: String,
             localPath: String,
             totalSize: Long = 0L,
             priority: Int = 100
         ): NetworkOperation {
             return NetworkOperation(
-                id = id,
+                id = id.hashCode().toLong(),
                 type = Type.DOWNLOAD,
                 remotePath = remotePath,
                 localPath = localPath,
@@ -289,6 +312,24 @@ data class NetworkOperation(
                 type = Type.CREATE_FOLDER,
                 remotePath = remotePath,
                 canPause = false,
+                createdAt = kotlinx.datetime.Clock.System.now(),
+                priority = priority
+            )
+        }
+        
+        /**
+         * Create a new sync operation
+         */
+        fun createSync(
+            id: String,
+            remotePath: String,
+            priority: Int = 100
+        ): NetworkOperation {
+            return NetworkOperation(
+                id = id.hashCode().toLong(),
+                type = Type.SYNC,
+                remotePath = remotePath,
+                canPause = true,
                 createdAt = kotlinx.datetime.Clock.System.now(),
                 priority = priority
             )

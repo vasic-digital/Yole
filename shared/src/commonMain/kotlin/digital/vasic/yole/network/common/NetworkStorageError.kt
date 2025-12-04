@@ -107,6 +107,18 @@ sealed class NetworkStorageException(
             cause = cause,
             errorCode = "NETWORK_UNAVAILABLE"
         )
+        
+        /**
+         * Not connected
+         */
+        class NotConnected(
+            message: String = "Not connected",
+            cause: Throwable? = null
+        ) : ConnectionException(
+            message = message,
+            cause = cause,
+            errorCode = "NOT_CONNECTED"
+        )
     }
     
     /**
@@ -194,6 +206,22 @@ sealed class NetworkStorageException(
             errorCode = "CREATE_FOLDER_FAILED",
             filePath = path,
             operation = "create_folder"
+        )
+        
+        /**
+         * Copy operation failed
+         */
+        class CopyFailed(
+            message: String = "Copy failed",
+            cause: Throwable? = null,
+            sourcePath: String,
+            targetPath: String
+        ) : FileOperationException(
+            message = "$message: $sourcePath -> $targetPath",
+            cause = cause,
+            errorCode = "COPY_FAILED",
+            filePath = sourcePath,
+            operation = "copy"
         )
         
         /**
@@ -291,6 +319,21 @@ sealed class NetworkStorageException(
             errorCode = "FILE_LOCKED",
             filePath = filePath,
             operation = "modify"
+        )
+        
+        /**
+         * Get file info operation failed
+         */
+        class InfoFailed(
+            message: String = "Get file info failed",
+            cause: Throwable? = null,
+            path: String
+        ) : FileOperationException(
+            message = "$message: $path",
+            cause = cause,
+            errorCode = "INFO_FAILED",
+            filePath = path,
+            operation = "info"
         )
     }
     
