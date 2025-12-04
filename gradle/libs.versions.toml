@@ -24,6 +24,8 @@ androidx-lifecycle = "2.8.7"
 androidx-navigation = "2.8.4"
 androidx-datastore = "1.1.1"
 androidx-documentfile = "1.0.1"
+androidx-browser = "1.8.0"
+androidx-preference = "1.2.1"
 androidx-test-junit = "1.2.1"
 androidx-test-espresso = "3.5.0"
 androidx-multidex = "2.0.1"
@@ -101,6 +103,8 @@ androidx-lifecycle-compose = { module = "androidx.lifecycle:lifecycle-runtime-co
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "androidx-navigation" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "androidx-datastore" }
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "androidx-documentfile" }
+androidx-browser = { module = "androidx.browser:browser", version.ref = "androidx-browser" }
+androidx-preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "androidx-preference" }
 androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "androidx-multidex" }
 
 # Material Design

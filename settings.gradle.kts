@@ -69,7 +69,6 @@ rootProject.name = "Yole"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 // Existing Android modules
-include(":core")
 include(":commons")
 
 // Format modules removed as they were for legacy app
@@ -79,6 +78,6 @@ include(":shared")
 
 // Platform-specific apps
 include(":androidApp")
-include(":desktopApp")
-include(":webApp")
-include(":iosApp")
+//include(":desktopApp")
+//include(":webApp")
+//include(":iosApp")

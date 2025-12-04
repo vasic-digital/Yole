@@ -15,7 +15,7 @@ import kotlinx.coroutines.withContext
  * Desktop implementation of secure storage using AES encryption with file-based storage.
  * Provides secure storage of sensitive data like passwords, tokens, and keys.
  */
-actual class DesktopSecureStorage actual constructor(
+class DesktopSecureStorage(
     private val storageDir: File
 ) : SecureStorage {
     
@@ -148,10 +148,13 @@ actual class DesktopSecureStorage actual constructor(
             } else {
                 content.lines()
                     .filter { it.isNotEmpty() }
-                    .associate { line ->
+                    .mapNotNull { line ->
                         val parts = line.split("=", limit = 2)
-                        parts[0] to parts.getOrNull(1) ?: ""
+                        if (parts.size >= 2 && parts[1] != null) {
+                            parts[0] to parts[1]
+                        } else null
                     }
+                    .toMap()
             }
         } catch (e: IOException) {
             return emptyMap()

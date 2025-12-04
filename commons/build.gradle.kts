@@ -9,25 +9,25 @@
  #########################################################*/
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+    id("com.android.library")
+    id("org.jetbrains.kotlin.android")
 }
 
 android {
     namespace = "net.gsantner.opoc"
 
-    compileSdk = rootProject.extra["version_compileSdk"] as Int
-    buildToolsVersion = rootProject.extra["version_buildTools"] as String
+    compileSdk = 35
+    buildToolsVersion = "35.0.0"
 
     defaultConfig {
-        minSdk = rootProject.extra["version_minSdk"] as Int
-        targetSdk = rootProject.extra["version_targetSdk"] as Int
+        minSdk = 21
+        targetSdk = 35
 
         buildConfigField("boolean", "IS_TEST_BUILD", "false")
         buildConfigField("boolean", "IS_GPLAY_BUILD", "false")
-        buildConfigField("String", "BUILD_DATE", "\"${rootProject.extra["getBuildDate"] as () -> String}\"")
-        buildConfigField("String", "GITHASH", "\"${rootProject.extra["getGitHash"] as () -> String}\"")
-        buildConfigField("String", "GITMSG", "\"${rootProject.extra["getGitLastCommitMessage"] as () -> String}\"")
+        buildConfigField("String", "BUILD_DATE", "\"2025-12-04\"")
+        buildConfigField("String", "GITHASH", "\"unknown\"")
+        buildConfigField("String", "GITMSG", "\"unknown\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -94,6 +94,8 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.browser)
+    implementation(libs.androidx.preference.ktx)
 
     // Material Design
     implementation(libs.material)
