@@ -95,6 +95,15 @@ kotlin {
                 // Okio for file system - Updated to match version catalog
                 implementation("com.squareup.okio:okio:3.9.1")
 
+                // Ktor Client for network operations
+                implementation(libs.ktor.client.core)
+                implementation("io.ktor:ktor-client-content-negotiation:3.0.2")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.2")
+
+                // SQLite database for metadata (common runtime)
+                implementation("app.cash.sqldelight:runtime:2.0.2")
+                implementation("app.cash.sqldelight:coroutines-extensions:2.0.2")
+
                 // Compose runtime (if using Compose Multiplatform)
                 implementation(compose.runtime)
                 implementation(compose.foundation)
@@ -105,6 +114,9 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(libs.kotest.framework.engine)
+                implementation(libs.kotest.assertions.core)
+                implementation(libs.mockk)
                 // kotlinx-coroutines-test doesn't have WASM variant
                 // implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
             }
@@ -115,6 +127,9 @@ kotlin {
             dependencies {
                 implementation("androidx.core:core-ktx:1.12.0")
                 implementation("androidx.appcompat:appcompat:1.6.1")
+                implementation("androidx.security:security-crypto:1.1.0-alpha06")
+                implementation("app.cash.sqldelight:android-driver:2.0.2")
+                implementation(libs.ktor.client.okhttp)
             }
         }
 
@@ -128,6 +143,8 @@ kotlin {
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.common)
+                implementation("app.cash.sqldelight:sqlite-driver:2.0.2")
+                implementation(libs.ktor.client.okhttp)
             }
         }
 
@@ -169,6 +186,8 @@ kotlin {
                 implementation(compose.ui)
                 implementation(compose.components.resources)
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+                implementation("app.cash.sqldelight:sqljs-driver:2.0.2")
+                implementation(libs.ktor.client.js)
             }
         }
 
