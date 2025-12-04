@@ -78,6 +78,6 @@ include(":shared")
 
 // Platform-specific apps
 include(":androidApp")
-//include(":desktopApp")
+include(":desktopApp")
 //include(":webApp")
 //include(":iosApp")

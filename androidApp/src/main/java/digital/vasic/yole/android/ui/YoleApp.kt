@@ -10,6 +10,7 @@
 package digital.vasic.yole.android.ui
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -21,23 +22,26 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material.icons.automirrored.filled.*
-import androidx.compose.material3.Checkbox
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.documentfile.provider.DocumentFile
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import digital.vasic.opoc.model.GsSharedPreferencesPropertyBackend
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
@@ -291,8 +295,8 @@ fun MainScreen() {
                             ScreenTransitions.slideOut(durationMillis = 600)
                         } else if (targetState == null && initialState != null) {
                             // Exiting sub-screen (slide back) - enhanced with shared animations
-                            ScreenTransitions.slideOut(durationMillis = 600).reversed() togetherWith
-                            ScreenTransitions.slideIn(durationMillis = 600).reversed()
+                            slideInHorizontally(animationSpec = tween(600)) { -it } togetherWith
+                            slideOutHorizontally(animationSpec = tween(600)) { it }
                         } else {
                             // Same level transitions or null to null - faster fade
                             ScreenTransitions.fade(durationMillis = 250) togetherWith
@@ -366,8 +370,8 @@ fun MainScreen() {
                                         ScreenTransitions.slideOut(durationMillis = 450)
                                     } else {
                                         // Swipe right (moving backward)
-                                        ScreenTransitions.slideOut(durationMillis = 450).reversed() togetherWith
-                                        ScreenTransitions.slideIn(durationMillis = 450).reversed()
+                                        slideInHorizontally(animationSpec = tween(450)) { it } togetherWith
+                                        slideOutHorizontally(animationSpec = tween(450)) { -it }
                                     }
                                 },
                                 label = "MainScreenTransition"
@@ -628,7 +632,7 @@ fun EmptyState(
 @Composable
 fun EmptyFileListState(onCreateFile: () -> Unit) {
     EmptyState(
-        icon = Icons.Filled.FolderOpen,
+        icon = Icons.Filled.Add,
         title = "No files yet",
         description = "This folder is empty.\nCreate your first file to get started.",
         actionLabel = "Create File",
@@ -746,6 +750,7 @@ fun FileBrowserScreen(
     onSettingsClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     var currentDirectory by remember { mutableStateOf<File?>(null) }
     var allFiles by remember { mutableStateOf<List<File>>(emptyList()) }
     var isLoadingFiles by remember { mutableStateOf(true) }
@@ -879,7 +884,7 @@ fun FileBrowserScreen(
                         androidx.compose.animation.AnimatedVisibility(
                             visible = true,
                             enter = ListAnimations.itemEnter(index),
-                            modifier = Modifier.animateItem()
+                            modifier = Modifier
                         ) {
                             Card(
                                 modifier = Modifier
@@ -891,8 +896,8 @@ fun FileBrowserScreen(
                                     // Navigate into directory with loading state
                                     isLoadingFiles = true
                                     currentDirectory = file
-                                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                                        kotlinx.coroutines.delay(200) // Brief delay for loading animation
+                                    coroutineScope.launch {
+                                        delay(200) // Brief delay for loading animation
                                         allFiles = file.listFiles()?.toList() ?: emptyList()
                                         isLoadingFiles = false
                                     }
@@ -954,8 +959,8 @@ fun FileBrowserScreen(
                     currentDirectory?.parentFile?.let { parent ->
                         isLoadingFiles = true
                         currentDirectory = parent
-                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                            kotlinx.coroutines.delay(200) // Brief delay for loading animation
+                        coroutineScope.launch {
+                            delay(200) // Brief delay for loading animation
                             allFiles = parent.listFiles()?.toList() ?: emptyList()
                             isLoadingFiles = false
                         }
