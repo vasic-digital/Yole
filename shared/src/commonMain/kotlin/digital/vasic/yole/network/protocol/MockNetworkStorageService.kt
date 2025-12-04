@@ -1,6 +1,8 @@
 package digital.vasic.yole.network.protocol
 
 import digital.vasic.yole.network.common.*
+import digital.vasic.yole.network.NetworkStorageService
+import digital.vasic.yole.network.StorageQuota
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.Clock
@@ -77,16 +79,34 @@ class MockNetworkStorageService(
         return Result.success(Unit)
     }
     
-    override suspend fun createFolder(remotePath: String): Result<Unit> {
-        return Result.success(Unit)
+    override suspend fun createFolder(remotePath: String): Result<NetworkDocument> {
+        return Result.success(NetworkDocument(
+            id = "folder_$remotePath",
+            name = remotePath.substringAfterLast("/"),
+            path = remotePath,
+            isFolder = true,
+            syncStatus = SyncStatus.SYNCED,
+            permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE),
+            size = 0L,
+            lastModified = Clock.System.now()
+        ))
     }
     
     override suspend fun renameFile(remotePath: String, newName: String): Result<Unit> {
         return Result.success(Unit)
     }
     
-    override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<Unit> {
-        return Result.success(Unit)
+    override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> {
+        return Result.success(NetworkDocument(
+            id = "moved_$destinationPath",
+            name = destinationPath.substringAfterLast("/"),
+            path = destinationPath,
+            isFolder = false,
+            syncStatus = SyncStatus.SYNCED,
+            permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE),
+            size = 1024L,
+            lastModified = Clock.System.now()
+        ))
     }
     
     override suspend fun copyFile(sourcePath: String, destinationPath: String): Result<Unit> {
@@ -215,7 +235,8 @@ class MockNetworkStorageService(
             availableSpace = 512L * 1024L * 1024L, // 512MB
             usagePercentage = 0.5,
             isFull = false,
-            isLowOnSpace = false
+            isLowOnSpace = false,
+            metadata = mapOf("type" to "mock")
         ))
     }
     

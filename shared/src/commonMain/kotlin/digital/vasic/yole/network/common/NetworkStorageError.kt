@@ -24,6 +24,18 @@ sealed class NetworkStorageException(
     ) : NetworkStorageException(message, cause, errorCode) {
         
         /**
+         * Connection failed
+         */
+        class Failed(
+            message: String = "Connection failed",
+            cause: Throwable? = null
+        ) : ConnectionException(
+            message = message,
+            cause = cause,
+            errorCode = "CONNECTION_FAILED"
+        )
+        
+        /**
          * Connection timeout occurred
          */
         class Timeout(
@@ -122,6 +134,97 @@ sealed class NetworkStorageException(
             errorCode = "FILE_NOT_FOUND",
             filePath = filePath,
             operation = "read"
+        )
+        
+        /**
+         * List files operation failed
+         */
+        class ListFailed(
+            message: String = "List files failed",
+            cause: Throwable? = null,
+            path: String
+        ) : FileOperationException(
+            message = "$message: $path",
+            cause = cause,
+            errorCode = "LIST_FAILED",
+            filePath = path,
+            operation = "list"
+        )
+        
+        /**
+         * Upload operation failed
+         */
+        class UploadFailed(
+            message: String = "Upload failed",
+            cause: Throwable? = null,
+            path: String
+        ) : FileOperationException(
+            message = "$message: $path",
+            cause = cause,
+            errorCode = "UPLOAD_FAILED",
+            filePath = path,
+            operation = "upload"
+        )
+        
+        /**
+         * Download operation failed
+         */
+        class DownloadFailed(
+            message: String = "Download failed",
+            cause: Throwable? = null,
+            path: String
+        ) : FileOperationException(
+            message = "$message: $path",
+            cause = cause,
+            errorCode = "DOWNLOAD_FAILED",
+            filePath = path,
+            operation = "download"
+        )
+        
+        /**
+         * Create folder operation failed
+         */
+        class CreateFolderFailed(
+            message: String = "Create folder failed",
+            cause: Throwable? = null,
+            path: String
+        ) : FileOperationException(
+            message = "$message: $path",
+            cause = cause,
+            errorCode = "CREATE_FOLDER_FAILED",
+            filePath = path,
+            operation = "create_folder"
+        )
+        
+        /**
+         * Move operation failed
+         */
+        class MoveFailed(
+            message: String = "Move failed",
+            cause: Throwable? = null,
+            sourcePath: String,
+            targetPath: String
+        ) : FileOperationException(
+            message = "$message: $sourcePath -> $targetPath",
+            cause = cause,
+            errorCode = "MOVE_FAILED",
+            filePath = sourcePath,
+            operation = "move"
+        )
+        
+        /**
+         * Delete operation failed
+         */
+        class DeleteFailed(
+            message: String = "Delete failed",
+            cause: Throwable? = null,
+            path: String
+        ) : FileOperationException(
+            message = "$message: $path",
+            cause = cause,
+            errorCode = "DELETE_FAILED",
+            filePath = path,
+            operation = "delete"
         )
         
         /**

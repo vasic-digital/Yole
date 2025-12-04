@@ -9,7 +9,7 @@ import androidx.security.crypto.MasterKey
  * Android implementation of secure storage using EncryptedSharedPreferences.
  * Provides secure storage of sensitive data like passwords, tokens, and keys.
  */
-actual class AndroidSecureStorage actual constructor(
+class AndroidSecureStorage(
     private val context: Context
 ) : SecureStorage {
     
