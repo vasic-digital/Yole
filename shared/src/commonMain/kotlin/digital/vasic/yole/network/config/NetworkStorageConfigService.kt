@@ -441,11 +441,16 @@ class NetworkStorageConfigService {
         return try {
             val service = when (storageConfig) {
                 is StorageConfig.WebDavConfig -> WebDavService(storageConfig)
-                // TODO: Implement other protocols
+                is StorageConfig.FtpConfig -> digital.vasic.yole.network.protocols.ftp.FtpService(storageConfig)
+                is StorageConfig.SftpConfig -> digital.vasic.yole.network.protocols.sftp.SftpService(storageConfig)
+                is StorageConfig.SmbConfig -> digital.vasic.yole.network.protocols.smb.SmbService(storageConfig)
+                is StorageConfig.GoogleDriveConfig -> digital.vasic.yole.network.protocols.googledrive.GoogleDriveService(storageConfig)
+                is StorageConfig.DropboxConfig -> digital.vasic.yole.network.protocols.dropbox.DropboxService(storageConfig)
+                is StorageConfig.OneDriveConfig -> digital.vasic.yole.network.protocols.onedrive.OneDriveService(storageConfig)
                 else -> return Result.failure(
                     NetworkStorageException.ProtocolException.Unsupported(
                         protocol = storageConfig.storageType.name,
-                        supportedProtocols = StorageType.values().map { it.name }
+                        supportedProtocols = listOf("WebDAV", "FTP", "SFTP", "SMB", "Google Drive", "Dropbox", "OneDrive")
                     )
                 )
             }
