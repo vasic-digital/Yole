@@ -38,7 +38,7 @@ index 08733dc..c9c26f4 100644
 @@ -39,6 +46,7 @@ import android.widget.LinearLayout;
  import android.widget.TextView;
  
- import net.gsantner.markor.R;
+ import digital.vasic.yole.R;
 +import net.gsantner.opoc.util.ContextUtils;
  
  import java.io.File;

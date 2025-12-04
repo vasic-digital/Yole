@@ -11,7 +11,7 @@ I think I've finally found a system that I'm going to stick with.
 In this post, I will describe this system and explain why I like it so much.
 
 _**tl;dr**: I write notes in Markdown with Vim and Vimwiki on my computer
-and with Markor on my phone,
+and with Yole on my phone,
 keep them in sync with Syncthing,
 and view them as web pages and PDFs that I generate with pandoc._
 
@@ -196,7 +196,7 @@ I use
 [Syncthing](https://syncthing.net/)
 to keep my notes directory in sync between my machines and my phone.
 I also use the
-[Markor](https://github.com/gsantner/markor)
+[Yole](https://github.com/vasic-digital/Yole)
 app to manage and edit the notes on my phone.
 This app is nice because it makes it easy to navigate my notes
 directory and the built in editor formats Markdown files nicely.

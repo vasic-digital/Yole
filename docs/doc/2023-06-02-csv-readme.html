@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yole - CSV Format Guide</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <nav>
+        <a href="../index.html">Home</a> |
+        <a href="README.html">Guides</a> |
+        <a href="../README.html">README</a>
+    </nav>
+
+    <main style="padding: 20px;">
+        <p>Last updated 2023-06-02 by k3b</p>
+<h2>Information about csv files in markor</h2>
+<p>The android editor app <a href="https://github.com/vasic-digital/Yole">markor</a>
+can handle <a href="https://en.wikipedia.org/wiki/Comma-separated_values">csv</a> files since version v2.10.9</p>
+<p><img alt="" src="assets/csv/2023-06-25-csv-landscape.webp" /> </p>
+<h3>Features</h3>
+<ul>
+<li>Editor with SyntaxHighlighter</li>
+<li>Each csv column is shown in a different unique color to see which csv-data belongs to which colum/header</li>
+<li>Preview as html-Table with export as pdf</li>
+<li>A csv column may contain markdown formatting like <strong>bold</strong> or image  </li>
+<li>Automatic discovering of <code>csv-field-delimiter-char</code> from found csv-header. </li>
+<li>Currently implemented: <code>;,:|</code> and <code>&lt;tab&gt;</code></li>
+<li>Automatic discovering of <code>csv-quote-char</code> from found csv-header.</li>
+<li>Currently implemented: <code>"'</code></li>
+<li>empty lines are skipped</li>
+<li>comments: Lines that start with <strong><code>#</code></strong> that do not contain <code>csv-field-delimiter-char</code> or <code>csv-quote-char</code> are skipped.</li>
+<li>Example <code># this is a comment</code> </li>
+<li>column content may or may not be sorrounded with <code>csv-quote-char</code> .</li>
+<li>column content must be sorrounded with <code>csv-quote-char</code> if content contains <code>csv-field-delimiter-char</code> or <code>&lt;cr&gt;</code> or <code>&lt;nl&gt;</code> .</li>
+<li>Example ... <code>;"</code>A column may contain a <code>;</code> char <code>";</code> ... </li>
+<li>column content may contain <code>csv-quote-char</code> : </li>
+<li>Example: <code>"</code>This text contains a <code>""</code> char<code>"</code> </li>
+</ul>
+<p>Note: Screenshot Example csv data <a href="assets/csv/Example-Wikidata-rhodos3.csv">Example-Wikidata-rhodos3.csv</a> was queried from
+www.wikidata.org  : commons.wikimedia.org photos from the greek island of rhodes.</p>
+<h3>Requirements</h3>
+<ul>
+<li>csv must have a csv-header-line within the first 8000 chars of the csv</li>
+<li>if csv uses <code>csv-quote-char</code> = <strong><code>'</code></strong> then at least one header column name must be sourrounden by <code>'</code> </li>
+<li><code>#</code> Example: redefining  <code>csv-field-delimiter-char</code> and <code>csv-quote-char</code> through csv-header-line</li>
+<li><code>'</code>column1<code>'|</code>column2<code>|</code>column3</li>
+</ul>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Yole Project</p>
+    </footer>
+</body>
+</html>

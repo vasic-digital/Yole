@@ -1,4 +1,4 @@
-## Markor: Markdown Editor - todo.txt - Notes Offline - Simple and lightweight
+## Yole: Markdown Editor - todo.txt - Notes Offline - Simple and lightweight
 
 📝 Create __notes and manage your to-do list__ using simple markup formats  
 🌲 Work completely offline - whenever, wherever  
@@ -7,7 +7,7 @@
 🖍 `Syntax Highlighting` and format related actions -- quick insert pictures and to-do  
 👀 Convert, preview, and share documents as HTML and PDF  
 🖍 Formats: _Markdown, todo.txt_  & csv, ics, ini, json, toml, txt, vcf, yaml  
-📋 Copy to clipboard: Copy any text, including text shared into Markor  
+📋 Copy to clipboard: Copy any text, including text shared into Yole  
 🎨 Highly customizeable, ~~black~~ dark theme available  
 👌 Privacy focused: No ads or unnecessary permissions
 
@@ -20,7 +20,7 @@
 - [x] No. 1 Markdown app on Google Play
 - [x] Also available on Aptoide, F-Droid & GitHub
 
-Project page: <https://github.com/gsantner/markor>
+Project page: <https://github.com/vasic-digital/Yole>
 
-![Markor Logo](https://raw.githubusercontent.com/gsantner/markor/master/app/src/main/ic_launcher-web.png)
+![Yole Logo](https://raw.githubusercontent.com/vasic-digital/Yole/master/app/src/main/ic_launcher-web.png)
 

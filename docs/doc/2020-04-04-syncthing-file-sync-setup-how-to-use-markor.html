@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yole - Syncthing Setup</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <nav>
+        <a href="../index.html">Home</a> |
+        <a href="README.html">Guides</a> |
+        <a href="../README.html">README</a>
+    </nav>
+
+    <main style="padding: 20px;">
+        <h1>Yole: How to synchronize files with Syncthing</h1>
+<p>This page helps you to get started using file synchronization with Syncthing and <a href="https://github.com/vasic-digital/Yole">Yole</a> as your favourite file editor of choice. Required applications are Syncthing (Desktop &amp; Android) and Yole (Android).</p>
+<h2>Attribution</h2>
+<p>'<em>I</em>/<em>me</em>/<em>myself</em>/<em>our</em>/<em>we</em>' refers to the original author.</p>
+<ul>
+<li><a href="https://github.com/vasic-digital/Yole/issues/358#issuecomment-433652981">@wmww (GitHub)</a> from Yole community wrote the Quick Guide.</li>
+<li><a href="https://github.com/vasic-digital/Yole/issues/358#issuecomment-427037466">@tengucrow (GitHub)</a> from Yole community wrote the Detailed Guide.</li>
+</ul>
+<h2>Quick Guide</h2>
+<p>Syncthing is a protocol to sync files between your devices, with implementations for various platforms. Unlike other (even open source) sync and backup solutions, it does not require complex server setup or dependence on 3rd parties. According to their <a href="https://syncthing.net/">website</a>:</p>
+<blockquote>
+<p>Syncthing replaces proprietary sync and cloud services with something open, trustworthy and decentralized. Your data is your data alone and you deserve to choose where it is stored, if it is shared with some third party and how it's transmitted over the Internet.</p>
+</blockquote>
+<p>To start off, install Syncthing and set up a shared folder. More info on how to do that <a href="https://docs.syncthing.net/intro/getting-started.html">here</a>.</p>
+<p>Then, all you need to do is tell Yole where to look for and save files:
+* Go to Yole's main screen and swipe to <code>More</code>
+* Open <code>Settings</code> -&gt; <code>General</code> -&gt; <code>Notebook</code>
+* Select the folder you sync with Syncthing (The Syncthing app tells you the default path)</p>
+<h2>Detailed Guide</h2>
+<p>I use <a href="https://syncthing.net/">Syncthing</a> - both on my desktop (Linux Debian) and on Android phone (Xiaomi Redmi 4x). Open source, privacy (my data doesn't get to the third party), etc.</p>
+<p>I use both with local networks settings (syncing by local home wifi) since in the recent past I didn't have mobile internet, so I connect desktop (<strong>firefly</strong> at <strong>192.168.1.4</strong>) and phone (<strong>redmi 4x new</strong> at <strong>192.168.1.6</strong>).</p>
+<p>I prefer keep separate folder for texts (<code>~/text</code> at desktop, and <code>~/text</code> aka <code>/storage/emulated/0/text</code> at phone), because syncthing sync little text files lightning fast - without having to wait for all other (big) files to be synchronized. </p>
+<p>For desktop linux I install syncthing by default repo (<code>sudo apt install syncthing</code>), start it and set it up via browser interface (http://127.0.0.1:8384/). I use "homebrew" selftuned Openbox install, so syncthing run at start via <code>~/.config/openbox/autostart.sh</code> (added there <code>(syncthing -no-browser) &amp;</code>).</p>
+<p><img alt="syncthing desktop" src="assets/2020-04-04-syncthing-file-sync-setup-android-desktop-1.webp" />
+<img alt="syncthing desktop" src="assets/2020-04-04-syncthing-file-sync-setup-android-desktop-2.webp" />
+<img alt="syncthing desktop" src="assets/2020-04-04-syncthing-file-sync-setup-android-desktop-3.webp" /></p>
+<p>For android phone I get syncthing from <a href="https://f-droid.org/packages/com.nutomic.syncthingandroid/">f-droid.org</a> and connect it with desktop.</p>
+<p><img alt="syncthing android" src="assets/2020-04-04-syncthing-file-sync-setup-android-desktop-4.webp" /></p>
+<p>Rarely I may get version conflict, but syncthing keep both version of files (see at screenshot) and I just use vimdiff.</p>
+<p><img alt="2018-10-04_1708-1538662113_1920x1080_scrot" src="assets/2020-04-04-syncthing-file-sync-setup-android-desktop-5-conflict.webp" /></p>
+<p>So far - 143 files inside <code>~/text</code> :)</p>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Yole Project</p>
+    </footer>
+</body>
+</html>

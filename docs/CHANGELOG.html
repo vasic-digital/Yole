@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yole - Changelog</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <a href="index.html">Home</a> |
+        <a href="doc/README.html">Guides</a> |
+        <a href="README.html">README</a>
+    </nav>
+
+    <main style="padding: 20px;">
+        <h3>Recent changes</h3>
+<ul>
+<li>See <a href="https://github.com/vasic-digital/Yole/discussions">Discussions</a>, <a href="https://github.com/vasic-digital/Yole/issues">Issues</a> and <a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md">Project news</a> to see what is going on.</li>
+<li>New Updates also visible here: <a href="https://github.com/vasic-digital/Yole/releases">https://github.com/vasic-digital/Yole/releases</a></li>
+</ul>
+<h3>v2.15.1 - Kotlin Multiplatform Migration Complete</h3>
+<ul>
+<li><strong>🎉 Migration Complete</strong>: Full Kotlin Multiplatform implementation across Android, Desktop, iOS, and Web</li>
+<li><strong>🏗️ Architecture</strong>: Modular design with shared core and platform-specific implementations</li>
+<li><strong>📚 All 18 Formats</strong>: Complete support for Markdown, todo.txt, CSV, and 15 additional formats</li>
+<li><strong>🧪 Testing</strong>: Comprehensive test suite with 100% coverage goals</li>
+<li><strong>📖 Documentation</strong>: Updated guides for multi-platform development</li>
+</ul>
+<h3>v2.15 -&gt; v2.16 - Major Architecture Refactor &amp; 8 New Formats</h3>
+<ul>
+<li><strong>🏗️ Modular Architecture</strong>: Complete refactor into 20+ modules (commons, core, app, 18 format modules)</li>
+<li><strong>📚 New Formats Added</strong>:</li>
+<li><strong>LaTeX</strong> (.tex) - Academic writing with KaTeX math rendering</li>
+<li><strong>reStructuredText</strong> (.rst) - Python documentation standard</li>
+<li><strong>TaskPaper</strong> (.taskpaper) - Project-based task management</li>
+<li><strong>Textile</strong> (.textile) - Lightweight markup format</li>
+<li><strong>Creole</strong> (.creole) - Wiki markup standard</li>
+<li><strong>TiddlyWiki</strong> (.tid) - Personal wiki format</li>
+<li><strong>Jupyter</strong> (.ipynb) - Data science notebooks</li>
+<li><strong>R Markdown</strong> (.Rmd) - R programming documentation</li>
+<li><strong>🧪 Comprehensive Testing</strong>: 100% test success rate with unit, integration, and E2E tests</li>
+<li><strong>🤖 AI QA Integration</strong>: Automated testing with real device/emulator validation</li>
+<li><strong>📖 Enhanced Documentation</strong>: Complete architecture guide and format specifications</li>
+<li><strong>🔧 Build System</strong>: Multi-module Gradle setup with automated testing pipeline</li>
+</ul>
+<h3>v2.14 -&gt; v2.15</h3>
+<ul>
+<li><a href="https://github.com/vasic-digital/Yole/compare/v2.14.0...v2.14.1">2.14.0 - 2.14.1</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/compare/v2.14.0...v2.15.0">2.14.0 - 2.15.0</a></li>
+<li>Make .svg editable, closes #2647, by @gsantner</li>
+<li>keep the toolbar ref intact (#2635)</li>
+<li>ShareInto: tracking/bloat parameter filtering - Amazon</li>
+<li>Add SHA-256 to file info dialog (#2622)</li>
+<li>Simpler http(s) regex for GsSimpleMarkdownParser (PR #2606)</li>
+<li>Add dyslexia friendly font (PR #2602)</li>
+<li>Improving view mode and rendering (PR #2566)</li>
+<li>Fixes and improvements for AsciiDoc (darklight, caution-admonition, linebreak, pagebreak, quote, attachment)  (#2597)</li>
+<li>Improve PlaintextSyntaxHighlighter with basic programming language editor syntax highlighting (PR #2560)</li>
+<li>Update README.md (PR #2595)</li>
+<li>Add AsciiDoc-reference, toolbar swap view and save button (#2580) (#2579)</li>
+<li>Upgrade to mermaid v11.6.0 (PR #2575)</li>
+<li>Template: Mermaid-Katex improvements (PR #2574)</li>
+<li>Settings: Move some 'Other' settings to 'Edit mode' (PR #2562)</li>
+<li>Quick filter all files, Share files into markor (PR #2521)</li>
+<li>Fix Prism code block issues (PR #2542)</li>
+<li>Fix unit tests - Color.rgb is Android only API and not available in junit -&gt; own method</li>
+<li>CSV: View-Mode syntax highlighting: Make column 3 readable in dark mode (255 blue -&gt; violet-blue), closes #2540, by @gsantner</li>
+<li>OrgMode: make insert-link action-button use correct syntax, closes #2527 (#2528)</li>
+<li>Improve text rendering performance, closes #2478, closes #2515 (#2509)</li>
+<li>Filebrowser: Per folder sort order (PR #2499)</li>
+<li>Improve line numbers (PR #2470)</li>
+<li>Orgmode fixes and improvements, closes #2405 (PR #2504)</li>
+<li>View-Mode: Code highlighting block - Prism add more language (PR #2508)</li>
+<li>Markdown: Open link action: Fix open links when Markdown link has space at end</li>
+<li>Update Android gradle/tools to 8.10.2/8.8</li>
+</ul>
+<h3>v2.13 series</h3>
+<ul>
+<li><a href="https://github.com/vasic-digital/Yole/compare/v2.13.0...v2.14.0">2.13.0 - 2.14.0</a></li>
+<li>Markdown: Fix rendering of '$' in non-math view mode (PR #2485 closes #2085 #2236)</li>
+<li>Android Studio latest version support</li>
+<li>Keyboard TAB key handling, syntax highlighting performance, filebrowser navigation (PR #2487 closes #2469 #2484)</li>
+<li>Restore audio action  (PR #2481)</li>
+<li>Multi user file browsing, closes #2479 (PR #2482)</li>
+<li>Select lines (PR #2443 by @harshad1)</li>
+<li>Fix various crashes of v2.13.1, by @gsantner</li>
+<li>Fix lots of minor issues and crashes in v2.13.0, by @gsantner</li>
+<li>Update F-Droid metadata links (#2466)</li>
+<li>(wshoy/storageButton, wshoy/master) Update translations (#2467)</li>
+<li>Remove OmRecorder (Voice/Audio recording feature), library outdated and download broken. (PR #2468)</li>
+</ul>
+<h3>v2.12 series</h3>
+<ul>
+<li><a href="https://github.com/vasic-digital/Yole/compare/v2.11.1...v2.12.0">2.12.0</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/compare/v2.12.0...v2.12.1">2.12.1</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/compare/v2.12.1...v2.12.2">2.12.2</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/compare/v2.12.2...v2.12.3">2.12.3</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/compare/v2.12.3...v2.12.4">2.12.4</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/compare/v2.12.4...v2.12.5">2.12.5</a></li>
+<li>
+<p><a href="https://github.com/vasic-digital/Yole/compare/v2.12.5...v2.12.6">2.12.6</a></p>
+</li>
+<li>
+<p>Override .org file extension to use text mimetype (<em>/</em> unrecognized on older devices) PR#2455</p>
+</li>
+<li>android-35 Disable window size overlap, closes #2448 #2387 #2451</li>
+<li>orgmode: add more text styling syntax and textactions (PR #2450)</li>
+<li>orgmode: fix action buttons not being loaded correctly (PR #2449)</li>
+<li>Rework /storage mapped folders (PR #2445 by @gsantner)</li>
+<li>FileManager: Remove top submenu to open special folders, load storage overview in filemanager instead (PR #2440 by @gsantner)</li>
+<li>Register chess extension (.fen) for plaintext - https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation closes #2241 (#2439)</li>
+<li>Open .lrc extension as plaintext by default, closes #2322 (#2438)</li>
+<li>TextAction: Add text case changing functionality (closes #2390, PR #2426)</li>
+<li>Bugfix: showAndFlash must be called on UI thread, closes #2427 (#2428)</li>
+<li>Improvements for HeadlineDialog scroll restoration and copy code block button (PR #2406)</li>
+<li>Improvements for the action buttons (closes #2386, PR #2388)</li>
+<li>Create launcher widget for todo (closes #1997, PR #2379)</li>
+<li>Disable multi-window settings option by default (PR #2420)</li>
+<li>Fixed checking for indices (#2421)</li>
+<li>Fix how multiple windows are launched (PR #2419)</li>
+<li>Add Em Space special key for paragraph indent (#2400)</li>
+<li>GitHub Actions CI configuration - upgrade upload step, fixes CI build error (PR #2416 by @gsantner)</li>
+<li>Updated README with dark/light todo.txt format images (PR #2411)</li>
+<li>Navigation and highlighting improvements (PR #2377 closes #2409 closes #2410)</li>
+<li>Filebrowser: Fix file modification time not reloaded, closes #2196 (PR #2385)</li>
+<li>Minor doc improvements</li>
+<li>Fix inject-head js option not applying, closes #2365, closes #2380 (PR #2383)</li>
+<li>Add usual yyyy-MM-dd newfile default option</li>
+<li>DocumentEditAndViewFragment: Fix all warnings, especially related to null pointers</li>
+<li>Zim: Fix link/attachment format (PR #2147 by @mehw)</li>
+<li>Add history scroll restoration for scroll views (#2366)</li>
+<li>Various bugfixes (anchor/toc jumping #2364, snippets folder #2369, wikitext newfile #2362, virtual directory browser #2350) (PR #2370 by @hardhard1)</li>
+<li>New Color picker, bump Android minSdk from 16 to 18, closes #1428 (PR #2203 by @halfdane)</li>
+<li>Latest Android SDK/Gradle fixes, by @gsantner #2360</li>
+<li>Add links to changelog</li>
+<li>SearchReplace dialog: Use full width, closes #2367, by @gsantner</li>
+<li>ShareInto: Fix crash when editor is null</li>
+<li>Appearance improvements (PR #2359 closes #2358)</li>
+<li>Fix notebook directory not being created, fix NewFileDialog when no last used type, by @gsantner closes #2360</li>
+<li>Project configuration: upgrade to Android SDK 35, Gradle 8.7, AGP 8.5, Build tools 35, by @gsantner, (closes #2346, closes #2305 PR #2355)</li>
+<li>Add ACTION_CREATE_NOTE intent filter, closes #2320, by @gsantner</li>
+<li>Highlight file when going back to filebrowser (PR #2351)</li>
+<li>View-Mode: Prism codeblock copy to clipboard button, update Mermaid and dark mode, closes #2336 closes #2335  (#2345)</li>
+<li>File browser: Make Folder and file icons visually better distinct (outlined icon for file),  (PR by @wshoy #2331 fixes #2186)</li>
+<li>Jump to correct heading via id, other tweaks, bugfixes (PR #2307 by @harshad1, fixes #2312 #2313)</li>
+<li>FileBrowser: Disable file change options in virtual directories (closes #2287, by @gsantner)</li>
+<li>Format detection fixes, headline dialog improvements (PR #2300 closes #2303 closes #2296 closes #2297)</li>
+<li>Disallow treating openxml (msword) files as textfiles, closes #2285</li>
+<li>ShareInto: Move link checkbox down</li>
+<li>ShareInto: Fix missing text at shared links (PR #2282 closes #2294)</li>
+<li>CI/CD: Update GitHub Actions versions, fixes outdated warnings, force Java from Eclipse</li>
+<li>Fix crash for unknown filetypes, fix EmbedBinary not detected, related to PR #2277</li>
+<li>FileBrowser: Fix file copy file (nullpointer in currentfolder), by @gsantner</li>
+<li>Update year in texts</li>
+<li>Reformat code of PR #2277, closes #2225, closes #2217, closes #2199, closes #2153</li>
+<li>Improvements to newfile dialog, open links, other fixes (PR #2277)</li>
+</ul>
+<h3>v2.11 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v211---asciidoc-csv-and-org-mode-todotxt-advanced-search-line-numbers">Details</a>)</h3>
+<ul>
+<li>Reworked attachments (PR #2106 by @harshad1)</li>
+<li>Editor/viewer: Side margin improvements 2, closes #2111 (PR #2119 by @guanglinn)</li>
+<li>Format: Add Orgmode - SyntaxHighlight basic support (PR #2107 by @bigger124 @gsantner)</li>
+<li>Editor/viewer: Side margin improvements, closes #2111 (PR #2118 by @guanglinn)</li>
+<li>Reformat code, by @gsantner</li>
+<li>Update translations (PR #2108)</li>
+<li>ShareInto: Automatically remove new YouTube tracking parameter si</li>
+<li>New folder in copy/move dialog, closes #2093 (PR #2098)</li>
+<li>AsciiDoc: Support view-mode light theme, by @TimReset (#1880 #2091 #2092)</li>
+<li>Update translations (PR #2071)</li>
+<li>Line numbers improvements, by @harshad1 @guang-lin @gsantner (PR #2090)</li>
+<li>Feature: Add Line numbers support (Issue #2057, PR #2062, by @guang-lin)</li>
+<li>Chunked undo redo, by @harshad1 (#2052)</li>
+<li>Update translations (PR #2056)</li>
+<li>Update CSV documentation and NEWS/CHANGELOG (PR #2058)</li>
+<li>Markdown: Text converter do not make duplicate header id (closes #2045, by @gsantner)</li>
+</ul>
+<h3>v2.10 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v210---custom-file-templates-share-into-remove-url-tracking-parameters">Details</a>)</h3>
+<ul>
+<li><a href="https://github.com/vasic-digital/Yole/pull/1689/files">Search: Keep in-files search dialog open, closes #1663, by @harshad1 (PR #1689)</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/pull/1693/files">File management: Support UTF-8 with BOM, by @tifish (PR #1693)</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/pull/1694/files">Editor: Increase performance on editables, more chunked operations, by @harshad1 (PR #1694)</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/commit/b4ae32bf0e8ab890ded57718a9598da7a7d52870">Dialogs: Don't show OK button at dialogs that require specific selection, by @gsantner closes #1699, closes #1700</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/issues/1699">Sync clients: Remove irritating file paths from unsupported dialog, by @gsantner, closes #1705</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/issues/1695">Check file existance case insensitive (Android filesystem usually is insensitive), by @gsantner, closes #1695</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/pull/1720/files">Improve Dialog OK button constraints #1699, by @harshad1 (PR #1720)</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/pull/1704/files">dotFiles: Hide "<em>_files" and "</em>.assets" from browser-&gt;save page to html, by @tifish (PR #1704)</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/pull/1736/files">More deterministic save / resume - Switching on every tab move, by @harshad1 (PR #1736)</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/pull/1719/files">Improve file handling (hash calc) &amp; FileInfo detection, by @harshad1 (PR #1719)</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/issues/1717">Use style/AppTheme.Unified.StartupFlash for DocumentActivity, by @gsantner, closes #1717</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/issues/1614">Editor: Disable richtext pasting which can lead to dropped characters, by @gsantner, closes #1614</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/issues/676">New file dialog: Custom file templates, using snippets folder (<notebook>/.app/snippets, by @gsantner, closes #676</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/pull/1735/files">Various performance improvements, by @harshad1 (PR #1735)</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/issues/1490">ShareInto: Filter few additional tracking parameters in shared URLs, by @gsantner</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/pull/1748/files">Launcher shortcuts: Open ToDo &amp; QuickNote at bottom, by @harshad1 (PR #1748)</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/pull/1751/files">SearchDialog: Improve condition calculation for simple dialogs, by @harshad1 (PR #1751)</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/pull/1754/files">todo.txt filter search: Disable highlighting at completed tasks, by @harshad1 (PR #1754)</a></li>
+<li><a href="https://github.com/vasic-digital/Yole/pull/1758/files">Editor: Restore behaviour - don't overwrite newer files unless content modified, by @harshad1 (PR #1758)</a></li>
+</ul>
+<h3>v2.9 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v29---snippets-templates-graphs-charts-diagrams-yaml-front-matter-chemistry">Details</a>)</h3>
+<ul>
+<li>Updates are officially only available from GitHub and F-Droid as of now</li>
+<li>New feature: Snippets</li>
+<li>Discussion forum &amp; questions now on Yole GitHub Discussion</li>
+<li>Faster Yole application startup with less flashing</li>
+<li>Improve performance at filebrowser and editor</li>
+<li>Allow to install APK files from filebrowser on click</li>
+<li>Markdown Table of Contents options</li>
+<li>Zim: Follow links to other wiki pages</li>
+<li>Under the hood improvements for I/O, widgets &amp; syntax highlighting</li>
+<li>todo.txt: Better browsing at editor with dialog &amp; saved search queries</li>
+<li>Settings option to enable/disable Chrome Custom Tabs</li>
+<li>Privacy settings option to disallow screenshots of Yole</li>
+<li>Debloat &amp; drop experimental/unused features, i.e. todo.txt huuid</li>
+<li>Support Android Day/Night theme system</li>
+<li>Filebrowser: Show full filename (multiline allowed instead of singleline only)</li>
+<li>View mode: Open links to folders in filebrowser</li>
+<li>Markdown: Better Math support, add mhchem chemistry module</li>
+<li>Markdown: Add support flowcharts with Mermaid</li>
+<li>Markdown: Add admonition extension (create fancy info boxes quickly)</li>
+<li>Per-file settings - In addition to the global settings, many options are now also configurable on a file basis</li>
+<li>Markdown: Display YAML fron-matter contents (like article titles and publish date)</li>
+</ul>
+<h3>v2.8 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v28---multi-selection-for-todotxt-dialogs">Details</a>)</h3>
+<ul>
+<li>Reference to GitHub discussion on More page, by @gsantner</li>
+<li>Add multi-selection to todo.txt dialogs, by @harshad1 @gsantner</li>
+<li>In-content search support for encrypted files, #1388 by @opensource21</li>
+<li>Remove alternative todo.txt naming (tags/categories), by @gsantner</li>
+</ul>
+<h3>v2.7 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v27---search-in-content-backup--restore-settings">Details</a>)</h3>
+<ul>
+<li>Recursive file search with in-content search, #1337 by @adelobosko @harshad1 @gsantner</li>
+<li>Backup and restore settings, Format selection with radio buttons, #1244 by @harshad1 @gsantner</li>
+<li>Per-file font size, #1332 by @harshad1</li>
+<li>Markdown: Support superscript^2^ syntax, #1268 by @gsantner</li>
+<li>View mode: Image/PDF export whole page, add seperate screenshot option, by @gsantner</li>
+<li>todo.txt: Fix trailing space resulting in contexts/projects/due-dates to be entered twice, #1282 by @harshad1</li>
+<li>Markdown: Enable GitLab extension, display video links as html5-video, #1280 by @gsantner</li>
+<li>Markdown: Enable typographic transformation, #1277 by @gsantner</li>
+<li>todo.txt: Fix tags dialog not shows up onLongClick, #1292 by @gsantner</li>
+<li>Editor: Allow top-menu back button also when the file is empty, #1290 by @harshad1</li>
+<li>ShareInto: Improve automatic link reformatting, #1275 by @harshad1</li>
+<li>Search dialogs: Hide search input field when if there is no data, #1298 by @harshad1</li>
+<li>Decrease scrollbar width for better usability, #1306 by @harshad1</li>
+<li>todo.txt: Settings option for always-visible @contexts &amp; +projects, #1305 by @harshad1 @gsantner</li>
+<li>TextActions: Improve cursor placement at Regex replace, #1310 by @harshad1</li>
+<li>File manager: Move/Copy file improvements, add Yes/No/All overwrite options, #1281 by @harshad1</li>
+<li>Fix App might crash on toolbar-click for TOC, #1336 by @adelobosko</li>
+<li>Fix Android 4.4 crash on file move/copy, #1333 by @harshad1</li>
+<li>Fix Android 4.4 crash when opening .txt file due to ZimWiki format detection, #1341 by @fredericjacob</li>
+<li>Markdown: Don't match extra spaces at ordered-list regex, #1367 by @harshad1</li>
+<li>File Manager: Fix MB being displayed as GB at description (SI 1000 unit), #1352 by @gsantner</li>
+<li>File Manager: Duplicate file / allow copy into same folder, #1345 by @harshad1- Filemanager formatter: fix MB being displayed as GB (SI 1000 unit), #1352 by @gsantner</li>
+</ul>
+<h3>v2.6 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v26---zim-wiki-newline--new-paragraph-save-format">Details</a>)</h3>
+<ul>
+<li>Markdown: Add settings option for newlines to start new paragraphs, #1260 by @gsantner</li>
+<li>Editor/Viewer: Remember last used file format, show current selected format, #1226 by @harshad1</li>
+<li>Editor/Viewer: Back arrow (top menu) finish activity, #1165 by @gsantner</li>
+<li>Editor: Per-file option to enable/disable syntax highlighting, #1168 by @harshad1</li>
+<li>Share-Into: Add launcher, #1184 by @gsantner</li>
+<li>Markdown: Apply Yole Table of Content config for custom <code>[TOC]: #</code> too, #1189 by @gsantner</li>
+<li>Editor: Improve writing to sdcard, #1192 by @gsantner</li>
+<li>Zim: Support file generation on <code>Android&lt;7/Java=6</code>, #1194 by @gsantner</li>
+<li>Zim: Editor: Support Table of contents (top menu), #1186 by @fredericjacob</li>
+<li>Markdown: Math/KaTex: Improve \ line breaks usage, #1196 by @radanovicnik</li>
+<li>ShareInto: Add space after formatted link - messengers then show correct link preview, by @gsantner</li>
+<li>Markdown: Add break page example to Markdown reference, by @gsantner</li>
+<li>Editor: Prevent Android accessibility &amp; autofill to produce errors, #1204 by @harshad1</li>
+<li>Main page: Reduce friction when app was running in background for a while, #1210 by @harshad1</li>
+<li>Search: Add input field to filter search results, #1222 by @harshad1</li>
+<li>Markdown: Don't start new list item when reaching file end and toggling, #1213 by @harshad1</li>
+<li>Zim: Simplify Zim format detection, #1227 by @gsantner</li>
+<li>Zim: Add more text actions (links, images, checkbox, ..), #1195 by @fredericjacob</li>
+<li>All formats: Date/Time dialog don't add entry twice to history, #1229 by @harshad1</li>
+<li>Editor/Viewer: Increase scrollbar width, #1241 by @harshad1</li>
+<li>File browser: File move start from current folder, #1234 by @harshad1</li>
+<li>Editor/Viwer: Add file info option (document top menu), #1233 by @harshad1</li>
+<li>Viewer: Privacy: Opt-out of Android WebView's internal metrics, #1181 by @gsantner</li>
+<li>Markdown: Support Notable's special home brewed syntax for attachments, #1252 by @gsantner</li>
+<li>Dependencies: Add source code of colorpicker and build subproject, by @gsantner</li>
+<li>Optimize image assets, by @gsantner</li>
+<li>DevOps: Improvements to GitHub Actions CI/CD configuration, by @gsantner</li>
+<li>Improve encryption wording &amp; usage, #1171 #1179 by @opensource21</li>
+</ul>
+<h3>v2.5 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v25---zim-wiki---search--replace---zettelkasten">Details</a>)</h3>
+<ul>
+<li>Add Zim Wiki format and template #1098</li>
+<li>Add search &amp; replace (simple|regex, replace once|all) #1112</li>
+<li>Add settings for current file to toolbar #1129</li>
+<li>Fix file sometimes not opens from launcher shortcut #1139</li>
+<li>Use GitHub Actions for CI/CD #1151</li>
+<li>Add template for Zettelkasten #1156</li>
+<li>Add Nord editor color scheme #1134</li>
+<li>Allow to select folder when create new file via share into Yole #1138</li>
+<li>Improve license dialog readability #1119</li>
+<li>General improvements, fixes and translations</li>
+</ul>
+<h3>v2.4 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v24---all-new-todotxt---programming-language-syntax-highlighting">Details</a>)</h3>
+<ul>
+<li>Markdown: Correctly insert or remove list item on press enter at empty list item</li>
+<li>Remove title from todo.txt date dialog, better usable on small devices</li>
+<li>Fix search sometimes not working when chaging from view to edit mode</li>
+<li>Rework Indent &amp; Move lines Actions</li>
+<li>Add settings option to control todo.txt completition date auto insert</li>
+<li>All new todo.txt support in Yole</li>
+<li>Add many languages to view-mode code highlighting</li>
+<li>Add xlf format (plaintext)</li>
+<li>Remove colored highlighting from changelog dialog</li>
+<li>Add search to Markdown edit-mode outline/TOC dialog</li>
+<li>New file dialog remember type selection</li>
+<li>Better preserve current open folder across device rotation &amp; reboot</li>
+<li>todo.txt: Long press sort to sort by most recent used method</li>
+<li>Markdown: Improve bold/italic syntax highlighting with punctuations</li>
+<li>todo.txt: Create done file again when not exists</li>
+<li>Add Actions: Move line up &amp; down, start new line</li>
+<li>Insert Date/Time text action: List of recent time formats</li>
+<li>Control visibility of text actions</li>
+<li>Edit-Mode Search: Open selected position instead of first match</li>
+<li>File browser: Add settings option to customize file description format</li>
+<li>todo.txt: Syntax highlighting in edit-mode search dialog</li>
+<li>Save last used folder to settings, use info for titlebar</li>
+<li>New File Dialog: Remember type selection</li>
+</ul>
+<h3>v2.3 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v23---table-of-contents-custom-action-order">Details</a>)</h3>
+<ul>
+<li>Add action to Move current selected line(s)/cursor text up/down</li>
+<li>Add settings option for View-Mode link color</li>
+<li>Improve table of contents - add border, disable underline</li>
+<li>Long press toolbar to jump to top/bottom (edit &amp; view mode)</li>
+<li>Add search to View Mode</li>
+<li>Accessibility improvements &amp; Talkback support</li>
+<li>Allow http protocol on Android&gt;=9</li>
+<li>Telegram file edit support</li>
+<li>Markdown: Normal sized headers by default, increases performance</li>
+<li>Disable highlighting on big files to improve edit performance</li>
+<li>Don't sort non-document files in third group</li>
+<li>Add Accordion (Click to expand) example and add action button</li>
+<li>Tooltips for action buttons</li>
+<li>For index.html files, show foldername at favourites/recents</li>
+<li>todo.txt: Set completition date also when there is no creation date</li>
+<li>Markdown: Configurable unordered list character</li>
+<li>Custom order of action buttons</li>
+<li>Markdown: Add alternative more performant heading highlighting</li>
+<li>Fix foldername in Main toolbar not reloaded</li>
+<li>Plaintext: Add extensions for AsciiDoc (.adoc), OrgMode (.org), Ledger (.dg .ledger), Diff (.diff .patch)</li>
+<li>Remember last used file extension for new file creation</li>
+<li>todo.txt: Preselect last used archive file by default for archiving</li>
+<li>Markdown: Long press code to insert code block</li>
+<li>todo.txt: Improved task sort functionalities</li>
+<li>Add action button to expand selection of cursror to whole line</li>
+<li>Markdown: Add Table of contents / Outline for Edit mode (Press toolbar)</li>
+<li>Vertical Scrollbar now draggable at view &amp; edit mode</li>
+<li>todo.txt: Date&amp;Time selection dialogs</li>
+<li>Markdown: Auto update ordered list numbers</li>
+</ul>
+<h3>v2.2 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v22---presentations-voice-notes-markdown-table-editor">Details</a>)</h3>
+<ul>
+<li>Added Presentations &amp; Slides with Markdown</li>
+<li>Added audio recording dialog which allows to add voice to documents. Manual interaction required to start &amp; stop voice recording. Voice recording permission required for this feature</li>
+<li>Added editor button to create Markdown tables</li>
+<li>Markdown Footnotes support added</li>
+<li>Added attachment button for all formats (insert color, link, image, file, audio, date)</li>
+<li>Date/Time button long press now inserts text with last used format</li>
+<li>Improved SD Card reading &amp; writing</li>
+<li>Added option to File-import-dialog to import to notebook instead of current folder</li>
+<li>Reordered editor buttons so global actions are on same position at all formats</li>
+<li>Source code highlighting for View mode</li>
+<li>Added settings option to enable experimental features</li>
+<li>New experimental feature: Convert epub to plaintext and replace current text with ebook</li>
+<li>New experimental feature: Speed Reading for (text from) edit mode</li>
+<li>New Special Keys option: Indent / Deindent current line</li>
+<li>Copy textfile to clipboard from file browser</li>
+<li>Added highlighting todo.txt due dates</li>
+<li>Long press the todo.txt date button to insert due date</li>
+<li>Sepia editor theme</li>
+</ul>
+<h3>v2.1 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v21---key-value-highlighting-jsoniniyamlcsv-improved-performance">Details</a>)</h3>
+<ul>
+<li>Improved editor, highlighting and overall performance</li>
+<li>New file dialog: Templates</li>
+<li>New format: KeyValue - highlighting for json, ini, csv, yaml, vcard, ics, toml and other simple key-value like syntax</li>
+<li>Long click on main view plus button -&gt; open favourites/recents</li>
+<li>Use lightweight Markdown heading highlighting on non-highend devices</li>
+<li>Show SD Card dialog when opening file that is under SAF</li>
+<li>Share: Rename PDF -&gt; Print/PDF </li>
+<li>Text action to sort todo by date</li>
+<li>Keep view mode scroll position</li>
+<li>Remove LinkBox from main screen to improve performance</li>
+<li>Make filesystem selection dialog fill screen</li>
+<li>Rework share into: Use file browser to select favourite/recent/popular files</li>
+<li>Special keys added: Insert page break for PDF/Printing, ohm key, punctation mark arrows</li>
+<li>Append linefeed on end when saving</li>
+<li>Show error when trying to rename to existing file/folder</li>
+<li>Add special handling for percent encoded filenames in nextcloud/owncloud folder</li>
+<li>Link 'More-&gt;Help' to Project website FAQ</li>
+<li>Debug Log settings option</li>
+<li>Improve local/linked file opening when clicking link at preview</li>
+<li>Add option to set font size in view mode</li>
+<li>Share (multiple) files from file browser</li>
+<li>PlaintextConverter: Put HTML into preview as is (allow to view html files)</li>
+<li>Fix folder title not visible sometimes</li>
+<li>Enable hex color highlighting for various prefix/postfixes (like colon, quote, ...)</li>
+</ul>
+<h3>v2.0 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v20---search-dotfiles-pdf-export">Details</a>)</h3>
+<ul>
+<li>Recursive file &amp; folder search</li>
+<li>Search button in editor, viewer and file browser</li>
+<li>Always export PDF and images with light theme and white background (improves printing)</li>
+<li>Show dialog on for textfiles to choose open in Yole or other app</li>
+<li>Setting to set file extensions to always load in Yole</li>
+<li>Always view files starting with "index."</li>
+<li>Setting to configure wrap mode (=line breaking)</li>
+<li>Menu option for reload file (editor/viewer)</li>
+<li>Menu option for hiding files &amp; folders starting with a dot</li>
+<li>Setting to set tab width</li>
+<li>Improve back button when always start view mode is set</li>
+<li>Keep file browser sort order</li>
+<li>Improve inline code highlighting</li>
+<li>Add new line when archiving tasks</li>
+</ul>
+<h3>v1.8 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v18---all-new-file-browser-favourites-and-faster-markdown-preview">Details</a>)</h3>
+<ul>
+<li>Show app intro at first start  </li>
+<li>All new file navigation  </li>
+<li>Add favourite files  </li>
+<li>Add quick navigiation options (to notebook, sdcard, AppData and more)  </li>
+<li>Add option to set Navigation-Bar color  </li>
+<li>Combine edit &amp; view mode to one fragment, show view as overlay  </li>
+<li>Add horizontal scrolling for code blocks in view mode  </li>
+<li>More efficient undo/redo  </li>
+<li>Option to enable/disable swipe to change mode  </li>
+<li>WikiLinks: Disable default escaped characters, so subfolder path is not converted to hyphen  </li>
+<li>Added fonts: Source Pro, DejaVu Sans Mono, Ubuntu, Lato  </li>
+<li>Scan storage Fonts folder for custom fonts  </li>
+<li>Add word count to document info dialog  </li>
+</ul>
+<h3>v1.7 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v17---custom-fonts-linkbox-with-markdown">Details</a>)</h3>
+<ul>
+<li>Improved app color theme for better readability  </li>
+<li>Load custom fonts from file  </li>
+<li>Yole bundles 5 additional open fonts  </li>
+<li>Copy custom fonts to folder: 'Notebook/.app/fonts/'  </li>
+<li>Links shared from e.g. browsers are automatically converted to Markdown syntax if possible  </li>
+<li>LinkBox is now listed on the main view bottom bar  </li>
+<li>LinkBox defaults on new installations to LinkBox.md as filename  </li>
+<li>Default to last used date/time format at dialog  </li>
+<li>Apply todo.txt format only for .txt files  </li>
+<li>L/R Swipe in edit/representation mode to change mode  </li>
+<li>Open link textaction: Don't include trailing ')' in parsed URL, which is common for markdown  </li>
+<li>Added App Shortcuts, requires Android 7.1+  </li>
+<li>Markdown: Enable WikiLink style to reference [[file]] relative  </li>
+<li>Strip #ref from URL in representation to determine if another file should be opened on click  </li>
+<li>Option to set app start tab (Notebook / ToDo / QuickNote / LinkBox / More)  </li>
+</ul>
+<h3>v1.6 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v16---datetime-dialog---jekyll-and-katex-improvements">Details</a>)</h3>
+<p><strong>New features:</strong><br />
+- TextAction: Insert date/time<br />
+- Add website title when sharing into Yole, if browser supports it<br />
+  - Website title + URL formatted in Markdown format if possible</p>
+<p><strong>Improved:</strong><br />
+- Automatically create ToDo/linkbox/QuickNote and parent folders when using respective launcher<br />
+- KaTex/Math: Improve inline math<br />
+- Close virtual keyboard after creating new file<br />
+- Language selection: Load system's most important language as system hint<br />
+- Markdown + Jekyll: Replace {{ site.baseurl }} with .. in representation<br />
+- More padding at settings on older devices<br />
+- Use the new file dialog for sharing into new documents
+- Filesystem dialog now shows images / textfiles only at respective file selection  </p>
+<p><strong>Fixed:</strong><br />
+- New file dialog: Jekyll option on older devices<br />
+- Title not updated when swiping  </p>
+<h3>v1.5 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v15---multiple-windows-markdown-tasks-theming">Details</a>)</h3>
+<p><strong>New features:</strong><br />
+- App-wide<br />
+  - Settings option: Keep screen on
+- Editor<br />
+  - Open multiple Windows<br />
+- Document browser<br />
+  - Completly new 'New file' dialog<br />
+- Text Actions<br />
+  - Sort todo.txt files<br />
+  - Tasks support in Markdown  </p>
+<p><strong>Improved:</strong><br />
+- Document browser<br />
+  - Replace 'Reload button' with pull down to refresh<br />
+  - Added 'Last modified' to File information dialog<br />
+- Editor<br />
+  - Added greenscale basic editor colors<br />
+- Representation<br />
+  - Set inital background color before loading document<br />
+  - Math/KaTex: Show inline when single dollar is used</p>
+<h3>v1.4</h3>
+<p><strong>New features:</strong><br />
+- App-wide<br />
+  - Add popular documents to 'share into'<br />
+- Editor<br />
+  - Settings options for editor background and foreground color<br />
+  - todo.txt: Highlight multiple levels of context/projects (@@/++)<br />
+- Text Actions<br />
+  - Add zero-width space character to 'special characters'<br />
+  - Add color picker  </p>
+<p><strong>Improved:</strong><br />
+- TextActions<br />
+  - Markdown: Multiline textaction for header/quote/list<br />
+- Editor<br />
+  - More space for document title<br />
+  - Harden automatic file naming and moving<br />
+- Representation<br />
+  - Enable block rendering for KaTex (math)<br />
+- App-wide<br />
+  - Natural scrolling in dialogs  </p>
+<p><strong>Fixed:</strong><br />
+- Filesystem<br />
+  - Discard selection when leaving filesystem view  </p>
+<h3>v1.3</h3>
+<p><strong>New features:</strong><br />
+- App-wide<br />
+  - Add 'Auto' theme, switch light/dark theme by current hour<br />
+  - Support for Chrome Custom Tabs
+- Editor
+  - Start document at the recent cursor position (jump to bottom on new documents and at special files)<br />
+  - Enable link highlighting in plaintext format (especially easier to distinguish title and links in linkbox)<br />
+- Text Actions<br />
+  - Markdown: Long press image adds img-src with max-height<br />
+  - Long press 'Special key' jumps to top/bottom<br />
+  - Long press 'Open external' opens content search  </p>
+<p><strong>Improved:</strong><br />
+- TextActions<br />
+  - Don't list empty lines in simple search<br />
+  - Edit picture supports now relative filepaths too<br />
+  - Show import dialog for selected pictures too (like in file selection)<br />
+- Representation<br />
+  - Renamed from Preview
+  - Performance improvement for TOC &amp; Math - only use when text contains headers/math<br />
+  - Markdown: Underline h2 too (like h1, more common for two levels)<br />
+  - ToDo: Add alternative naming for contexts/projects<br />
+- App-wide<br />
+  - </p>
+<p><strong>Fixed:</strong><br />
+- Editor
+  - Disable 'History disable' performance option for data integrity
+- App-wide
+  - Special files: When app launcher was used, create file if not exists   </p>
+<h3>v1.2 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v12---markdown-with-katexmath---search-in-current-document">Details</a>)</h3>
+<p><strong>New features:</strong>
+- General
+  - Launchers to directly open LinkBox/ToDo/QuickNote (opt-in)
+- Text Actions
+  - Search/filter lines by input (available in special-keys button menu)
+  - Todo: context aware search for projects,contexts (longpress project/context button)
+- Preview
+  - Table of contents (opt-in))
+  - Math using KaTex (opt-in)</p>
+<p><strong>Improved:</strong>
+- Converter
+  - Markdown: More features enabled, notably GFM like table parsing and underlined h1
+- Settings
+  - More spacing between categories</p>
+<p><strong>Fixed:</strong>
+- Editor
+  - File saving</p>
+<h3>v1.1 (<a href="https://github.com/vasic-digital/Yole/blob/master/NEWS.md#markor-v11---markdown-picture-import-from-gallery-and-camera">Details</a>)</h3>
+<p><strong>New features:</strong><br />
+- Text Module Actions
+  - Markdown Picture Dialog
+  - Load picture from gallery
+  - Take picture with camera
+  - Edit picture with graphics app</p>
+<p><strong>Improved:</strong><br />
+- Formats
+  - Load Markdown Format for .md.txt files</p>
+<p><strong>Fixed:</strong><br />
+- Editor
+  - Change default lineheight back to 100%
+  - Not connects multiple lines anymore
+- Filesystem view
+  - More checks for storage access and the yellow info box</p>
+<h3>v1.0.1</h3>
+<p><strong>New features:</strong><br />
+- Add popular files (most used files by access count)
+- Add popular &amp; recent files as virtual folder under /storage/
+  - Selectable e.g. for widgets</p>
+<p><strong>Improved:</strong><br />
+- Text-Module-Actions
+  - More safety checks at execution
+- Highlighting
+  - MD: Better code readability
+  - MD: Better unordered list readability</p>
+<h3>v1.0.0</h3>
+<p><strong>New features:</strong><br />
+- ShareInto
+  - Added export: calendar appointment</p>
+<p><strong>Improved:</strong><br />
+- Widget
+  - Added shortcuts to ToDo, QuickNote and LinkBox
+- SD Card handling and permission errors
+  - Show warning when opening a file on not writeable path
+  - Add shortcuts to writeable SD card folders
+  - Mark unwriteable files red in selection dialog
+- ShareInto
+  - Better separator placement</p>
+<p><strong>Fixed:</strong><br />
+- Widget
+  - Open selected file
+- Editor
+  - Markdown header highlighting padding
+- Share to app
+  - Fix view intent not starting on some devices
+- Filesystem view
+  - Allow to view Details for folder too</p>
+<h3>v0.3.10</h3>
+<p><strong>New features:</strong><br />
+- ShareInto
+  - Show "open in browser" option if text contains link
+  - Prepend separator to all existing documents
+- Settings / Preview
+  - User customizeable CSS/JS injection option (for preview)
+  - Configureable in settings
+  - Contains some (uncommented) modification lines for important elements
+  - like font size, font type, script to load when page loaded etc.</p>
+<p><strong>Improved:</strong><br />
+- Inherit font size from global font preference</p>
+<p><strong>Fixed:</strong><br />
+- Recents working without having opened anything yet</p>
+<h3>v0.3.9</h3>
+<p><strong>Improved:</strong><br />
+- Translation updated
+- Updated project description
+- Slightly modified adaptive icon</p>
+<p><strong>Fixed:</strong><br />
+- Editor-Rotation: Creates new file again when editing before
+- Create folder: Screen rotation</p>
+<h3>v0.3.8</h3>
+<p><strong>New features:</strong><br />
+- Recently viewed documents
+  - Start editing of recent documents, button in the toolbar of main view
+  - Allow sharing into recend documents
+  - Queue containing the 10 last viewed files
+- Keep scroll position when reloading document list (Notebook)
+- Document/File Info: Dialog showing information about selected file
+  - Openable at main views toolbar when one item is selected</p>
+<p><strong>Improved:</strong><br />
+- Overall better performance 
+  - Faster document loading
+  - Decreased memory usage
+- Reduce edit history size (undo/redo) to 5 for lower memory usage
+- Preview/Rendering (All):
+  - Rework of theme, font-size and font injection
+- Preview/Rendering (Markdown):
+  - Blockquote theme based styling
+  - Blockquote RTL compatibility</p>
+<p><strong>Fixed:</strong><br />
+- Crash when Yole put to background and huge file is loaded
+  - Document contents are not stored into resume cache anymore if they are too big
+  - Make no major differences for huge files, just undo/redo history is cleared when switchting away</p>
+<h3>v0.3.7</h3>
+<ul>
+<li>Option to disable spellchecking-underline</li>
+<li>More file managers and sync clients supported (notably: seafile)</li>
+<li>Improve default settings</li>
+<li>Limit history size to improve performance</li>
+<li>Support UTF8 local filename references</li>
+</ul>
+<h3>v0.3.6</h3>
+<ul>
+<li>Decrease padding of textmoduleactions for more fitting elements</li>
+<li>Add delete action for all formats</li>
+<li>Add open link in browser moduleaction</li>
+<li>Fix actionmode icon color</li>
+<li>Share into:: Add LinkBox option</li>
+<li>Share into:: Fix re-sharing of text</li>
+</ul>
+<h3>v0.3.5</h3>
+<ul>
+<li>All new More section</li>
+<li>All new "Share into" handling</li>
+<li>Fix: Keep dates when priority is assigned</li>
+<li>Mod: Disable colored,underlined header text</li>
+<li>Add: Enable zoom gestures in Preview</li>
+<li>Mod: md::link/image filesystem selection in working directory</li>
+<li>Remove MoreFragment and AboutActivity</li>
+<li>Share into:: Editable text</li>
+<li>Share into:: Re-Share option</li>
+<li>Share into:: Copy to clipboard option</li>
+<li>Share into:: Landscape support</li>
+<li>Update settings</li>
+<li>Improve permission checking</li>
+</ul>
+<h3>v0.3.4</h3>
+<ul>
+<li>Replace commonmark markdown parser with flexmark</li>
+<li>Various smaller bug fixes</li>
+<li>Updated translations</li>
+<li>Settings option: Edit in screen center</li>
+<li>Add ".." in folder selection to go up</li>
+</ul>
+<h3>v0.3.3</h3>
+<ul>
+<li>Add support for editing files from most file managers</li>
+<li>Allow to open from Own/NextCloud</li>
+<li>Hints about using Yole with Dropbox</li>
+<li>Allow to set document folder outside of internal storage</li>
+<li>Fix import dialog orientation crash</li>
+<li>Add option to start editing on bottom</li>
+<li>md: moduleaction: end line with 2 spaces</li>
+<li>Improve project icon</li>
+<li>Trim share-into text</li>
+<li>Improved exporting/sharing</li>
+</ul>
+<h3>v0.3.2</h3>
+<ul>
+<li>Todotxt: Support delete, archive tasks</li>
+<li>Todotxt: Try to keep cursor position</li>
+<li>Translation updates :)</li>
+</ul>
+<h3>v0.3.1</h3>
+<ul>
+<li>Option for custom line height</li>
+<li>Remember cursor position when switching away from app</li>
+<li>Special keyboard actions (Page up, Tab,..)</li>
+</ul>
+<h3>v0.3.0</h3>
+<ul>
+<li>New project icon</li>
+<li>Settings ordered in subscreens</li>
+<li>Additional syntax information</li>
+</ul>
+<h3>v0.2.5</h3>
+<ul>
+<li>Improve highlighter performance</li>
+<li>Improve default highlighter settings</li>
+<li>Added new highlting settings options</li>
+<li>Preference support lib for settings</li>
+</ul>
+<h3>v0.2.4</h3>
+<ul>
+<li>Abstract highlighting, converter and text module actions</li>
+<li>Added: Support for todo.txt</li>
+<li>Added: Icons to settings</li>
+<li>Added: Hex-Color-Code underlining</li>
+<li>Added: Changelog dialog</li>
+</ul>
+<h3>v0.2.3</h3>
+<ul>
+<li>Select  file/image from filesystem</li>
+<li>Fix relative web local file loading</li>
+<li>Added: manually save option</li>
+<li>Added: Launcher shortcuts</li>
+<li>Filesystem: Add refresh menu option</li>
+</ul>
+<h3>v0.2.2</h3>
+<ul>
+<li>Show document and file amount below folders</li>
+<li>Settings toolbar option</li>
+<li>Highlight line-endings with two spaces (MD line break)</li>
+<li>Translation updates</li>
+</ul>
+<h3>v0.2.1</h3>
+<ul>
+<li>Translation update</li>
+<li>Widget and document list fixes</li>
+<li>Improve editor actions</li>
+</ul>
+<h3>v0.2.0</h3>
+<ul>
+<li>Rework of core functionalities of the app</li>
+<li>Added QuickNote</li>
+<li>Redo/Undo editing</li>
+<li>Separate Preview/Edit by fragments, unify functions</li>
+<li>Rewrite storage/handling of documents</li>
+<li>Improved sharing into the app, allow appending</li>
+<li>Added bottom navigation</li>
+<li>New font chooser in settings</li>
+</ul>
+<h3>v0.1.6</h3>
+<ul>
+<li>Added: Many new supported languages</li>
+<li>More supported markdown elements in highlighter</li>
+<li>More markdown file extensions supported</li>
+<li>Improved language selection</li>
+<li>Share as image fixed</li>
+</ul>
+<h3>v0.1.5</h3>
+<ul>
+<li>Added: Translation: Brazilian, Polish, Hindi, French, Russian, Ukrainian, Italian</li>
+<li>Added: Sort files</li>
+<li>Added: Replace markdown charbar with actions</li>
+<li>Improved: Syntax highlighting</li>
+</ul>
+<h3>v0.1.4</h3>
+<ul>
+<li>Fixed: replaced Uri.fromFile with FileProvider</li>
+<li>Added: Share as file, share as PDF</li>
+<li>Use commonmark-java instead of AndDown markdown parser</li>
+<li>Added: Spanish translation (#26</li>
+<li>Added: More font size options</li>
+</ul>
+<h3>v0.1.3</h3>
+<ul>
+<li>Fix: Renaming case sensitive</li>
+<li>Mod: Syntax highlighting</li>
+<li>Fix: Widget</li>
+<li>Added: Copyright notices</li>
+<li>Changed: Translation license</li>
+</ul>
+<h3>v0.1.2</h3>
+<ul>
+<li>Overall refactoring</li>
+<li>Remove startup ""authentication""</li>
+<li>Remove slow animations</li>
+<li>FilesystemDialog from scratch</li>
+<li>Save only if title/content changed</li>
+<li>Rework most callbacks and broadcasts</li>
+<li>Rework settings</li>
+</ul>
+<h3>v0.1.1</h3>
+<ul>
+<li>Fix import (#2)</li>
+<li>Use appcompat in dialogs</li>
+<li>Change cursor in editor</li>
+<li>Fix resizing with fullscreen in editor</li>
+<li>Dialogs in dark</li>
+</ul>
+<h3>v0.1.0</h3>
+<ul>
+<li>Initial release</li>
+<li>Start of community project Yole</li>
+<li>Fork of writeily-pro</li>
+<li>Different branding</li>
+<li>New initial features</li>
+</ul>
+<h3>v</h3>
+<h2><strong>New features:</strong></h2>
+<h2><strong>Improved:</strong></h2>
+<h2><strong>Fixed:</strong></h2>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Yole Project</p>
+    </footer>
+</body>
+</html>

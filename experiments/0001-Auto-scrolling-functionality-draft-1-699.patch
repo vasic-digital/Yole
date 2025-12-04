@@ -13,12 +13,12 @@ Subject: [PATCH] Auto scrolling functionality, draft 1 (#699)
  6 files changed, 74 insertions(+)
  create mode 100644 app/thirdparty/res/drawable/ic_arrow_downward_black_24dp.xml
 
-diff --git a/app/src/main/java/net/gsantner/markor/activity/DocumentActivity.java b/app/src/main/java/net/gsantner/markor/activity/DocumentActivity.java
+diff --git a/app/src/main/java/net/vasic-digital/Yole/activity/DocumentActivity.java b/app/src/main/java/net/vasic-digital/Yole/activity/DocumentActivity.java
 index eca0ab1f..b9d95876 100644
---- a/app/src/main/java/net/gsantner/markor/activity/DocumentActivity.java
-+++ b/app/src/main/java/net/gsantner/markor/activity/DocumentActivity.java
-@@ -37,6 +37,7 @@ import net.gsantner.markor.util.DocumentIO;
- import net.gsantner.markor.util.PermissionChecker;
+--- a/app/src/main/java/net/vasic-digital/Yole/activity/DocumentActivity.java
++++ b/app/src/main/java/net/vasic-digital/Yole/activity/DocumentActivity.java
+@@ -37,6 +37,7 @@ import digital.vasic.yole.util.DocumentIO;
+ import digital.vasic.yole.util.PermissionChecker;
  import net.gsantner.opoc.activity.GsFragmentBase;
  import net.gsantner.opoc.util.Callback;
 +import net.gsantner.opoc.util.CoolExperimentalStuff;
@@ -38,10 +38,10 @@ index eca0ab1f..b9d95876 100644
      @Override
      @SuppressWarnings("StatementWithEmptyBody")
      public void onBackPressed() {
-diff --git a/app/src/main/java/net/gsantner/markor/activity/DocumentEditAndViewFragment.java b/app/src/main/java/net/gsantner/markor/activity/DocumentEditAndViewFragment.java
+diff --git a/app/src/main/java/net/vasic-digital/Yole/activity/DocumentEditAndViewFragment.java b/app/src/main/java/net/vasic-digital/Yole/activity/DocumentEditAndViewFragment.java
 index c0ad2d1f..23af187d 100644
---- a/app/src/main/java/net/gsantner/markor/activity/DocumentEditAndViewFragment.java
-+++ b/app/src/main/java/net/gsantner/markor/activity/DocumentEditAndViewFragment.java
+--- a/app/src/main/java/net/vasic-digital/Yole/activity/DocumentEditAndViewFragment.java
++++ b/app/src/main/java/net/vasic-digital/Yole/activity/DocumentEditAndViewFragment.java
 @@ -250,6 +250,7 @@ public class DocumentEditAndViewFragment extends GsFragmentBase implements TextFormat.T
          menu.findItem(R.id.submenu_tools).setVisible(isExpimentalFeaturesEnabled);
          menu.findItem(R.id.action_load_epub).setVisible(isExpimentalFeaturesEnabled);

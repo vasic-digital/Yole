@@ -38,12 +38,19 @@ tmp/
 build/
 gradle-app.setting
 
+# Use Kotlin DSL only - prevent legacy Groovy build files
+# Exclude root build files and wrapper
+**/build.gradle
+!build.gradle
+!settings.gradle
+!gradle-wrapper.gradle
+
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !gradle-wrapper.jar
 
 ###############
 ### Eclipse ###
-#.project
+.project
 *.pydevproject
 .metadata
 *.swp
@@ -104,3 +111,7 @@ app/flavor*
 
 /.favorites.json
 /.vscode
+
+.kotlin
+.kotlin/*
+

@@ -1,0 +1,68 @@
+# Codecov Configuration
+# https://docs.codecov.io/docs/codecov-yaml
+
+codecov:
+  require_ci_to_pass: yes
+  notify:
+    wait_for_ci: yes
+
+coverage:
+  precision: 2
+  round: down
+  range: "50...90"
+
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 1%
+        if_ci_failed: error
+
+    patch:
+      default:
+        target: 70%
+        threshold: 5%
+        if_ci_failed: error
+
+comment:
+  layout: "reach,diff,flags,tree,footer"
+  behavior: default
+  require_changes: false
+  require_base: no
+  require_head: yes
+
+flags:
+  shared:
+    paths:
+      - shared/src/
+    carryforward: true
+
+  android:
+    paths:
+      - androidApp/src/
+    carryforward: true
+
+  desktop:
+    paths:
+      - desktopApp/src/
+    carryforward: true
+
+  combined:
+    carryforward: false
+
+ignore:
+  - "**/*Test.kt"
+  - "**/*Tests.kt"
+  - "**/test/**"
+  - "**/androidTest/**"
+  - "**/commonTest/**"
+  - "build/**"
+  - "dist/**"
+  - "docs/**"
+  - "templates/**"
+  - "scripts/**"
+  - "**/*.gradle.kts"
+  - "**/generated/**"
+
+github_checks:
+  annotations: true

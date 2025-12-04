@@ -13,7 +13,7 @@ Subject: [PATCH] Imageview from url in popup (#395) by @noob893796;
  .../main/res/layout/select_path_dialog.xml    |  8 ++++
  app/src/main/res/values/strings.xml           |  1 +
  7 files changed, 88 insertions(+), 2 deletions(-)
- create mode 100644 app/src/main/java/net/gsantner/markor/util/DownloadImageTask.java
+ create mode 100644 app/src/main/java/net/vasic-digital/Yole/util/DownloadImageTask.java
 
 diff --git a/app/build.gradle b/app/build.gradle
 index 401a970d..278dafd3 100644
@@ -35,10 +35,10 @@ index 401a970d..278dafd3 100644
  
      // Tool libraries
      implementation "com.jakewharton:butterknife:${version_library_butterknife}"
-diff --git a/app/src/main/java/net/gsantner/markor/format/markdown/MarkdownTextModuleActions.java b/app/src/main/java/net/gsantner/markor/format/markdown/MarkdownTextModuleActions.java
+diff --git a/app/src/main/java/net/vasic-digital/Yole/format/markdown/MarkdownTextModuleActions.java b/app/src/main/java/net/vasic-digital/Yole/format/markdown/MarkdownTextModuleActions.java
 index 8b1d237e..f5bdec29 100644
---- a/app/src/main/java/net/gsantner/markor/format/markdown/MarkdownTextModuleActions.java
-+++ b/app/src/main/java/net/gsantner/markor/format/markdown/MarkdownTextModuleActions.java
+--- a/app/src/main/java/net/vasic-digital/Yole/format/markdown/MarkdownTextModuleActions.java
++++ b/app/src/main/java/net/vasic-digital/Yole/format/markdown/MarkdownTextModuleActions.java
 @@ -288,6 +288,7 @@ public class MarkdownTextModuleActions extends TextModuleActions {
          final Button buttonPictureGallery = view.findViewById(R.id.ui__select_path_dialog__gallery_picture);
          final Button buttonPictureCamera = view.findViewById(R.id.ui__select_path_dialog__camera_picture);
@@ -55,11 +55,11 @@ index 8b1d237e..f5bdec29 100644
  
          buttonBrowseFs.setOnClickListener(button -> {
              if (getActivity() instanceof AppCompatActivity) {
-diff --git a/app/src/main/java/net/gsantner/markor/format/plaintext/CommonTextModuleActions.java b/app/src/main/java/net/gsantner/markor/format/plaintext/CommonTextModuleActions.java
+diff --git a/app/src/main/java/net/vasic-digital/Yole/format/plaintext/CommonTextModuleActions.java b/app/src/main/java/net/vasic-digital/Yole/format/plaintext/CommonTextModuleActions.java
 index a90b3ee4..41b9049b 100644
---- a/app/src/main/java/net/gsantner/markor/format/plaintext/CommonTextModuleActions.java
-+++ b/app/src/main/java/net/gsantner/markor/format/plaintext/CommonTextModuleActions.java
-@@ -11,8 +11,14 @@ package net.gsantner.markor.format.plaintext;
+--- a/app/src/main/java/net/vasic-digital/Yole/format/plaintext/CommonTextModuleActions.java
++++ b/app/src/main/java/net/vasic-digital/Yole/format/plaintext/CommonTextModuleActions.java
+@@ -11,8 +11,14 @@ package digital.vasic.yole.format.plaintext;
  
  import android.app.Activity;
  import android.content.DialogInterface;
@@ -74,11 +74,11 @@ index a90b3ee4..41b9049b 100644
  
  import com.flask.colorpicker.ColorPickerView;
  import com.flask.colorpicker.Utils;
-@@ -23,6 +29,7 @@ import net.gsantner.markor.R;
- import net.gsantner.markor.model.Document;
- import net.gsantner.markor.ui.SearchOrCustomTextDialogCreator;
- import net.gsantner.markor.ui.hleditor.HighlightingEditor;
-+import net.gsantner.markor.util.DownloadImageTask;
+@@ -23,6 +29,7 @@ import digital.vasic.yole.R;
+ import digital.vasic.yole.model.Document;
+ import digital.vasic.yole.ui.SearchOrCustomTextDialogCreator;
+ import digital.vasic.yole.ui.hleditor.HighlightingEditor;
++import digital.vasic.yole.util.DownloadImageTask;
  import net.gsantner.opoc.format.plaintext.PlainTextStuff;
  import net.gsantner.opoc.util.Callback;
  import net.gsantner.opoc.util.ContextUtils;
@@ -132,13 +132,13 @@ index a90b3ee4..41b9049b 100644
              case ACTION_DELETE_LINES: {
                  int[] indexes = PlainTextStuff.getNeighbourLineEndings(_hlEditor.getText().toString(), _hlEditor.getSelectionStart(), _hlEditor.getSelectionEnd());
                  if (indexes != null) {
-diff --git a/app/src/main/java/net/gsantner/markor/util/DownloadImageTask.java b/app/src/main/java/net/gsantner/markor/util/DownloadImageTask.java
+diff --git a/app/src/main/java/net/vasic-digital/Yole/util/DownloadImageTask.java b/app/src/main/java/net/vasic-digital/Yole/util/DownloadImageTask.java
 new file mode 100644
 index 00000000..8d405be3
 --- /dev/null
-+++ b/app/src/main/java/net/gsantner/markor/util/DownloadImageTask.java
++++ b/app/src/main/java/net/vasic-digital/Yole/util/DownloadImageTask.java
 @@ -0,0 +1,37 @@
-+package net.gsantner.markor.util;
++package digital.vasic.yole.util;
 +
 +import android.annotation.SuppressLint;
 +import android.graphics.Bitmap;

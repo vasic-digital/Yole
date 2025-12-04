@@ -1,0 +1,135 @@
+-- Network storage metadata database schema for Yole network protocols
+
+CREATE TABLE NetworkStorage (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    location TEXT NOT NULL,
+    total_space INTEGER,
+    used_space INTEGER,
+    is_online INTEGER NOT NULL DEFAULT 0,
+    last_sync INTEGER,
+    metadata TEXT, -- JSON string
+    is_enabled INTEGER NOT NULL DEFAULT 1,
+    priority INTEGER NOT NULL DEFAULT 100,
+    supports_folders INTEGER NOT NULL DEFAULT 1,
+    supports_metadata INTEGER NOT NULL DEFAULT 1,
+    max_file_size INTEGER,
+    supported_extensions TEXT, -- JSON array
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE NetworkDocument (
+    id TEXT NOT NULL PRIMARY KEY,
+    storage_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    path TEXT NOT NULL,
+    is_folder INTEGER NOT NULL DEFAULT 0,
+    size INTEGER NOT NULL DEFAULT 0,
+    last_modified INTEGER NOT NULL,
+    sync_status TEXT NOT NULL, -- Enum as string
+    document_id TEXT, -- Local document reference
+    content_type TEXT,
+    extension TEXT,
+    parent_path TEXT,
+    is_syncing INTEGER NOT NULL DEFAULT 0,
+    has_pending_changes INTEGER NOT NULL DEFAULT 0,
+    is_available_offline INTEGER NOT NULL DEFAULT 0,
+    is_read_only INTEGER NOT NULL DEFAULT 0,
+    is_hidden INTEGER NOT NULL DEFAULT 0,
+    metadata TEXT, -- JSON string
+    thumbnails TEXT, -- JSON array
+    tags TEXT, -- JSON array
+    owner TEXT,
+    permissions TEXT, -- JSON array
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    
+    FOREIGN KEY (storage_id) REFERENCES NetworkStorage(id) ON DELETE CASCADE
+);
+
+CREATE TABLE CacheEntry (
+    id TEXT NOT NULL PRIMARY KEY,
+    remote_document_id TEXT NOT NULL,
+    local_path TEXT NOT NULL,
+    remote_path TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    last_accessed INTEGER NOT NULL,
+    last_modified INTEGER NOT NULL,
+    expires_at INTEGER,
+    is_valid INTEGER NOT NULL DEFAULT 1,
+    is_pinned INTEGER NOT NULL DEFAULT 0,
+    is_in_use INTEGER NOT NULL DEFAULT 0,
+    access_count INTEGER NOT NULL DEFAULT 0,
+    content_type TEXT,
+    checksum TEXT,
+    compression TEXT,
+    original_size INTEGER,
+    priority INTEGER NOT NULL DEFAULT 100,
+    metadata TEXT, -- JSON string
+    tags TEXT, -- JSON array
+    
+    FOREIGN KEY (remote_document_id) REFERENCES NetworkDocument(id) ON DELETE CASCADE
+);
+
+CREATE TABLE NetworkOperation (
+    id INTEGER NOT NULL PRIMARY KEY,
+    type TEXT NOT NULL, -- Enum as string
+    remote_path TEXT NOT NULL,
+    local_path TEXT,
+    status TEXT NOT NULL, -- Enum as string
+    progress REAL NOT NULL DEFAULT 0.0,
+    total_size INTEGER NOT NULL DEFAULT 0,
+    bytes_transferred INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    started_at INTEGER,
+    completed_at INTEGER,
+    error_message TEXT,
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    max_retries INTEGER NOT NULL DEFAULT 3,
+    priority INTEGER NOT NULL DEFAULT 100,
+    can_pause INTEGER NOT NULL DEFAULT 1,
+    can_cancel INTEGER NOT NULL DEFAULT 1,
+    is_paused INTEGER NOT NULL DEFAULT 0,
+    estimated_time_remaining INTEGER,
+    transfer_speed INTEGER,
+    metadata TEXT -- JSON string
+);
+
+CREATE TABLE SyncStatus (
+    remote_path TEXT NOT NULL PRIMARY KEY,
+    status TEXT NOT NULL, -- Enum as string
+    last_sync_time INTEGER,
+    next_sync_time INTEGER,
+    error_message TEXT,
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    max_retries INTEGER NOT NULL DEFAULT 3,
+    progress REAL NOT NULL DEFAULT 0.0,
+    estimated_time_remaining INTEGER,
+    data_size INTEGER NOT NULL DEFAULT 0,
+    bytes_transferred INTEGER NOT NULL DEFAULT 0,
+    is_automatic INTEGER NOT NULL DEFAULT 1,
+    is_available_offline INTEGER NOT NULL DEFAULT 0,
+    has_conflicts INTEGER NOT NULL DEFAULT 0,
+    conflict_resolution TEXT, -- Enum as string
+    metadata TEXT -- JSON string
+);
+
+-- Indexes for better performance
+CREATE INDEX idx_network_storage_type ON NetworkStorage(type);
+CREATE INDEX idx_network_storage_enabled ON NetworkStorage(is_enabled);
+CREATE INDEX idx_network_document_storage_id ON NetworkDocument(storage_id);
+CREATE INDEX idx_network_document_path ON NetworkDocument(path);
+CREATE INDEX idx_network_document_parent_path ON NetworkDocument(parent_path);
+CREATE INDEX idx_network_document_sync_status ON NetworkDocument(sync_status);
+CREATE INDEX idx_cache_entry_remote_document_id ON CacheEntry(remote_document_id);
+CREATE INDEX idx_cache_entry_remote_path ON CacheEntry(remote_path);
+CREATE INDEX idx_cache_entry_created_at ON CacheEntry(created_at);
+CREATE INDEX idx_cache_entry_last_accessed ON CacheEntry(last_accessed);
+CREATE INDEX idx_cache_entry_expires_at ON CacheEntry(expires_at);
+CREATE INDEX idx_network_operation_status ON NetworkOperation(status);
+CREATE INDEX idx_network_operation_created_at ON NetworkOperation(created_at);
+CREATE INDEX idx_sync_status_status ON SyncStatus(status);
+CREATE INDEX idx_sync_status_next_sync_time ON SyncStatus(next_sync_time);

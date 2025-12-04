@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Yole</string>
+
+    <!-- Navigation -->
+    <string name="navigation_files">Files</string>
+    <string name="navigation_todo">To-Do</string>
+    <string name="navigation_quicknote">QuickNote</string>
+    <string name="navigation_more">More</string>
+
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="preview">Preview</string>
+    <string name="search">Search</string>
+    <string name="filter">Filter</string>
+    <string name="sort">Sort</string>
+    <string name="settings">Settings</string>
+    <string name="about">About</string>
+    <string name="help">Help</string>
+    <string name="close">Close</string>
+    <string name="back">Back</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+    <string name="done">Done</string>
+    <string name="undo">Undo</string>
+    <string name="redo">Redo</string>
+    <string name="copy">Copy</string>
+    <string name="paste">Paste</string>
+    <string name="cut">Cut</string>
+    <string name="select_all">Select All</string>
+    <string name="share">Share</string>
+    <string name="export">Export</string>
+    <string name="import_action">Import</string>
+
+    <!-- Files -->
+    <string name="files">Files</string>
+    <string name="file_browser">File Browser</string>
+    <string name="new_file">New File</string>
+    <string name="new_folder">New Folder</string>
+    <string name="open_file">Open File</string>
+    <string name="rename">Rename</string>
+    <string name="move">Move</string>
+    <string name="copy_to">Copy to</string>
+    <string name="file_name">File Name</string>
+    <string name="folder_name">Folder Name</string>
+    <string name="file_extension">File Extension</string>
+    <string name="file_size">File Size</string>
+    <string name="modified">Modified</string>
+    <string name="created">Created</string>
+    <string name="permissions">Permissions</string>
+    <string name="properties">Properties</string>
+    <string name="open_with">Open with</string>
+    <string name="create_shortcut">Create Shortcut</string>
+
+    <!-- To-Do -->
+    <string name="todo">To-Do</string>
+    <string name="add_task">Add Task</string>
+    <string name="task_completed">Task Completed</string>
+    <string name="task_pending">Task Pending</string>
+    <string name="priority_high">High Priority</string>
+    <string name="priority_medium">Medium Priority</string>
+    <string name="priority_low">Low Priority</string>
+    <string name="due_date">Due Date</string>
+    <string name="completed_date">Completed Date</string>
+    <string name="project">Project</string>
+    <string name="context">Context</string>
+    <string name="tags">Tags</string>
+    <string name="show_completed">Show Completed</string>
+    <string name="hide_completed">Hide Completed</string>
+    <string name="sort_by_priority">Sort by Priority</string>
+    <string name="sort_by_due_date">Sort by Due Date</string>
+    <string name="sort_by_project">Sort by Project</string>
+    <string name="filter_by_project">Filter by Project</string>
+    <string name="filter_by_context">Filter by Context</string>
+
+    <!-- QuickNote -->
+    <string name="quicknote">QuickNote</string>
+    <string name="start_writing">Start writing your quick note...</string>
+    <string name="markdown_supported">Markdown supported</string>
+    <string name="plaintext_mode">Plain text mode</string>
+    <string name="rich_text_mode">Rich text mode</string>
+    <string name="auto_save">Auto-save</string>
+    <string name="word_count">Word Count</string>
+    <string name="character_count">Character Count</string>
+    <string name="line_count">Line Count</string>
+
+    <!-- More -->
+    <string name="more">More</string>
+    <string name="backup_restore">Backup &amp; Restore</string>
+    <string name="backup">Backup</string>
+    <string name="restore">Restore</string>
+    <string name="sync">Sync</string>
+    <string name="cloud_sync">Cloud Sync</string>
+    <string name="syncthing">Syncthing</string>
+    <string name="nextcloud">Nextcloud</string>
+    <string name="dropbox">Dropbox</string>
+    <string name="onedrive">OneDrive</string>
+    <string name="google_drive">Google Drive</string>
+    <string name="templates">Templates</string>
+    <string name="snippets">Snippets</string>
+    <string name="plugins">Plugins</string>
+    <string name="themes">Themes</string>
+    <string name="fonts">Fonts</string>
+    <string name="language">Language</string>
+    <string name="appearance">Appearance</string>
+    <string name="behavior">Behavior</string>
+    <string name="advanced">Advanced</string>
+    <string name="experimental">Experimental</string>
+
+    <!-- Settings -->
+    <string name="general">General</string>
+    <string name="editor">Editor</string>
+    <string name="viewer">Viewer</string>
+    <string name="file_management">File Management</string>
+    <string name="security">Security</string>
+    <string name="notifications">Notifications</string>
+    <string name="accessibility">Accessibility</string>
+    <string name="about_app">About Yole</string>
+    <string name="version">Version</string>
+    <string name="build">Build</string>
+    <string name="license">License</string>
+    <string name="contributors">Contributors</string>
+    <string name="changelog">Changelog</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="terms_of_service">Terms of Service</string>
+    <string name="open_source_licenses">Open Source Licenses</string>
+
+    <!-- Formats -->
+    <string name="format_markdown">Markdown</string>
+    <string name="format_todotxt">Todo.txt</string>
+    <string name="format_plaintext">Plain Text</string>
+    <string name="format_csv">CSV</string>
+    <string name="format_json">JSON</string>
+    <string name="format_xml">XML</string>
+    <string name="format_yaml">YAML</string>
+    <string name="format_html">HTML</string>
+    <string name="format_css">CSS</string>
+    <string name="format_javascript">JavaScript</string>
+    <string name="format_python">Python</string>
+    <string name="format_java">Java</string>
+    <string name="format_kotlin">Kotlin</string>
+    <string name="format_latex">LaTeX</string>
+    <string name="format_asciidoc">AsciiDoc</string>
+    <string name="format_orgmode">Org-Mode</string>
+    <string name="format_restructuredtext">reStructuredText</string>
+    <string name="format_textile">Textile</string>
+    <string name="format_creole">Creole</string>
+    <string name="format_tiddlywiki">TiddlyWiki</string>
+    <string name="format_jupyter">Jupyter</string>
+    <string name="format_rmarkdown">R Markdown</string>
+    <string name="format_taskpaper">TaskPaper</string>
+    <string name="format_ics">iCalendar</string>
+    <string name="format_vcf">vCard</string>
+    <string name="format_ini">INI</string>
+    <string name="format_toml">TOML</string>
+
+    <!-- Actions -->
+    <string name="action_bold">Bold</string>
+    <string name="action_italic">Italic</string>
+    <string name="action_strikethrough">Strikethrough</string>
+    <string name="action_underline">Underline</string>
+    <string name="action_code">Code</string>
+    <string name="action_link">Link</string>
+    <string name="action_image">Image</string>
+    <string name="action_list">List</string>
+    <string name="action_numbered_list">Numbered List</string>
+    <string name="action_quote">Quote</string>
+    <string name="action_header">Header</string>
+    <string name="action_table">Table</string>
+    <string name="action_horizontal_rule">Horizontal Rule</string>
+    <string name="action_line_break">Line Break</string>
+    <string name="action_page_break">Page Break</string>
+    <string name="action_footnote">Footnote</string>
+    <string name="action_task_list">Task List</string>
+    <string name="action_math">Math</string>
+    <string name="action_highlight">Highlight</string>
+    <string name="action_comment">Comment</string>
+
+    <!-- Messages -->
+    <string name="file_saved">File saved</string>
+    <string name="file_loaded">File loaded</string>
+    <string name="file_created">File created</string>
+    <string name="file_deleted">File deleted</string>
+    <string name="folder_created">Folder created</string>
+    <string name="folder_deleted">Folder deleted</string>
+    <string name="operation_successful">Operation successful</string>
+    <string name="operation_failed">Operation failed</string>
+    <string name="permission_denied">Permission denied</string>
+    <string name="file_not_found">File not found</string>
+    <string name="folder_not_found">Folder not found</string>
+    <string name="invalid_file_name">Invalid file name</string>
+    <string name="file_already_exists">File already exists</string>
+    <string name="folder_already_exists">Folder already exists</string>
+    <string name="unsaved_changes">You have unsaved changes</string>
+    <string name="confirm_delete">Are you sure you want to delete this?</string>
+    <string name="confirm_overwrite">Are you sure you want to overwrite this file?</string>
+    <string name="loading">Loading...</string>
+    <string name="saving">Saving...</string>
+    <string name="processing">Processing...</string>
+    <string name="no_files_found">No files found</string>
+    <string name="no_tasks_found">No tasks found</string>
+    <string name="search_no_results">No results found</string>
+
+    <!-- Help -->
+    <string name="help_markdown">Markdown Help</string>
+    <string name="help_todotxt">Todo.txt Help</string>
+    <string name="help_formats">Supported Formats</string>
+    <string name="help_keyboard_shortcuts">Keyboard Shortcuts</string>
+    <string name="help_getting_started">Getting Started</string>
+    <string name="help_faq">Frequently Asked Questions</string>
+    <string name="help_report_bug">Report a Bug</string>
+    <string name="help_feature_request">Feature Request</string>
+    <string name="help_contact">Contact</string>
+    <string name="help_donate">Donate</string>
+
+    <!-- Accessibility -->
+    <string name="accessibility_file_list">File list</string>
+    <string name="accessibility_file_item">File item</string>
+    <string name="accessibility_folder_item">Folder item</string>
+    <string name="accessibility_task_item">Task item</string>
+    <string name="accessibility_completed_task">Completed task</string>
+    <string name="accessibility_pending_task">Pending task</string>
+    <string name="accessibility_edit_button">Edit button</string>
+    <string name="accessibility_delete_button">Delete button</string>
+    <string name="accessibility_save_button">Save button</string>
+    <string name="accessibility_cancel_button">Cancel button</string>
+    <string name="accessibility_search_button">Search button</string>
+    <string name="accessibility_filter_button">Filter button</string>
+    <string name="accessibility_sort_button">Sort button</string>
+    <string name="accessibility_menu_button">Menu button</string>
+    <string name="accessibility_back_button">Back button</string>
+    <string name="accessibility_forward_button">Forward button</string>
+
+</resources>

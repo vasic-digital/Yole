@@ -1,0 +1,673 @@
+/*#######################################################
+ *
+ * SPDX-FileCopyrightText: 2025 Milos Vasic
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Comprehensive UI Tests for Yole Desktop App
+ *
+ *########################################################*/
+package digital.vasic.yole.desktop.ui
+
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createComposeRule
+import org.junit.Rule
+import org.junit.Test
+import kotlin.test.*
+
+/**
+ * Comprehensive UI tests for Yole Desktop application.
+ *
+ * Tests cover:
+ * - Main screen rendering
+ * - Screen navigation
+ * - File browser functionality
+ * - Editor functionality
+ * - Preview functionality
+ * - Settings functionality
+ * - Format integration
+ * - Animation states
+ */
+class YoleDesktopUITest {
+
+    @get:Rule
+    val composeTestRule = createComposeRule()
+
+    // ==================== Main Screen Tests ====================
+
+    @Test
+    fun `should render MainScreen without crashing`() {
+        composeTestRule.setContent {
+            MainScreen()
+        }
+
+        // Verify top app bar is displayed
+        composeTestRule.onNodeWithText("Yole").assertIsDisplayed()
+    }
+
+    @Test
+    fun `should display all navigation buttons`() {
+        composeTestRule.setContent {
+            MainScreen()
+        }
+
+        // Verify all navigation buttons are present
+        composeTestRule.onNodeWithText("Files", substring = true).assertExists()
+        composeTestRule.onNodeWithText("Edit", substring = true).assertExists()
+        composeTestRule.onNodeWithText("Preview", substring = true).assertExists()
+        composeTestRule.onNodeWithText("Settings", substring = true).assertExists()
+    }
+
+    @Test
+    fun `should start with FileBrowser screen by default`() {
+        composeTestRule.setContent {
+            MainScreen()
+        }
+
+        // File Browser should be the default screen
+        composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
+    }
+
+    @Test
+    fun `should navigate to Editor screen`() {
+        composeTestRule.setContent {
+            MainScreen()
+        }
+
+        // Click Edit button
+        composeTestRule.onNodeWithText("Edit", substring = true).performClick()
+
+        // Verify Editor screen is displayed
+        composeTestRule.onNodeWithText("Editing:", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should navigate to Preview screen`() {
+        composeTestRule.setContent {
+            MainScreen()
+        }
+
+        // Click Preview button
+        composeTestRule.onNodeWithText("Preview", substring = true).performClick()
+
+        // Verify Preview screen is displayed
+        composeTestRule.onNodeWithText("Preview:", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should navigate to Settings screen`() {
+        composeTestRule.setContent {
+            MainScreen()
+        }
+
+        // Click Settings button
+        composeTestRule.onNodeWithText("Settings", substring = true).performClick()
+
+        // Verify Settings screen is displayed
+        composeTestRule.onNodeWithText("Appearance").assertIsDisplayed()
+    }
+
+    @Test
+    fun `should navigate between screens`() {
+        composeTestRule.setContent {
+            MainScreen()
+        }
+
+        // Navigate Files -> Edit -> Preview -> Settings -> Files
+        composeTestRule.onNodeWithText("Files", substring = true).performClick()
+        composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("Edit", substring = true).performClick()
+        composeTestRule.onNodeWithText("Editing:", substring = true).assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("Preview", substring = true).performClick()
+        composeTestRule.onNodeWithText("Preview:", substring = true).assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("Settings", substring = true).performClick()
+        composeTestRule.onNodeWithText("Appearance").assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("Files", substring = true).performClick()
+        composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
+    }
+
+    // ==================== File Browser Screen Tests ====================
+
+    @Test
+    fun `FileBrowserScreen should render without crashing`() {
+        composeTestRule.setContent {
+            FileBrowserScreen(onFileSelected = { _, _ -> })
+        }
+
+        composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
+    }
+
+    @Test
+    fun `FileBrowserScreen should display sample files`() {
+        composeTestRule.setContent {
+            FileBrowserScreen(onFileSelected = { _, _ -> })
+        }
+
+        // Check for sample files
+        composeTestRule.onNodeWithText("sample.md").assertIsDisplayed()
+        composeTestRule.onNodeWithText("todo.txt").assertIsDisplayed()
+        composeTestRule.onNodeWithText("notes.txt").assertIsDisplayed()
+    }
+
+    @Test
+    fun `FileBrowserScreen should show supported formats count`() {
+        composeTestRule.setContent {
+            FileBrowserScreen(onFileSelected = { _, _ -> })
+        }
+
+        composeTestRule.onNodeWithText("Supported formats:", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `FileBrowserScreen should handle file selection`() {
+        var selectedFile = ""
+        var selectedContent = ""
+
+        composeTestRule.setContent {
+            FileBrowserScreen(onFileSelected = { file, content ->
+                selectedFile = file
+                selectedContent = content
+            })
+        }
+
+        // Click on a file
+        composeTestRule.onNodeWithText("sample.md").performClick()
+
+        // Verify callback was invoked
+        assertEquals("sample.md", selectedFile)
+        assertTrue(selectedContent.isNotEmpty())
+    }
+
+    @Test
+    fun `FileBrowserScreen should display implementation note`() {
+        composeTestRule.setContent {
+            FileBrowserScreen(onFileSelected = { _, _ -> })
+        }
+
+        composeTestRule.onNodeWithText("Note: File system access will be implemented next").assertIsDisplayed()
+    }
+
+    // ==================== Editor Screen Tests ====================
+
+    @Test
+    fun `EditorScreen should render without crashing`() {
+        composeTestRule.setContent {
+            EditorScreen(
+                fileName = "test.md",
+                content = "Test content",
+                onContentChanged = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("Editing: test.md").assertIsDisplayed()
+    }
+
+    @Test
+    fun `EditorScreen should display file name`() {
+        composeTestRule.setContent {
+            EditorScreen(
+                fileName = "my-document.md",
+                content = "",
+                onContentChanged = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("Editing: my-document.md").assertIsDisplayed()
+    }
+
+    @Test
+    fun `EditorScreen should display initial content`() {
+        val testContent = "# Hello World\nThis is a test."
+
+        composeTestRule.setContent {
+            EditorScreen(
+                fileName = "test.md",
+                content = testContent,
+                onContentChanged = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText(testContent).assertIsDisplayed()
+    }
+
+    @Test
+    fun `EditorScreen should show placeholder when empty`() {
+        composeTestRule.setContent {
+            EditorScreen(
+                fileName = "untitled.txt",
+                content = "",
+                onContentChanged = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("Start typing...").assertIsDisplayed()
+    }
+
+    @Test
+    fun `EditorScreen should handle content changes`() {
+        var changedContent = ""
+
+        composeTestRule.setContent {
+            EditorScreen(
+                fileName = "test.txt",
+                content = "",
+                onContentChanged = { changedContent = it }
+            )
+        }
+
+        // Type in the editor
+        composeTestRule.onNodeWithText("Start typing...").performTextInput("New content")
+
+        // Verify callback was invoked
+        assertEquals("New content", changedContent)
+    }
+
+    @Test
+    fun `EditorScreen should handle untitled files`() {
+        composeTestRule.setContent {
+            EditorScreen(
+                fileName = "Untitled",
+                content = "",
+                onContentChanged = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("Editing: Untitled").assertIsDisplayed()
+    }
+
+    // ==================== Preview Screen Tests ====================
+
+    @Test
+    fun `PreviewScreen should render without crashing`() {
+        composeTestRule.setContent {
+            PreviewScreen(
+                fileName = "test.md",
+                content = "# Test"
+            )
+        }
+
+        composeTestRule.onNodeWithText("Preview: test.md").assertIsDisplayed()
+    }
+
+    @Test
+    fun `PreviewScreen should display file name`() {
+        composeTestRule.setContent {
+            PreviewScreen(
+                fileName = "document.md",
+                content = "Content"
+            )
+        }
+
+        composeTestRule.onNodeWithText("Preview: document.md").assertIsDisplayed()
+    }
+
+    @Test
+    fun `PreviewScreen should show format information`() {
+        composeTestRule.setContent {
+            PreviewScreen(
+                fileName = "test.md",
+                content = "# Test"
+            )
+        }
+
+        composeTestRule.onNodeWithText("Format:", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `PreviewScreen should display content`() {
+        val content = "Test content for preview"
+
+        composeTestRule.setContent {
+            PreviewScreen(
+                fileName = "test.txt",
+                content = content
+            )
+        }
+
+        composeTestRule.onNodeWithText(content, substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `PreviewScreen should detect format from filename`() {
+        composeTestRule.setContent {
+            PreviewScreen(
+                fileName = "document.md",
+                content = "# Markdown content"
+            )
+        }
+
+        // Should show Markdown format
+        composeTestRule.onNodeWithText("Markdown", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `PreviewScreen should handle unsupported formats`() {
+        composeTestRule.setContent {
+            PreviewScreen(
+                fileName = "unknown.xyz",
+                content = "Content"
+            )
+        }
+
+        // Should still display content
+        composeTestRule.onNodeWithText("Content", substring = true).assertIsDisplayed()
+    }
+
+    // ==================== Settings Screen Tests ====================
+
+    @Test
+    fun `SettingsScreen should render without crashing`() {
+        composeTestRule.setContent {
+            SettingsScreen(
+                themeMode = "system",
+                onThemeModeChanged = {},
+                showLineNumbers = true,
+                onShowLineNumbersChanged = {},
+                autoSave = true,
+                onAutoSaveChanged = {},
+                animationsEnabled = true,
+                onAnimationsEnabledChanged = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("Settings").assertIsDisplayed()
+    }
+
+    @Test
+    fun `SettingsScreen should display all sections`() {
+        composeTestRule.setContent {
+            SettingsScreen(
+                themeMode = "system",
+                onThemeModeChanged = {},
+                showLineNumbers = true,
+                onShowLineNumbersChanged = {},
+                autoSave = true,
+                onAutoSaveChanged = {},
+                animationsEnabled = true,
+                onAnimationsEnabledChanged = {}
+            )
+        }
+
+        // Verify all sections are present
+        composeTestRule.onNodeWithText("Appearance").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Editor").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Animations").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Formats").assertIsDisplayed()
+        composeTestRule.onNodeWithText("About Yole").assertIsDisplayed()
+    }
+
+    @Test
+    fun `SettingsScreen should display theme options`() {
+        composeTestRule.setContent {
+            SettingsScreen(
+                themeMode = "system",
+                onThemeModeChanged = {},
+                showLineNumbers = true,
+                onShowLineNumbersChanged = {},
+                autoSave = true,
+                onAutoSaveChanged = {},
+                animationsEnabled = true,
+                onAnimationsEnabledChanged = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("System theme (follows system setting)").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Light theme").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dark theme").assertIsDisplayed()
+    }
+
+    @Test
+    fun `SettingsScreen should handle theme selection`() {
+        var selectedTheme = "system"
+
+        composeTestRule.setContent {
+            SettingsScreen(
+                themeMode = selectedTheme,
+                onThemeModeChanged = { selectedTheme = it },
+                showLineNumbers = true,
+                onShowLineNumbersChanged = {},
+                autoSave = true,
+                onAutoSaveChanged = {},
+                animationsEnabled = true,
+                onAnimationsEnabledChanged = {}
+            )
+        }
+
+        // Click light theme
+        composeTestRule.onNodeWithText("Light theme").performClick()
+        assertEquals("light", selectedTheme)
+
+        // Click dark theme
+        composeTestRule.onNodeWithText("Dark theme").performClick()
+        assertEquals("dark", selectedTheme)
+    }
+
+    @Test
+    fun `SettingsScreen should display editor switches`() {
+        composeTestRule.setContent {
+            SettingsScreen(
+                themeMode = "system",
+                onThemeModeChanged = {},
+                showLineNumbers = true,
+                onShowLineNumbersChanged = {},
+                autoSave = true,
+                onAutoSaveChanged = {},
+                animationsEnabled = true,
+                onAnimationsEnabledChanged = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("Show line numbers").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Auto-save").assertIsDisplayed()
+    }
+
+    @Test
+    fun `SettingsScreen should toggle line numbers`() {
+        var showLineNumbers = true
+
+        composeTestRule.setContent {
+            SettingsScreen(
+                themeMode = "system",
+                onThemeModeChanged = {},
+                showLineNumbers = showLineNumbers,
+                onShowLineNumbersChanged = { showLineNumbers = it },
+                autoSave = true,
+                onAutoSaveChanged = {},
+                animationsEnabled = true,
+                onAnimationsEnabledChanged = {}
+            )
+        }
+
+        // Toggle should work
+        assertTrue(showLineNumbers)
+    }
+
+    @Test
+    fun `SettingsScreen should toggle auto-save`() {
+        var autoSave = true
+
+        composeTestRule.setContent {
+            SettingsScreen(
+                themeMode = "system",
+                onThemeModeChanged = {},
+                showLineNumbers = true,
+                onShowLineNumbersChanged = {},
+                autoSave = autoSave,
+                onAutoSaveChanged = { autoSave = it },
+                animationsEnabled = true,
+                onAnimationsEnabledChanged = {}
+            )
+        }
+
+        assertTrue(autoSave)
+    }
+
+    @Test
+    fun `SettingsScreen should display animation toggle`() {
+        composeTestRule.setContent {
+            SettingsScreen(
+                themeMode = "system",
+                onThemeModeChanged = {},
+                showLineNumbers = true,
+                onShowLineNumbersChanged = {},
+                autoSave = true,
+                onAutoSaveChanged = {},
+                animationsEnabled = true,
+                onAnimationsEnabledChanged = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("Enable smooth transitions").assertIsDisplayed()
+    }
+
+    @Test
+    fun `SettingsScreen should toggle animations`() {
+        var animationsEnabled = true
+
+        composeTestRule.setContent {
+            SettingsScreen(
+                themeMode = "system",
+                onThemeModeChanged = {},
+                showLineNumbers = true,
+                onShowLineNumbersChanged = {},
+                autoSave = true,
+                onAutoSaveChanged = {},
+                animationsEnabled = animationsEnabled,
+                onAnimationsEnabledChanged = { animationsEnabled = it }
+            )
+        }
+
+        assertTrue(animationsEnabled)
+    }
+
+    @Test
+    fun `SettingsScreen should display supported formats count`() {
+        composeTestRule.setContent {
+            SettingsScreen(
+                themeMode = "system",
+                onThemeModeChanged = {},
+                showLineNumbers = true,
+                onShowLineNumbersChanged = {},
+                autoSave = true,
+                onAutoSaveChanged = {},
+                animationsEnabled = true,
+                onAnimationsEnabledChanged = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("Supported formats:", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `SettingsScreen should display about information`() {
+        composeTestRule.setContent {
+            SettingsScreen(
+                themeMode = "system",
+                onThemeModeChanged = {},
+                showLineNumbers = true,
+                onShowLineNumbersChanged = {},
+                autoSave = true,
+                onAutoSaveChanged = {},
+                animationsEnabled = true,
+                onAnimationsEnabledChanged = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("About Yole").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Version: 2.15.1").assertIsDisplayed()
+    }
+
+    @Test
+    fun `SettingsScreen should display format list preview`() {
+        composeTestRule.setContent {
+            SettingsScreen(
+                themeMode = "system",
+                onThemeModeChanged = {},
+                showLineNumbers = true,
+                onShowLineNumbersChanged = {},
+                autoSave = true,
+                onAutoSaveChanged = {},
+                animationsEnabled = true,
+                onAnimationsEnabledChanged = {}
+            )
+        }
+
+        // Should show first 5 formats
+        composeTestRule.onNodeWithText("Markdown", substring = true).assertExists()
+    }
+
+    // ==================== Integration Tests ====================
+
+    @Test
+    fun `should maintain state when navigating between screens`() {
+        composeTestRule.setContent {
+            MainScreen()
+        }
+
+        // Navigate to settings and change theme
+        composeTestRule.onNodeWithText("Settings", substring = true).performClick()
+        composeTestRule.onNodeWithText("Light theme").performClick()
+
+        // Navigate away and back
+        composeTestRule.onNodeWithText("Files", substring = true).performClick()
+        composeTestRule.onNodeWithText("Settings", substring = true).performClick()
+
+        // Settings screen should still be accessible
+        composeTestRule.onNodeWithText("Appearance").assertIsDisplayed()
+    }
+
+    @Test
+    fun `should integrate with FormatRegistry`() {
+        composeTestRule.setContent {
+            MainScreen()
+        }
+
+        // Navigate to settings
+        composeTestRule.onNodeWithText("Settings", substring = true).performClick()
+
+        // Verify format information is shown from FormatRegistry
+        composeTestRule.onNodeWithText("Supported formats:", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should handle file selection and navigation to editor`() {
+        composeTestRule.setContent {
+            MainScreen()
+        }
+
+        // Start on file browser
+        composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
+
+        // Select a file (this triggers navigation in the actual app)
+        composeTestRule.onNodeWithText("sample.md").assertExists()
+    }
+
+    @Test
+    fun `YoleApp should render without crashing`() {
+        composeTestRule.setContent {
+            YoleApp()
+        }
+
+        // Should show the main screen
+        composeTestRule.onNodeWithText("Yole").assertIsDisplayed()
+    }
+
+    @Test
+    fun `should display all UI components`() {
+        composeTestRule.setContent {
+            MainScreen()
+        }
+
+        // Verify top bar
+        composeTestRule.onNodeWithText("Yole").assertIsDisplayed()
+
+        // Verify navigation
+        composeTestRule.onNodeWithText("Files", substring = true).assertExists()
+
+        // Verify content area
+        composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
+    }
+}

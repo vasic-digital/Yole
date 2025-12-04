@@ -1,12 +1,12 @@
-# Markor: How to synchronize files with Syncthing
+# Yole: How to synchronize files with Syncthing
 
-This page helps you to get started using file synchronization with Syncthing and [Markor](https://github.com/gsantner/markor) as your favourite file editor of choice. Required applications are Syncthing (Desktop & Android) and Markor (Android).
+This page helps you to get started using file synchronization with Syncthing and [Yole](https://github.com/vasic-digital/Yole) as your favourite file editor of choice. Required applications are Syncthing (Desktop & Android) and Yole (Android).
 
 ## Attribution
 '_I_/_me_/_myself_/_our_/_we_' refers to the original author.
 
-* [@wmww (GitHub)](https://github.com/gsantner/markor/issues/358#issuecomment-433652981) from Markor community wrote the Quick Guide.
-* [@tengucrow (GitHub)](https://github.com/gsantner/markor/issues/358#issuecomment-427037466) from Markor community wrote the Detailed Guide.
+* [@wmww (GitHub)](https://github.com/vasic-digital/Yole/issues/358#issuecomment-433652981) from Yole community wrote the Quick Guide.
+* [@tengucrow (GitHub)](https://github.com/vasic-digital/Yole/issues/358#issuecomment-427037466) from Yole community wrote the Detailed Guide.
 
 
 ## Quick Guide
@@ -16,8 +16,8 @@ Syncthing is a protocol to sync files between your devices, with implementations
 
 To start off, install Syncthing and set up a shared folder. More info on how to do that [here](https://docs.syncthing.net/intro/getting-started.html).
 
-Then, all you need to do is tell Marker where to look for and save files:
-* Go to Markor's main screen and swipe to `More`
+Then, all you need to do is tell Yole where to look for and save files:
+* Go to Yole's main screen and swipe to `More`
 * Open `Settings` -> `General` -> `Notebook`
 * Select the folder you sync with Syncthing (The Syncthing app tells you the default path)
 

@@ -1,0 +1,51 @@
+{
+  "name": "Yole - Text Editor",
+  "short_name": "Yole",
+  "description": "A versatile text editor supporting 18+ markup formats",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1976d2",
+  "orientation": "any",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png", 
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "permissions": [
+    "clipboard-read",
+    "clipboard-write"
+  ],
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "text/*": [
+          ".txt",
+          ".md",
+          ".csv",
+          ".tex",
+          ".org",
+          ".adoc",
+          ".wiki",
+          ".taskpaper",
+          ".textile",
+          ".creole",
+          ".tiddlywiki",
+          ".ipynb",
+          ".rmd",
+          ".rst",
+          ".keyvalue"
+        ]
+      }
+    }
+  ]
+}

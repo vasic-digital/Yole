@@ -1,0 +1,1168 @@
+/* Yole Website - Unique Design System */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Yole smooth transitions */
+* {
+    transition: background-color 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), 
+                color 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), 
+                border-color 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
+                transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.7;
+    color: #374151;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #dbeafe 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 15% 15%, rgba(220, 38, 38, 0.08) 0%, transparent 30%),
+                radial-gradient(circle at 85% 85%, rgba(185, 28, 28, 0.08) 0%, transparent 30%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Yole Container */
+.yole-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 30px;
+}
+
+/* Yole Theme Toggle */
+.yole-theme-toggle-container {
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.yole-theme-toggle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #dc2626, #b91c1c);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.yole-theme-toggle::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.yole-theme-toggle:hover::before {
+    opacity: 1;
+}
+
+.yole-theme-toggle:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(220, 38, 38, 0.6);
+}
+
+.yole-theme-icon {
+    font-size: 1.4rem;
+    position: absolute;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.yole-moon-icon {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+}
+
+.yole-sun-icon {
+    opacity: 0;
+    transform: scale(0.8) rotate(15deg);
+}
+
+.yole-theme-toggle.yole-dark-theme .yole-moon-icon {
+    opacity: 0;
+    transform: scale(0.8) rotate(-15deg);
+}
+
+.yole-theme-toggle.yole-dark-theme .yole-sun-icon {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+}
+
+/* Yole Header */
+.yole-hero {
+    padding: 100px 0 80px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.yole-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(124, 58, 237, 0.05) 100%);
+}
+
+.yole-hero-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 50px;
+    position: relative;
+    z-index: 1;
+}
+
+.yole-hero-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.yole-logo {
+    width: 150px;
+    height: 150px;
+    border-radius: 25px;
+    background: linear-gradient(135deg, rgba(240, 249, 255, 0.1) 0%, rgba(224, 242, 254, 0.1) 50%, rgba(219, 234, 254, 0.1) 100%);
+    box-shadow: 0 15px 35px rgba(220, 38, 38, 0.3);
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+    animation: yole-float 8s ease-in-out infinite;
+    border: 6px solid rgba(255, 255, 255, 0.6);
+}
+
+.yole-hero-title {
+    font-size: 4rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #dc2626, #b91c1c, #991b1b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+    letter-spacing: -1px;
+    margin: 0;
+    position: relative;
+}
+
+.yole-hero-title::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 6px;
+    background: linear-gradient(90deg, #dc2626, #991b1b);
+    border-radius: 3px;
+    animation: yole-pulse 2s infinite;
+}
+
+.yole-subtitle {
+    color: #4b5563;
+    font-size: 1.8rem;
+    font-weight: 500;
+    margin: 0;
+    max-width: 700px;
+    text-align: center;
+}
+
+.yole-hero-description {
+    color: #6b7280;
+    font-size: 1.4rem;
+    max-width: 700px;
+    margin: 15px auto 0;
+    text-align: center;
+}
+
+.yole-editor-visual {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+    animation: yole-float 8s ease-in-out infinite;
+}
+
+.yole-editor-mockup {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    width: 350px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    position: relative;
+}
+
+.yole-editor-header {
+    background: #f9fafb;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #e5e7eb;
+    justify-content: space-between;
+}
+
+.yole-editor-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.yole-control {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+}
+
+.yole-red { background: #ef4444; }
+.yole-yellow { background: #f59e0b; }
+.yole-green { background: #10b981; }
+
+.yole-editor-title {
+    color: #6b7280;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.yole-editor-body {
+    padding: 25px;
+    font-family: 'Fira Code', 'Courier New', monospace;
+    line-height: 2;
+    background: #fafafa;
+    min-height: 200px;
+}
+
+.yole-editor-line {
+    color: #4b5563;
+    margin-bottom: 12px;
+    position: relative;
+    padding-left: 25px;
+}
+
+.yole-task-line::before {
+    content: '☐';
+    position: absolute;
+    left: 0;
+    color: #9ca3af;
+    font-size: 1.1rem;
+}
+
+.yole-task-line.yole-completed::before {
+    content: '☑';
+    color: #10b981;
+}
+
+/* Yole Section Headings */
+.yole-section-heading {
+    font-size: 3rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 60px;
+    color: #1f2937;
+    position: relative;
+    display: block;
+}
+
+.yole-section-heading::after {
+    content: '';
+    display: block;
+    width: 100px;
+    height: 5px;
+    background: linear-gradient(to right, #dc2626, #991b1b);
+    margin: 20px auto 0;
+    border-radius: 3px;
+    animation: yole-grow-width 1s ease-out forwards;
+    transform-origin: left;
+    transform: scaleX(0);
+}
+
+@keyframes yole-grow-width {
+    to { transform: scaleX(1); }
+}
+
+/* Yole Platforms Section */
+.yole-platforms-section {
+    padding: 100px 0;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(15px);
+}
+
+.yole-platforms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 40px;
+    margin-top: 40px;
+}
+
+.yole-platform-card {
+    background: white;
+    border-radius: 20px;
+    padding: 40px 30px;
+    text-align: center;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    transform: translateY(0);
+}
+
+.yole-platform-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(to right, #dc2626, #b91c1c);
+}
+
+.yole-platform-card:hover {
+    transform: translateY(-15px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+}
+
+.yole-platform-icon {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 25px;
+    border-radius: 50%;
+    font-size: 2.5rem;
+    color: white;
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    box-shadow: 0 10px 25px rgba(220, 38, 38, 0.3);
+}
+
+.yole-platform-card h3 {
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+    color: #1f2937;
+    font-weight: 600;
+}
+
+.yole-platform-card p {
+    color: #6b7280;
+    font-size: 1.1rem;
+}
+
+/* Yole Features Section */
+.yole-features-section {
+    padding: 100px 0;
+    background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+}
+
+.yole-features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 40px;
+    margin-top: 40px;
+}
+
+.yole-feature-card {
+    background: white;
+    border-radius: 20px;
+    padding: 40px 35px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+    position: relative;
+    overflow: hidden;
+    border-left: 7px solid #4f46e5;
+    transform: translateY(0);
+}
+
+.yole-feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    background: linear-gradient(to bottom, rgba(79, 70, 229, 0.05), transparent);
+    z-index: 1;
+    transition: height 0.4s ease;
+}
+
+.yole-feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.12);
+}
+
+.yole-feature-card:hover::before {
+    height: 100%;
+}
+
+.yole-feature-icon {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    border-radius: 18px;
+    color: white;
+    font-size: 2rem;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 25px rgba(220, 38, 38, 0.3);
+}
+
+.yole-feature-card h3 {
+    font-size: 1.7rem;
+    margin-bottom: 20px;
+    color: #1f2937;
+    font-weight: 600;
+    position: relative;
+    z-index: 2;
+}
+
+.yole-feature-card p {
+    color: #6b7280;
+    line-height: 1.8;
+    position: relative;
+    z-index: 2;
+    font-size: 1.1rem;
+}
+
+/* Yole Download Section */
+.yole-download-section {
+    padding: 120px 0;
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    color: white;
+    text-align: center;
+}
+
+.yole-download-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.yole-download-text .yole-section-heading {
+    color: white;
+}
+
+.yole-download-text .yole-section-heading::after {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.yole-download-subtitle {
+    font-size: 1.4rem;
+    margin-bottom: 50px;
+    opacity: 0.9;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.yole-download-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    flex-wrap: wrap;
+}
+
+.yole-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px 35px;
+    border-radius: 55px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.2rem;
+    transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    gap: 12px;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.yole-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, rgba(255,255,255,0.2), transparent);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.yole-btn:hover::before {
+    opacity: 1;
+}
+
+.yole-btn-primary {
+    background: white;
+    color: #4f46e5;
+}
+
+.yole-btn-primary:hover {
+    background: #f0f0f0;
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+.yole-btn-secondary {
+    background: rgba(255, 255, 255, 0.18);
+    color: white;
+    backdrop-filter: blur(10px);
+}
+
+.yole-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.28);
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+.yole-btn-tertiary {
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    backdrop-filter: blur(10px);
+}
+
+.yole-btn-tertiary:hover {
+    background: rgba(255, 255, 255, 0.22);
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Yole Documentation Section */
+.yole-docs-section {
+    padding: 100px 0;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(15px);
+}
+
+.yole-docs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.yole-doc-card {
+    background: white;
+    border-radius: 20px;
+    padding: 35px;
+    text-decoration: none;
+    color: #374151;
+    transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.yole-doc-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    background: linear-gradient(to bottom, rgba(79, 70, 229, 0.03), transparent);
+    z-index: -1;
+    transition: height 0.4s ease;
+}
+
+.yole-doc-card:hover {
+    transform: translateY(-12px);
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.12);
+}
+
+.yole-doc-card:hover::before {
+    height: 100%;
+}
+
+.yole-doc-icon {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    border-radius: 15px;
+    color: white;
+    font-size: 1.6rem;
+    margin-bottom: 25px;
+    box-shadow: 0 8px 20px rgba(220, 38, 38, 0.25);
+}
+
+.yole-doc-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: #1f2937;
+    font-weight: 600;
+}
+
+.yole-doc-card p {
+    color: #6b7280;
+    flex-grow: 1;
+    font-size: 1.05rem;
+}
+
+/* Yole Footer */
+.yole-footer {
+    background: #1f2937;
+    color: white;
+    padding: 70px 0 40px;
+    margin-top: 60px;
+}
+
+.yole-footer-content {
+    text-align: center;
+    padding: 0 30px;
+}
+
+.yole-footer-content p {
+    margin-bottom: 20px;
+    color: #d1d5db;
+}
+
+.yole-social-links {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    margin-top: 30px;
+}
+
+.yole-social-links a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    text-decoration: none;
+    transition: all 0.4s ease;
+    font-size: 1.4rem;
+}
+
+.yole-social-links a:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4);
+}
+
+/* Other pages specific styles */
+nav {
+    background: rgba(31, 41, 55, 0.92);
+    color: white;
+    padding: 18px;
+    border-radius: 12px;
+    margin-bottom: 40px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+nav a {
+    color: #93c5fd;
+    text-decoration: none;
+    margin: 0 15px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: all 0.4s ease;
+    font-weight: 500;
+    position: relative;
+}
+
+nav a::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 0;
+    height: 3px;
+    background: linear-gradient(to right, #dc2626, #b91c1c);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+}
+
+nav a:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-3px);
+    text-decoration: none;
+}
+
+nav a:hover::after {
+    width: 100%;
+}
+
+main {
+    background: white;
+    padding: 50px;
+    border-radius: 20px;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.09);
+    margin-bottom: 50px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    position: relative;
+    overflow: hidden;
+}
+
+main::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 8px;
+    background: linear-gradient(to right, #dc2626, #991b1b);
+}
+
+h1, h2, h3 {
+    color: #1f2937;
+    margin-bottom: 20px;
+}
+
+h1 {
+    font-size: 2.8rem;
+    position: relative;
+    padding-bottom: 20px;
+    font-weight: 700;
+}
+
+h1::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100px;
+    height: 5px;
+    background: linear-gradient(to right, #dc2626, #991b1b);
+    border-radius: 3px;
+}
+
+h2 {
+    font-size: 2.2rem;
+    margin-top: 40px;
+    color: #374151;
+    font-weight: 600;
+}
+
+h3 {
+    font-size: 1.7rem;
+    color: #4b5563;
+    font-weight: 600;
+}
+
+code {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-family: 'Fira Code', 'Courier New', monospace;
+    font-size: 1rem;
+    border: 1px solid rgba(220, 38, 38, 0.25);
+    color: #dc2626;
+}
+
+pre {
+    background: #1e293b;
+    padding: 30px;
+    border-radius: 15px;
+    overflow-x: auto;
+    margin: 25px 0;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+pre code {
+    background: transparent;
+    color: #e2e8f0;
+    padding: 0;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+ul, ol {
+    padding-left: 35px;
+    margin: 20px 0;
+}
+
+li {
+    margin-bottom: 12px;
+    line-height: 1.8;
+}
+
+/* Yole Dark Mode */
+body.yole-dark-mode {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    color: #e2e8f0;
+}
+
+body.yole-dark-mode::before {
+    background: radial-gradient(circle at 15% 15%, rgba(113, 29, 33, 0.1) 0%, transparent 30%),
+                radial-gradient(circle at 85% 85%, rgba(69, 10, 10, 0.1) 0%, transparent 30%);
+}
+
+body.yole-dark-mode .yole-subtitle {
+    color: #94a3b8;
+}
+
+body.yole-dark-mode .yole-hero-description {
+    color: #cbd5e0;
+}
+
+body.yole-dark-mode .yole-section-heading {
+    color: #f1f5f9;
+}
+
+body.yole-dark-mode .yole-platforms-section {
+    background: rgba(15, 23, 42, 0.85);
+}
+
+body.yole-dark-mode .yole-platform-card {
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body.yole-dark-mode .yole-platform-card h3 {
+    color: #f1f5f9;
+}
+
+body.yole-dark-mode .yole-platform-card p {
+    color: #94a3b8;
+}
+
+body.yole-dark-mode .yole-platform-icon {
+    box-shadow: 0 10px 25px rgba(113, 29, 33, 0.3);
+}
+
+body.yole-dark-mode .yole-features-section {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+body.yole-dark-mode .yole-feature-card {
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body.yole-dark-mode .yole-feature-card h3 {
+    color: #f1f5f9;
+}
+
+body.yole-dark-mode .yole-feature-card p {
+    color: #94a3b8;
+}
+
+body.yole-dark-mode .yole-feature-icon {
+    box-shadow: 0 10px 25px rgba(113, 29, 33, 0.3);
+}
+
+body.yole-dark-mode .yole-docs-section {
+    background: rgba(15, 23, 42, 0.85);
+}
+
+body.yole-dark-mode .yole-doc-card {
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body.yole-dark-mode .yole-doc-card h3 {
+    color: #f1f5f9;
+}
+
+body.yole-dark-mode .yole-doc-card p {
+    color: #94a3b8;
+}
+
+body.yole-dark-mode .yole-doc-icon {
+    box-shadow: 0 8px 20px rgba(113, 29, 33, 0.25);
+}
+
+body.yole-dark-mode .yole-doc-card:hover {
+    background: linear-gradient(135deg, #2d3748, #334155);
+}
+
+body.yole-dark-mode .yole-editor-mockup {
+    background: #1a202c;
+    border: 1px solid #334155;
+}
+
+body.yole-dark-mode .yole-editor-header {
+    background: #2d3748;
+    border-bottom: 1px solid #4a5568;
+}
+
+body.yole-dark-mode .yole-editor-body {
+    background: #1e293b;
+}
+
+body.yole-dark-mode .yole-editor-line {
+    color: #e2e8f0;
+}
+
+body.yole-dark-mode .yole-theme-toggle {
+    background: linear-gradient(145deg, #711D21, #450a0a);
+    box-shadow: 0 6px 20px rgba(113, 29, 33, 0.4);
+}
+
+body.yole-dark-mode .yole-theme-toggle:hover {
+    box-shadow: 0 8px 25px rgba(113, 29, 33, 0.6);
+}
+
+body.yole-dark-mode .yole-logo {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.15) 0%, rgba(30, 41, 59, 0.15) 50%, rgba(51, 65, 85, 0.15) 100%);
+    box-shadow: 0 15px 35px rgba(113, 29, 33, 0.3);
+    filter: drop-shadow(1px 1px 2px rgba(255, 255, 255, 0.8));
+}
+
+body.yole-dark-mode nav {
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.yole-dark-mode nav a {
+    color: #93c5fd;
+}
+
+body.yole-dark-mode nav a:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+body.yole-dark-mode .yole-social-links a:hover {
+    box-shadow: 0 8px 20px rgba(113, 29, 33, 0.4);
+}
+
+body.yole-dark-mode main {
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
+}
+
+body.yole-dark-mode h1, 
+body.yole-dark-mode h2, 
+body.yole-dark-mode h3 {
+    color: #f1f5f9;
+}
+
+body.yole-dark-mode code {
+    background: linear-gradient(135deg, #1e293b, #334155);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    color: #bfdbfe;
+}
+
+body.yole-dark-mode pre {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Yole Animations */
+@keyframes yole-float {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+@keyframes yole-pulse {
+    0% {
+        opacity: 1;
+        transform: translateX(-50%) scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: translateX(-50%) scale(1.1);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) scale(1);
+    }
+}
+
+/* Yole Scroll Animations */
+.yole-fade-in {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: yole-fadeInUp 0.8s forwards;
+}
+
+@keyframes yole-fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Yole Responsive Design */
+@media (max-width: 1024px) {
+    .yole-hero-title {
+        font-size: 4rem;
+    }
+    
+    .yole-subtitle {
+        font-size: 1.5rem;
+    }
+    
+    .yole-section-heading {
+        font-size: 2.5rem;
+    }
+    
+    .yole-platforms-grid,
+    .yole-features-grid,
+    .yole-docs-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .yole-download-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .yole-btn {
+        width: 100%;
+        max-width: 350px;
+    }
+    
+    .yole-hero-content {
+        gap: 30px;
+        padding: 0 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .yole-container {
+        padding: 0 20px;
+    }
+    
+    .yole-hero {
+        padding: 80px 0 60px;
+    }
+    
+    .yole-hero-title {
+        font-size: 3.5rem;
+    }
+    
+    .yole-subtitle {
+        font-size: 1.3rem;
+    }
+    
+    .yole-section-heading {
+        font-size: 2.2rem;
+    }
+    
+    .yole-platform-card,
+    .yole-feature-card,
+    .yole-doc-card {
+        padding: 30px 25px;
+    }
+    
+    .yole-platform-icon {
+        width: 70px;
+        height: 70px;
+        font-size: 2rem;
+    }
+    
+    .yole-editor-mockup {
+        width: 100%;
+        max-width: 320px;
+    }
+    
+    nav {
+        padding: 15px;
+    }
+    
+    nav a {
+        margin: 5px 10px;
+        padding: 8px 15px;
+        font-size: 0.9rem;
+    }
+    
+    main {
+        padding: 35px;
+    }
+}
+
+@media (max-width: 480px) {
+    .yole-hero {
+        padding: 60px 0 40px;
+    }
+    
+    .yole-hero-title {
+        font-size: 2.8rem;
+    }
+    
+    .yole-subtitle {
+        font-size: 1.2rem;
+    }
+    
+    .yole-section-heading {
+        font-size: 1.9rem;
+    }
+    
+    .yole-container {
+        padding: 0 15px;
+    }
+    
+    .yole-btn {
+        max-width: 100%;
+    }
+    
+    .yole-download-section {
+        padding: 80px 0;
+    }
+    
+    .yole-logo {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .yole-platform-card,
+    .yole-feature-card,
+    .yole-doc-card {
+        padding: 25px 20px;
+    }
+}

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yole - Pandoc Integration</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <nav>
+        <a href="../index.html">Home</a> |
+        <a href="README.html">Guides</a> |
+        <a href="../README.html">README</a>
+    </nav>
+
+    <main style="padding: 20px;">
+        <h1>How I Take Notes With Vim, Markdown, and Pandoc</h1>
+<p><em>15. May 2018</em></p>
+<p><strong>Notice: James Vaughan is the author of this article. It was first published on his <a href="https://jamesbvaughan.com/markdown-pandoc-notes/">blog</a> in May 2018. 'I' refers to the original author.</strong></p>
+<hr />
+<p>I've gone through quite a few revisions of my note-taking process
+and now that I'm in my final year of school,
+I think I've finally found a system that I'm going to stick with.
+In this post, I will describe this system and explain why I like it so much.</p>
+<p><em><strong>tl;dr</strong>: I write notes in Markdown with Vim and Vimwiki on my computer
+and with Yole on my phone,
+keep them in sync with Syncthing,
+and view them as web pages and PDFs that I generate with pandoc.</em></p>
+<p>You might be wondering what things I'm taking notes on that are important
+enough to warrant a whole post on how I take them.
+Right now, the main thing is lectures for classes,
+but I also take notes on:</p>
+<ul>
+<li>books that I read</li>
+<li>movies that I watch</li>
+<li>important conversations</li>
+<li>interesting things that I learn about people</li>
+<li>projects that I am work on</li>
+<li>recipes</li>
+<li>ideas for future blog posts</li>
+</ul>
+<!-- more -->
+
+<h3>My Note-Taking History</h3>
+<p>For some context,
+in addition to taking notes with the method I describe in this post,
+I have tried taking notes
+with pen and paper,
+with Google Docs,
+with Evernote,
+and
+with Simplenote.</p>
+<p>Of these methods, I stuck with pen and paper the longest.
+I still like taking handwritten notes, but for most use cases
+I value the ability to search through and format my notes
+on my computer over the extra expressiveness of handwritten notes.</p>
+<p>Evernote and Simplenote are great tools and I would recommend them for most
+people, but I personally <strong>prefer to keep my notes in simple files
+on my filesystem that I can organize, modify, and parse however I want to.</strong></p>
+<h2>How I Settled On This System</h2>
+<p>One problem that I've had with digital note-taking tools and apps is that
+they're not Vim.
+This might sound like a joke, but once you start using
+Vim regularly, you can begin to feel handicapped without it.</p>
+<p><em>(For those who don't know what Vim is,
+it's a text editor that encourages a completely mouse-free workflow.
+It has an
+extensive and elegant system of composable keybindings that enable users to
+perform complex editing tasks with minimal hand movement.)</em></p>
+<p>Vim is not a <a href="https://en.wikipedia.org/wiki/WYSIWYG">WYSIWYG</a>
+editor, but I like using nice formatting features,
+like
+headings,
+lists,
+tables,
+and pretty math,
+so I needed to pick a markup language.
+At first I thought I might use
+<a href="https://www.latex-project.org//">LaTeX</a>
+because I was familiar with it and
+it has nice default styles,
+but ended up going with Markdown after discovering
+<a href="http://pandoc.org/">pandoc</a>,
+and learning that I could write documents in simple Markdown and
+then use it to convert them
+to LaTeX-formatted PDFs, HTML pages, and a bunch of other formats.</p>
+<h2>Organization</h2>
+<p>I keep most of my notes in <code>~/Documents/notes</code>,
+under subdirectories for different topics or types of notes.
+For example, the notes for my computer security class are in
+<code>~/Documents/notes/school/cs136</code>.
+Within individual notes, I link to others with standard Markdown link syntax,
+and can quickly navigate to them by placing my cursor over the link I want
+to navigate to and pressing Enter, thanks to the
+<a href="http://vimwiki.github.io/">Vimwiki</a> plugin.</p>
+<h2>Viewing</h2>
+<p>When I need to read my notes,
+whether it's just for a quick reference
+or to study for a big exam,
+I have a few different methods set up.
+<br/><br/></p>
+<h4>In Vim</h4>
+<p>Vimwiki makes it really easy to navigate through a bunch of Markdown notes.
+I have an <code>index.md</code> that looks something like this:</p>
+<h2>```markdown</h2>
+<p>title: My Knowledge Base
+subtitle: &gt;
+  This is a collection of things that I know,
+  things that I learn,
+  and things that I want to remember.</p>
+<hr />
+<h2>School</h2>
+<ul>
+<li><a href="school/computer-science">Computer Science</a></li>
+<li><a href="school/math">Math</a></li>
+<li><a href="school/physics">Physics</a></li>
+</ul>
+<h2>Technologies</h2>
+<p>Tips and tricks on different applications and technologies that
+I've found myself needing to look up more than once.</p>
+<h4>Languages</h4>
+<ul>
+<li><a href="technologies/go">Go</a></li>
+<li><a href="technologies/python">Python</a></li>
+</ul>
+<h4>Tools</h4>
+<ul>
+<li><a href="technologies/postgres">Postgres</a></li>
+<li><a href="technologies/mysql">MySQL</a></li>
+<li><a href="technologies/open-ssh">SSH</a></li>
+<li><a href="technologies/git">Git</a></li>
+</ul>
+<h4>Other</h4>
+<ul>
+<li><a href="technologies/linux-audio">Linux Audio</a></li>
+<li><a href="technologies/pwas">Progressive Web Apps</a></li>
+<li><a href="technologies/machine-learning">Machine Learning</a></li>
+</ul>
+<h2>Misc</h2>
+<ul>
+<li><a href="film-moments">Favorite Film Moments</a></li>
+<li><a href="recipes/index">Recipes</a></li>
+<li><a href="projects/ideas">Project Ideas</a></li>
+<li><a href="blog-post-ideas">Blog Post Ideas</a></li>
+<li><a href="music-to-listen-to">Music to Listen To</a></li>
+<li><a href="books/index">Book Notes</a></li>
+<li><a href="people/index">People</a></li>
+<li><a href="quotes">Quotes I Like</a>
+```</li>
+</ul>
+<p>This file links to all my different categories of notes and
+is a nice "home base" for them.
+It also makes for a nice homepage when I convert the notes to a static
+website.
+<br/><br/></p>
+<h4>On The Web</h4>
+<p>For quick things, the most common way I look at notes is actually with a web
+browser.
+I have a Makefile that converts all of my Markdown notes to HTML using
+pandoc and deploys them to my server where they're served behind HTTP auth.
+The Makefile looks something like this:</p>
+<p>```makefile
+MD_FILES=$(shell find . -name *.md)
+HTML_FILES=$(MD_FILES:.md=.html)
+BUILD_HTML_FILES=$(HTML_FILES:%=build/%)</p>
+<p>all: $(BUILD_HTML_FILES)</p>
+<p>build/assets/%: assets/%
+        @mkdir -p $$(dirname $@)
+        cp $? $@</p>
+<p>build/%.html: %.md template.html
+  @mkdir -p $$(dirname $@)
+  pandoc -o $@ --template=template.html $&lt;</p>
+<p>deploy:
+        rsync --recursive --human-readable --delete --info=progress2 \
+               build/* my_server
+```</p>
+<p>Right now I'm running this manually after I make changes to my notes that I
+want to deploy but I might automate it in the future.
+<br/><br/></p>
+<h4>On My Phone</h4>
+<p>I use
+<a href="https://syncthing.net/">Syncthing</a>
+to keep my notes directory in sync between my machines and my phone.
+I also use the
+<a href="https://github.com/vasic-digital/Yole">Yole</a>
+app to manage and edit the notes on my phone.
+This app is nice because it makes it easy to navigate my notes
+directory and the built in editor formats Markdown files nicely.
+<br/><br/></p>
+<h3>In Print</h3>
+<p>When I have a big exam coming up,
+it sometimes helps to make a PDF of all my notes to study off of.
+For this, I've created Makefiles for specific classes that produce a nice
+looking PDF of all my notes for the class.
+For example, this is my Makefile for a software engineering class I'm taking
+right now:</p>
+<p>```makefile
+MD_FILES=about.md 130-final-notes.md general-advice.md requirements.md \
+         software-processes.md modeling.md architectural-design.md \
+         design-of-components.md software-quality.md \
+         configuration-management.md testing.md week-2-discussion.md \
+         week-3-discussion.md week-4-discussion.md
+PDF_FILES=$(MD_FILES:.md=.pdf)
+BUILD_PDF_FILES=$(PDF_FILES:%=build/%)
+EXTRA_PDFS=sample-midterm-solutions.pdf</p>
+<p>130.pdf: $(BUILD_PDF_FILES)
+        gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/default \
+                -dNOPAUSE -dQUIET -dBATCH -dDetectDuplicateImages
+                -dCompressFonts=true -r150 -sOutputFile=$@ $^ $(EXTRA_PDFS)</p>
+<p>build/%.pdf: %.md
+        @mkdir -p $$(dirname $@)
+        pandoc -V geometry:margin=1in -o $@ $?
+```</p>
+<p>This converts each file to a PDF and then uses
+<a href="https://www.ghostscript.com/">Ghostscript</a>
+to combine them all into one.
+It also lets me include any other PDFs I have, like the sample midterm in
+my example.
+This has been super handy for open-note tests.</p>
+<h2>Caveats</h2>
+<p>I like this system a lot but it's not perfect.</p>
+<p>One issue with it is that I have a lot of fun tweaking and "optimizing"
+my Vim configuration and note taking process.
+I put "optimizing" in quotes because this often ends up taking more of my
+time than the "optimizations" actually save,
+and I'll commonly miss chunks of lectures because I got distracted trying
+to fix the syntax highlighting for misspelled words in my Vim colorscheme
+or trying to decide on a better font size for the headers in my generated
+PDFs.</p>
+<p>Another area with room for improvement is in my use of the Vimwiki plugin.
+It's a powerful plugin with a bunch of cool features, but
+the only one I'm really using right now is the ability to navigate to linked
+documents.
+I think that my process could be improved by either using a more minimal
+plugin that includes only that feature or by starting to take advantage of
+more of Vimwiki's features.</p>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Yole Project</p>
+    </footer>
+</body>
+</html>

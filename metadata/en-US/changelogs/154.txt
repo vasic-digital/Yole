@@ -1,2 +1,2 @@
-See https://github.com/gsantner/markor/commits/master/   and  https://github.com/gsantner/markor/blob/master/CHANGELOG.md
+See https://github.com/vasic-digital/Yole/commits/master/   and  https://github.com/vasic-digital/Yole/blob/master/CHANGELOG.md
 

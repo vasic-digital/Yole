@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yole - Simple & Versatile Text Editor</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="yole-theme-toggle-container">
+        <button id="yole-theme-toggle" class="yole-theme-toggle" aria-label="Toggle dark mode">
+            <i class="yole-theme-icon yole-moon-icon">🌙</i>
+            <i class="yole-theme-icon yole-sun-icon">☀️</i>
+        </button>
+    </div>
+
+    <header class="yole-hero">
+        <div class="yole-hero-content">
+            <div class="yole-hero-text">
+                <img src="Logo.png" alt="Yole Logo" class="yole-logo">
+                <h1 class="yole-hero-title">Yole - Simple & Versatile Text Editor</h1>
+                <p class="yole-subtitle">Your Ultimate Cross-Platform Text Editor</p>
+                <p class="yole-hero-description">Supporting 18+ markup formats across Android, Desktop, iOS & Web</p>
+            </div>
+            <div class="yole-editor-visual">
+                <div class="yole-editor-mockup">
+                    <div class="yole-editor-header">
+                        <div class="yole-editor-controls">
+                            <div class="yole-control yole-red"></div>
+                            <div class="yole-control yole-yellow"></div>
+                            <div class="yole-control yole-green"></div>
+                        </div>
+                        <div class="yole-editor-title">welcome.md</div>
+                    </div>
+                    <div class="yole-editor-body">
+                        <div class="yole-editor-line"># Welcome to Yole</div>
+                        <div class="yole-editor-line">Cross-platform text editor for modern workflows</div>
+                        <div class="yole-editor-line">Supporting 18+ markup formats</div>
+                        <div class="yole-editor-line yole-task-line">☐ Get started with Yole</div>
+                        <div class="yole-editor-line yole-task-line">☐ Explore 18+ formats</div>
+                        <div class="yole-editor-line yole-task-line yole-completed">☑ Enjoy privacy</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="yole-platforms-section">
+        <div class="yole-container">
+            <h2 class="yole-section-heading">Cross-Platform Support</h2>
+            <div class="yole-platforms-grid">
+                <div class="yole-platform-card">
+                    <div class="yole-platform-icon yole-android-icon">🤖</div>
+                    <h3>Android <span style="color: #22c55e; font-size: 0.8em;">✓ Production</span></h3>
+                    <p>Native Android with full feature set</p>
+                </div>
+                <div class="yole-platform-card">
+                    <div class="yole-platform-icon yole-desktop-icon">🖥️</div>
+                    <h3>Desktop <span style="color: #f59e0b; font-size: 0.8em;">⚠ Beta</span></h3>
+                    <p>Windows, macOS & Linux support</p>
+                </div>
+                <div class="yole-platform-card">
+                    <div class="yole-platform-icon yole-ios-icon">📱</div>
+                    <h3>iOS <span style="color: #3b82f6; font-size: 0.8em;">🚧 Coming Soon</span></h3>
+                    <p>Native iOS experience (Q2 2026)</p>
+                </div>
+                <div class="yole-platform-card">
+                    <div class="yole-platform-icon yole-web-icon">🌐</div>
+                    <h3>Web <span style="color: #3b82f6; font-size: 0.8em;">🚧 Coming Soon</span></h3>
+                    <p>Progressive Web App (Q3 2026)</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="yole-features-section">
+        <div class="yole-container">
+            <h2 class="yole-section-heading">Powerful Capabilities</h2>
+            <div class="yole-features-grid">
+                <div class="yole-feature-card">
+                    <div class="yole-feature-icon">📝</div>
+                    <h3>Format Versatility</h3>
+                    <p>Markdown, todo.txt, CSV, LaTeX, reStructuredText, TaskPaper and 15+ more formats</p>
+                </div>
+                <div class="yole-feature-card">
+                    <div class="yole-feature-icon">🔒</div>
+                    <h3>Privacy Focused</h3>
+                    <p>Works completely offline. Your data stays on your device. No tracking.</p>
+                </div>
+                <div class="yole-feature-card">
+                    <div class="yole-feature-icon">🔄</div>
+                    <h3>Sync Compatible</h3>
+                    <p>Works with Syncthing, Dropbox, Nextcloud and other synchronization solutions</p>
+                </div>
+                <div class="yole-feature-card">
+                    <div class="yole-feature-icon">🎨</div>
+                    <h3>Customizable UI</h3>
+                    <p>Dark theme, syntax highlighting, and personalized editor preferences</p>
+                </div>
+                <div class="yole-feature-card">
+                    <div class="yole-feature-icon">📚</div>
+                    <h3>Notebook System</h3>
+                    <p>Organize files in notebook structure with quick folder access</p>
+                </div>
+                <div class="yole-feature-card">
+                    <div class="yole-feature-icon">📋</div>
+                    <h3>Clipboard Integration</h3>
+                    <p>Direct sharing from any app for quick note capture</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="yole-download-section">
+        <div class="yole-container">
+            <div class="yole-download-wrapper">
+                <div class="yole-download-text">
+                    <h2 class="yole-section-heading">Start Using Yole</h2>
+                    <p class="yole-download-subtitle">Choose your platform and begin your journey</p>
+                </div>
+                <div class="yole-download-buttons">
+                    <a href="https://f-droid.org/repository/browse/?fdid=digital.vasic.yole" class="yole-btn yole-btn-primary">
+                        🤖 F-Droid for Android
+                    </a>
+                    <a href="https://github.com/vasic-digital/Yole/releases/latest" class="yole-btn yole-btn-secondary">
+                        📦 GitHub Releases
+                    </a>
+                    <a href="https://github.com/vasic-digital/Yole" class="yole-btn yole-btn-tertiary">
+                        🧑‍💻 Source Code
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="yole-docs-section">
+        <div class="yole-container">
+            <h2 class="yole-section-heading">Documentation</h2>
+            <div class="yole-docs-grid">
+                <a href="README.html" class="yole-doc-card">
+                    <div class="yole-doc-icon">📖</div>
+                    <h3>Getting Started</h3>
+                    <p>Installation, features, and usage guide</p>
+                </a>
+                <a href="api/" class="yole-doc-card">
+                    <div class="yole-doc-icon">📚</div>
+                    <h3>API Reference</h3>
+                    <p>Complete API documentation for developers</p>
+                </a>
+                <a href="QUICK_START.html" class="yole-doc-card">
+                    <div class="yole-doc-icon">⚡</div>
+                    <h3>Quick Start</h3>
+                    <p>5-minute setup for all platforms</p>
+                </a>
+                <a href="ARCHITECTURE.html" class="yole-doc-card">
+                    <div class="yole-doc-icon">🏗️</div>
+                    <h3>Architecture</h3>
+                    <p>Technical overview and development</p>
+                </a>
+                <a href="TESTING_STRATEGY.html" class="yole-doc-card">
+                    <div class="yole-doc-icon">🧪</div>
+                    <h3>Testing</h3>
+                    <p>Comprehensive testing coverage</p>
+                </a>
+                <a href="FORMAT_DOCUMENTATION.html" class="yole-doc-card">
+                    <div class="yole-doc-icon">📝</div>
+                    <h3>Formats</h3>
+                    <p>Details of all supported formats</p>
+                </a>
+                <a href="CONTRIBUTING.html" class="yole-doc-card">
+                    <div class="yole-doc-icon">🤝</div>
+                    <h3>Contributing</h3>
+                    <p>How to contribute to the project</p>
+                </a>
+                <a href="CHANGELOG.html" class="yole-doc-card">
+                    <div class="yole-doc-icon">📋</div>
+                    <h3>Changelog</h3>
+                    <p>Version history and updates</p>
+                </a>
+                <a href="doc/README.html" class="yole-doc-card">
+                    <div class="yole-doc-icon">🎓</div>
+                    <h3>User Guides</h3>
+                    <p>Additional tutorials and tips</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="yole-footer">
+        <div class="yole-container">
+            <div class="yole-footer-content">
+                <p>&copy; 2025 Yole Project. Licensed under Apache 2.0.</p>
+                <p>Made with ❤️ by <a href="https://www.vasic.digital">Vasic Digital</a></p>
+                <div class="yole-social-links">
+                    <a href="https://github.com/vasic-digital/Yole" aria-label="GitHub"><span class="yole-social-icon">🔗</span></a>
+                    <a href="https://github.com/vasic-digital/Yole/discussions" aria-label="Discussions"><span class="yole-social-icon">💬</span></a>
+                    <a href="https://github.com/vasic-digital/Yole/issues" aria-label="Issues"><span class="yole-social-icon">🐛</span></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Yole theme toggle functionality
+        const yoleThemeToggle = document.getElementById('yole-theme-toggle');
+        const yoleBody = document.body;
+
+        // Check for saved theme or system preference
+        const yoleSavedTheme = localStorage.getItem('yole-theme');
+        const yoleSystemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        if (yoleSavedTheme === 'dark' || (!yoleSavedTheme && yoleSystemPrefersDark)) {
+            yoleBody.classList.add('yole-dark-mode');
+            yoleThemeToggle.classList.add('yole-dark-theme');
+        }
+
+        // Listen for system theme changes
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (!localStorage.getItem('yole-theme')) {
+                    yoleBody.classList.toggle('yole-dark-mode', e.matches);
+                    yoleThemeToggle.classList.toggle('yole-dark-theme', e.matches);
+                }
+            });
+        }
+
+        // Toggle theme on button click
+        yoleThemeToggle.addEventListener('click', () => {
+            yoleBody.classList.toggle('yole-dark-mode');
+            yoleThemeToggle.classList.toggle('yole-dark-theme');
+            
+            // Save preference to localStorage
+            const yoleIsDark = yoleBody.classList.contains('yole-dark-mode');
+            localStorage.setItem('yole-theme', yoleIsDark ? 'dark' : 'light');
+        });
+
+        // Yole scroll animations
+        const yoleObserverOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+
+        const yoleObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('yole-fade-in');
+                    yoleObserver.unobserve(entry.target);
+                }
+            });
+        }, yoleObserverOptions);
+
+        // Observe feature cards
+        document.querySelectorAll('.yole-feature-card').forEach(card => {
+            yoleObserver.observe(card);
+        });
+
+        // Observe platform cards
+        document.querySelectorAll('.yole-platform-card').forEach(card => {
+            yoleObserver.observe(card);
+        });
+    </script>
+</body>
+</html>

@@ -27,7 +27,7 @@ index 4dc5b5fd..6e8dd27e 100644
 @@ -31,6 +32,7 @@ import android.widget.TextView;
  import android.widget.Toast;
  
- import net.gsantner.markor.R;
+ import digital.vasic.yole.R;
 +import net.gsantner.opoc.util.ImageLoaderTask;
  
  import java.io.File;
@@ -105,9 +105,9 @@ index 00000000..4007595c
 +import android.os.AsyncTask;
 +import android.support.v4.content.ContextCompat;
 +
-+import net.gsantner.markor.R;
-+import net.gsantner.markor.util.AppSettings;
-+import net.gsantner.markor.util.ContextUtils;
++import digital.vasic.yole.R;
++import digital.vasic.yole.util.AppSettings;
++import digital.vasic.yole.util.ContextUtils;
 +
 +import java.io.File;
 +

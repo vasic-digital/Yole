@@ -10,7 +10,7 @@ assignees: ''
 * App version: 
 * Android version/rom: 
 * Device: 
-* I accept that this issue will be closed without further notice in case I didn't describe the problem including general information, or didn't [search](https://github.com/gsantner/markor/issues?q=) for similar issues & [requests](https://github.com/gsantner/markor/discussions?discussions_q=).
+* I accept that this issue will be closed without further notice in case I didn't describe the problem including general information, or didn't [search](https://github.com/vasic-digital/Yole/issues?q=) for similar issues & [requests](https://github.com/vasic-digital/Yole/discussions?discussions_q=).
 
 ## Explain the Problem
 What problem did you encounter? What did you expect to happen?

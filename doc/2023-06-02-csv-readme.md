@@ -2,7 +2,7 @@ Last updated 2023-06-02 by k3b
 
 ## Information about csv files in markor
 
-The android editor app [markor](https://github.com/gsantner/markor)
+The android editor app [markor](https://github.com/vasic-digital/Yole)
 can handle [csv](https://en.wikipedia.org/wiki/Comma-separated_values) files since version v2.10.9
 
 ![](assets/csv/2023-06-25-csv-landscape.webp) 
