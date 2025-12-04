@@ -40,17 +40,16 @@ class FtpService(
     override val isOnline: Boolean
         get() = _isConnected
     
-    override val storageInfo: NetworkStorage
-        get() = NetworkStorage(
+    override suspend fun getStorageInfo(): NetworkStorage {
+        return NetworkStorage(
             id = "ftp_${config.name}",
             name = config.name,
             type = StorageType.FTP,
             location = "ftp://${config.host}:${config.port}${_rootPath}",
             isOnline = _isConnected,
-            lastSync = Clock.System.now(),
-            supportsFolders = true,
-            supportsMetadata = false
+            lastSync = Clock.System.now()
         )
+    }
     
     override suspend fun connect(): Result<Unit> = try {
         // Test connection by listing root directory

@@ -45,18 +45,16 @@ class SftpService(
     override val isOnline: Boolean
         get() = _isConnected
     
-    override val storageInfo: NetworkStorage
-        get() = NetworkStorage(
+    override suspend fun getStorageInfo(): NetworkStorage {
+        return NetworkStorage(
             id = "sftp_${config.name}",
             name = config.name,
             type = StorageType.SFTP,
             location = "sftp://${config.host}:${config.port}${_rootPath}",
             isOnline = _isConnected,
-            lastSync = Clock.System.now(),
-            supportsFolders = true,
-            supportsMetadata = true,
-            supportsEncryption = true
+            lastSync = Clock.System.now()
         )
+    }
     
     override suspend fun connect(): Result<Unit> = try {
         // Test SFTP connection

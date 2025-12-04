@@ -30,11 +30,11 @@ class MockNetworkStorageService(
                 id = "test1",
                 name = "Test File.md",
                 path = "/Test File.md",
-                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
-                syncStatus = SyncStatus.SYNCED,
-                type = DocumentType.FILE,
+                isFolder = false,
                 size = 1024L,
-                lastModified = Clock.System.now()
+                lastModified = Clock.System.now(),
+                syncStatus = SyncStatus.SYNCED,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
             )
         )))
     }
@@ -43,13 +43,16 @@ class MockNetworkStorageService(
         // Mock download operation
         emit(NetworkOperation(
             id = System.currentTimeMillis(),
-            type = OperationType.DOWNLOAD,
-            status = OperationStatus.COMPLETED,
-            sourcePath = remotePath,
-            targetPath = localPath,
-            progress = 1.0f,
+            type = NetworkOperation.Type.DOWNLOAD,
+            status = NetworkOperation.Status.COMPLETED,
+            remotePath = remotePath,
+            localPath = localPath,
+            progress = 1.0,
+            totalSize = 1024L,
             bytesTransferred = 1024L,
-            totalBytes = 1024L
+            createdAt = Clock.System.now(),
+            startedAt = Clock.System.now(),
+            completedAt = Clock.System.now()
         ))
     }
     
@@ -57,13 +60,16 @@ class MockNetworkStorageService(
         // Mock upload operation
         emit(NetworkOperation(
             id = System.currentTimeMillis(),
-            type = OperationType.UPLOAD,
-            status = OperationStatus.COMPLETED,
-            sourcePath = localPath,
-            targetPath = remotePath,
-            progress = 1.0f,
+            type = NetworkOperation.Type.UPLOAD,
+            status = NetworkOperation.Status.COMPLETED,
+            remotePath = remotePath,
+            localPath = localPath,
+            progress = 1.0,
+            totalSize = 1024L,
             bytesTransferred = 1024L,
-            totalBytes = 1024L
+            createdAt = Clock.System.now(),
+            startedAt = Clock.System.now(),
+            completedAt = Clock.System.now()
         ))
     }
     
@@ -92,11 +98,11 @@ class MockNetworkStorageService(
             id = "test1",
             name = "Test File.md",
             path = remotePath,
-            permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
-            syncStatus = SyncStatus.SYNCED,
-            type = DocumentType.FILE,
+            isFolder = false,
             size = 1024L,
-            lastModified = Clock.System.now()
+            lastModified = Clock.System.now(),
+            syncStatus = SyncStatus.SYNCED,
+            permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
         ))
     }
     
@@ -123,11 +129,7 @@ class MockNetworkStorageService(
             type = StorageType.WEBDAV,
             location = "mock://",
             isOnline = isOnline,
-            lastSync = Clock.System.now(),
-            supportsFolders = true,
-            supportsMetadata = true,
-            supportsPermissions = true,
-            supportsEncryption = true
+            lastSync = Clock.System.now()
         )
     }
     
@@ -159,13 +161,15 @@ class MockNetworkStorageService(
         // Mock sync operation
         emit(NetworkOperation(
             id = System.currentTimeMillis(),
-            type = OperationType.SYNC,
-            status = OperationStatus.COMPLETED,
-            sourcePath = remotePath,
-            targetPath = remotePath,
-            progress = 1.0f,
+            type = NetworkOperation.Type.SYNC,
+            status = NetworkOperation.Status.COMPLETED,
+            remotePath = remotePath,
+            progress = 1.0,
+            totalSize = 1024L,
             bytesTransferred = 1024L,
-            totalBytes = 1024L
+            createdAt = Clock.System.now(),
+            startedAt = Clock.System.now(),
+            completedAt = Clock.System.now()
         ))
     }
     
@@ -173,13 +177,15 @@ class MockNetworkStorageService(
         // Mock sync operations
         emit(NetworkOperation(
             id = System.currentTimeMillis(),
-            type = OperationType.SYNC,
-            status = OperationStatus.COMPLETED,
-            sourcePath = "/",
-            targetPath = "/",
-            progress = 1.0f,
+            type = NetworkOperation.Type.SYNC,
+            status = NetworkOperation.Status.COMPLETED,
+            remotePath = "/",
+            progress = 1.0,
+            totalSize = 1024L,
             bytesTransferred = 1024L,
-            totalBytes = 1024L
+            createdAt = Clock.System.now(),
+            startedAt = Clock.System.now(),
+            completedAt = Clock.System.now()
         ))
     }
     
@@ -189,10 +195,10 @@ class MockNetworkStorageService(
                 id = "search1",
                 name = "Search Result.md",
                 path = "/Search Result.md",
-                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
+                isFolder = false,
                 syncStatus = SyncStatus.SYNCED,
-                type = DocumentType.FILE,
-                size = 2048L,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
+                size = 1024L,
                 lastModified = Clock.System.now()
             )
         )))

@@ -1,6 +1,9 @@
 package digital.vasic.yole.network.common
 
 import kotlinx.datetime.Instant
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * Represents a cached file or document entry in the local cache.
@@ -224,7 +227,7 @@ data class CacheEntry(
                 createdAt = now,
                 lastAccessed = now,
                 lastModified = now,
-                expiresAt = ttl?.let { now.plus(it, kotlinx.datetime.DateTimeUnit.MILLISECOND) },
+                expiresAt = ttl?.let { now.plus(it.milliseconds) },
                 isPinned = isPinned,
                 contentType = contentType
             )
@@ -246,9 +249,9 @@ data class CacheEntry(
                 localPath = localPath,
                 remotePath = remotePath,
                 size = size,
-                createdAt = now.minus(1, kotlinx.datetime.DateTimeUnit.HOUR),
-                lastAccessed = now.minus(30, kotlinx.datetime.DateTimeUnit.MINUTE),
-                lastModified = now.minus(1, kotlinx.datetime.DateTimeUnit.HOUR),
+                createdAt = now.minus(1.hours),
+                lastAccessed = now.minus(30.minutes),
+                lastModified = now.minus(1.hours),
                 isValid = true,
                 isPinned = false,
                 accessCount = 5

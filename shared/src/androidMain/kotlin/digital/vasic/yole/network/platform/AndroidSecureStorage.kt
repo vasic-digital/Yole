@@ -16,7 +16,6 @@ actual class AndroidSecureStorage actual constructor(
     private val sharedPreferences: SharedPreferences by lazy {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .setKeySize(MasterKey.KeySize.SIZE_256)
             .build()
         
         EncryptedSharedPreferences.create(

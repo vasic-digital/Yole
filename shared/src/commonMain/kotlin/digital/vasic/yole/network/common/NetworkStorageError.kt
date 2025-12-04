@@ -472,7 +472,7 @@ sealed class NetworkStorageException(
             is QuotaException.BandwidthExceeded -> "Bandwidth quota exceeded. Please try again later."
             is CacheException.Corruption -> "Cache corruption detected. Please clear cache and try again."
             is CacheException.EntryNotFound -> "Cache file not found. Please download again."
-            else -> message
+            else -> message ?: "Unknown error occurred"
         }
     }
     
@@ -546,7 +546,7 @@ sealed class NetworkStorageException(
             return when {
                 throwable is NetworkStorageException -> throwable
                 throwable.message?.contains("timeout", ignoreCase = true) == true ->
-                    ConnectionException.Timeout(cause = throwable)
+                    ConnectionException.Timeout(timeoutMs = 30000L, cause = throwable)
                 throwable.message?.contains("authentication", ignoreCase = true) == true ->
                     ConnectionException.Authentication(cause = throwable, authType = "unknown", username = "unknown")
                 throwable.message?.contains("permission", ignoreCase = true) == true ->

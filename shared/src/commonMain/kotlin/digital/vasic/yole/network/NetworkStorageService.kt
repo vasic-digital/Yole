@@ -69,9 +69,9 @@ interface NetworkStorageService {
     /**
      * Create a new folder in remote storage
      * @param remotePath Path to the folder to create
-     * @return Result indicating success or failure
+     * @return Result containing NetworkDocument for created folder or error
      */
-    suspend fun createFolder(remotePath: String): Result<Unit>
+    suspend fun createFolder(remotePath: String): Result<NetworkDocument>
     
     /**
      * Rename a file or folder in remote storage
@@ -85,9 +85,9 @@ interface NetworkStorageService {
      * Move a file or folder to a new location
      * @param sourcePath Current path of the file/folder
      * @param destinationPath New path for the file/folder
-     * @return Result indicating success or failure
+     * @return Result containing NetworkDocument for moved file/folder or error
      */
-    suspend fun moveFile(sourcePath: String, destinationPath: String): Result<Unit>
+    suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument>
     
     /**
      * Copy a file or folder to a new location

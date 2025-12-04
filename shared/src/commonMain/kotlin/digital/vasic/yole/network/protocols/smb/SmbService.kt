@@ -40,18 +40,16 @@ class SmbService(
     override val isOnline: Boolean
         get() = _isConnected
     
-    override val storageInfo: NetworkStorage
-        get() = NetworkStorage(
+    override suspend fun getStorageInfo(): NetworkStorage {
+        return NetworkStorage(
             id = "smb_${config.name}",
             name = config.name,
             type = StorageType.SMB,
             location = "smb://${config.host}/${_share}${_rootPath}",
             isOnline = _isConnected,
-            lastSync = Clock.System.now(),
-            supportsFolders = true,
-            supportsMetadata = true,
-            supportsPermissions = true
+            lastSync = Clock.System.now()
         )
+    }
     
     override suspend fun connect(): Result<Unit> = try {
         // Test SMB connection by attempting to list share

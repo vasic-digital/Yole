@@ -21,11 +21,11 @@ import kotlinx.serialization.json.jsonPrimitive
  * Provides Dropbox API integration with OAuth2 authentication
  */
 class DropboxService(
-    private val config: StorageConfig.DropboxConfig
+    override val config: StorageConfig.DropboxConfig
 ) : NetworkStorageService {
     
     private val httpClient = HttpClient(CIO) {
-        defaultRequest {
+        install(io.ktor.client.plugins.DefaultRequest) {
             header("Authorization", "Bearer ${config.accessToken}")
         }
     }
@@ -36,20 +36,16 @@ class DropboxService(
     override val isOnline: Boolean
         get() = _isConnected
     
-    override val storageInfo: NetworkStorage
-        get() = NetworkStorage(
+    override suspend fun getStorageInfo(): NetworkStorage {
+        return NetworkStorage(
             id = "dropbox_${config.name}",
             name = config.name,
             type = StorageType.DROPBOX,
             location = "dropbox://",
             isOnline = _isConnected,
-            lastSync = Clock.System.now(),
-            supportsFolders = true,
-            supportsMetadata = true,
-            supportsVersioning = true,
-            supportsSharing = true,
-            supportsOfflineSync = true
+            lastSync = Clock.System.now()
         )
+    }
     
     override suspend fun connect(): Result<Unit> = try {
         // Test Dropbox API connection by getting account info
@@ -97,7 +93,7 @@ class DropboxService(
         Result.failure(NetworkStorageException.fromThrowable(e, "testConnection"))
     }
     
-    override suspend fun listFiles(path: String): Flow<Result<NetworkDocument>> = flow {
+    override suspend fun listFiles(path: String = "/"): Flow<Result<List<NetworkDocument>>> = flow {
         if (!_isConnected) {
             emit(Result.failure(NetworkStorageException.ConnectionError.NotConnected(
                 message = "Dropbox not connected"
@@ -147,29 +143,21 @@ class DropboxService(
                         id = entry.pathLower,
                         name = entry.name,
                         path = entry.pathDisplay,
-                        type = DocumentType.FOLDER,
+                        isFolder = true,
                         size = 0L,
                         lastModified = Clock.System.now(),
-                        permissions = DocumentPermission(
-                            canRead = true,
-                            canWrite = true,
-                            canDelete = true,
-                            canExecute = true
-                        )
+                        syncStatus = SyncStatus.SYNCED,
+                        permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE)
                     )
                     entry.tag == "file" -> NetworkDocument(
                         id = entry.pathLower,
                         name = entry.name,
                         path = entry.pathDisplay,
-                        type = DocumentType.FILE,
+                        isFolder = false,
                         size = entry.size,
                         lastModified = kotlinx.datetime.Instant.parse(entry.serverModified),
-                        permissions = DocumentPermission(
-                            canRead = true,
-                            canWrite = true,
-                            canDelete = true,
-                            canExecute = false
-                        )
+                        syncStatus = SyncStatus.SYNCED,
+                        permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE)
                     )
                     else -> null
                 }
@@ -222,15 +210,11 @@ class DropboxService(
                 id = fileMetadata.pathLower,
                 name = fileMetadata.name,
                 path = fileMetadata.pathDisplay,
-                type = DocumentType.FILE,
+                isFolder = false,
+                syncStatus = SyncStatus.SYNCED,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE),
                 size = fileMetadata.size,
-                lastModified = kotlinx.datetime.Instant.parse(fileMetadata.serverModified),
-                permissions = DocumentPermission(
-                    canRead = true,
-                    canWrite = true,
-                    canDelete = true,
-                    canExecute = false
-                )
+                lastModified = kotlinx.datetime.Instant.parse(fileMetadata.serverModified)
             ))
         } else {
             Result.failure(NetworkStorageException.FileOperationError.UploadFailed(
@@ -362,15 +346,11 @@ class DropboxService(
                 id = folderMetadata.metadata.pathLower,
                 name = folderMetadata.metadata.name,
                 path = folderMetadata.metadata.pathDisplay,
-                type = DocumentType.FOLDER,
+                isFolder = true,
+                syncStatus = SyncStatus.SYNCED,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE),
                 size = 0L,
-                lastModified = Clock.System.now(),
-                permissions = DocumentPermission(
-                    canRead = true,
-                    canWrite = true,
-                    canDelete = true,
-                    canExecute = true
-                )
+                lastModified = Clock.System.now()
             ))
         } else {
             Result.failure(NetworkStorageException.FileOperationError.CreateFolderFailed(
@@ -426,15 +406,11 @@ class DropboxService(
                         id = fileMetadata.pathLower,
                         name = fileMetadata.name,
                         path = fileMetadata.pathDisplay,
-                        type = DocumentType.FILE,
+                        isFolder = false,
+                        syncStatus = SyncStatus.SYNCED,
+                        permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE),
                         size = fileMetadata.size,
-                        lastModified = kotlinx.datetime.Instant.parse(fileMetadata.serverModified),
-                        permissions = DocumentPermission(
-                            canRead = true,
-                            canWrite = true,
-                            canDelete = true,
-                            canExecute = false
-                        )
+                        lastModified = kotlinx.datetime.Instant.parse(fileMetadata.serverModified)
                     )
                 }
                 "folder" -> {
@@ -443,15 +419,11 @@ class DropboxService(
                         id = folderMetadata.metadata.pathLower,
                         name = folderMetadata.metadata.name,
                         path = folderMetadata.metadata.pathDisplay,
-                        type = DocumentType.FOLDER,
+                        isFolder = true,
+                        syncStatus = SyncStatus.SYNCED,
+                        permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE),
                         size = 0L,
-                        lastModified = Clock.System.now(),
-                        permissions = DocumentPermission(
-                            canRead = true,
-                            canWrite = true,
-                            canDelete = true,
-                            canExecute = true
-                        )
+                        lastModified = Clock.System.now()
                     )
                 }
                 else -> null
@@ -513,15 +485,11 @@ class DropboxService(
                         id = fileMetadata.pathLower,
                         name = fileMetadata.name,
                         path = fileMetadata.pathDisplay,
-                        type = DocumentType.FILE,
+                        isFolder = false,
+                        syncStatus = SyncStatus.SYNCED,
+                        permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE),
                         size = fileMetadata.size,
-                        lastModified = kotlinx.datetime.Instant.parse(fileMetadata.serverModified),
-                        permissions = DocumentPermission(
-                            canRead = true,
-                            canWrite = true,
-                            canDelete = true,
-                            canExecute = false
-                        )
+                        lastModified = kotlinx.datetime.Instant.parse(fileMetadata.serverModified)
                     )
                 }
                 "folder" -> {
@@ -530,15 +498,11 @@ class DropboxService(
                         id = folderMetadata.metadata.pathLower,
                         name = folderMetadata.metadata.name,
                         path = folderMetadata.metadata.pathDisplay,
-                        type = DocumentType.FOLDER,
+                        isFolder = true,
+                        syncStatus = SyncStatus.SYNCED,
+                        permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE),
                         size = 0L,
-                        lastModified = Clock.System.now(),
-                        permissions = DocumentPermission(
-                            canRead = true,
-                            canWrite = true,
-                            canDelete = true,
-                            canExecute = true
-                        )
+                        lastModified = Clock.System.now()
                     )
                 }
                 else -> null

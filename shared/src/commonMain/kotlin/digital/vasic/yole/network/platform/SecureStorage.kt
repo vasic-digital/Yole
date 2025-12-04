@@ -119,6 +119,34 @@ interface SecureStorage {
     suspend fun deleteToken(service: String): Result<Unit> {
         return delete("${service}_token")
     }
+    
+    /**
+     * Store a private key securely.
+     * @param service The service name
+     * @param privateKey The private key content
+     * @return Result indicating success or failure
+     */
+    suspend fun storePrivateKey(service: String, privateKey: String): Result<Unit> {
+        return store("${service}_private_key", privateKey)
+    }
+    
+    /**
+     * Retrieve a stored private key.
+     * @param service The service name
+     * @return Result containing the private key or null if not found
+     */
+    suspend fun retrievePrivateKey(service: String): Result<String?> {
+        return retrieve("${service}_private_key")
+    }
+    
+    /**
+     * Delete a stored private key.
+     * @param service The service name
+     * @return Result indicating success or failure
+     */
+    suspend fun deletePrivateKey(service: String): Result<Unit> {
+        return delete("${service}_private_key")
+    }
 }
 
 /**

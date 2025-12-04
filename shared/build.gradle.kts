@@ -99,6 +99,7 @@ kotlin {
                 implementation(libs.ktor.client.core)
                 implementation("io.ktor:ktor-client-content-negotiation:3.0.2")
                 implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.2")
+                implementation("io.ktor:ktor-client-cio:3.0.2")
 
                 // SQLite database for metadata (common runtime)
                 implementation("app.cash.sqldelight:runtime:2.0.2")

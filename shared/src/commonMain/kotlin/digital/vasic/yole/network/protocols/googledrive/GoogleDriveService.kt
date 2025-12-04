@@ -36,21 +36,16 @@ class GoogleDriveService(
     override val isOnline: Boolean
         get() = _isConnected
     
-    override val storageInfo: NetworkStorage
-        get() = NetworkStorage(
+    override suspend fun getStorageInfo(): NetworkStorage {
+        return NetworkStorage(
             id = "googledrive_${config.name}",
             name = config.name,
             type = StorageType.GOOGLE_DRIVE,
             location = "googledrive://",
             isOnline = _isConnected,
-            lastSync = Clock.System.now(),
-            supportsFolders = true,
-            supportsMetadata = true,
-            supportsVersioning = true,
-            supportsSearch = true,
-            supportsCollaboration = true,
-            supportsOfflineSync = true
+            lastSync = Clock.System.now()
         )
+    }
     
     override suspend fun connect(): Result<Unit> = try {
         // Test Google Drive API connection by getting user info

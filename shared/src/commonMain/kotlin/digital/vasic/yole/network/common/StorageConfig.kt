@@ -286,6 +286,43 @@ sealed class StorageConfig {
             return copy(metadata = metadata)
         }
     }
+    
+    /**
+     * Git storage configuration
+     */
+    @Serializable
+    data class GitConfig(
+        override val name: String,
+        val repositoryUrl: String,
+        val branch: String = "main",
+        val username: String? = null,
+        val password: String? = null,
+        val privateKeyPath: String? = null,
+        val privateKeyPassphrase: String? = null,
+        val localCachePath: String,
+        val autoSync: Boolean = true,
+        val commitAuthorName: String = "Yole",
+        val commitAuthorEmail: String = "yole@example.com",
+        val connectionTimeout: Int = 30000, // milliseconds
+        override val isEnabled: Boolean = true,
+        override val priority: Int = 100,
+        override val metadata: Map<String, String> = emptyMap()
+    ) : StorageConfig() {
+        
+        override val storageType = StorageType.GIT
+        
+        override fun withEnabled(isEnabled: Boolean): StorageConfig {
+            return copy(isEnabled = isEnabled)
+        }
+        
+        override fun withPriority(priority: Int): StorageConfig {
+            return copy(priority = priority)
+        }
+        
+        override fun withMetadata(metadata: Map<String, String>): StorageConfig {
+            return copy(metadata = metadata)
+        }
+    }
 }
 
 /**
@@ -299,7 +336,8 @@ enum class StorageType {
     SMB,
     GOOGLE_DRIVE,
     DROPBOX,
-    ONEDRIVE;
+    ONEDRIVE,
+    GIT;
     
     /**
      * Human-readable display name
@@ -313,6 +351,7 @@ enum class StorageType {
             GOOGLE_DRIVE -> "Google Drive"
             DROPBOX -> "Dropbox"
             ONEDRIVE -> "OneDrive"
+            GIT -> "Git"
         }
     
     /**
@@ -320,7 +359,7 @@ enum class StorageType {
      */
     val supportsFolders: Boolean
         get() = when (this) {
-            WEBDAV, SFTP, SMB, GOOGLE_DRIVE, DROPBOX, ONEDRIVE -> true
+            WEBDAV, SFTP, SMB, GOOGLE_DRIVE, DROPBOX, ONEDRIVE, GIT -> true
             FTP -> false // Basic FTP doesn't have reliable folder support
         }
     
@@ -329,7 +368,7 @@ enum class StorageType {
      */
     val supportsEncryption: Boolean
         get() = when (this) {
-            WEBDAV, SFTP, SMB, GOOGLE_DRIVE, DROPBOX, ONEDRIVE -> true
+            WEBDAV, SFTP, SMB, GOOGLE_DRIVE, DROPBOX, ONEDRIVE, GIT -> true
             FTP -> false
         }
     
@@ -345,6 +384,7 @@ enum class StorageType {
             GOOGLE_DRIVE -> 443 // HTTPS
             DROPBOX -> 443 // HTTPS
             ONEDRIVE -> 443 // HTTPS
+            GIT -> 22 // SSH for Git
         }
 }
 

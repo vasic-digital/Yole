@@ -74,6 +74,7 @@ class NetworkStorageConfigService {
                     is StorageConfig.GoogleDriveConfig -> "googledrive://"
                     is StorageConfig.DropboxConfig -> "dropbox://"
                     is StorageConfig.OneDriveConfig -> "onedrive://"
+                    is StorageConfig.GitConfig -> storageConfig.repositoryUrl
                 },
                 isOnline = true,
                 lastSync = kotlinx.datetime.Clock.System.now(),
@@ -111,6 +112,16 @@ class NetworkStorageConfigService {
                 is StorageConfig.OneDriveConfig -> {
                     storageConfig.refreshToken?.let { token ->
                         secureStorage.storeToken("onedrive_${storageConfig.name}", token)
+                    }
+                }
+                is StorageConfig.GitConfig -> {
+                    storageConfig.username?.let { username ->
+                        storageConfig.password?.let { password ->
+                            secureStorage.storeCredentials("git_${storageConfig.name}", username, password)
+                        }
+                    }
+                    storageConfig.privateKeyPath?.let { keyPath ->
+                        secureStorage.storePrivateKey("git_${storageConfig.name}", keyPath)
                     }
                 }
             }
@@ -334,6 +345,24 @@ class NetworkStorageConfigService {
                     "OneDrive",
                     "SharePoint Online"
                 )
+            ),
+            StorageTypeInfo(
+                type = StorageType.GIT,
+                name = "Git",
+                description = "Git version control repository",
+                supportedFeatures = setOf(
+                    StorageFeature.VERSIONING,
+                    StorageFeature.SEARCH,
+                    StorageFeature.SYNC,
+                    StorageFeature.BACKUP,
+                    StorageFeature.ENCRYPTION
+                ),
+                popularServices = listOf(
+                    "GitHub",
+                    "GitLab",
+                    "Bitbucket",
+                    "Gitea"
+                )
             )
         )
     }
@@ -407,6 +436,15 @@ class NetworkStorageConfigService {
                     else -> null
                 }
             }
+            is StorageConfig.GitConfig -> {
+                when {
+                    storageConfig.repositoryUrl.isBlank() -> Exception("Repository URL is required")
+                    storageConfig.localCachePath.isBlank() -> Exception("Local cache path is required")
+                    !storageConfig.repositoryUrl.startsWith("http") && !storageConfig.repositoryUrl.startsWith("git@") ->
+                        Exception("Repository URL must start with http(s):// or git@")
+                    else -> null
+                }
+            }
         }
     }
     
@@ -447,6 +485,7 @@ class NetworkStorageConfigService {
                 is StorageConfig.GoogleDriveConfig -> digital.vasic.yole.network.protocols.googledrive.GoogleDriveService(storageConfig)
                 is StorageConfig.DropboxConfig -> digital.vasic.yole.network.protocols.dropbox.DropboxService(storageConfig)
                 is StorageConfig.OneDriveConfig -> digital.vasic.yole.network.protocols.onedrive.OneDriveService(storageConfig)
+                is StorageConfig.GitConfig -> digital.vasic.yole.network.protocols.git.GitService(storageConfig)
                 else -> return Result.failure(
                     NetworkStorageException.ProtocolException.Unsupported(
                         protocol = storageConfig.storageType.name,
@@ -487,5 +526,7 @@ enum class StorageFeature {
     COLLABORATION,
     OFFLINE_SYNC,
     SHARING,
-    OFFICE_INTEGRATION
+    OFFICE_INTEGRATION,
+    SYNC,
+    BACKUP
 }

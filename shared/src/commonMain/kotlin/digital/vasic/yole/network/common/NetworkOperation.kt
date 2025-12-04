@@ -1,6 +1,7 @@
 package digital.vasic.yole.network.common
 
 import kotlinx.datetime.Instant
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * Represents a network operation (upload, download, delete, etc.).
@@ -153,8 +154,8 @@ data class NetworkOperation(
      */
     val duration: Long?
         get() = when {
-            completedAt != null && startedAt != null -> completedAt.minus(startedAt).inWholeMilliseconds
-            startedAt != null -> kotlinx.datetime.Clock.System.now().minus(startedAt).inWholeMilliseconds
+            completedAt != null && startedAt != null -> (completedAt - startedAt).inWholeMilliseconds
+            startedAt != null -> (kotlinx.datetime.Clock.System.now() - startedAt).inWholeMilliseconds
             else -> null
         }
     
@@ -310,8 +311,8 @@ data class NetworkOperation(
                 progress = progress,
                 totalSize = 1024L,
                 bytesTransferred = (1024L * progress).toLong(),
-                createdAt = kotlinx.datetime.Clock.System.now().minus(1, kotlinx.datetime.DateTimeUnit.MINUTE),
-                startedAt = kotlinx.datetime.Clock.System.now().minus(1, kotlinx.datetime.DateTimeUnit.MINUTE)
+                createdAt = kotlinx.datetime.Clock.System.now().minus(1.minutes),
+                startedAt = kotlinx.datetime.Clock.System.now().minus(1.minutes)
             )
         }
     }
