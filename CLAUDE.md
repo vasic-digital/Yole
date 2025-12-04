@@ -370,3 +370,10 @@ See `AGENTS.md` for complete CI/CD documentation.
 - Test failures require investigation before proceeding
 - Format issues: Check corresponding parser in `shared/src/commonMain/kotlin/digital/vasic/yole/format/`
 - Platform issues: Check platform-specific implementations in `[platform]Main/`
+
+## Active Technologies
+- Kotlin 2.1.0 (Multiplatform) + Ktor Client 3.0.2, Okio, platform-specific SDKs, kotlinx.coroutines, kotlinx.serialization (002-network-protocols)
+- Local cache with SQLite metadata store, platform secure storage for credentials (002-network-protocols)
+
+## Recent Changes
+- 002-network-protocols: Added Kotlin 2.1.0 (Multiplatform) + Ktor Client 3.0.2, Okio, platform-specific SDKs, kotlinx.coroutines, kotlinx.serialization
