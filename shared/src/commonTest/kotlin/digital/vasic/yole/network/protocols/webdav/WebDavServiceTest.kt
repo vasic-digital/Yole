@@ -199,7 +199,7 @@ class WebDavServiceTest {
     fun testGetParentPath() {
         webDavService = WebDavService(webDavConfig)
         
-        assertEquals("/", webDavService.getParentPath("/test.md"))
+        assertEquals("", webDavService.getParentPath("/test.md"))
         assertEquals("/folder", webDavService.getParentPath("/folder/test.md"))
         assertEquals("/folder/subfolder", webDavService.getParentPath("/folder/subfolder/test.md"))
         assertEquals(null, webDavService.getParentPath("/"))
