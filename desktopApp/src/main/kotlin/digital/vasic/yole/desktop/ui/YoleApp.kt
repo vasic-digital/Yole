@@ -25,6 +25,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import digital.vasic.yole.desktop.ui.theme.YoleDesktopTheme
+import digital.vasic.yole.desktop.ui.theme.YoleDesktopThemeWithSettings
 import digital.vasic.yole.format.FormatRegistry
 import java.util.prefs.Preferences
 
@@ -37,6 +39,12 @@ class YoleDesktopSettings {
     // Theme settings
     fun getThemeMode(): String = prefs.get("theme_mode", "system")
     fun setThemeMode(mode: String) = prefs.put("theme_mode", mode)
+
+    fun getAccentColor(): String? = prefs.get("accent_color", null)
+    fun setAccentColor(colorHex: String?) = prefs.put("accent_color", colorHex)
+
+    fun getHighContrastEnabled(): Boolean = prefs.getBoolean("high_contrast", false)
+    fun setHighContrastEnabled(enabled: Boolean) = prefs.putBoolean("high_contrast", enabled)
 
     // Editor settings
     fun getShowLineNumbers(): Boolean = prefs.getBoolean("show_line_numbers", true)
@@ -60,10 +68,9 @@ enum class Screen {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun YoleApp() {
-    val systemInDarkTheme = isSystemInDarkTheme()
-    val colorScheme = if (systemInDarkTheme) darkColorScheme() else lightColorScheme()
+    val settings = remember { YoleDesktopSettings() }
 
-    MaterialTheme(colorScheme = colorScheme) {
+    YoleDesktopThemeWithSettings(settings) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background

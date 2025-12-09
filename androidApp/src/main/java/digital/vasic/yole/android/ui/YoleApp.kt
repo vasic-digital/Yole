@@ -29,6 +29,8 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import digital.vasic.yole.android.ui.theme.YoleAndroidTheme
+import digital.vasic.yole.android.ui.theme.YoleAndroidThemeWithSettings
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,6 +64,12 @@ class YoleSettings(context: android.content.Context) : GsSharedPreferencesProper
     // Theme settings
     fun getThemeMode(): String = getString("theme_mode", "system")
     fun setThemeMode(mode: String) = setString("theme_mode", mode)
+
+    fun getDynamicColorsEnabled(): Boolean = getBool("dynamic_colors_enabled", true)
+    fun setDynamicColorsEnabled(enabled: Boolean) = setBool("dynamic_colors_enabled", enabled)
+
+    fun getCustomSeedColor(): String? = getString("custom_seed_color", "")
+    fun setCustomSeedColor(colorHex: String?) = setString("custom_seed_color", colorHex ?: "")
 
     // Editor settings
     fun getShowLineNumbers(): Boolean = getBool("show_line_numbers", true)
@@ -131,10 +139,10 @@ enum class SubScreen {
 
 @Composable
 fun YoleApp() {
-    val systemInDarkTheme = isSystemInDarkTheme()
-    val colorScheme = if (systemInDarkTheme) darkColorScheme() else lightColorScheme()
+    val context = LocalContext.current
+    val settings = remember { YoleSettings(context) }
 
-    MaterialTheme(colorScheme = colorScheme) {
+    YoleAndroidThemeWithSettings(settings) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
