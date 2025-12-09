@@ -64,6 +64,9 @@ kotlin {
                     useChromeHeadless()
                 }
             }
+            runTask {
+                outputFileName = "yole-web.js"
+            }
         }
     }
 }
