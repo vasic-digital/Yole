@@ -44,7 +44,7 @@ class MockNetworkStorageService(
     override suspend fun downloadFile(remotePath: String, localPath: String): Flow<NetworkOperation> = flow {
         // Mock download operation
         emit(NetworkOperation(
-            id = System.currentTimeMillis(),
+            id = Clock.System.now().toEpochMilliseconds(),
             type = NetworkOperation.Type.DOWNLOAD,
             status = NetworkOperation.Status.COMPLETED,
             remotePath = remotePath,
@@ -61,7 +61,7 @@ class MockNetworkStorageService(
     override suspend fun uploadFile(localPath: String, remotePath: String): Flow<NetworkOperation> = flow {
         // Mock upload operation
         emit(NetworkOperation(
-            id = System.currentTimeMillis(),
+            id = Clock.System.now().toEpochMilliseconds(),
             type = NetworkOperation.Type.UPLOAD,
             status = NetworkOperation.Status.COMPLETED,
             remotePath = remotePath,
@@ -180,7 +180,7 @@ class MockNetworkStorageService(
     override suspend fun syncFile(remotePath: String, forceSync: Boolean): Flow<NetworkOperation> = flow {
         // Mock sync operation
         emit(NetworkOperation(
-            id = System.currentTimeMillis(),
+            id = Clock.System.now().toEpochMilliseconds(),
             type = NetworkOperation.Type.SYNC,
             status = NetworkOperation.Status.COMPLETED,
             remotePath = remotePath,
@@ -196,7 +196,7 @@ class MockNetworkStorageService(
     override suspend fun syncAll(forceSync: Boolean): Flow<NetworkOperation> = flow {
         // Mock sync operations
         emit(NetworkOperation(
-            id = System.currentTimeMillis(),
+            id = Clock.System.now().toEpochMilliseconds(),
             type = NetworkOperation.Type.SYNC,
             status = NetworkOperation.Status.COMPLETED,
             remotePath = "/",

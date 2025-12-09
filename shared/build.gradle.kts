@@ -48,25 +48,11 @@ kotlin {
         }
     }
 
-    // iOS targets - Temporarily disabled due to Kotlin 2.1.0 bug (see IOS_COMPILATION_ISSUE.md)
-    // iosX64 {
-    //     binaries.framework {
-    //         baseName = "shared"
-    //         isStatic = true
-    //     }
-    // }
-    // iosArm64 {
-    //     binaries.framework {
-    //         baseName = "shared"
-    //         isStatic = true
-    //     }
-    // }
-    // iosSimulatorArm64 {
-    //     binaries.framework {
-    //         baseName = "shared"
-    //         isStatic = true
-    //     }
-    // }
+    // iOS targets - Temporarily disabled due to framework export configuration issues
+    // Will be re-enabled once proper solution is found (requires macOS environment)
+    // iosX64()
+    // iosArm64()
+    // iosSimulatorArm64()
 
     // Web target (Wasm)
     @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
@@ -95,15 +81,14 @@ kotlin {
                 // Okio for file system - Updated to match version catalog
                 implementation("com.squareup.okio:okio:3.9.1")
 
-                // Ktor Client for network operations
-                implementation(libs.ktor.client.core)
-                implementation("io.ktor:ktor-client-content-negotiation:3.0.2")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.2")
-                implementation("io.ktor:ktor-client-cio:3.0.2")
+                 // Ktor Client for network operations
+                 implementation(libs.ktor.client.core)
+                 implementation("io.ktor:ktor-client-content-negotiation:3.0.2")
+                 implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.2")
 
-                // SQLite database for metadata (common runtime)
-                implementation("app.cash.sqldelight:runtime:2.0.2")
-                implementation("app.cash.sqldelight:coroutines-extensions:2.0.2")
+                 // SQLite database for metadata - platform specific due to WASM incompatibility
+                 // implementation("app.cash.sqldelight:runtime:2.0.2")
+                 // implementation("app.cash.sqldelight:coroutines-extensions:2.0.2")
 
                 // Compose runtime (if using Compose Multiplatform)
                 implementation(compose.runtime)
@@ -117,7 +102,8 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(libs.kotest.framework.engine)
                 implementation(libs.kotest.assertions.core)
-                implementation(libs.mockk)
+                // MockK is JVM-only, not compatible with WASM
+                // implementation(libs.mockk)
                 // kotlinx-coroutines-test doesn't have WASM variant
                 // implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
             }
@@ -131,6 +117,8 @@ kotlin {
                 implementation("androidx.security:security-crypto:1.1.0-alpha06")
                 implementation("app.cash.sqldelight:android-driver:2.0.2")
                 implementation(libs.ktor.client.okhttp)
+                // CIO is JVM-only, so we use OkHttp for Android
+                implementation("io.ktor:ktor-client-cio:3.0.2")
             }
         }
 
@@ -146,6 +134,8 @@ kotlin {
                 implementation(compose.desktop.common)
                 implementation("app.cash.sqldelight:sqlite-driver:2.0.2")
                 implementation(libs.ktor.client.okhttp)
+                // CIO is JVM-only, so we use OkHttp for Desktop
+                implementation("io.ktor:ktor-client-cio:3.0.2")
             }
         }
 
@@ -155,7 +145,7 @@ kotlin {
             }
         }
 
-        // iOS-specific code - Temporarily disabled due to Kotlin 2.1.0 bug
+        // iOS-specific code - Temporarily disabled due to framework export issues
         // val iosX64Main by getting
         // val iosArm64Main by getting
         // val iosSimulatorArm64Main by getting
@@ -187,8 +177,10 @@ kotlin {
                 implementation(compose.ui)
                 implementation(compose.components.resources)
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-                implementation("app.cash.sqldelight:sqljs-driver:2.0.2")
+                // SQLDelight not available for WASM
+                // implementation("app.cash.sqldelight:sqljs-driver:2.0.2")
                 implementation(libs.ktor.client.js)
+                // WASM uses JS client, no CIO needed
             }
         }
 
@@ -197,6 +189,8 @@ kotlin {
                 implementation(kotlin("test-wasm-js"))
                 // kotlinx-coroutines-test doesn't have WASM variant
                 // implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+                // MockK is JVM-only, not available for WASM
+                // implementation(libs.mockk)
             }
         }
 
@@ -255,15 +249,7 @@ tasks.register<JavaExec>("runSimpleBenchmarks") {
     mainClass.set("digital.vasic.yole.format.benchmark.SimpleBenchmarkRunner")
 }
 
-// Workaround for iOS framework export configuration issue - Not needed while iOS is disabled
-// configurations {
-//     create("iosX64DebugFrameworkExport")
-//     create("iosX64ReleaseFrameworkExport")
-//     create("iosArm64DebugFrameworkExport")
-//     create("iosArm64ReleaseFrameworkExport")
-//     create("iosSimulatorArm64DebugFrameworkExport")
-//     create("iosSimulatorArm64ReleaseFrameworkExport")
-// }
+// iOS temporarily disabled - framework export configurations not needed
 
 android {
     namespace = "digital.vasic.yole.shared"

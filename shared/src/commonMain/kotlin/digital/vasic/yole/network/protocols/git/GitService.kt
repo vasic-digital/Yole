@@ -5,7 +5,6 @@ import digital.vasic.yole.network.StorageQuota
 import digital.vasic.yole.network.common.*
 import digital.vasic.yole.network.platform.SecureStorageFactory
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -15,6 +14,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import digital.vasic.yole.network.protocol.createHttpClient
 
 /**
  * Git implementation of NetworkStorageService
@@ -24,7 +24,7 @@ class GitService(
     override val config: StorageConfig.GitConfig
 ) : NetworkStorageService {
     
-    private val httpClient = HttpClient(CIO) {
+    private val httpClient = createHttpClient().config {
         // Basic authentication setup simplified for compilation
     }
     

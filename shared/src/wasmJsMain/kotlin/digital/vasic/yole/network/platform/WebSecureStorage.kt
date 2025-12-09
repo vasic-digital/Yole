@@ -3,6 +3,7 @@ package digital.vasic.yole.network.platform
 import kotlinx.browser.localStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -14,7 +15,7 @@ import kotlinx.serialization.json.jsonPrimitive
  * Note: Web environment has limited security capabilities compared to native platforms.
  * This provides obfuscation but not true encryption.
  */
-actual class WebSecureStorage : SecureStorage {
+class WebSecureStorage : SecureStorage {
     
     private val json = Json { ignoreUnknownKeys = true }
     
@@ -101,7 +102,7 @@ actual class WebSecureStorage : SecureStorage {
             // Web environment can only provide obfuscation, not true encryption
             // We'll test the obfuscation/deobfuscation cycle
             val testKey = "_secure_storage_test_"
-            val testValue = "test_value_${System.currentTimeMillis()}"
+            val testValue = "test_value_${Clock.System.now().toEpochMilliseconds()}"
             
             store(testKey, testValue)
             val retrieved = retrieve(testKey).getOrNull()
@@ -125,7 +126,7 @@ actual class WebSecureStorage : SecureStorage {
         
         for (i in data.indices) {
             val char = data[i].code
-            val obfuscated = char xor key[i % key.length]
+            val obfuscated = char xor key[i % key.length].code
             result.append(obfuscated.toChar())
         }
         
@@ -141,7 +142,7 @@ actual class WebSecureStorage : SecureStorage {
         
         for (i in encoded.indices) {
             val char = encoded[i].code
-            val deobfuscated = char xor key[i % key.length]
+            val deobfuscated = char xor key[i % key.length].code
             result.append(deobfuscated.toChar())
         }
         

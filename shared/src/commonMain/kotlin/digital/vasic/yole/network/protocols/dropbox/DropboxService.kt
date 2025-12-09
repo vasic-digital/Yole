@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.Clock
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -16,6 +15,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import digital.vasic.yole.network.protocol.createHttpClient
 
 /**
  * Dropbox implementation of NetworkStorageService
@@ -25,7 +25,7 @@ class DropboxService(
     override val config: StorageConfig.DropboxConfig
 ) : NetworkStorageService {
     
-    private val httpClient = HttpClient(CIO) {
+    private val httpClient = createHttpClient().config {
         install(io.ktor.client.plugins.DefaultRequest) {
             header("Authorization", "Bearer ${config.accessToken}")
         }
@@ -212,7 +212,7 @@ class DropboxService(
             
             if (response.status.isSuccess()) {
                 emit(NetworkOperation(
-                    id = System.currentTimeMillis(),
+                    id = Clock.System.now().toEpochMilliseconds(),
                     type = NetworkOperation.Type.UPLOAD,
                     remotePath = remotePath,
                     localPath = localPath,
@@ -226,7 +226,7 @@ class DropboxService(
                 ))
             } else {
                 emit(NetworkOperation(
-                    id = System.currentTimeMillis(),
+                    id = Clock.System.now().toEpochMilliseconds(),
                     type = NetworkOperation.Type.UPLOAD,
                     remotePath = remotePath,
                     localPath = localPath,
@@ -239,7 +239,7 @@ class DropboxService(
             }
         } catch (e: Exception) {
             emit(NetworkOperation(
-                id = System.currentTimeMillis(),
+                id = Clock.System.now().toEpochMilliseconds(),
                 type = NetworkOperation.Type.UPLOAD,
                 remotePath = remotePath,
                 localPath = localPath,
@@ -258,7 +258,7 @@ class DropboxService(
     ): Flow<NetworkOperation> = flow {
         if (!_isConnected) {
             emit(NetworkOperation(
-                id = System.currentTimeMillis(),
+                id = Clock.System.now().toEpochMilliseconds(),
                 type = NetworkOperation.Type.DOWNLOAD,
                 remotePath = remotePath,
                 localPath = localPath,
@@ -286,7 +286,7 @@ class DropboxService(
                 // For compilation purposes, just skip actual file writing
                 
                 emit(NetworkOperation(
-                    id = System.currentTimeMillis(),
+                    id = Clock.System.now().toEpochMilliseconds(),
                     type = NetworkOperation.Type.DOWNLOAD,
                     remotePath = remotePath,
                     localPath = localPath,
@@ -300,7 +300,7 @@ class DropboxService(
                 ))
             } else {
                 emit(NetworkOperation(
-                    id = System.currentTimeMillis(),
+                    id = Clock.System.now().toEpochMilliseconds(),
                     type = NetworkOperation.Type.DOWNLOAD,
                     remotePath = remotePath,
                     localPath = localPath,
@@ -313,7 +313,7 @@ class DropboxService(
             }
         } catch (e: Exception) {
             emit(NetworkOperation(
-                id = System.currentTimeMillis(),
+                id = Clock.System.now().toEpochMilliseconds(),
                 type = NetworkOperation.Type.DOWNLOAD,
                 remotePath = remotePath,
                 localPath = localPath,
@@ -752,7 +752,7 @@ class DropboxService(
     override suspend fun syncFile(remotePath: String, forceSync: Boolean): Flow<NetworkOperation> = flow {
         // For compilation purposes, emit a mock operation
         emit(NetworkOperation(
-            id = System.currentTimeMillis(),
+            id = Clock.System.now().toEpochMilliseconds(),
             type = NetworkOperation.Type.SYNC,
             remotePath = remotePath,
             localPath = "",
@@ -767,7 +767,7 @@ class DropboxService(
     override suspend fun syncAll(forceSync: Boolean): Flow<NetworkOperation> = flow {
         // For compilation purposes, emit a mock operation
         emit(NetworkOperation(
-            id = System.currentTimeMillis(),
+            id = Clock.System.now().toEpochMilliseconds(),
             type = NetworkOperation.Type.SYNC,
             remotePath = "/",
             localPath = "",

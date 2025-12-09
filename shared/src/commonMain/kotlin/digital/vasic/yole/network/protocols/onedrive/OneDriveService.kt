@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.Clock
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -17,6 +16,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import digital.vasic.yole.network.protocol.createHttpClient
 
 /**
  * OneDrive implementation of NetworkStorageService
@@ -26,7 +26,7 @@ class OneDriveService(
     override val config: StorageConfig.OneDriveConfig
 ) : NetworkStorageService {
     
-    private val httpClient = HttpClient(CIO) {
+    private val httpClient = createHttpClient().config {
         // OAuth2 setup simplified for compilation
     }
     

@@ -94,7 +94,7 @@ class SftpService(
         try {
             // For compilation purposes, just emit a completed operation
             emit(NetworkOperation(
-                id = System.currentTimeMillis(),
+                id = Clock.System.now().toEpochMilliseconds(),
                 type = NetworkOperation.Type.UPLOAD,
                 remotePath = remotePath,
                 localPath = localPath,
@@ -106,7 +106,7 @@ class SftpService(
             ))
         } catch (e: Exception) {
             emit(NetworkOperation(
-                id = System.currentTimeMillis(),
+                id = Clock.System.now().toEpochMilliseconds(),
                 type = NetworkOperation.Type.UPLOAD,
                 remotePath = remotePath,
                 localPath = localPath,
@@ -134,7 +134,7 @@ class SftpService(
         try {
             // For compilation purposes, just emit a completed operation
             emit(NetworkOperation(
-                id = System.currentTimeMillis(),
+                id = Clock.System.now().toEpochMilliseconds(),
                 type = NetworkOperation.Type.DOWNLOAD,
                 remotePath = remotePath,
                 localPath = localPath,
@@ -146,7 +146,7 @@ class SftpService(
             ))
         } catch (e: Exception) {
             emit(NetworkOperation(
-                id = System.currentTimeMillis(),
+                id = Clock.System.now().toEpochMilliseconds(),
                 type = NetworkOperation.Type.DOWNLOAD,
                 remotePath = remotePath,
                 localPath = localPath,
@@ -161,7 +161,7 @@ class SftpService(
         return try {
             // For compilation purposes, just return a mock document
             Result.success(NetworkDocument(
-                id = System.currentTimeMillis().toString(),
+                id = Clock.System.now().toEpochMilliseconds().toString(),
                 name = remotePath.substringAfterLast('/'),
                 path = remotePath,
                 isFolder = true,
@@ -181,7 +181,7 @@ class SftpService(
         return try {
             // For compilation purposes, just return a mock document
             Result.success(NetworkDocument(
-                id = System.currentTimeMillis().toString(),
+                id = Clock.System.now().toEpochMilliseconds().toString(),
                 name = destinationPath.substringAfterLast('/'),
                 path = destinationPath,
                 isFolder = false,
@@ -272,7 +272,7 @@ class SftpService(
     override suspend fun syncFile(remotePath: String, forceSync: Boolean): Flow<NetworkOperation> = flow {
         // For compilation purposes, emit a mock operation
         emit(NetworkOperation(
-            id = System.currentTimeMillis(),
+            id = Clock.System.now().toEpochMilliseconds(),
             type = NetworkOperation.Type.SYNC,
             remotePath = remotePath,
             localPath = "",
@@ -287,7 +287,7 @@ class SftpService(
     override suspend fun syncAll(forceSync: Boolean): Flow<NetworkOperation> = flow {
         // For compilation purposes, emit a mock operation
         emit(NetworkOperation(
-            id = System.currentTimeMillis(),
+            id = Clock.System.now().toEpochMilliseconds(),
             type = NetworkOperation.Type.SYNC,
             remotePath = "/",
             localPath = "",
@@ -349,7 +349,7 @@ class SftpService(
         return try {
             // For compilation purposes, return a mock document
             Result.success(NetworkDocument(
-                id = System.currentTimeMillis().toString(),
+                id = Clock.System.now().toEpochMilliseconds().toString(),
                 name = path.substringAfterLast('/'),
                 path = path,
                 isFolder = false,
