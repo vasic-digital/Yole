@@ -12,6 +12,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.test.assertNull
 
 class DocumentTest {
 
@@ -213,5 +214,66 @@ class DocumentTest {
         assertEquals("latex", Document.FORMAT_LATEX)
         assertEquals("todotxt", Document.FORMAT_TODOTXT)
         assertEquals("unknown", Document.FORMAT_UNKNOWN)
+    }
+
+    @Test
+    fun testCurrentTimeMillis() {
+        val time1 = currentTimeMillis()
+        val time2 = currentTimeMillis()
+
+        // Time should be monotonically increasing
+        assertTrue(time2 >= time1)
+
+        // Time should be reasonable (after 2020)
+        assertTrue(time1 > 1577836800000L) // 2020-01-01 00:00:00 UTC
+
+        // Time should be close to current time (within 1 second)
+        val currentTime = System.currentTimeMillis()
+        assertTrue(time1 <= currentTime + 1000)
+        assertTrue(time1 >= currentTime - 1000)
+    }
+
+    @Test
+    fun testDocumentFileOperations() {
+        val doc = Document(
+            path = "/definitely/does/not/exist/anywhere/on/any/system/file.txt",
+            title = "file",
+            extension = "txt"
+        )
+
+        // Test file operations on non-existent file
+        assertFalse(doc.fileExists())
+        // File mod time should be -1 for non-existent files
+        assertTrue(doc.getFileModTime() <= 0L)
+        assertTrue(doc.getFileSize() >= 0L) // Size should be non-negative
+    }
+
+    @Test
+    fun testCreateDocument() {
+        // Test creating document from non-existent path
+        val doc = createDocument("/nonexistent/file.txt")
+        assertNull(doc)
+    }
+
+    @Test
+    fun testHasChanged() {
+        val doc = Document(
+            path = "/test/document.md",
+            title = "document",
+            extension = "md"
+        )
+
+        // Initially should have changed (both times are -1, indicating untracked)
+        assertTrue(doc.hasChanged())
+
+        // Set both times to indicate tracking is active
+        doc.modTime = currentTimeMillis()
+        doc.touchTime = currentTimeMillis()
+        // Should not have changed since file doesn't exist (getFileModTime() returns -1)
+        assertFalse(doc.hasChanged())
+
+        // Reset tracking
+        doc.resetChangeTracking()
+        assertTrue(doc.hasChanged())
     }
 }
