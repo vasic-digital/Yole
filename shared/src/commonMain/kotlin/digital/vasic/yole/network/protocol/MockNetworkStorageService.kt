@@ -245,7 +245,8 @@ class MockNetworkStorageService(
     }
     
     override fun getParentPath(remotePath: String): String? {
-        return if (remotePath == "/") null else remotePath.substringBeforeLast("/")
+        val parent = remotePath.substringBeforeLast('/', "")
+        return if (parent.isEmpty()) "/" else parent
     }
     
     override fun validatePath(remotePath: String): Result<Unit> {
