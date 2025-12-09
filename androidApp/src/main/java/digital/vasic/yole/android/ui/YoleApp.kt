@@ -35,6 +35,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -70,6 +75,16 @@ class YoleSettings(context: android.content.Context) : GsSharedPreferencesProper
 
     fun getCustomSeedColor(): String? = getString("custom_seed_color", "")
     fun setCustomSeedColor(colorHex: String?) = setString("custom_seed_color", colorHex ?: "")
+
+    // Accessibility settings
+    fun getReduceMotion(): Boolean = getBool("reduce_motion", false)
+    fun setReduceMotion(reduce: Boolean) = setBool("reduce_motion", reduce)
+
+    fun getHighContrast(): Boolean = getBool("high_contrast", false)
+    fun setHighContrast(highContrast: Boolean) = setBool("high_contrast", highContrast)
+
+    fun getAnnounceChanges(): Boolean = getBool("announce_changes", true)
+    fun setAnnounceChanges(announce: Boolean) = setBool("announce_changes", announce)
 
     // Editor settings
     fun getShowLineNumbers(): Boolean = getBool("show_line_numbers", true)
@@ -195,7 +210,52 @@ fun MainScreen() {
         digital.vasic.yole.format.ParserInitializer.registerAllParsersLazy()
     }
 
+    // Keyboard shortcuts
+    LaunchedEffect(Unit) {
+        // Add global keyboard shortcuts here
+    }
+
     Scaffold(
+        modifier = Modifier.onKeyEvent { event ->
+            if (event.type == KeyEventType.KeyDown) {
+                when (event.key) {
+                    Key.S -> if (event.isCtrlPressed) {
+                        // Save current file
+                        if (currentSubScreen == SubScreen.EDITOR && selectedFile != null) {
+                            val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
+                            if (!docsDir.exists()) docsDir.mkdirs()
+                            val filePath = File(docsDir, selectedFile!!).absolutePath
+                            try {
+                                File(filePath).writeText(fileContent)
+                                // Announce save success
+                                println("File saved: $selectedFile")
+                            } catch (e: Exception) {
+                                println("Failed to save file: ${e.message}")
+                            }
+                        }
+                        true
+                    } else false
+                    Key.N -> if (event.isCtrlPressed) {
+                        // New file
+                        selectedFile = null
+                        fileContent = ""
+                        currentSubScreen = SubScreen.EDITOR
+                        true
+                    } else false
+                    Key.O -> if (event.isCtrlPressed) {
+                        // Open file
+                        currentSubScreen = SubScreen.FILE_BROWSER
+                        true
+                    } else false
+                    Key.Escape -> {
+                        // Close current sub-screen
+                        currentSubScreen = null
+                        true
+                    }
+                    else -> false
+                }
+            } else false
+        },
         topBar = {
             when (currentSubScreen) {
                 SubScreen.EDITOR -> EditorTopBar(
@@ -1143,8 +1203,10 @@ fun MarkdownActionButtons(onInsert: (String) -> Unit) {
 fun ActionButton(text: String, description: String, onClick: () -> Unit) {
     OutlinedButton(
         onClick = onClick,
-        modifier = Modifier.height(36.dp),
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+        modifier = Modifier
+            .height(48.dp) // Increased for accessibility
+            .semantics { contentDescription = description },
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Text(text, style = MaterialTheme.typography.bodySmall)
     }

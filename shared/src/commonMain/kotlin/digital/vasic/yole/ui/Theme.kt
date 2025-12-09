@@ -20,6 +20,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import kotlin.math.pow
 
 /**
  * Semantic color tokens for consistent theming across platforms.
@@ -282,7 +283,7 @@ object ThemeUtils {
             val b = color.blue.toDouble()
 
             val toLinear = { value: Double ->
-                if (value <= 0.03928) value / 12.92 else kotlin.math.pow((value + 0.055) / 1.055, 2.4)
+                if (value <= 0.03928) value / 12.92 else ((value + 0.055) / 1.055).pow(2.4)
             }
 
             val rLinear = toLinear(r)

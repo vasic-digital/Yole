@@ -24,6 +24,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import digital.vasic.yole.desktop.ui.theme.YoleDesktopTheme
 import digital.vasic.yole.desktop.ui.theme.YoleDesktopThemeWithSettings
@@ -45,6 +50,16 @@ class YoleDesktopSettings {
 
     fun getHighContrastEnabled(): Boolean = prefs.getBoolean("high_contrast", false)
     fun setHighContrastEnabled(enabled: Boolean) = prefs.putBoolean("high_contrast", enabled)
+
+    // Accessibility settings
+    fun getReduceMotion(): Boolean = prefs.getBoolean("reduce_motion", false)
+    fun setReduceMotion(reduce: Boolean) = prefs.putBoolean("reduce_motion", reduce)
+
+    fun getFocusIndicators(): Boolean = prefs.getBoolean("focus_indicators", true)
+    fun setFocusIndicators(show: Boolean) = prefs.putBoolean("focus_indicators", show)
+
+    fun getAnnounceChanges(): Boolean = prefs.getBoolean("announce_changes", true)
+    fun setAnnounceChanges(announce: Boolean) = prefs.putBoolean("announce_changes", announce)
 
     // Editor settings
     fun getShowLineNumbers(): Boolean = prefs.getBoolean("show_line_numbers", true)
@@ -96,21 +111,67 @@ fun MainScreen() {
     var animationsEnabled by remember { mutableStateOf(settings.getAnimationsEnabled()) }
 
     Scaffold(
+        modifier = Modifier.onKeyEvent { event ->
+            if (event.type == KeyEventType.KeyDown) {
+                when (event.key) {
+                    Key.S -> if (event.isCtrlPressed) {
+                        // Save current file
+                        if (currentScreen == Screen.EDITOR) {
+                            // Save logic would go here
+                            println("Save file (desktop)")
+                        }
+                        true
+                    } else false
+                    Key.N -> if (event.isCtrlPressed) {
+                        // New file
+                        currentScreen = Screen.EDITOR
+                        true
+                    } else false
+                    Key.O -> if (event.isCtrlPressed) {
+                        // Open file
+                        currentScreen = Screen.FILE_BROWSER
+                        true
+                    } else false
+                    Key.Comma -> if (event.isCtrlPressed) {
+                        // Settings
+                        currentScreen = Screen.SETTINGS
+                        true
+                    } else false
+                    Key.Escape -> {
+                        // Close dialogs or go back
+                        true
+                    }
+                    else -> false
+                }
+            } else false
+        },
         topBar = {
             TopAppBar(
                 title = { Text("Yole") },
                 actions = {
                     // Navigation buttons with icons
-                    TextButton(onClick = { currentScreen = Screen.FILE_BROWSER }) {
+                    TextButton(
+                        onClick = { currentScreen = Screen.FILE_BROWSER },
+                        modifier = Modifier.semantics { contentDescription = "Open file browser" }
+                    ) {
                         Text(if (currentScreen == Screen.FILE_BROWSER) "📁 Files" else "Files")
                     }
-                    TextButton(onClick = { currentScreen = Screen.EDITOR }) {
+                    TextButton(
+                        onClick = { currentScreen = Screen.EDITOR },
+                        modifier = Modifier.semantics { contentDescription = "Open editor" }
+                    ) {
                         Text(if (currentScreen == Screen.EDITOR) "✏️ Edit" else "Edit")
                     }
-                    TextButton(onClick = { currentScreen = Screen.PREVIEW }) {
+                    TextButton(
+                        onClick = { currentScreen = Screen.PREVIEW },
+                        modifier = Modifier.semantics { contentDescription = "Open preview" }
+                    ) {
                         Text(if (currentScreen == Screen.PREVIEW) "👁️ Preview" else "Preview")
                     }
-                    TextButton(onClick = { currentScreen = Screen.SETTINGS }) {
+                    TextButton(
+                        onClick = { currentScreen = Screen.SETTINGS },
+                        modifier = Modifier.semantics { contentDescription = "Open settings" }
+                    ) {
                         Text(if (currentScreen == Screen.SETTINGS) "⚙️ Settings" else "Settings")
                     }
                 }
