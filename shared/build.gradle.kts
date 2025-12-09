@@ -234,17 +234,16 @@ tasks.register<JavaExec>("runSimpleBenchmarks") {
 
     dependsOn("compileBenchmarkKotlinDesktop", "compileKotlinDesktop")
 
-    doFirst {
-        val desktopTarget = kotlin.targets.getByName("desktop")
-        val benchmarkCompilation = desktopTarget.compilations.getByName("benchmark")
-        val mainCompilation = desktopTarget.compilations.getByName("main")
+    // Configuration cache compatible classpath setup
+    val desktopTarget = kotlin.targets.getByName("desktop")
+    val benchmarkCompilation = desktopTarget.compilations.getByName("benchmark")
+    val mainCompilation = desktopTarget.compilations.getByName("main")
 
-        classpath = files(
-            mainCompilation.output.allOutputs,
-            benchmarkCompilation.output.allOutputs,
-            benchmarkCompilation.runtimeDependencyFiles
-        )
-    }
+    classpath = files(
+        mainCompilation.output.allOutputs,
+        benchmarkCompilation.output.allOutputs,
+        benchmarkCompilation.runtimeDependencyFiles
+    )
 
     mainClass.set("digital.vasic.yole.format.benchmark.SimpleBenchmarkRunner")
 }

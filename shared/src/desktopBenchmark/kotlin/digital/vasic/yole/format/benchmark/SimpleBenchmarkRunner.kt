@@ -25,7 +25,10 @@ object SimpleBenchmarkRunner {
         val name: String,
         val averageTimeMs: Double,
         val minTimeMs: Long,
-        val maxTimeMs: Long
+        val maxTimeMs: Long,
+        val averageMemoryKb: Double,
+        val minMemoryKb: Long,
+        val maxMemoryKb: Long
     )
 
     private fun runBenchmark(name: String, block: () -> Unit): BenchmarkResult {
@@ -34,16 +37,37 @@ object SimpleBenchmarkRunner {
             block()
         }
 
+        // Force garbage collection before measurement
+        System.gc()
+        Thread.sleep(100)
+
         // Measure
-        val times = (1..MEASUREMENT_ITERATIONS).map {
-            measureTimeMillis { block() }
+        val measurements = (1..MEASUREMENT_ITERATIONS).map {
+            val startTime = System.nanoTime()
+            val startMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()
+
+            block()
+
+            val endTime = System.nanoTime()
+            val endMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()
+
+            val timeMs = (endTime - startTime) / 1_000_000.0
+            val memoryKb = (endMemory - startMemory) / 1024.0
+
+            Pair(timeMs, memoryKb)
         }
+
+        val times = measurements.map { it.first }
+        val memories = measurements.map { it.second }
 
         return BenchmarkResult(
             name = name,
             averageTimeMs = times.average(),
-            minTimeMs = times.minOrNull() ?: 0,
-            maxTimeMs = times.maxOrNull() ?: 0
+            minTimeMs = times.minOrNull()?.toLong() ?: 0,
+            maxTimeMs = times.maxOrNull()?.toLong() ?: 0,
+            averageMemoryKb = memories.average(),
+            minMemoryKb = memories.minOrNull()?.toLong() ?: 0,
+            maxMemoryKb = memories.maxOrNull()?.toLong() ?: 0
         )
     }
 
@@ -263,9 +287,8 @@ object SimpleBenchmarkRunner {
 
         results.forEach { result ->
             println("${result.name}")
-            println("  Average: ${String.format("%.2f", result.averageTimeMs)} ms")
-            println("  Min: ${result.minTimeMs} ms")
-            println("  Max: ${result.maxTimeMs} ms")
+            println("  Time - Average: ${String.format("%.2f", result.averageTimeMs)} ms, Min: ${result.minTimeMs} ms, Max: ${result.maxTimeMs} ms")
+            println("  Memory - Average: ${String.format("%.1f", result.averageMemoryKb)} KB, Min: ${result.minMemoryKb} KB, Max: ${result.maxMemoryKb} KB")
             println()
         }
 

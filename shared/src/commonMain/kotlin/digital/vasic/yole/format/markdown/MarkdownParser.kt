@@ -275,96 +275,200 @@ class MarkdownParser : TextParser {
 
     /**
      * Convert inline Markdown markup to HTML.
-     * 
-     * This method processes inline formatting including:
-     * - Code spans (`code`)
-     * - Links ([text](url))
-     * - Images (![alt](url))
-     * - Task list checkboxes ([ ] and [x])
-     * - Bold text (**text** or __text__)
-     * - Italic text (*text* or _text_)
-     * - Strikethrough text (~~text~~)
-     * 
+     *
+     * Memory-optimized version that processes markup in a single pass
+     * to reduce string allocations and improve performance.
+     *
      * @param text The text containing inline markup
      * @return HTML with inline markup converted to appropriate tags
      */
     private fun convertInlineMarkup(text: String): String {
-        var result = text
+        if (text.isEmpty()) return text
 
-        // Process inline code FIRST (before escaping)
-        result = result.replace(Regex("""`([^`]+)`""")) { match ->
-            val code = match.groupValues[1].escapeHtml()
-            "\u0000CODE\u0000$code\u0000/CODE\u0000"
+        val result = StringBuilder(text.length + text.length / 2) // Pre-allocate with some overhead
+        var i = 0
+
+        while (i < text.length) {
+            val char = text[i]
+
+            when (char) {
+                '`' -> { // Inline code
+                    if (i + 1 < text.length && text[i + 1] != '`') {
+                        // Find closing backtick
+                        var end = i + 1
+                        while (end < text.length && text[end] != '`') {
+                            end++
+                        }
+                        if (end < text.length) {
+                            val code = text.substring(i + 1, end).escapeHtml()
+                            result.append("<code>$code</code>")
+                            i = end + 1
+                            continue
+                        }
+                    }
+                    result.append(char)
+                }
+
+                '!' -> { // Image
+                    if (i + 1 < text.length && text[i + 1] == '[') {
+                        val imageMatch = parseLinkOrImage(text, i, true)
+                        if (imageMatch != null) {
+                            result.append("<img src='${imageMatch.url}' alt='${imageMatch.text}'/>")
+                            i = imageMatch.endIndex
+                            continue
+                        }
+                    }
+                    result.append(char)
+                }
+
+                '[' -> { // Link or checkbox
+                    if (i + 2 < text.length && text[i + 1] == ' ' && text[i + 2] == ']') {
+                        // Unchecked checkbox
+                        result.append("<input type='checkbox' disabled>")
+                        i += 3
+                        continue
+                    } else if (i + 2 < text.length && text[i + 1] == 'x' && text[i + 2] == ']') {
+                        // Checked checkbox
+                        result.append("<input type='checkbox' disabled checked>")
+                        i += 3
+                        continue
+                    } else {
+                        // Link
+                        val linkMatch = parseLinkOrImage(text, i, false)
+                        if (linkMatch != null) {
+                            result.append("<a href='${linkMatch.url}'>${linkMatch.text}</a>")
+                            i = linkMatch.endIndex
+                            continue
+                        }
+                    }
+                    result.append(char)
+                }
+
+                '*' -> { // Bold or italic
+                    val boldMatch = parseBoldOrItalic(text, i, true)
+                    if (boldMatch != null) {
+                        result.append("<strong>${boldMatch.content}</strong>")
+                        i = boldMatch.endIndex
+                        continue
+                    }
+                    val italicMatch = parseBoldOrItalic(text, i, false)
+                    if (italicMatch != null) {
+                        result.append("<em>${italicMatch.content}</em>")
+                        i = italicMatch.endIndex
+                        continue
+                    }
+                    result.append(char)
+                }
+
+                '_' -> { // Bold or italic (underscore)
+                    val boldMatch = parseBoldOrItalic(text, i, true)
+                    if (boldMatch != null) {
+                        result.append("<strong>${boldMatch.content}</strong>")
+                        i = boldMatch.endIndex
+                        continue
+                    }
+                    val italicMatch = parseBoldOrItalic(text, i, false)
+                    if (italicMatch != null) {
+                        result.append("<em>${italicMatch.content}</em>")
+                        i = italicMatch.endIndex
+                        continue
+                    }
+                    result.append(char)
+                }
+
+                '~' -> { // Strikethrough
+                    if (i + 1 < text.length && text[i + 1] == '~') {
+                        var end = i + 2
+                        while (end < text.length && !(text[end] == '~' && end + 1 < text.length && text[end + 1] == '~')) {
+                            end++
+                        }
+                        if (end + 1 < text.length) {
+                            val content = convertInlineMarkup(text.substring(i + 2, end)) // Recursively process nested markup
+                            result.append("<s>$content</s>")
+                            i = end + 2
+                            continue
+                        }
+                    }
+                    result.append(char)
+                }
+
+                '&', '<', '>' -> { // HTML entities
+                    result.append(char.toString().escapeHtml())
+                }
+
+                else -> {
+                    result.append(char)
+                }
+            }
+            i++
         }
 
-        // Process images and links BEFORE escaping
-        // Images: ![alt](url)
-        result = result.replace(Regex("""!\[([^\]]*)\]\(([^)]+)\)""")) { match ->
-            val alt = match.groupValues[1]
-            val url = match.groupValues[2]
-            "\u0000IMG\u0000$url\u0000ALT\u0000$alt\u0000/IMG\u0000"
+        return result.toString()
+    }
+
+    private data class LinkMatch(val text: String, val url: String, val endIndex: Int)
+
+    private fun parseLinkOrImage(text: String, startIndex: Int, isImage: Boolean): LinkMatch? {
+        val bracketStart = if (isImage) startIndex + 2 else startIndex + 1 // Skip ![ or [
+
+        // Find closing ]
+        var bracketEnd = bracketStart
+        while (bracketEnd < text.length && text[bracketEnd] != ']') {
+            bracketEnd++
+        }
+        if (bracketEnd >= text.length || bracketEnd + 1 >= text.length || text[bracketEnd + 1] != '(') {
+            return null
         }
 
-        // Links: [text](url)
-        result = result.replace(Regex("""\[([^\]]+)\]\(([^)]+)\)""")) { match ->
-            val text = match.groupValues[1]
-            val url = match.groupValues[2]
-            "\u0000LINK\u0000$url\u0000TEXT\u0000$text\u0000/LINK\u0000"
+        val textContent = text.substring(bracketStart, bracketEnd)
+
+        // Find closing )
+        var parenEnd = bracketEnd + 2
+        while (parenEnd < text.length && text[parenEnd] != ')') {
+            parenEnd++
+        }
+        if (parenEnd >= text.length) {
+            return null
         }
 
-        // Task list checkboxes: [ ] and [x]
-        result = result.replace(Regex("""\[ \]""")) { "\u0000CHECKBOX\u0000unchecked\u0000/CHECKBOX\u0000" }
-        result = result.replace(Regex("""\[x\]""")) { "\u0000CHECKBOX\u0000checked\u0000/CHECKBOX\u0000" }
+        val url = text.substring(bracketEnd + 2, parenEnd)
+        return LinkMatch(textContent, url, parenEnd + 1)
+    }
 
-        // Escape HTML
-        result = result.escapeHtml()
+    private data class BoldItalicMatch(val content: String, val endIndex: Int)
 
-        // Bold and italic (need to handle carefully to avoid conflicts)
-        // Process bold before italic
+    private fun parseBoldOrItalic(text: String, startIndex: Int, isBold: Boolean): BoldItalicMatch? {
+        val marker = text[startIndex]
+        val requiredLength = if (isBold) 2 else 1
 
-        // Bold: **text** or __text__
-        result = result.replace(Regex("""\*\*(.+?)\*\*""")) { match ->
-            "\u0000BOLD\u0000${match.groupValues[1]}\u0000/BOLD\u0000"
-        }
-        result = result.replace(Regex("""__(.+?)__""")) { match ->
-            "\u0000BOLD\u0000${match.groupValues[1]}\u0000/BOLD\u0000"
-        }
-
-        // Strikethrough: ~~text~~ (GFM)
-        result = result.replace(Regex("""~~(.+?)~~""")) { match ->
-            "\u0000STRIKE\u0000${match.groupValues[1]}\u0000/STRIKE\u0000"
+        // Check if we have enough markers
+        for (j in 0 until requiredLength) {
+            if (startIndex + j >= text.length || text[startIndex + j] != marker) {
+                return null
+            }
         }
 
-        // Italic: *text* or _text_
-        result = result.replace(Regex("""\*(.+?)\*""")) { match ->
-            "\u0000ITALIC\u0000${match.groupValues[1]}\u0000/ITALIC\u0000"
-        }
-        result = result.replace(Regex("""_(.+?)_""")) { match ->
-            "\u0000ITALIC\u0000${match.groupValues[1]}\u0000/ITALIC\u0000"
-        }
-
-        // Restore all placeholders with HTML tags
-        result = result.replace(Regex("""\u0000CODE\u0000(.+?)\u0000/CODE\u0000""")) { "<code>${it.groupValues[1]}</code>" }
-        result = result.replace(Regex("""\u0000BOLD\u0000(.+?)\u0000/BOLD\u0000""")) { "<strong>${it.groupValues[1]}</strong>" }
-        result = result.replace(Regex("""\u0000ITALIC\u0000(.+?)\u0000/ITALIC\u0000""")) { "<em>${it.groupValues[1]}</em>" }
-        result = result.replace(Regex("""\u0000STRIKE\u0000(.+?)\u0000/STRIKE\u0000""")) { "<s>${it.groupValues[1]}</s>" }
-
-        result = result.replace(Regex("""\u0000LINK\u0000(.+?)\u0000TEXT\u0000(.+?)\u0000/LINK\u0000""")) { match ->
-            "<a href='${match.groupValues[1]}'>${match.groupValues[2]}</a>"
-        }
-
-        result = result.replace(Regex("""\u0000IMG\u0000(.+?)\u0000ALT\u0000(.+?)\u0000/IMG\u0000""")) { match ->
-            "<img src='${match.groupValues[1]}' alt='${match.groupValues[2]}'/>"
+        // Find closing markers
+        var end = startIndex + requiredLength
+        var found = false
+        while (end + requiredLength <= text.length) {
+            if (text[end] == marker) {
+                found = true
+                for (j in 1 until requiredLength) {
+                    if (text[end + j] != marker) {
+                        found = false
+                        break
+                    }
+                }
+                if (found) break
+            }
+            end++
         }
 
-        result = result.replace(Regex("""\u0000CHECKBOX\u0000unchecked\u0000/CHECKBOX\u0000""")) {
-            "<input type='checkbox' disabled>"
-        }
-        result = result.replace(Regex("""\u0000CHECKBOX\u0000checked\u0000/CHECKBOX\u0000""")) {
-            "<input type='checkbox' disabled checked>"
-        }
+        if (!found) return null
 
-        return result
+        val content = text.substring(startIndex + requiredLength, end)
+        return BoldItalicMatch(convertInlineMarkup(content), end + requiredLength) // Recursively process nested markup
     }
 
     /**
