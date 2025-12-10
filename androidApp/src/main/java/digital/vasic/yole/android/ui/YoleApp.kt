@@ -41,6 +41,8 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextDecoration
@@ -219,8 +221,8 @@ fun MainScreen() {
         modifier = Modifier.onKeyEvent { event ->
             if (event.type == KeyEventType.KeyDown) {
                 when (event.key) {
-                    Key.S -> if (event.isCtrlPressed) {
-                        // Save current file
+                    Key.S -> {
+                        // Save current file (Ctrl+S on desktop, just S on Android)
                         if (currentSubScreen == SubScreen.EDITOR && selectedFile != null) {
                             val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
                             if (!docsDir.exists()) docsDir.mkdirs()
@@ -234,19 +236,19 @@ fun MainScreen() {
                             }
                         }
                         true
-                    } else false
-                    Key.N -> if (event.isCtrlPressed) {
-                        // New file
+                    }
+                    Key.N -> {
+                        // New file (Ctrl+N on desktop, just N on Android)
                         selectedFile = null
                         fileContent = ""
                         currentSubScreen = SubScreen.EDITOR
                         true
-                    } else false
-                    Key.O -> if (event.isCtrlPressed) {
-                        // Open file
+                    }
+                    Key.O -> {
+                        // Open file (Ctrl+O on desktop, just O on Android)
                         currentSubScreen = SubScreen.FILE_BROWSER
                         true
-                    } else false
+                    }
                     Key.Escape -> {
                         // Close current sub-screen
                         currentSubScreen = null

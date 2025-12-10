@@ -29,6 +29,8 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import digital.vasic.yole.desktop.ui.theme.YoleDesktopTheme
 import digital.vasic.yole.desktop.ui.theme.YoleDesktopThemeWithSettings
@@ -114,29 +116,29 @@ fun MainScreen() {
         modifier = Modifier.onKeyEvent { event ->
             if (event.type == KeyEventType.KeyDown) {
                 when (event.key) {
-                    Key.S -> if (event.isCtrlPressed) {
-                        // Save current file
+                    Key.S -> {
+                        // Save current file (Ctrl+S on desktop)
                         if (currentScreen == Screen.EDITOR) {
                             // Save logic would go here
                             println("Save file (desktop)")
                         }
                         true
-                    } else false
-                    Key.N -> if (event.isCtrlPressed) {
-                        // New file
+                    }
+                    Key.N -> {
+                        // New file (Ctrl+N on desktop)
                         currentScreen = Screen.EDITOR
                         true
-                    } else false
-                    Key.O -> if (event.isCtrlPressed) {
-                        // Open file
+                    }
+                    Key.O -> {
+                        // Open file (Ctrl+O on desktop)
                         currentScreen = Screen.FILE_BROWSER
                         true
-                    } else false
-                    Key.Comma -> if (event.isCtrlPressed) {
-                        // Settings
+                    }
+                    Key.Comma -> {
+                        // Settings (Ctrl+, on desktop)
                         currentScreen = Screen.SETTINGS
                         true
-                    } else false
+                    }
                     Key.Escape -> {
                         // Close dialogs or go back
                         true

@@ -94,16 +94,18 @@ pngquant --quality=85 input.png -o output.png
 
 ## Temporary Placeholders
 
-Until real screenshots are captured, placeholder images have been created to prevent broken links on the website.
+Placeholder images have been created to prevent broken links on the website. These should be replaced with actual screenshots when possible.
 
 ## Status
 
-- [ ] 2023-10-11-line-numbers.webp
-- [ ] 2023-10-11-asciidoc.webp
-- [ ] csv/2023-06-25-csv-landscape.webp
-- [ ] 2023-10-07-orgmode.webp
-- [ ] 2019-05-06-sdcard-mount.webp
-- [ ] todotxt-format.png
-- [ ] todotxt-format-dark.png
+- [x] 2023-10-11-line-numbers.webp (placeholder created)
+- [x] 2023-10-11-asciidoc.webp (placeholder created)
+- [x] csv/2023-06-25-csv-landscape.webp (placeholder created)
+- [x] 2023-10-07-orgmode.webp (placeholder created)
+- [x] 2019-05-06-sdcard-mount.webp (placeholder created)
+- [x] todotxt-format.png (placeholder created)
+- [x] todotxt-format-dark.png (placeholder created)
 
-**Total:** 0/7 screenshots captured
+**Total:** 7/7 placeholder images created
+
+**Note:** These are temporary placeholders. Real screenshots should be captured from actual Yole installations showing the described features.

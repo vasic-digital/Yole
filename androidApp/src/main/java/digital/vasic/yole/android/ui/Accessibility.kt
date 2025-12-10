@@ -19,12 +19,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import digital.vasic.yole.ui.AccessibilityConstants
 import digital.vasic.yole.ui.AccessibilitySettings
-import digital.vasic.yole.ui.AccessibilityState
-import digital.vasic.yole.ui.ScreenReader
+import digital.vasic.yole.ui.AccessibilityState as SharedAccessibilityState
+import digital.vasic.yole.ui.ScreenReader as SharedScreenReader
 import digital.vasic.yole.ui.TouchTargets
 
 /**
@@ -87,12 +90,15 @@ object AndroidAccessibilityModifiers {
      * Ensures minimum touch target size for Android accessibility.
      */
     fun Modifier.androidAccessibleTouchTarget(
+        currentSize: Dp = 44.dp, // Default to minimum size
         minSize: Dp = AccessibilityConstants.MIN_TOUCH_TARGET_SIZE_LARGE
     ): Modifier {
-        return TouchTargets.ensureMinTouchTarget(
-            currentSize = 0.dp, // This would need to be passed in or calculated
-            minSize = minSize
-        ).padding(minSize / 4) // Add padding to increase touch target
+        return if (currentSize < minSize) {
+            val padding = (minSize - currentSize) / 2
+            this.padding(padding)
+        } else {
+            this
+        }
     }
 
     /**
@@ -106,35 +112,35 @@ object AndroidAccessibilityModifiers {
 /**
  * Android screen reader implementation.
  */
-object AndroidScreenReader : ScreenReader {
+object AndroidScreenReader {
 
-    override fun announce(message: String, role: AccessibilityConstants.SemanticRole) {
+    fun announce(message: String, role: AccessibilityConstants.SemanticRole) {
         // Get context from composition local
         // This would need to be called from a composable context
-        println("Android screen reader announcement: $message")
+        SharedScreenReader.announce(message, role)
     }
 
-    override fun Modifier.liveRegion(): Modifier {
-        return this // Android handles live regions automatically
+    fun Modifier.liveRegion(): Modifier {
+        return this.semantics { liveRegion = LiveRegionMode.Polite }
     }
 }
 
 /**
  * Android accessibility state implementation.
  */
-object AndroidAccessibilityState : AccessibilityState {
+object AndroidAccessibilityState {
 
-    override fun announce(message: String) {
+    fun announce(message: String) {
         // Implementation would use Android's accessibility framework
-        println("Android accessibility announcement: $message")
+        SharedAccessibilityState.announce(message)
     }
 
-    override fun isScreenReaderActive(): Boolean {
+    fun isScreenReaderActive(): Boolean {
         // This would need context, so it's handled in AndroidAccessibility
         return false
     }
 
-    override fun getSettings(): AccessibilitySettings {
+    fun getSettings(): AccessibilitySettings {
         // This would need context, so it's handled in AndroidAccessibility
         return AccessibilitySettings.DEFAULT
     }

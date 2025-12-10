@@ -78,6 +78,6 @@ include(":shared")
 
 // Platform-specific apps
 include(":androidApp")
-// include(":desktopApp")  // Temporarily disabled for build performance measurement
+include(":desktopApp")
 include(":webApp")
-//include(":iosApp")
+// include(":iosApp")  // Requires macOS environment for building

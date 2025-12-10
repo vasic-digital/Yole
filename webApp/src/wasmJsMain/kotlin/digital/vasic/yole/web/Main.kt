@@ -296,13 +296,6 @@ fun createNewDocument(formatId: String, onDocumentCreated: (String, String) -> U
             x ${getCurrentDate()} Complete setup @work +planning
         """.trimIndent()
 
-        "csv" -> """
-            Name,Email,Phone,Department
-            John Doe,john.doe@company.com,555-0101,Engineering
-            Jane Smith,jane.smith@company.com,555-0102,Marketing
-            Bob Johnson,bob.johnson@company.com,555-0103,Sales
-        """.trimIndent()
-
         "latex" -> """
             \\documentclass{article}
             \\usepackage[utf8]{inputenc}
