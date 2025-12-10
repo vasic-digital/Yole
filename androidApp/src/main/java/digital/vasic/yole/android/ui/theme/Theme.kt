@@ -67,25 +67,36 @@ object YoleAndroidTheme {
     private fun createDynamicColorScheme(isDarkTheme: Boolean, seedColor: Color?): ColorScheme {
         val context = LocalContext.current
 
-        return if (seedColor != null) {
-            // Use custom seed color for dynamic color generation
-            if (isDarkTheme) {
-                dynamicDarkColorScheme(context).copy(
-                    primary = seedColor,
-                    // Let Material You generate the rest of the palette from the seed
-                )
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Dynamic color schemes are available on Android 12+
+            if (seedColor != null) {
+                // Use custom seed color for dynamic color generation
+                if (isDarkTheme) {
+                    dynamicDarkColorScheme(context).copy(
+                        primary = seedColor,
+                        // Let Material You generate the rest of the palette from the seed
+                    )
+                } else {
+                    dynamicLightColorScheme(context).copy(
+                        primary = seedColor,
+                        // Let Material You generate the rest of the palette from the seed
+
+                    )
+                }
             } else {
-                dynamicLightColorScheme(context).copy(
-                    primary = seedColor,
-                    // Let Material You generate the rest of the palette from the seed
-                )
+                // Use default dynamic color schemes
+                if (isDarkTheme) {
+                    dynamicDarkColorScheme(context)
+                } else {
+                    dynamicLightColorScheme(context)
+                }
             }
         } else {
-            // Use wallpaper-based dynamic colors
+            // Fallback to static color schemes for older Android versions
             if (isDarkTheme) {
-                dynamicDarkColorScheme(context)
+                darkColorScheme()
             } else {
-                dynamicLightColorScheme(context)
+                lightColorScheme()
             }
         }
     }
