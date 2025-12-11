@@ -19,13 +19,40 @@ class MarkdownInlineMarkupTest {
         parser = MarkdownParser()
     }
 
+    private fun getExpectedHtml(content: String): String {
+        return """<div class='markdown'><style>
+.markdown { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; }
+.markdown h1 { font-size: 2em; font-weight: 600; border-bottom: 1px solid #eee; padding-bottom: 0.3em; margin-top: 24px; margin-bottom: 16px; }
+.markdown h2 { font-size: 1.5em; font-weight: 600; border-bottom: 1px solid #eee; padding-bottom: 0.3em; margin-top: 24px; margin-bottom: 16px; }
+.markdown h3 { font-size: 1.25em; font-weight: 600; margin-top: 24px; margin-bottom: 16px; }
+.markdown h4 { font-size: 1em; font-weight: 600; margin-top: 24px; margin-bottom: 16px; }
+.markdown h5 { font-size: 0.875em; font-weight: 600; margin-top: 24px; margin-bottom: 16px; }
+.markdown h6 { font-size: 0.85em; font-weight: 600; color: #666; margin-top: 24px; margin-bottom: 16px; }
+.markdown p { margin-top: 0; margin-bottom: 16px; }
+.markdown blockquote { border-left: 4px solid #ddd; padding: 0 1em; color: #666; margin: 0 0 16px 0; }
+.markdown ul, .markdown ol { margin-top: 0; margin-bottom: 16px; padding-left: 2em; }
+.markdown li { margin-bottom: 0.25em; }
+.markdown code { background-color: rgba(27,31,35,0.05); padding: 0.2em 0.4em; margin: 0; font-size: 85%; font-family: 'SF Mono', Monaco, Consolas, 'Courier New', monospace; border-radius: 3px; }
+.markdown pre { background-color: #f6f8fa; padding: 16px; overflow-x: auto; font-size: 85%; line-height: 1.45; border-radius: 6px; margin-bottom: 16px; }
+.markdown pre code { background-color: transparent; padding: 0; margin: 0; border-radius: 0; }
+.markdown hr { height: 0.25em; padding: 0; margin: 24px 0; background-color: #e1e4e8; border: 0; }
+.markdown table { border-collapse: collapse; border-spacing: 0; margin-bottom: 16px; }
+.markdown table th { font-weight: 600; padding: 6px 13px; border: 1px solid #ddd; background-color: #f6f8fa; }
+.markdown table td { padding: 6px 13px; border: 1px solid #ddd; }
+.markdown a { color: #0366d6; text-decoration: none; }
+.markdown a:hover { text-decoration: underline; }
+.markdown img { max-width: 100%; }
+.markdown input[type='checkbox'] { margin-right: 0.5em; }
+</style>$content</div>"""
+    }
+
     @Test
     fun `should convert bold with double asterisks`() {
         val content = "**bold text**"
 
         val document = parser.parse(content)
 
-        assertEquals("<p><strong>bold text</strong></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><strong>bold text</strong> </p>"), document.parsedContent)
     }
 
     @Test
@@ -34,7 +61,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><strong>bold text</strong></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><strong>bold text</strong> </p>"), document.parsedContent)
     }
 
     @Test
@@ -43,7 +70,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><strong>bold1</strong> and <strong>bold2</strong></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><strong>bold1</strong> and <strong>bold2</strong> </p>"), document.parsedContent)
     }
 
     @Test
@@ -52,7 +79,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><strong>bold1</strong><strong>bold2</strong></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><strong>bold1</strong><strong>bold2</strong> </p>"), document.parsedContent)
     }
 
     @Test
@@ -61,7 +88,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><strong>bold</strong> at start</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><strong>bold</strong> at start </p>"), document.parsedContent)
     }
 
     @Test
@@ -70,7 +97,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p>end with <strong>bold</strong></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>end with <strong>bold</strong> </p>"), document.parsedContent)
     }
 
     @Test
@@ -79,7 +106,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><strong>entire line is bold</strong></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><strong>entire line is bold</strong> </p>"), document.parsedContent)
     }
 
     @Test
@@ -99,7 +126,7 @@ class MarkdownInlineMarkupTest {
         val document = parser.parse(content)
 
         // Should not convert to bold when unclosed
-        assertEquals("<p>**unmatched bold</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>**unmatched bold </p>"), document.parsedContent)
     }
 
     @Test
@@ -108,7 +135,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p>****</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>**** </p>"), document.parsedContent)
     }
 
     @Test
@@ -117,7 +144,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><em>italic text</em></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><em>italic text</em> </p>"), document.parsedContent)
     }
 
     @Test
@@ -126,7 +153,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><em>italic text</em></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><em>italic text</em> </p>"), document.parsedContent)
     }
 
     @Test
@@ -135,7 +162,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><em>italic1</em> and <em>italic2</em></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><em>italic1</em> and <em>italic2</em> </p>"), document.parsedContent)
     }
 
     @Test
@@ -144,7 +171,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><em>italic1</em><em>italic2</em></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><em>italic1</em><em>italic2</em> </p>"), document.parsedContent)
     }
 
     @Test
@@ -153,7 +180,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p>**</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>** </p>"), document.parsedContent)
     }
 
     @Test
@@ -163,7 +190,7 @@ class MarkdownInlineMarkupTest {
         val document = parser.parse(content)
 
         // Should not convert to italic when unclosed
-        assertEquals("<p>*unmatched italic</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>*unmatched italic </p>"), document.parsedContent)
     }
 
     @Test
@@ -172,7 +199,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><em>italic1</em><em>italic2</em></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><em>italic1</em><em>italic2</em> </p>"), document.parsedContent)
     }
 
     @Test
@@ -182,7 +209,7 @@ class MarkdownInlineMarkupTest {
         val document = parser.parse(content)
 
         // Should not convert middle asterisks
-        assertEquals("<p>word*middle*word</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>word*middle*word </p>"), document.parsedContent)
     }
 
     @Test
@@ -192,7 +219,7 @@ class MarkdownInlineMarkupTest {
         val document = parser.parse(content)
 
         // Should not convert middle underscores
-        assertEquals("<p>word_middle_word</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>word_middle_word </p>"), document.parsedContent)
     }
 
     @Test
@@ -201,7 +228,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><strong>bold</strong> and <em>italic</em></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><strong>bold</strong> and <em>italic</em> </p>"), document.parsedContent)
     }
 
     @Test
@@ -210,15 +237,9 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        // Debug output to see what's actually happening
-        println("Input: $content")
-        println("Output: ${document.parsedContent}")
-        println("Has em tags: ${document.parsedContent.contains("<em>")}")
-        println("Has strong tags: ${document.parsedContent.contains("<strong>")}")
-
         // Current parser behavior: breaks italic and doesn't process nested bold
         // It produces: <p><em>italic with </em><em>bold</em><em> inside</em> </p>
-        // Instead of the expected: <p><em>italic with <strong>bold</strong> inside</em></p>
+        // Instead of the expected: <p><em>italic with <strong>bold</strong> inside</em> </p>
         
         // For now, we test that the parser at least processes some formatting
         // and doesn't crash on nested markers
@@ -236,7 +257,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><a href=\"https://example.com\"><strong>Bold link</strong></a></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<p><a href='https://example.com'><strong>Bold link</strong></a> </p>"""), document.parsedContent)
     }
 
     @Test
@@ -245,7 +266,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><a href=\"https://example.com\"><em>Italic link</em></a></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<p><a href='https://example.com'><em>Italic link</em></a> </p>"""), document.parsedContent)
     }
 
     @Test
@@ -254,7 +275,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><del>strikethrough text</del></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><del>strikethrough text</del> </p>"), document.parsedContent)
     }
 
     @Test
@@ -263,7 +284,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><del>strike1</del> and <del>strike2</del></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><del>strike1</del> and <del>strike2</del> </p>"), document.parsedContent)
     }
 
     @Test
@@ -272,7 +293,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><del><strong>bold strikethrough</strong></del></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><del><strong>bold strikethrough</strong></del> </p>"), document.parsedContent)
     }
 
     @Test
@@ -281,7 +302,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><code>inline code</code></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><code>inline code</code> </p>"), document.parsedContent)
     }
 
     @Test
@@ -290,7 +311,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><code>code1</code> and <code>code2</code></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><code>code1</code> and <code>code2</code> </p>"), document.parsedContent)
     }
 
     @Test
@@ -299,7 +320,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p>``</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>`` </p>"), document.parsedContent)
     }
 
     @Test
@@ -309,7 +330,7 @@ class MarkdownInlineMarkupTest {
         val document = parser.parse(content)
 
         // Should not convert to code when unclosed
-        assertEquals("<p>`unmatched code</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>`unmatched code </p>"), document.parsedContent)
     }
 
     @Test
@@ -318,7 +339,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><code>**not bold**</code></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><code>**not bold**</code> </p>"), document.parsedContent)
     }
 
     @Test
@@ -327,7 +348,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><code>&lt;div&gt;HTML content&lt;/div&gt;</code></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><code>&lt;div&gt;HTML content&lt;/div&gt;</code> </p>"), document.parsedContent)
     }
 
     @Test
@@ -336,7 +357,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><code>&lt;script&gt;alert('xss')&lt;/script&gt;</code></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><code>&lt;script&gt;alert('xss')&lt;/script&gt;</code> </p>"), document.parsedContent)
     }
 
     @Test
@@ -345,7 +366,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><a href=\"https://example.com\">link text</a></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<p><a href='https://example.com'>link text</a> </p>"""), document.parsedContent)
     }
 
     @Test
@@ -354,7 +375,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><a href=\"https://example1.com\">link1</a> and <a href=\"https://example2.com\">link2</a></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<p><a href='https://example1.com'>link1</a> and <a href='https://example2.com'>link2</a> </p>"""), document.parsedContent)
     }
 
     @Test
@@ -363,7 +384,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><a href=\"https://example.com\"></a></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<p><a href='https://example.com'></a> </p>"""), document.parsedContent)
     }
 
     @Test
@@ -372,7 +393,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertTrue(document.parsedContent.contains("<a href=\"https://example.com\">"))
+        assertTrue(document.parsedContent.contains("""<a href='https://example.com'>"""))
         assertTrue(document.parsedContent.contains("</a>"))
     }
 
@@ -392,7 +413,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><a href=\"/path/to/file.html\">link</a></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<p><a href='/path/to/file.html'>link</a> </p>"""), document.parsedContent)
     }
 
     @Test
@@ -401,7 +422,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><a href=\"../parent/file.html\">link</a></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<p><a href='../parent/file.html'>link</a> </p>"""), document.parsedContent)
     }
 
     @Test
@@ -410,7 +431,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><a href=\"#section\">link</a></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<p><a href='#section'>link</a> </p>"""), document.parsedContent)
     }
 
     @Test
@@ -419,7 +440,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><a href=\"https://example.com/path?param=value&other=123\">link</a></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<p><a href='https://example.com/path?param=value&other=123'>link</a> </p>"""), document.parsedContent)
     }
 
     @Test
@@ -428,7 +449,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><a href=\"https://example.com\">link</a> at start</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<p><a href='https://example.com'>link</a> at start </p>"""), document.parsedContent)
     }
 
     @Test
@@ -437,7 +458,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p>end with <a href=\"https://example.com\">link</a></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<p>end with <a href='https://example.com'>link</a> </p>"""), document.parsedContent)
     }
 
     @Test
@@ -446,7 +467,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p>[link only]</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>[link only] </p>"), document.parsedContent)
     }
 
     @Test
@@ -455,7 +476,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><img src=\"image.jpg\" alt=\"alt text\" /></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<p><img src="image.jpg" alt="alt text" /> </p>"""), document.parsedContent)
     }
 
     @Test
@@ -464,7 +485,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><img src=\"image.jpg\" alt=\"\" /></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<p><img src="image.jpg" alt="" /> </p>"""), document.parsedContent)
     }
 
     @Test
@@ -473,7 +494,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p>![alt only]</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>![alt only] </p>"), document.parsedContent)
     }
 
     @Test
@@ -482,7 +503,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><img src=\"image1.jpg\" alt=\"img1\" /> and <img src=\"image2.jpg\" alt=\"img2\" /></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<p><img src="image1.jpg" alt="img1" /> and <img src="image2.jpg" alt="img2" /> </p>"""), document.parsedContent)
     }
 
     @Test
@@ -491,7 +512,9 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<ul>\n<li><input type=\"checkbox\" checked=\"checked\" disabled=\"disabled\" /> Completed task</li>\n</ul>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<ul>
+<li><input type="checkbox" checked="checked" disabled="disabled" /> Completed task</li>
+</ul>"""), document.parsedContent)
     }
 
     @Test
@@ -500,7 +523,9 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<ul>\n<li><input type=\"checkbox\" disabled=\"disabled\" /> Incomplete task</li>\n</ul>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<ul>
+<li><input type="checkbox" disabled="disabled" /> Incomplete task</li>
+</ul>"""), document.parsedContent)
     }
 
     @Test
@@ -522,7 +547,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p>*not italic* and **not bold**</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>*not italic* and **not bold** </p>"), document.parsedContent)
     }
 
     @Test
@@ -531,7 +556,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p>This has &amp;lt; and &amp;gt; entities</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>This has &amp;lt; and &amp;gt; entities </p>"), document.parsedContent)
     }
 
     @Test
@@ -540,7 +565,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p>This has &lt; and &gt; signs</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>This has &lt; and &gt; signs </p>"), document.parsedContent)
     }
 
     @Test
@@ -549,7 +574,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p>She said \"Hello\" and 'Hi'</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>She said \"Hello\" and 'Hi' </p>"), document.parsedContent)
     }
 
     @Test
@@ -558,7 +583,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p>It's a nice day, isn't it?</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>It's a nice day, isn't it? </p>"), document.parsedContent)
     }
 
     @Test
@@ -568,7 +593,7 @@ class MarkdownInlineMarkupTest {
         val document = parser.parse(content)
 
         // Should not format across newlines
-        assertEquals("<p>**bold\ntext**</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>**bold\ntext** </p>"), document.parsedContent)
     }
 
     @Test
@@ -589,7 +614,7 @@ class MarkdownInlineMarkupTest {
         val document = parser.parse(content)
 
         // Should not format when there's whitespace inside markers
-        assertEquals("<p>** bold ** and * italic *</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>** bold ** and * italic * </p>"), document.parsedContent)
     }
 
     @Test
@@ -598,7 +623,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p>Text\twith\ttabs</p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p>Text\twith\ttabs </p>"), document.parsedContent)
     }
 
     @Test
@@ -607,7 +632,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><strong>日本語テキスト</strong></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><strong>日本語テキスト</strong> </p>"), document.parsedContent)
     }
 
     @Test
@@ -616,7 +641,7 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><em>日本語テキスト</em></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("<p><em>日本語テキスト</em> </p>"), document.parsedContent)
     }
 
     @Test
@@ -625,6 +650,6 @@ class MarkdownInlineMarkupTest {
 
         val document = parser.parse(content)
 
-        assertEquals("<p><a href=\"https://example.com\">日本語リンク</a></p>\n", document.parsedContent)
+        assertEquals(getExpectedHtml("""<p><a href='https://example.com'>日本語リンク</a> </p>"""), document.parsedContent)
     }
 }
