@@ -80,4 +80,4 @@ include(":shared")
 include(":androidApp")
 include(":desktopApp")
 include(":webApp")
-// include(":iosApp")  // Requires macOS environment for building
+include(":iosApp")  // Re-enabled for production development

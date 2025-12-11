@@ -61,7 +61,9 @@ kotlin {
     }
 }
 
-// iOS-specific configurations - Re-enabled for production
+// iOS-specific configurations - Temporarily disabled for testing
+// Will re-enable when iOS development begins
+/*
 val xcodeBuildDir = project.file("build/xcode-frameworks")
 
 tasks.register<org.jetbrains.kotlin.gradle.tasks.FatFrameworkTask>("debugFatFramework") {
@@ -85,3 +87,4 @@ tasks.register<org.jetbrains.kotlin.gradle.tasks.FatFrameworkTask>("releaseFatFr
 tasks.named("assemble") {
     dependsOn("debugFatFramework", "releaseFatFramework")
 }
+*/

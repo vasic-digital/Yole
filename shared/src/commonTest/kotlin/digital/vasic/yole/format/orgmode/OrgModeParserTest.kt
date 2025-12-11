@@ -11,7 +11,9 @@ package digital.vasic.yole.format.orgmode
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.orgmode.OrgModeParser
 import org.junit.Test
-import kotlin.test.*
+import org.assertj.core.api.Assertions.assertThat
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * Unit tests for Org Mode format parser.
@@ -34,8 +36,8 @@ class OrgModeParserTest {
         val format = FormatRegistry.getByExtension(".org")
 
         assertNotNull(format)
-        assertEquals(FormatRegistry.ID_ORGMODE, format.id)
-        assertEquals("Org Mode", format.name)
+        assertThat(format.id).isEqualTo(FormatRegistry.ID_ORG_MODE)
+        assertThat(format.name).isEqualTo("Org Mode")
     }
 
     @Test
@@ -43,7 +45,7 @@ class OrgModeParserTest {
         val format = FormatRegistry.detectByFilename("test.org")
 
         assertNotNull(format)
-        assertEquals(FormatRegistry.ID_ORGMODE, format.id)
+        assertThat(format.id).isEqualTo(FormatRegistry.ID_ORG_MODE)
     }
 
     @Test
@@ -53,7 +55,7 @@ class OrgModeParserTest {
         extensions.forEach { ext ->
             val format = FormatRegistry.getByExtension(ext)
             assertNotNull(format, "Extension $ext should be recognized")
-            assertEquals(FormatRegistry.ID_ORGMODE, format.id)
+            assertThat(format.id).isEqualTo(FormatRegistry.ID_ORG_MODE)
         }
     }
 
@@ -62,7 +64,7 @@ class OrgModeParserTest {
     @Test
     fun `should parse basic Org Mode content`() {
         val content = """
-            * Heading\n#+TITLE: Document
+            Sample Org Mode content here
         """.trimIndent()
 
         val result = parser.parse(content)
@@ -100,13 +102,13 @@ class OrgModeParserTest {
     @Test
     fun `should detect format by content patterns`() {
         val content = """
-            * Heading\n#+TITLE: Document
+            Sample Org Mode content here
         """.trimIndent()
 
         val format = FormatRegistry.detectByContent(content)
 
         assertNotNull(format)
-        assertEquals(FormatRegistry.ID_ORGMODE, format.id)
+        assertThat(format.id).isEqualTo(FormatRegistry.ID_ORG_MODE)
     }
 
     @Test
@@ -117,7 +119,7 @@ class OrgModeParserTest {
 
         // Should detect as plaintext, not Org Mode
         if (format != null) {
-            assertNotEquals(FormatRegistry.ID_ORGMODE, format.id)
+            assertThat(format.id).isNotEqualTo(FormatRegistry.ID_ORG_MODE)
         }
     }
 
@@ -201,19 +203,19 @@ class OrgModeParserTest {
 
     @Test
     fun `should integrate with FormatRegistry`() {
-        val format = FormatRegistry.getById(FormatRegistry.ID_ORGMODE)
+        val format = FormatRegistry.getById(FormatRegistry.ID_ORG_MODE)
 
         assertNotNull(format)
-        assertEquals("Org Mode", format.name)
-        assertEquals(".org", format.defaultExtension)
+        assertThat(format.name).isEqualTo("Org Mode")
+        assertThat(format.defaultExtension).isEqualTo(".org")
     }
 
     @Test
     fun `should be registered in FormatRegistry`() {
         val allFormats = FormatRegistry.formats
-        val orgModeFormat = allFormats.find { it.id == FormatRegistry.ID_ORGMODE }
+        val org modeFormat = allFormats.find { it.id == FormatRegistry.ID_ORG_MODE }
 
-        assertNotNull(orgModeFormat)
-        assertEquals("Org Mode", orgModeFormat.name)
+        assertNotNull(org modeFormat)
+        assertThat(org modeFormat.name).isEqualTo("Org Mode")
     }
 }

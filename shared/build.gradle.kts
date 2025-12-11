@@ -202,6 +202,15 @@ kotlin {
     }
 }
 
+// Dokka configuration for API documentation
+tasks.withType<org.jetbrains.dokka.gradle.DokkaTask>().configureEach {
+    // Basic module information
+    moduleName = "Yole Shared Module"
+    
+    // Configure output directory
+    outputDirectory = file("${layout.buildDirectory.get()}/dokka")
+}
+
 // Configure allopen for benchmark annotations
 allOpen {
     annotation("org.openjdk.jmh.annotations.State")

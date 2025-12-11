@@ -60,6 +60,8 @@ ${GREEN}Available Templates:${NC}
     - IntegrationTest.kt.template    (Integration tests)
     - MockKExample.kt.template       (MockK mocking examples)
     - KotestPropertyTest.kt.template (Property-based tests)
+    - UITest.kt.template             (UI automation tests)
+    - SnapshotTest.kt.template       (Visual regression tests)
 
 ${GREEN}Template Variables:${NC}
     {{FORMAT_NAME}}              - Human-readable format name
@@ -92,7 +94,7 @@ CLASS_NAME=""
 FORMAT_ID=""
 EXTENSIONS_LIST=""
 OUTPUT_DIR=""
-TEMPLATES="ParserTest,IntegrationTest,MockKExample,KotestPropertyTest"
+TEMPLATES="ParserTest,IntegrationTest,MockKExample,KotestPropertyTest,UITest,SnapshotTest"
 DRY_RUN=false
 
 while [[ $# -gt 0 ]]; do
