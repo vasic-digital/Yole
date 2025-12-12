@@ -13,6 +13,7 @@ package digital.vasic.yole.android.ui
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import digital.vasic.yole.android.MainActivity
 import digital.vasic.yole.format.ParserInitializer
 import org.junit.Before
 import org.junit.Rule

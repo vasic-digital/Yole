@@ -13,11 +13,13 @@ package digital.vasic.yole.android.ui
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import digital.vasic.yole.android.MainActivity
 import digital.vasic.yole.format.ParserInitializer
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 
 @RunWith(AndroidJUnit4::class)
 class YoleAppTest {
@@ -267,7 +269,7 @@ class YoleAppTest {
         composeTestRule.onNodeWithText("Files").assertIsDisplayed()
 
         // Create new file (should trigger editor screen with animation)
-        composeTestRule.onAllNodesWithContentDescription("Add").first().performClick()
+        composeTestRule.onNodeWithContentDescription("Add").performClick()
 
         // Should be in editor now
         composeTestRule.onNodeWithText("Editing: untitled.txt").assertIsDisplayed()

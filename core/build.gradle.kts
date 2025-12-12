@@ -9,8 +9,8 @@
  #########################################################*/
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+    id("com.android.library")
+    id("kotlin-android")
 }
 
 android {
@@ -21,13 +21,12 @@ android {
 
     defaultConfig {
         minSdk = rootProject.extra["version_minSdk"] as Int
-        targetSdk = rootProject.extra["version_targetSdk"] as Int
 
         buildConfigField("boolean", "IS_TEST_BUILD", "false")
         buildConfigField("boolean", "IS_GPLAY_BUILD", "false")
-        buildConfigField("String", "BUILD_DATE", "\"${rootProject.extra["getBuildDate"] as () -> String}\"")
-        buildConfigField("String", "GITHASH", "\"${rootProject.extra["getGitHash"] as () -> String}\"")
-        buildConfigField("String", "GITMSG", "\"${rootProject.extra["getGitLastCommitMessage"] as () -> String}\"")
+        buildConfigField("String", "BUILD_DATE", "\"2025-12-11\"")
+        buildConfigField("String", "GITHASH", "\"unknown\"")
+        buildConfigField("String", "GITMSG", "\"Core module build\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -85,6 +84,7 @@ android {
 dependencies {
     // Module dependencies
     implementation(project(":commons"))
+    implementation(project(":shared"))
 
     // Kotlin
     implementation(libs.kotlin.stdlib)

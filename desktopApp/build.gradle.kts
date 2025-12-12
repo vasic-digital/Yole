@@ -36,6 +36,13 @@ dependencies {
 
     // Kotlinx Coroutines
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.swing)
+
+    // Serialization
+    implementation(libs.kotlinx.serialization.json)
+
+    // Additional UI components
+    implementation("org.jetbrains.compose.material:material-icons-extended-desktop:1.6.11")
 
     // Testing
     testImplementation(libs.junit)

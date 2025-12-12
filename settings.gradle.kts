@@ -70,6 +70,7 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 // Existing Android modules
 include(":commons")
+include(":core")
 
 // Format modules removed as they were for legacy app
 

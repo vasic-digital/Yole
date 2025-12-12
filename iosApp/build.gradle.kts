@@ -61,30 +61,20 @@ kotlin {
     }
 }
 
-// iOS-specific configurations - Temporarily disabled for testing
-// Will re-enable when iOS development begins
-/*
-val xcodeBuildDir = project.file("build/xcode-frameworks")
+// iOS-specific configurations - Re-enabled for production development
+// Framework tasks will be configured when building on macOS with Xcode
 
-tasks.register<org.jetbrains.kotlin.gradle.tasks.FatFrameworkTask>("debugFatFramework") {
-    baseName = "Yole"
-    destinationDirProperty.set(xcodeBuildDir.resolve("Debug"))
-    from(
-        kotlin.targets.getByName<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>("iosArm64").binaries.getFramework("DEBUG"),
-        kotlin.targets.getByName<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>("iosX64").binaries.getFramework("DEBUG")
-    )
+// Configure iOS frameworks when targets are available
+kotlin {
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget> {
+        if (targetName.contains("ios", ignoreCase = true)) {
+            binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.Framework> {
+                baseName = "YoleIOS"
+                isStatic = true
+                
+                // Export dependencies for iOS app framework
+                export(project(":shared"))
+            }
+        }
+    }
 }
-
-tasks.register<org.jetbrains.kotlin.gradle.tasks.FatFrameworkTask>("releaseFatFramework") {
-    baseName = "Yole"
-    destinationDirProperty.set(xcodeBuildDir.resolve("Release"))
-    from(
-        kotlin.targets.getByName<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>("iosArm64").binaries.getFramework("RELEASE"),
-        kotlin.targets.getByName<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>("iosX64").binaries.getFramework("RELEASE")
-    )
-}
-
-tasks.named("assemble") {
-    dependsOn("debugFatFramework", "releaseFatFramework")
-}
-*/

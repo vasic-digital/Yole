@@ -28,13 +28,17 @@ import androidx.compose.ui.window.CanvasBasedWindow
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.TextFormat
+import kotlinx.browser.document
+import kotlinx.browser.localStorage
+import kotlinx.browser.window
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.browser.document
 import org.w3c.dom.HTMLAnchorElement
-import org.w3c.dom.HTMLTextAreaElement
+import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.url.URL
+import org.w3c.files.File
+import org.w3c.files.FileReader
 
 /**
  * Main entry point for Yole Web Application
@@ -58,10 +62,14 @@ fun YoleWebApp() {
     var currentFormat by remember { mutableStateOf("markdown") }
     var documentName by remember { mutableStateOf("untitled.md") }
     var isDarkTheme by remember { mutableStateOf(false) }
-
+    var showPreview by remember { mutableStateOf(true) }
+    var wordWrap by remember { mutableStateOf(true) }
+    var fontSize by remember { mutableStateOf(14) }
+    var showLineNumbers by remember { mutableStateOf(true) }
+    
     // Theme colors
     val colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
-
+    
     MaterialTheme(colorScheme = colorScheme) {
         Scaffold(
             topBar = {
@@ -184,23 +192,25 @@ fun YoleWebApp() {
                             placeholder = { Text("Start writing your document...") },
                             textStyle = LocalTextStyle.current.copy(
                                 fontFamily = FontFamily.Monospace,
-                                fontSize = 14.sp,
+                                fontSize = fontSize.sp,
                                 lineHeight = 21.sp
                             )
                         )
 
                         // Preview
-                        Surface(
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
-                            color = if (isDarkTheme) Color(0xFF252525) else Color(0xFFfafafa),
-                            tonalElevation = 1.dp
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .padding(16.dp)
-                                    .verticalScroll(rememberScrollState())
+                        if (showPreview) {
+                            Surface(
+                                modifier = Modifier.weight(1f).fillMaxHeight(),
+                                color = if (isDarkTheme) Color(0xFF252525) else Color(0xFFfafafa),
+                                tonalElevation = 1.dp
                             ) {
-                                MarkdownPreview(documentContent, currentFormat)
+                                Column(
+                                    modifier = Modifier
+                                        .padding(16.dp)
+                                        .verticalScroll(rememberScrollState())
+                                ) {
+                                    MarkdownPreview(documentContent, currentFormat)
+                                }
                             }
                         }
                     }
@@ -255,9 +265,8 @@ fun FormatList(
  * Get current date in YYYY-MM-DD format
  */
 fun getCurrentDate(): String {
-    val now = Clock.System.now()
-    val localDate = now.toLocalDateTime(TimeZone.currentSystemDefault()).date
-    return localDate.toString() // Returns YYYY-MM-DD format
+    // Simple date format for WASM compatibility
+    return "2025-12-11" // Static date for now to avoid WASM issues
 }
 
 /**
@@ -306,7 +315,7 @@ fun downloadFile(content: String, filename: String) {
 fun triggerFileInput(onFileLoaded: (String, String) -> Unit) {
     try {
         // Create a simple file input element
-        val fileInput = document.createElement("input") as org.w3c.dom.HTMLInputElement
+        val fileInput = document.createElement("input") as HTMLInputElement
         fileInput.type = "file"
         fileInput.style.display = "none"
         fileInput.accept = ".txt,.md,.csv,.tex,.org,.adoc,.wiki,.json,.xml,.yaml,.yml,.html"
@@ -332,88 +341,6 @@ fun triggerFileInput(onFileLoaded: (String, String) -> Unit) {
         val fallbackContent = "# Fallback Content\n\nFile loading is not available in this environment."
         val fallbackFilename = "fallback.md"
         onFileLoaded(fallbackContent, fallbackFilename)
-    }
-}
-
-/**
- * Auto-detect format from filename extension
- */
-fun detectFormatFromFilename(filename: String): String {
-    val extension = filename.substringAfterLast(".", "").lowercase()
-    return when (extension) {
-        "md", "markdown" -> "markdown"
-        "txt" -> {
-            // Could be plain text or todo.txt - default to plain text
-            "plaintext"
-        }
-        "csv" -> "csv"
-        "tex" -> "latex"
-        "org" -> "orgmode"
-        "adoc", "asciidoc" -> "asciidoc"
-        "wiki" -> "wikitext"
-        "json" -> "json"
-        "xml" -> "xml"
-        "yaml", "yml" -> "yaml"
-        "html" -> "html"
-        "css" -> "css"
-        "js" -> "javascript"
-        "kt", "kts" -> "kotlin"
-        "java" -> "java"
-        "py" -> "python"
-        "cpp", "cc", "cxx" -> "cpp"
-        "c" -> "c"
-        "h", "hpp" -> "cpp"
-        "rs" -> "rust"
-        "go" -> "go"
-        "rb" -> "ruby"
-        "php" -> "php"
-        "swift" -> "swift"
-        "scala" -> "scala"
-        "r" -> "r"
-        "m" -> "matlab"
-        "sql" -> "sql"
-        "sh" -> "shell"
-        "bat", "cmd" -> "batch"
-        "ps1" -> "powershell"
-        "pl" -> "perl"
-        "lua" -> "lua"
-        "nim" -> "nim"
-        "dart" -> "dart"
-        "ts", "tsx" -> "typescript"
-        "jsx" -> "javascript"
-        "vue" -> "vue"
-        "sass", "scss" -> "sass"
-        "less" -> "less"
-        "styl" -> "stylus"
-        "pug" -> "pug"
-        "haml" -> "haml"
-        "slim" -> "slim"
-        "erb" -> "erb"
-        "coffee", "litcoffee" -> "coffeescript"
-        "tsv" -> "tsv"
-        "log" -> "log"
-        "conf", "config" -> "config"
-        "ini" -> "ini"
-        "properties" -> "properties"
-        "env" -> "env"
-        "gitignore" -> "gitignore"
-        "dockerignore" -> "dockerignore"
-        "editorconfig" -> "editorconfig"
-        "eslintrc" -> "eslint"
-        "prettierrc" -> "prettier"
-        "babelrc" -> "babel"
-        "webpack" -> "webpack"
-        "rollup" -> "rollup"
-        "vite" -> "vite"
-        "parcel" -> "parcel"
-        "snowpack" -> "snowpack"
-        "wmr" -> "wmr"
-        "tsconfig" -> "tsconfig"
-        "jsconfig" -> "jsconfig"
-        "jsonc" -> "jsonc"
-        "json5" -> "json5"
-        "hjson" -> "hjson"
-        else -> "plaintext" // Default fallback
     }
 }
 
@@ -597,13 +524,13 @@ fun createNewDocument(formatId: String, onDocumentCreated: (String, String) -> U
  * HTML preview component using format parsers
  */
 @Composable
-fun MarkdownPreview(content: String, format: String) {
+fun MarkdownPreview(content: String, formatId: String) {
     var htmlContent by remember { mutableStateOf("<p>Loading preview...</p>") }
 
     // Generate HTML preview when content or format changes
-    LaunchedEffect(content, format) {
+    LaunchedEffect(content, formatId) {
         htmlContent = try {
-            val parser = ParserRegistry.getParser(format)
+            val parser = ParserRegistry.getParser(formatId)
             if (parser != null) {
                 val document = parser.parse(content)
                 parser.toHtml(document)
@@ -655,5 +582,77 @@ fun HtmlContent(html: String) {
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
+    }
+}
+
+/**
+ * Auto-detect format from filename extension
+ */
+fun detectFormatFromFilename(filename: String): String {
+    val extension = filename.substringAfterLast(".", "").lowercase()
+    return when (extension) {
+        "md", "markdown" -> "markdown"
+        "txt" -> {
+            // Could be plain text or todo.txt - default to plain text
+            "plaintext"
+        }
+        "csv" -> "csv"
+        "tex" -> "latex"
+        "org" -> "orgmode"
+        "adoc", "asciidoc" -> "asciidoc"
+        "wiki" -> "wikitext"
+        "json" -> "json"
+        "xml" -> "xml"
+        "yaml", "yml" -> "yaml"
+        "html" -> "html"
+        "css" -> "css"
+        "js" -> "javascript"
+        "ts", "tsx" -> "typescript"
+        "kt", "kts" -> "kotlin"
+        "java" -> "java"
+        "py" -> "python"
+        "cpp", "cc", "cxx" -> "cpp"
+        "c" -> "c"
+        "h", "hpp" -> "cpp"
+        "rs" -> "rust"
+        "go" -> "go"
+        "rb" -> "ruby"
+        "php" -> "php"
+        "swift" -> "swift"
+        "scala" -> "scala"
+        "r" -> "r"
+        "m" -> "matlab"
+        "sql" -> "sql"
+        "sh" -> "shell"
+        "bat", "cmd" -> "batch"
+        "ps1" -> "powershell"
+        "pl" -> "perl"
+        "lua" -> "lua"
+        "nim" -> "nim"
+        "dart" -> "dart"
+        "tsv" -> "tsv"
+        "log" -> "log"
+        "conf", "config" -> "config"
+        "ini" -> "ini"
+        "properties" -> "properties"
+        "env" -> "env"
+        "gitignore" -> "gitignore"
+        "dockerignore" -> "dockerignore"
+        "editorconfig" -> "editorconfig"
+        "eslintrc" -> "eslint"
+        "prettierrc" -> "prettier"
+        "babelrc" -> "babel"
+        "webpack" -> "webpack"
+        "rollup" -> "rollup"
+        "vite" -> "vite"
+        "parcel" -> "parcel"
+        "snowpack" -> "snowpack"
+        "wmr" -> "wmr"
+        "tsconfig" -> "tsconfig"
+        "jsconfig" -> "jsconfig"
+        "jsonc" -> "jsonc"
+        "json5" -> "json5"
+        "hjson" -> "hjson"
+        else -> "plaintext" // Default fallback
     }
 }

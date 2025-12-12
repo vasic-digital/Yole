@@ -88,6 +88,9 @@ kotlin {
                  // SQLite database for metadata - platform specific due to WASM incompatibility
                  // implementation("app.cash.sqldelight:runtime:2.0.2")
                  // implementation("app.cash.sqldelight:coroutines-extensions:2.0.2")
+                 
+                 // Database dependencies for cross-platform implementation
+                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
                 // Compose runtime (if using Compose Multiplatform)
                 implementation(compose.runtime)
@@ -115,6 +118,11 @@ kotlin {
                 implementation("androidx.appcompat:appcompat:1.6.1")
                 implementation("androidx.security:security-crypto:1.1.0-alpha06")
                 implementation("app.cash.sqldelight:android-driver:2.0.2")
+                // Room dependencies for Android database implementation
+                implementation("androidx.room:room-runtime:2.6.1")
+                implementation("androidx.room:room-ktx:2.6.1")
+                // SQLite JDBC for desktop
+                implementation("org.xerial:sqlite-jdbc:3.44.1.0")
                 implementation(libs.ktor.client.okhttp)
                 // CIO is JVM-only, so we use OkHttp for Android
                 implementation("io.ktor:ktor-client-cio:3.0.2")
@@ -132,6 +140,8 @@ kotlin {
             dependencies {
                 implementation(compose.desktop.common)
                 implementation("app.cash.sqldelight:sqlite-driver:2.0.2")
+                // SQLite JDBC for desktop
+                implementation("org.xerial:sqlite-jdbc:3.44.1.0")
                 implementation(libs.ktor.client.okhttp)
                 // CIO is JVM-only, so we use OkHttp for Desktop
                 implementation("io.ktor:ktor-client-cio:3.0.2")
@@ -157,6 +167,8 @@ kotlin {
             dependencies {
                 // iOS-specific dependencies (inherited from commonMain)
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+                // Native SQLite for iOS
+                implementation("co.touchlab:sqliter:1.3.1")
             }
         }
 
@@ -197,6 +209,22 @@ kotlin {
         val desktopBenchmark by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-benchmark-runtime:0.4.11")
+            }
+        }
+    }
+}
+
+// iOS framework configuration - enabled when building on macOS
+kotlin {
+    // Configure frameworks for iOS targets when available
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget> {
+        if (targetName.contains("ios", ignoreCase = true)) {
+            binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.Framework> {
+                baseName = "YoleShared"
+                isStatic = true
+                
+                // Export the shared module for iOS consumption
+                export(project(":shared"))
             }
         }
     }
@@ -255,8 +283,6 @@ tasks.register<JavaExec>("runSimpleBenchmarks") {
 
     mainClass.set("digital.vasic.yole.format.benchmark.SimpleBenchmarkRunner")
 }
-
-// iOS temporarily disabled - framework export configurations not needed
 
 android {
     namespace = "digital.vasic.yole.shared"
