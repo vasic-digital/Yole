@@ -213,7 +213,7 @@ object DatabaseExample {
             
             when (result) {
                 is Result.Success -> {
-                    println("Transaction success: ${result.value}")
+                    println("Transaction success: ${result.getOrNull()}")
                     
                     // Verify data was inserted
                     val storageCount = database.getTableRowCount("storage").getOrThrow()
@@ -223,7 +223,7 @@ object DatabaseExample {
                     println("After transaction - Storage: $storageCount, Documents: $documentCount, Cache: $cacheCount")
                 }
                 is Result.Failure -> {
-                    println("Transaction failed: ${result.exception}")
+                    println("Transaction failed: ${result.exceptionOrNull()}")
                 }
             }
             
@@ -254,9 +254,10 @@ object DatabaseExample {
             )
             val operation = NetworkOperation(
                 id = 1L,
-                type = OperationType.DOWNLOAD,
+                type = NetworkOperation.Type.DOWNLOAD,
                 remotePath = document.path,
-                status = OperationStatus.COMPLETED,
+                localPath = "/downloads/backup.txt",
+                status = NetworkOperation.Status.COMPLETED,
                 progress = 1.0,
                 totalSize = 2048L,
                 bytesTransferred = 2048L,

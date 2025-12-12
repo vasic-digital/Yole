@@ -3,144 +3,164 @@
  * SPDX-FileCopyrightText: 2025 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  *
- * Unified database interface for Yole
- * Provides cross-platform database abstraction
+ * Cross-platform database interface for Yole
+ * Replaces SQLDelight with platform-specific implementations
  *
  *########################################################*/
 
 package digital.vasic.yole.database
 
+import digital.vasic.yole.network.common.*
+import digital.vasic.yole.model.Document
 import kotlinx.coroutines.flow.Flow
-import digital.vasic.yole.network.common.NetworkStorage
-import digital.vasic.yole.network.common.NetworkDocument
-import digital.vasic.yole.network.common.CacheEntry
-import digital.vasic.yole.network.common.NetworkOperation
-import digital.vasic.yole.network.common.SyncStatus
+import kotlinx.datetime.Instant
 
 /**
- * Unified database interface that provides cross-platform database operations.
- * This interface abstracts away platform-specific database implementations.
+ * Cross-platform database interface that replaces SQLDelight
+ * Provides unified API for different database backends per platform
  */
 interface DatabaseInterface {
     
-    /**
-     * Initialize the database connection
-     */
-    suspend fun initialize(): Result<Unit>
-    
-    /**
-     * Close the database connection
-     */
-    suspend fun close(): Result<Unit>
-    
-    /**
-     * Check if database is initialized and ready
-     */
-    suspend fun isReady(): Boolean
-    
-    /**
-     * Transaction support
-     */
+    // Transaction support
     suspend fun <T> transaction(block: suspend () -> T): Result<T>
     
-    // NetworkStorage operations
+    // Document operations
+    suspend fun insertDocument(document: Document): Result<Unit>
+    suspend fun updateDocument(document: Document): Result<Unit>
+    suspend fun deleteDocument(documentId: String): Result<Unit>
+    suspend fun getDocument(documentId: String): Result<Document?>
+    suspend fun getAllDocuments(): Result<List<Document>>
+    suspend fun getDocumentsByFormat(format: String): Result<List<Document>>
+    suspend fun searchDocuments(query: String): Result<List<Document>>
+    suspend fun getRecentDocuments(limit: Int = 10): Result<List<Document>>
+    
+    // Network storage operations
     suspend fun insertStorage(storage: NetworkStorage): Result<Unit>
     suspend fun updateStorage(storage: NetworkStorage): Result<Unit>
-    suspend fun getStorage(id: String): Result<NetworkStorage?>
+    suspend fun deleteStorage(storageId: String): Result<Unit>
+    suspend fun getStorage(storageId: String): Result<NetworkStorage?>
     suspend fun getAllStorage(): Result<List<NetworkStorage>>
-    suspend fun deleteStorage(id: String): Result<Unit>
-    suspend fun getStorageByType(type: String): Result<List<NetworkStorage>>
     suspend fun getEnabledStorage(): Result<List<NetworkStorage>>
     
-    // NetworkDocument operations
-    suspend fun insertDocument(document: NetworkDocument): Result<Unit>
-    suspend fun updateDocument(document: NetworkDocument): Result<Unit>
-    suspend fun getDocument(id: String): Result<NetworkDocument?>
-    suspend fun getDocumentsByStorage(storageId: String): Result<List<NetworkDocument>>
-    suspend fun getDocumentsByPath(path: String): Result<List<NetworkDocument>>
-    suspend fun getDocumentsByParentPath(parentPath: String): Result<List<NetworkDocument>>
-    suspend fun deleteDocument(id: String): Result<Unit>
-    suspend fun searchDocuments(query: String): Result<List<NetworkDocument>>
-    suspend fun getDocumentsBySyncStatus(status: SyncStatus): Result<List<NetworkDocument>>
-    fun observeDocumentsByStorage(storageId: String): Flow<List<NetworkDocument>>
-    fun observeAllDocuments(): Flow<List<NetworkDocument>>
+    // Network document operations
+    suspend fun insertNetworkDocument(document: NetworkDocument): Result<Unit>
+    suspend fun updateNetworkDocument(document: NetworkDocument): Result<Unit>
+    suspend fun deleteNetworkDocument(documentId: String): Result<Unit>
+    suspend fun getNetworkDocument(documentId: String): Result<NetworkDocument?>
+    suspend fun getNetworkDocumentsByStorage(storageId: String): Result<List<NetworkDocument>>
+    suspend fun getNetworkDocumentsByPath(path: String): Result<List<NetworkDocument>>
     
-    // CacheEntry operations
+    // Cache operations
     suspend fun insertCacheEntry(entry: CacheEntry): Result<Unit>
     suspend fun updateCacheEntry(entry: CacheEntry): Result<Unit>
-    suspend fun getCacheEntry(id: String): Result<CacheEntry?>
+    suspend fun deleteCacheEntry(entryId: String): Result<Unit>
+    suspend fun getCacheEntry(entryId: String): Result<CacheEntry?>
     suspend fun getCacheEntriesByDocument(documentId: String): Result<List<CacheEntry>>
-    suspend fun getAllCacheEntries(): Result<List<CacheEntry>>
-    suspend fun deleteCacheEntry(id: String): Result<Unit>
-    suspend fun deleteExpiredCacheEntries(): Result<Int>
-    suspend fun getCacheUsage(): Result<Long>
-    suspend fun getCacheEntriesByPath(remotePath: String): Result<List<CacheEntry>>
-    suspend fun evictCacheEntries(maxSize: Long): Result<Int>
+    suspend fun getValidCacheEntries(): Result<List<CacheEntry>>
+    suspend fun cleanupExpiredCache(): Result<Int>
     
-    // NetworkOperation operations
+    // Operation tracking
     suspend fun insertOperation(operation: NetworkOperation): Result<Unit>
     suspend fun updateOperation(operation: NetworkOperation): Result<Unit>
-    suspend fun getOperation(id: Long): Result<NetworkOperation?>
+    suspend fun deleteOperation(operationId: Long): Result<Unit>
+    suspend fun getOperation(operationId: Long): Result<NetworkOperation?>
     suspend fun getActiveOperations(): Result<List<NetworkOperation>>
-    suspend fun getOperationsByStatus(status: String): Result<List<NetworkOperation>>
-    suspend fun deleteOperation(id: Long): Result<Unit>
-    suspend fun clearCompletedOperations(): Result<Int>
-    suspend fun getOperationCountByStatus(status: String): Result<Int>
+    suspend fun getOperationsByStatus(status: OperationStatus): Result<List<NetworkOperation>>
     
-    // SyncStatus operations
-    suspend fun updateSyncStatus(remotePath: String, status: SyncStatus): Result<Unit>
-    suspend fun getSyncStatus(remotePath: String): Result<SyncStatus?>
+    // Sync status operations
+    suspend fun updateSyncStatus(path: String, status: SyncStatus): Result<Unit>
+    suspend fun getSyncStatus(path: String): Result<SyncStatus?>
     suspend fun getAllSyncStatus(): Result<Map<String, SyncStatus>>
-    suspend fun deleteSyncStatus(remotePath: String): Result<Unit>
-    suspend fun getSyncStatusByPattern(pattern: String): Result<Map<String, SyncStatus>>
     
-    // Settings and preferences
+    // Settings operations
     suspend fun setSetting(key: String, value: String): Result<Unit>
     suspend fun getSetting(key: String): Result<String?>
-    suspend fun getAllSettings(): Result<Map<String, String>>
     suspend fun deleteSetting(key: String): Result<Unit>
-    suspend fun setSettingBulk(settings: Map<String, String>): Result<Unit>
+    suspend fun getAllSettings(): Result<Map<String, String>>
     
-    // Document metadata and search
-    suspend fun setDocumentMetadata(documentId: String, metadata: Map<String, String>): Result<Unit>
-    suspend fun getDocumentMetadata(documentId: String): Result<Map<String, String>>
-    suspend fun searchDocumentMetadata(query: String): Result<List<String>>
-    suspend fun deleteDocumentMetadata(documentId: String): Result<Unit>
+    // Statistics and analytics
+    suspend fun getDocumentStatistics(): Result<DocumentStatistics>
+    suspend fun getStorageStatistics(): Result<StorageStatistics>
+    suspend fun getCacheStatistics(): Result<CacheStatistics>
     
-    // Statistics and maintenance
-    suspend fun getDatabaseStats(): Result<DatabaseStats>
+    // Database maintenance
     suspend fun vacuum(): Result<Unit>
-    suspend fun clearAll(): Result<Unit>
-    suspend fun clearTable(tableName: String): Result<Unit>
-    suspend fun getTableRowCount(tableName: String): Result<Long>
+    suspend fun getDatabaseSize(): Result<Long>
+    suspend fun backup(backupPath: String): Result<Unit>
+    suspend fun restore(backupPath: String): Result<Unit>
     
-    // Backup and restore
-    suspend fun exportData(): Result<DatabaseBackup>
-    suspend fun importData(backup: DatabaseBackup): Result<Unit>
-    suspend fun validateData(): Result<List<String>>
+    // Real-time updates
+    fun observeDocuments(): Flow<List<Document>>
+    fun observeNetworkDocuments(): Flow<List<NetworkDocument>>
+    fun observeOperations(): Flow<List<NetworkOperation>>
+    fun observeStorage(): Flow<List<NetworkStorage>>
+    
+    // Database info
+    suspend fun getVersion(): Result<Int>
+    suspend fun isHealthy(): Result<Boolean>
+    suspend fun close(): Result<Unit>
 }
 
 /**
- * Database statistics
+ * Document statistics
  */
-data class DatabaseStats(
+data class DocumentStatistics(
+    val totalDocuments: Long,
     val totalSize: Long,
-    val tableCounts: Map<String, Long>,
-    val cacheSize: Long,
-    val operationCount: Long,
-    val lastVacuumTime: Long?
+    val documentsByFormat: Map<String, Long>,
+    val recentlyModified: Long,
+    val oldestDocument: Long,
+    val averageSize: Long
 )
 
 /**
- * Database backup data
+ * Storage statistics
  */
-data class DatabaseBackup(
-    val version: Int,
-    val timestamp: Long,
-    val storage: List<NetworkStorage>,
-    val documents: List<NetworkDocument>,
-    val cacheEntries: List<CacheEntry>,
-    val operations: List<NetworkOperation>,
-    val syncStatus: Map<String, SyncStatus>,
-    val settings: Map<String, String>
+data class StorageStatistics(
+    val totalStorage: Long,
+    val enabledStorage: Long,
+    val totalSpace: Long,
+    val usedSpace: Long,
+    val storageByType: Map<StorageType, Long>
 )
+
+/**
+ * Cache statistics
+ */
+data class CacheStatistics(
+    val totalEntries: Long,
+    val totalSize: Long,
+    val validEntries: Long,
+    val expiredEntries: Long,
+    val pinnedEntries: Long,
+    val hitRate: Double,
+    val missRate: Double
+)
+
+/**
+ * Database configuration
+ */
+data class DatabaseConfig(
+    val name: String = "yole_database",
+    val version: Int = 1,
+    val enableWal: Boolean = true,
+    val enableForeignKeys: Boolean = true,
+    val cacheSize: Int = 10000,
+    val journalMode: String = "WAL",
+    val synchronousMode: String = "NORMAL",
+    val tempStore: String = "MEMORY",
+    val mmapSize: Long = 268435456L, // 256MB
+    val pageSize: Int = 4096,
+    val autoVacuum: Boolean = true,
+    val incrementalVacuum: Boolean = true
+)
+
+/**
+ * Database exception
+ */
+class DatabaseException(message: String, cause: Throwable? = null) : Exception(message, cause)
+
+/**
+ * Migration exception
+ */
+class MigrationException(message: String, cause: Throwable? = null) : Exception(message, cause)
