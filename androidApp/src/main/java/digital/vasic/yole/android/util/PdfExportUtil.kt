@@ -417,7 +417,7 @@ object PdfExportUtil {
     /**
      * Get all exported PDF files
      */
-    fun getExportedPdfs(context: Context): List<File> {
+    fun getExportedPdfs(context: Context): kotlin.collections.List<File> {
         val pdfDir = File(context.getExternalFilesDir(null), PDF_DIR)
         return if (pdfDir.exists()) {
             pdfDir.listFiles { file -> file.extension.equals("pdf", ignoreCase = true) }?.toList() ?: emptyList()
