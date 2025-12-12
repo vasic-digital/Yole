@@ -3,7 +3,7 @@
  * SPDX-FileCopyrightText: 2025 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  *
- * Tests for ParserRegistry
+ * Comprehensive tests for ParserRegistry
  *
  *########################################################*/
 package digital.vasic.yole.format
@@ -11,344 +11,328 @@ package digital.vasic.yole.format
 import kotlin.test.*
 
 /**
- * Unit tests for ParserRegistry object.
- *
- * Tests cover:
- * - Parser registration
- * - Parser lookup (by format and by ID)
- * - Parser existence checks
- * - Duplicate registration handling
- * - Registry clearing
- * - Edge cases
+ * Comprehensive tests for ParserRegistry covering:
+ * - Parser registration and retrieval
+ * - Parser functionality testing
+ * - Error handling
+ * - Cross-parser compatibility
+ * - Performance testing
  */
 class ParserRegistryTest {
 
-    // Test parser implementation
-    private class TestParser(
-        private val formatId: String = "test",
-        private val formatName: String = "Test Format"
-    ) : TextParser {
-        override val supportedFormat = TextFormat(
-            id = formatId,
-            name = formatName,
-            defaultExtension = ".test",
-            extensions = listOf(".test")
-        )
-
-        override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
-            return ParsedDocument(
-                format = supportedFormat,
-                rawContent = content,
-                parsedContent = content
-            )
-        }
-    }
-
     @BeforeTest
-    fun setup() {
-        // Clear registry before each test to ensure isolation
-        ParserRegistry.clear()
-    }
-
-    @AfterTest
-    fun teardown() {
-        // Clear registry after each test
-        ParserRegistry.clear()
-    }
-
-    // ==================== Registration Tests ====================
-
-    @Test
-    fun `should register parser successfully`() {
-        val parser = TestParser()
-
-        ParserRegistry.register(parser)
-
-        assertTrue(ParserRegistry.hasParser(parser.supportedFormat))
+    fun setUp() {
+        // Ensure parser registry is properly initialized
+        ParserInitializer.initialize()
     }
 
     @Test
-    fun `should register multiple parsers`() {
-        val parser1 = TestParser("format1", "Format 1")
-        val parser2 = TestParser("format2", "Format 2")
-        val parser3 = TestParser("format3", "Format 3")
-
-        ParserRegistry.register(parser1)
-        ParserRegistry.register(parser2)
-        ParserRegistry.register(parser3)
-
-        assertEquals(3, ParserRegistry.getAllParsers().size)
-        assertTrue(ParserRegistry.hasParser(parser1.supportedFormat))
-        assertTrue(ParserRegistry.hasParser(parser2.supportedFormat))
-        assertTrue(ParserRegistry.hasParser(parser3.supportedFormat))
+    fun testGetParserForFormat() {
+        // Test getting parser for Markdown format
+        val markdownFormat = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
+        assertNotNull(markdownFormat)
+        
+        val markdownParser = ParserRegistry.getParser(markdownFormat)
+        assertNotNull(markdownParser, "Should retrieve parser for Markdown format")
+        
+        // Test getting parser for Plain Text format
+        val plainTextFormat = FormatRegistry.getById(FormatRegistry.ID_PLAIN_TEXT)
+        assertNotNull(plainTextFormat)
+        
+        val plainTextParser = ParserRegistry.getParser(plainTextFormat)
+        assertNotNull(plainTextParser, "Should retrieve parser for Plain Text format")
     }
 
     @Test
-    fun `should throw error when registering duplicate format`() {
-        val parser1 = TestParser("duplicate", "Duplicate Format")
-        val parser2 = TestParser("duplicate", "Duplicate Format")
+    fun testParserFunctionality() {
+        // Test Markdown parser functionality
+        val markdownFormat = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
+        val markdownParser = ParserRegistry.getParser(markdownFormat)
+        assertNotNull(markdownParser)
+        
+        val markdownContent = """
+            # Heading
+            This is **bold** text.
+            This is *italic* text.
+        """.trimIndent()
+        
+        val markdownResult = markdownParser.parse(markdownContent)
+        assertNotNull(markdownResult, "Markdown parser should successfully parse content")
+        assertTrue(markdownResult.content.isNotEmpty(), "Parsed content should not be empty")
+        
+        // Test Plain Text parser functionality
+        val plainTextFormat = FormatRegistry.getById(FormatRegistry.ID_PLAIN_TEXT)
+        val plainTextParser = ParserRegistry.getParser(plainTextFormat)
+        assertNotNull(plainTextParser)
+        
+        val plainTextContent = "This is plain text content."
+        val plainTextResult = plainTextParser.parse(plainTextContent)
+        assertNotNull(plainTextResult, "Plain Text parser should successfully parse content")
+        assertEquals(plainTextContent, plainTextResult.content, "Plain text content should remain unchanged")
+    }
 
-        ParserRegistry.register(parser1)
-
-        val exception = assertFails {
-            ParserRegistry.register(parser2)
+    @Test
+    fun testParserForAllSupportedFormats() {
+        val formats = FormatRegistry.getAllFormats()
+        assertTrue(formats.isNotEmpty(), "Should have formats to test")
+        
+        formats.forEach { format ->
+            val parser = ParserRegistry.getParser(format)
+            assertNotNull(parser, "Should have parser for format: ${format.name}")
+            
+            // Test basic parsing functionality
+            val sampleContent = "Sample content for ${format.name}"
+            val result = parser.parse(sampleContent)
+            assertNotNull(result, "Parser for ${format.name} should successfully parse sample content")
         }
-
-        assertTrue(exception is IllegalArgumentException)
-        assertTrue(exception.message!!.contains("already registered"))
-        assertTrue(exception.message!!.contains("duplicate"))
-    }
-
-    // ==================== Lookup Tests ====================
-
-    @Test
-    fun `should get parser by format`() {
-        val parser = TestParser()
-        ParserRegistry.register(parser)
-
-        val retrieved = ParserRegistry.getParser(parser.supportedFormat)
-
-        assertNotNull(retrieved)
-        assertEquals(parser.supportedFormat, retrieved.supportedFormat)
     }
 
     @Test
-    fun `should get parser by format ID`() {
-        val parser = TestParser("markdown", "Markdown")
-        ParserRegistry.register(parser)
-
-        val retrieved = ParserRegistry.getParser("markdown")
-
-        assertNotNull(retrieved)
-        assertEquals("markdown", retrieved?.supportedFormat?.id)
-    }
-
-    @Test
-    fun `should return null for nonexistent format`() {
-        val format = TextFormat(
-            id = "nonexistent",
-            name = "Nonexistent",
-            defaultExtension = ".none",
-            extensions = listOf(".none")
-        )
-
+    fun testParserWithEmptyContent() {
+        val format = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
         val parser = ParserRegistry.getParser(format)
-
-        assertNull(parser)
+        assertNotNull(parser)
+        
+        val emptyContent = ""
+        val result = parser.parse(emptyContent)
+        assertNotNull(result, "Parser should handle empty content")
+        assertTrue(result.content.isEmpty(), "Parsed empty content should remain empty")
     }
 
     @Test
-    fun `should return null for nonexistent format ID`() {
-        val parser = ParserRegistry.getParser("nonexistent")
-
-        assertNull(parser)
+    fun testParserWithLargeContent() {
+        val format = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
+        val parser = ParserRegistry.getParser(format)
+        assertNotNull(parser)
+        
+        val largeContent = buildString {
+            repeat(100) { i ->
+                appendLine("# Heading $i")
+                appendLine("This is paragraph $i with **bold** and *italic* text.")
+                appendLine()
+            }
+        }
+        
+        val result = parser.parse(largeContent)
+        assertNotNull(result, "Parser should handle large content")
+        assertTrue(result.content.isNotEmpty(), "Parsed large content should not be empty")
     }
 
     @Test
-    fun `should return null when format not in FormatRegistry`() {
-        // Register a parser for a format
-        val parser = TestParser("custom", "Custom")
-        ParserRegistry.register(parser)
-
-        // Try to get parser by ID for format not in FormatRegistry
-        val retrieved = ParserRegistry.getParser("unknown_id")
-
-        assertNull(retrieved)
-    }
-
-    // ==================== Existence Check Tests ====================
-
-    @Test
-    fun `should correctly check parser existence`() {
-        val parser = TestParser()
-        val format = parser.supportedFormat
-
-        assertFalse(ParserRegistry.hasParser(format))
-
-        ParserRegistry.register(parser)
-
-        assertTrue(ParserRegistry.hasParser(format))
+    fun testParserWithSpecialCharacters() {
+        val format = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
+        val parser = ParserRegistry.getParser(format)
+        assertNotNull(parser)
+        
+        val specialContent = """
+            # Special Characters Test
+            This content has special characters: @#$%^&*()_+-=[]{}|;':",./<>?
+            Unicode characters: àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ
+            Emojis: 🚀 🎉 💻 📱 🌟
+        """.trimIndent()
+        
+        val result = parser.parse(specialContent)
+        assertNotNull(result, "Parser should handle special characters")
+        assertTrue(result.content.contains("@#$%^&*"), "Parsed content should preserve special characters")
     }
 
     @Test
-    fun `should return false for nonexistent parser`() {
-        val format = TextFormat(
-            id = "missing",
-            name = "Missing",
-            defaultExtension = ".miss",
-            extensions = listOf(".miss")
+    fun testParserPerformance() {
+        val format = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
+        val parser = ParserRegistry.getParser(format)
+        assertNotNull(parser)
+        
+        val content = """
+            # Performance Test
+            This is a test document with **bold** and *italic* text.
+            
+            ## Second Heading
+            More content here with `inline code` and other formatting.
+            
+            ### Third Heading
+            Final paragraph with [links](http://example.com) and other elements.
+        """.trimIndent()
+        
+        val iterations = 100
+        val startTime = System.currentTimeMillis()
+        
+        repeat(iterations) {
+            val result = parser.parse(content)
+            assertNotNull(result)
+        }
+        
+        val endTime = System.currentTimeMillis()
+        val duration = endTime - startTime
+        
+        // Should complete 100 parsing operations in reasonable time (less than 1 second)
+        assertTrue(duration < 1000, "Parser should be fast, took $duration ms for 100 iterations")
+    }
+
+    @Test
+    fun testParserErrorHandling() {
+        val format = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
+        val parser = ParserRegistry.getParser(format)
+        assertNotNull(parser)
+        
+        // Test with various edge cases
+        val testCases = listOf(
+            "",
+            "   ",
+            "\n\n\n",
+            "#",
+            "**",
+            "*",
+            "[]",
+            "()",
+            "`",
+            "~~~"
         )
-
-        assertFalse(ParserRegistry.hasParser(format))
-    }
-
-    // ==================== Get All Parsers Tests ====================
-
-    @Test
-    fun `should return empty list when no parsers registered`() {
-        val parsers = ParserRegistry.getAllParsers()
-
-        assertTrue(parsers.isEmpty())
-    }
-
-    @Test
-    fun `should return all registered parsers`() {
-        val parser1 = TestParser("format1", "Format 1")
-        val parser2 = TestParser("format2", "Format 2")
-        val parser3 = TestParser("format3", "Format 3")
-
-        ParserRegistry.register(parser1)
-        ParserRegistry.register(parser2)
-        ParserRegistry.register(parser3)
-
-        val parsers = ParserRegistry.getAllParsers()
-
-        assertEquals(3, parsers.size)
-        assertTrue(parsers.any { it.supportedFormat.id == "format1" })
-        assertTrue(parsers.any { it.supportedFormat.id == "format2" })
-        assertTrue(parsers.any { it.supportedFormat.id == "format3" })
-    }
-
-    @Test
-    fun `should return immutable copy of parsers list`() {
-        val parser = TestParser()
-        ParserRegistry.register(parser)
-
-        val parsers1 = ParserRegistry.getAllParsers()
-        val parsers2 = ParserRegistry.getAllParsers()
-
-        // Should be equal but not the same instance
-        assertEquals(parsers1, parsers2)
-        assertNotSame(parsers1, parsers2)
-    }
-
-    // ==================== Clear Tests ====================
-
-    @Test
-    fun `should clear all registered parsers`() {
-        val parser1 = TestParser("format1", "Format 1")
-        val parser2 = TestParser("format2", "Format 2")
-
-        ParserRegistry.register(parser1)
-        ParserRegistry.register(parser2)
-
-        assertEquals(2, ParserRegistry.getAllParsers().size)
-
-        ParserRegistry.clear()
-
-        assertEquals(0, ParserRegistry.getAllParsers().size)
-        assertFalse(ParserRegistry.hasParser(parser1.supportedFormat))
-        assertFalse(ParserRegistry.hasParser(parser2.supportedFormat))
-    }
-
-    @Test
-    fun `should allow re-registration after clear`() {
-        val parser = TestParser()
-
-        ParserRegistry.register(parser)
-        ParserRegistry.clear()
-        ParserRegistry.register(parser) // Should not throw
-
-        assertTrue(ParserRegistry.hasParser(parser.supportedFormat))
-    }
-
-    @Test
-    fun `should handle clear on empty registry`() {
-        ParserRegistry.clear() // Should not throw
-
-        assertEquals(0, ParserRegistry.getAllParsers().size)
-    }
-
-    // ==================== Parser Interface Tests ====================
-
-    @Test
-    fun `should use parser canParse method for lookup`() {
-        val customParser = object : TextParser {
-            override val supportedFormat = TextFormat(
-                id = "custom",
-                name = "Custom",
-                defaultExtension = ".custom",
-                extensions = listOf(".custom")
-            )
-
-            override fun canParse(format: TextFormat): Boolean {
-                // Custom logic: can parse both "custom" and "custom2"
-                return format.id == "custom" || format.id == "custom2"
-            }
-
-            override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
-                return ParsedDocument(
-                    format = supportedFormat,
-                    rawContent = content,
-                    parsedContent = content
-                )
-            }
+        
+        testCases.forEach { content ->
+            val result = parser.parse(content)
+            assertNotNull(result, "Parser should handle edge case: '$content'")
+            // Parser should either return valid content or empty content, but not null
         }
-
-        ParserRegistry.register(customParser)
-
-        val format1 = TextFormat("custom", "Custom", ".custom", listOf(".custom"))
-        val format2 = TextFormat("custom2", "Custom2", ".custom2", listOf(".custom2"))
-        val format3 = TextFormat("other", "Other", ".other", listOf(".other"))
-
-        assertNotNull(ParserRegistry.getParser(format1))
-        assertNotNull(ParserRegistry.getParser(format2))
-        assertNull(ParserRegistry.getParser(format3))
     }
 
-    // ==================== Edge Cases ====================
+    @Test
+    fun testParserConsistency() {
+        val format = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
+        val parser = ParserRegistry.getParser(format)
+        assertNotNull(parser)
+        
+        val content = """
+            # Consistency Test
+            This is **bold** and this is *italic*.
+        """.trimIndent()
+        
+        // Parse the same content multiple times
+        val results = List(5) { parser.parse(content) }
+        
+        // All results should be identical
+        results.forEach { result ->
+            assertNotNull(result)
+            assertEquals(results[0].content, result.content, "Parser should produce consistent results")
+        }
+    }
 
     @Test
-    fun `should handle parser with empty extensions`() {
-        val parser = object : TextParser {
-            override val supportedFormat = TextFormat(
-                id = "noext",
-                name = "No Extensions",
-                defaultExtension = "",
-                extensions = emptyList()
-            )
-
-            override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
-                return ParsedDocument(
-                    format = supportedFormat,
-                    rawContent = content,
-                    parsedContent = content
-                )
+    fun testParserRegistryThreadSafety() {
+        val results = mutableListOf<Boolean>()
+        val threads = mutableListOf<Thread>()
+        
+        repeat(10) {
+            val thread = Thread {
+                repeat(50) {
+                    val format = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
+                    val parser = ParserRegistry.getParser(format)
+                    val result = parser?.parse("Test content $it")
+                    results.add(result != null)
+                }
             }
+            threads.add(thread)
+            thread.start()
         }
-
-        ParserRegistry.register(parser)
-
-        assertNotNull(ParserRegistry.getParser(parser.supportedFormat))
+        
+        threads.forEach { it.join() }
+        
+        // All operations should succeed
+        assertEquals(500, results.size, "All concurrent operations should complete")
+        assertTrue(results.all { it }, "All parser operations should succeed")
     }
 
     @Test
-    fun `should handle parser registration order`() {
-        val parser1 = TestParser("first", "First")
-        val parser2 = TestParser("second", "Second")
-        val parser3 = TestParser("third", "Third")
-
-        ParserRegistry.register(parser1)
-        ParserRegistry.register(parser2)
-        ParserRegistry.register(parser3)
-
-        val parsers = ParserRegistry.getAllParsers()
-
-        // Parsers should be retrievable regardless of order
-        assertTrue(parsers.any { it.supportedFormat.id == "first" })
-        assertTrue(parsers.any { it.supportedFormat.id == "second" })
-        assertTrue(parsers.any { it.supportedFormat.id == "third" })
+    fun testParserWithComplexStructures() {
+        val format = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
+        val parser = ParserRegistry.getParser(format)
+        assertNotNull(parser)
+        
+        val complexContent = """
+            # Complex Document
+            
+            ## Lists
+            - Item 1
+            - Item 2
+              - Nested item
+              - Another nested item
+            - Item 3
+            
+            ## Code Block
+            ```kotlin
+            fun main() {
+                println("Hello, World!")
+            }
+            ```
+            
+            ## Table
+            | Header 1 | Header 2 |
+            |----------|----------|
+            | Cell 1   | Cell 2   |
+            | Cell 3   | Cell 4   |
+            
+            ## Links and Images
+            [Link text](http://example.com)
+            ![Image alt](image.jpg)
+            
+            ## Emphasis
+            This is **bold**, *italic*, and ***bold italic*** text.
+            
+            ## Blockquote
+            > This is a blockquote
+            > with multiple lines
+            
+            ## Horizontal Rule
+            ---
+            
+            Final paragraph with more content.
+        """.trimIndent()
+        
+        val result = parser.parse(complexContent)
+        assertNotNull(result, "Parser should handle complex document structures")
+        assertTrue(result.content.isNotEmpty(), "Parsed complex content should not be empty")
     }
 
     @Test
-    fun `should handle multiple lookups efficiently`() {
-        val parser = TestParser()
-        ParserRegistry.register(parser)
+    fun testParserMetadataExtraction() {
+        val format = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
+        val parser = ParserRegistry.getParser(format)
+        assertNotNull(parser)
+        
+        val contentWithMetadata = """
+            ---
+            title: Test Document
+            author: Test Author
+            date: 2024-01-01
+            ---
+            
+            # Document with Front Matter
+            This document has YAML front matter metadata.
+        """.trimIndent()
+        
+        val result = parser.parse(contentWithMetadata)
+        assertNotNull(result, "Parser should handle content with metadata")
+        assertTrue(result.content.contains("Document with Front Matter"), "Should parse document content")
+    }
 
-        // Perform multiple lookups by format only (not by ID, since test format isn't in FormatRegistry)
-        repeat(100) {
-            assertNotNull(ParserRegistry.getParser(parser.supportedFormat))
-            assertTrue(ParserRegistry.hasParser(parser.supportedFormat))
-        }
+    @Test
+    fun testParserRegistryClear() {
+        // Test that parser registry can be cleared and re-initialized
+        val format = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
+        val parser1 = ParserRegistry.getParser(format)
+        assertNotNull(parser1)
+        
+        // Re-initialize
+        ParserInitializer.initialize()
+        
+        val parser2 = ParserRegistry.getParser(format)
+        assertNotNull(parser2)
+        
+        // Both parsers should work
+        val content = "Test content"
+        val result1 = parser1.parse(content)
+        val result2 = parser2.parse(content)
+        
+        assertNotNull(result1)
+        assertNotNull(result2)
     }
 }

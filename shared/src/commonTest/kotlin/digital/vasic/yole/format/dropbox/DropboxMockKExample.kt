@@ -25,7 +25,7 @@ import kotlin.test.assertNotNull
  * - Spy on real objects
  * - Relaxed mocks
  */
-class MockKExampleTest {
+class DropboxMockKExampleTest {
 
     // Mock object that will be reset before each test
     private lateinit var mockFileSystem: MockFileSystem

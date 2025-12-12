@@ -151,6 +151,9 @@ kotlin {
         val desktopTest by getting {
             dependencies {
                 implementation(kotlin("test-junit"))
+                implementation(libs.assertj.core)
+                implementation(libs.mockk)
+                implementation(libs.junit)
             }
         }
 

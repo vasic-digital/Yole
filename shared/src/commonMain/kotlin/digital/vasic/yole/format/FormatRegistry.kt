@@ -387,4 +387,11 @@ object FormatRegistry {
     const val ID_JUPYTER = "jupyter"
     const val ID_RMARKDOWN = "rmarkdown"
     const val ID_BINARY = "binary"
+    
+    // Network storage format IDs
+    const val ID_DROPBOX = "dropbox"
+    const val ID_FTP = "ftp"
+    const val ID_GOOGLEDRIVE = "googledrive"
+    const val ID_ONEDRIVE = "onedrive"
+    const val ID_SFTP = "sftp"
 }
