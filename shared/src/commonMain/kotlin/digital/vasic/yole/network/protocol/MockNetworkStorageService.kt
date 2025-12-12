@@ -36,7 +36,8 @@ class MockNetworkStorageService(
                 size = 1024L,
                 lastModified = Clock.System.now(),
                 syncStatus = SyncStatus.SYNCED,
-                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
+                storageId = "mock-storage"
             )
         )))
     }
@@ -88,7 +89,8 @@ class MockNetworkStorageService(
             syncStatus = SyncStatus.SYNCED,
             permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE),
             size = 0L,
-            lastModified = Clock.System.now()
+            lastModified = Clock.System.now(),
+            storageId = "mock-storage"
         ))
     }
     
@@ -105,7 +107,8 @@ class MockNetworkStorageService(
             syncStatus = SyncStatus.SYNCED,
             permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE),
             size = 1024L,
-            lastModified = Clock.System.now()
+            lastModified = Clock.System.now(),
+            storageId = "mock-storage"
         ))
     }
     
@@ -122,7 +125,8 @@ class MockNetworkStorageService(
             size = 1024L,
             lastModified = Clock.System.now(),
             syncStatus = SyncStatus.SYNCED,
-            permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
+            permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
+            storageId = "mock-storage"
         ))
     }
     
@@ -219,7 +223,8 @@ class MockNetworkStorageService(
                 syncStatus = SyncStatus.SYNCED,
                 permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
                 size = 1024L,
-                lastModified = Clock.System.now()
+                lastModified = Clock.System.now(),
+                storageId = "mock-storage"
             )
         )))
     }

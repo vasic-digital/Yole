@@ -110,7 +110,12 @@ data class NetworkDocument(
     /**
      * Document permissions
      */
-    val permissions: Set<DocumentPermission> = emptySet()
+    val permissions: Set<DocumentPermission> = emptySet(),
+    
+    /**
+     * Storage ID this document belongs to
+     */
+    val storageId: String
 ) {
     /**
      * Whether this document is a text file that can be edited
@@ -229,7 +234,8 @@ data class NetworkDocument(
             path: String = "/test.txt",
             isFolder: Boolean = false,
             size: Long = 1024L,
-            syncStatus: SyncStatus = SyncStatus.SYNCED
+            syncStatus: SyncStatus = SyncStatus.SYNCED,
+            storageId: String = "test-storage"
         ): NetworkDocument {
             return NetworkDocument(
                 id = "mock-${kotlinx.datetime.Clock.System.now().epochSeconds}",
@@ -238,7 +244,8 @@ data class NetworkDocument(
                 isFolder = isFolder,
                 size = size,
                 lastModified = kotlinx.datetime.Clock.System.now(),
-                syncStatus = syncStatus
+                syncStatus = syncStatus,
+                storageId = storageId
             )
         }
         
@@ -247,7 +254,8 @@ data class NetworkDocument(
          */
         fun mockFolder(
             name: String = "folder",
-            path: String = "/folder"
+            path: String = "/folder",
+            storageId: String = "test-storage"
         ): NetworkDocument {
             return NetworkDocument(
                 id = "mock-folder-${kotlinx.datetime.Clock.System.now().epochSeconds}",
@@ -255,7 +263,8 @@ data class NetworkDocument(
                 path = path,
                 isFolder = true,
                 lastModified = kotlinx.datetime.Clock.System.now(),
-                syncStatus = SyncStatus.SYNCED
+                syncStatus = SyncStatus.SYNCED,
+                storageId = storageId
             )
         }
     }

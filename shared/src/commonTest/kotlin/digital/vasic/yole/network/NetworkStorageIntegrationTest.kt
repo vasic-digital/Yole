@@ -110,6 +110,13 @@ class NetworkStorageIntegrationTest {
                         expiresIn = 3600L
                     )
                 }
+                is StorageConfig.FtpConfig,
+                is StorageConfig.SftpConfig,
+                is StorageConfig.SmbConfig,
+                is StorageConfig.WebDavConfig,
+                is StorageConfig.GitConfig -> {
+                    // No token storage needed for these protocols
+                }
             }
         }
     }

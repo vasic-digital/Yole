@@ -7,6 +7,7 @@ import digital.vasic.yole.network.platform.SecureStorage
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Duration
 import kotlin.test.*
 
 /**
@@ -317,7 +318,7 @@ class DropboxServiceEnhancedTest {
         authTokenManager.clearTokens()
         
         // Store expired access token and valid refresh token
-        val pastTime = Clock.System.now().minus(kotlinx.datetime.Duration.hours(1))
+        val pastTime = Clock.System.now().minus(Duration.hours(1))
         authTokenManager.storeAccessToken("expired-access-token")
         authTokenManager.storeRefreshToken("valid-refresh-token")
         authTokenManager.storeTokenExpiration(pastTime)

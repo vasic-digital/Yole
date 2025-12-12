@@ -4,6 +4,7 @@ import digital.vasic.yole.network.platform.SecureStorage
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.Duration
 import kotlin.test.*
 
 /**
@@ -52,7 +53,7 @@ class AuthTokenManagerTest {
     
     @Test
     fun testStoreAndCheckTokenExpiration() = runTest {
-        val futureTime = Clock.System.now().plus(kotlinx.datetime.Duration.hours(1))
+        val futureTime = Clock.System.now().plus(Duration.hours(1))
         
         // Store expiration time
         val storeResult = authTokenManager.storeTokenExpiration(futureTime)
@@ -66,7 +67,7 @@ class AuthTokenManagerTest {
     
     @Test
     fun testExpiredTokenDetection() = runTest {
-        val pastTime = Clock.System.now().minus(kotlinx.datetime.Duration.hours(1))
+        val pastTime = Clock.System.now().minus(Duration.hours(1))
         
         // Store past expiration time
         val storeResult = authTokenManager.storeTokenExpiration(pastTime)
@@ -86,7 +87,7 @@ class AuthTokenManagerTest {
         assertFalse(initialCheck.getOrNull() ?: true, "Should not have valid token initially")
         
         // Store valid token with future expiration
-        val futureTime = Clock.System.now().plus(kotlinx.datetime.Duration.hours(2))
+        val futureTime = Clock.System.now().plus(Duration.hours(2))
         authTokenManager.storeAccessToken("valid-token")
         authTokenManager.storeTokenExpiration(futureTime)
         
@@ -99,7 +100,7 @@ class AuthTokenManagerTest {
     @Test
     fun testHasValidTokenWithExpiredToken() = runTest {
         // Store token with past expiration
-        val pastTime = Clock.System.now().minus(kotlinx.datetime.Duration.hours(1))
+        val pastTime = Clock.System.now().minus(Duration.hours(1))
         authTokenManager.storeAccessToken("expired-token")
         authTokenManager.storeTokenExpiration(pastTime)
         
@@ -114,7 +115,7 @@ class AuthTokenManagerTest {
         // Store tokens
         authTokenManager.storeAccessToken("access-token")
         authTokenManager.storeRefreshToken("refresh-token")
-        val futureTime = Clock.System.now().plus(kotlinx.datetime.Duration.hours(1))
+        val futureTime = Clock.System.now().plus(Duration.hours(1))
         authTokenManager.storeTokenExpiration(futureTime)
         
         // Verify tokens exist
@@ -214,7 +215,7 @@ class AuthTokenManagerTest {
         // Store tokens
         authTokenManager.storeAccessToken("access-token")
         authTokenManager.storeRefreshToken("refresh-token")
-        val futureTime = Clock.System.now().plus(kotlinx.datetime.Duration.hours(2))
+        val futureTime = Clock.System.now().plus(Duration.hours(2))
         authTokenManager.storeTokenExpiration(futureTime)
         
         // Check token info with valid tokens
