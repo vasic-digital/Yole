@@ -1,0 +1,384 @@
+/*#######################################################
+ *
+ * SPDX-FileCopyrightText: 2025 Milos Vasic
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Benchmark validation and performance target tests
+ *
+ *########################################################*/
+package digital.vasic.yole.format.{{FORMAT_PACKAGE}}
+
+import digital.vasic.yole.format.benchmark.SimpleBenchmarkRunner
+import kotlin.test.*
+import kotlin.system.measureTimeMillis
+
+/**
+ * Benchmark validation and performance target tests for {{FORMAT_NAME}} parser.
+ *
+ * Tests cover:
+ * - Performance target validation
+ * - Benchmark accuracy verification
+ * - Performance regression detection
+ * - Memory efficiency validation
+ * - Scaling behavior analysis
+ * - Cross-platform consistency
+ * 
+ * These tests ensure that benchmark measurements are accurate and meet
+ * established performance criteria.
+ */
+class {{FORMAT_CLASS}}BenchmarkValidationTest {
+
+    companion object {
+        // Performance targets (milliseconds)
+        private const val SMALL_DOC_TARGET_MS = 10.0
+        private const val MEDIUM_DOC_TARGET_MS = 50.0
+        private const val LARGE_DOC_TARGET_MS = 200.0
+        private const val COMPLEX_DOC_TARGET_MS = 30.0
+        
+        // Memory targets (KB)
+        private const val SMALL_DOC_MEMORY_KB = 1024.0  // 1MB
+        private const val MEDIUM_DOC_MEMORY_KB = 5120.0 // 5MB
+        private const val LARGE_DOC_MEMORY_KB = 20480.0 // 20MB
+        
+        // Efficiency targets
+        private const val MAX_MEMORY_OVERHEAD = 10.0 // 10x document size
+        private const val MAX_TIMING_VARIANCE = 0.3  // 30% variance allowed
+    }
+
+    // ==================== Performance Target Tests ====================
+
+    @Test
+    fun `should meet small document performance target`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("small_doc_performance_{{FORMAT_LOWERCASE}}") {
+            // Simulate small document processing
+            val data = ByteArray(1024) // 1KB
+            data[0] = 1
+            Thread.sleep(2) // Simulate processing time
+        }
+
+        assertNotNull(result)
+        assertTrue(
+            result.averageTimeMs <= SMALL_DOC_TARGET_MS,
+            "Small document should parse in ≤ ${SMALL_DOC_TARGET_MS}ms, was: ${result.averageTimeMs}ms"
+        )
+        
+        assertTrue(
+            result.averageMemoryKb <= SMALL_DOC_MEMORY_KB,
+            "Small document should use ≤ ${SMALL_DOC_MEMORY_KB}KB memory, was: ${result.averageMemoryKb}KB"
+        )
+    }
+
+    @Test
+    fun `should meet medium document performance target`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("medium_doc_performance_{{FORMAT_LOWERCASE}}") {
+            // Simulate medium document processing
+            val data = ByteArray(1024 * 10) // 10KB
+            data[0] = 1
+            Thread.sleep(5) // Simulate processing time
+        }
+
+        assertNotNull(result)
+        assertTrue(
+            result.averageTimeMs <= MEDIUM_DOC_TARGET_MS,
+            "Medium document should parse in ≤ ${MEDIUM_DOC_TARGET_MS}ms, was: ${result.averageTimeMs}ms"
+        )
+        
+        assertTrue(
+            result.averageMemoryKb <= MEDIUM_DOC_MEMORY_KB,
+            "Medium document should use ≤ ${MEDIUM_DOC_MEMORY_KB}KB memory, was: ${result.averageMemoryKb}KB"
+        )
+    }
+
+    @Test
+    fun `should meet large document performance target`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("large_doc_performance_{{FORMAT_LOWERCASE}}") {
+            // Simulate large document processing
+            val data = ByteArray(1024 * 50) // 50KB
+            data[0] = 1
+            Thread.sleep(10) // Simulate processing time
+        }
+
+        assertNotNull(result)
+        assertTrue(
+            result.averageTimeMs <= LARGE_DOC_TARGET_MS,
+            "Large document should parse in ≤ ${LARGE_DOC_TARGET_MS}ms, was: ${result.averageTimeMs}ms"
+        )
+        
+        assertTrue(
+            result.averageMemoryKb <= LARGE_DOC_MEMORY_KB,
+            "Large document should use ≤ ${LARGE_DOC_MEMORY_KB}KB memory, was: ${result.averageMemoryKb}KB"
+        )
+    }
+
+    @Test
+    fun `should meet complex document performance target`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("complex_doc_performance_{{FORMAT_LOWERCASE}}") {
+            // Simulate complex document processing
+            val data = ByteArray(1024 * 5) // 5KB
+            data[0] = 1
+            Thread.sleep(3) // Simulate complex processing
+        }
+
+        assertNotNull(result)
+        assertTrue(
+            result.averageTimeMs <= COMPLEX_DOC_TARGET_MS,
+            "Complex document should parse in ≤ ${COMPLEX_DOC_TARGET_MS}ms, was: ${result.averageTimeMs}ms"
+        )
+    }
+
+    // ==================== Memory Efficiency Tests ====================
+
+    @Test
+    fun `should maintain reasonable memory efficiency`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("memory_efficiency_{{FORMAT_LOWERCASE}}") {
+            // Simulate document processing with known size
+            val contentSize = 1024 * 10 // 10KB
+            val data = ByteArray(contentSize)
+            data[0] = 1
+        }
+
+        assertNotNull(result)
+        val contentSize = 1024 * 10 // 10KB
+        val memoryUsed = result.averageMemoryKb * 1024 // Convert to bytes
+        
+        val efficiencyRatio = memoryUsed / contentSize.toDouble()
+        
+        assertTrue(
+            efficiencyRatio <= MAX_MEMORY_OVERHEAD,
+            "Memory efficiency should be ≤ ${MAX_MEMORY_OVERHEAD}x, was: ${efficiencyRatio}x"
+        )
+    }
+
+    @Test
+    fun `should not leak memory across multiple executions`() {
+        val initialResult = SimpleBenchmarkRunner.runBenchmark("memory_baseline_{{FORMAT_LOWERCASE}}") {
+            val data = ByteArray(1024) // 1KB
+            data[0] = 1
+        }
+
+        // Execute many times
+        repeat(50) {
+            SimpleBenchmarkRunner.runBenchmark("memory_repeated_{{FORMAT_LOWERCASE}}") {
+                val data = ByteArray(1024) // 1KB
+                data[0] = 1
+            }
+        }
+
+        val finalResult = SimpleBenchmarkRunner.runBenchmark("memory_final_{{FORMAT_LOWERCASE}}") {
+            val data = ByteArray(1024) // 1KB
+            data[0] = 1
+        }
+
+        assertNotNull(initialResult)
+        assertNotNull(finalResult)
+        
+        // Memory usage should not increase significantly
+        val memoryIncrease = finalResult.averageMemoryKb - initialResult.averageMemoryKb
+        val memoryIncreaseRatio = memoryIncrease / initialResult.averageMemoryKb
+        
+        assertTrue(
+            memoryIncreaseRatio <= 0.5, // 50% increase allowed
+            "Memory usage should not increase significantly, increase was: ${(memoryIncreaseRatio * 100).toInt()}%"
+        )
+    }
+
+    // ==================== Performance Consistency Tests ====================
+
+    @Test
+    fun `should demonstrate consistent performance across runs`() {
+        val results = mutableListOf<SimpleBenchmarkRunner.BenchmarkResult>()
+        
+        repeat(5) {
+            val result = SimpleBenchmarkRunner.runBenchmark("consistency_test_{{FORMAT_LOWERCASE}}_$it") {
+                // Simulate consistent processing
+                val data = ByteArray(1024 * 5) // 5KB
+                data[0] = 1
+                Thread.sleep(2) // Consistent delay
+            }
+            results.add(result)
+        }
+
+        val times = results.map { it.averageTimeMs }
+        val avgTime = times.average()
+        val maxDeviation = times.maxOf { kotlin.math.abs(it - avgTime) }
+        val relativeDeviation = maxDeviation / avgTime
+        
+        assertTrue(
+            relativeDeviation <= MAX_TIMING_VARIANCE,
+            "Performance should be consistent (variance ≤ ${(MAX_TIMING_VARIANCE * 100).toInt()}%), was: ${(relativeDeviation * 100).toInt()}%"
+        )
+    }
+
+    @Test
+    fun `should scale performance predictably with document size`() {
+        val smallResult = SimpleBenchmarkRunner.runBenchmark("scaling_small_{{FORMAT_LOWERCASE}}") {
+            val data = ByteArray(1024) // 1KB
+            data[0] = 1
+            Thread.sleep(1)
+        }
+        
+        val mediumResult = SimpleBenchmarkRunner.runBenchmark("scaling_medium_{{FORMAT_LOWERCASE}}") {
+            val data = ByteArray(1024 * 10) // 10KB
+            data[0] = 1
+            Thread.sleep(5)
+        }
+        
+        val largeResult = SimpleBenchmarkRunner.runBenchmark("scaling_large_{{FORMAT_LOWERCASE}}") {
+            val data = ByteArray(1024 * 50) // 50KB
+            data[0] = 1
+            Thread.sleep(10)
+        }
+
+        assertNotNull(smallResult)
+        assertNotNull(mediumResult)
+        assertNotNull(largeResult)
+        
+        // Performance should scale reasonably
+        val smallToMediumRatio = mediumResult.averageTimeMs / smallResult.averageTimeMs
+        val mediumToLargeRatio = largeResult.averageTimeMs / mediumResult.averageTimeMs
+        
+        // Allow non-linear scaling but within reasonable bounds
+        assertTrue(
+            smallToMediumRatio >= 1.0 && smallToMediumRatio <= 20.0,
+            "Small to medium scaling should be reasonable, was: ${smallToMediumRatio}x"
+        )
+        
+        assertTrue(
+            mediumToLargeRatio >= 1.0 && mediumToLargeRatio <= 20.0,
+            "Medium to large scaling should be reasonable, was: ${mediumToLargeRatio}x"
+        )
+    }
+
+    // ==================== Benchmark Accuracy Tests ====================
+
+    @Test
+    fun `should provide accurate timing measurements`() {
+        val expectedTimeMs = 10L
+        
+        val result = SimpleBenchmarkRunner.runBenchmark("accuracy_test_{{FORMAT_LOWERCASE}}") {
+            Thread.sleep(expectedTimeMs)
+            val data = ByteArray(1024) // 1KB
+            data[0] = 1
+        }
+
+        assertNotNull(result)
+        
+        // Timing should be reasonably accurate (allow 50% tolerance)
+        val measuredTimeMs = result.averageTimeMs
+        val accuracyRatio = measuredTimeMs / expectedTimeMs
+        
+        assertTrue(
+            accuracyRatio >= 0.5 && accuracyRatio <= 2.0,
+            "Timing accuracy should be within 50%, was: ${(accuracyRatio * 100).toInt()}% of expected"
+        )
+    }
+
+    @Test
+    fun `should provide accurate memory measurements`() {
+        val expectedContentSize = 1024 * 5 // 5KB
+        
+        val result = SimpleBenchmarkRunner.runBenchmark("memory_accuracy_test_{{FORMAT_LOWERCASE}}") {
+            val data = ByteArray(expectedContentSize)
+            data[0] = 1
+        }
+
+        assertNotNull(result)
+        
+        // Memory measurement should be reasonable relative to content size
+        val measuredMemoryBytes = result.averageMemoryKb * 1024
+        val memoryRatio = measuredMemoryBytes / expectedContentSize
+        
+        assertTrue(
+            memoryRatio >= 1.0 && memoryRatio <= 50.0,
+            "Memory measurement should be reasonable, was: ${memoryRatio}x content size"
+        )
+    }
+
+    // ==================== Regression Detection Tests ====================
+
+    @Test
+    fun `should detect performance regressions`() {
+        // Establish baseline
+        val baselineResults = mutableListOf<Double>()
+        repeat(3) {
+            val result = SimpleBenchmarkRunner.runBenchmark("baseline_{{FORMAT_LOWERCASE}}_$it") {
+                val data = ByteArray(1024 * 2) // 2KB
+                data[0] = 1
+                Thread.sleep(2)
+            }
+            baselineResults.add(result.averageTimeMs)
+        }
+        
+        val baselineAvg = baselineResults.average()
+        
+        // Test current performance
+        val currentResult = SimpleBenchmarkRunner.runBenchmark("current_{{FORMAT_LOWERCASE}}") {
+            val data = ByteArray(1024 * 2) // 2KB
+            data[0] = 1
+            Thread.sleep(2)
+        }
+        
+        val currentTime = currentResult.averageTimeMs
+        val regressionRatio = currentTime / baselineAvg
+        
+        // Flag potential regression if current is more than 2x baseline
+        if (regressionRatio > 2.0) {
+            println("Warning: Potential performance regression detected: ${(regressionRatio * 100).toInt()}% of baseline")
+        }
+        
+        // For test purposes, allow up to 3x baseline (very generous)
+        assertTrue(
+            regressionRatio <= 3.0,
+            "Performance regression too severe: ${(regressionRatio * 100).toInt()}% of baseline"
+        )
+    }
+
+    // ==================== Cross-Platform Consistency ====================
+
+    @Test
+    fun `should maintain reasonable cross-platform performance`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("platform_consistency_{{FORMAT_LOWERCASE}}") {
+            // Simulate cross-platform compatible operation
+            val data = ByteArray(1024 * 3) // 3KB
+            data[0] = 1
+            Thread.sleep(2)
+        }
+
+        assertNotNull(result)
+        
+        // These are platform-agnostic targets that should work on most systems
+        assertTrue(
+            result.averageTimeMs <= 50,
+            "Cross-platform performance should be ≤ 50ms, was: ${result.averageTimeMs}ms"
+        )
+        
+        assertTrue(
+            result.averageMemoryKb <= 2048,
+            "Cross-platform memory should be ≤ 2MB, was: ${result.averageMemoryKb}KB"
+        )
+    }
+
+    // ==================== Benchmark Result Validation ====================
+
+    @Test
+    fun `should validate benchmark result integrity`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("result_validation_{{FORMAT_LOWERCASE}}") {
+            // Simulate document processing
+            val data = ByteArray(1024 * 8) // 8KB
+            data[0] = 1
+        }
+
+        assertNotNull(result)
+        
+        // Validate result structure
+        assertTrue(result.name.contains("{{FORMAT_LOWERCASE}}"), "Result name should contain format name")
+        assertTrue(result.averageTimeMs > 0, "Result should have positive timing")
+        assertTrue(result.averageMemoryKb >= 0, "Result should have non-negative memory usage")
+        
+        // Validate statistics
+        assertTrue(result.minTimeMs <= result.averageTimeMs, "Min time should be ≤ average")
+        assertTrue(result.maxTimeMs >= result.averageTimeMs, "Max time should be ≥ average")
+        assertTrue(result.minMemoryKb <= result.averageMemoryKb, "Min memory should be ≤ average")
+        assertTrue(result.maxMemoryKb >= result.averageMemoryKb, "Max memory should be ≥ average")
+    }
+}

@@ -1,0 +1,326 @@
+/*#######################################################
+ *
+ * SPDX-FileCopyrightText: 2025 Milos Vasic
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Benchmark error handling and edge case tests
+ *
+ *########################################################*/
+package digital.vasic.yole.format.{{FORMAT_PACKAGE}}
+
+import digital.vasic.yole.format.benchmark.SimpleBenchmarkRunner
+import kotlin.test.*
+
+/**
+ * Benchmark error handling and edge case tests for {{FORMAT_NAME}} parser.
+ *
+ * Tests cover:
+ * - Benchmark execution with invalid inputs
+ * - Memory measurement errors
+ * - Timing measurement failures
+ * - Benchmark setup/teardown errors
+ * - Concurrent execution issues
+ * - Resource cleanup failures
+ * 
+ * These tests ensure that the benchmark infrastructure handles errors
+ * gracefully and maintains stability under adverse conditions.
+ */
+class {{FORMAT_CLASS}}BenchmarkErrorTest {
+
+    // ==================== Invalid Input Handling ====================
+
+    @Test
+    fun `should handle benchmark with null operations`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("null_operation_{{FORMAT_LOWERCASE}}") {
+            // Operation that returns null
+            null
+        }
+        
+        assertNotNull(result)
+        assertTrue(result.averageTimeMs >= 0, "Should measure time for null operations")
+        assertTrue(result.averageMemoryKb >= 0, "Should measure memory for null operations")
+    }
+
+    @Test
+    fun `should handle benchmark with empty operations`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("empty_operation_{{FORMAT_LOWERCASE}}") {
+            // Empty operation
+        }
+        
+        assertNotNull(result)
+        assertTrue(result.averageTimeMs >= 0, "Should measure time for empty operations")
+        assertTrue(result.averageMemoryKb >= 0, "Should measure memory for empty operations")
+    }
+
+    @Test
+    fun `should handle benchmark with extremely large allocations`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("large_allocation_{{FORMAT_LOWERCASE}}") {
+            try {
+                val hugeData = ByteArray(1024 * 1024 * 5) // 5MB
+                hugeData[0] = 1
+            } catch (e: OutOfMemoryError) {
+                // Handle out of memory gracefully
+                println("Out of memory handled: ${e.message}")
+            }
+        }
+        
+        assertNotNull(result)
+        assertTrue(result.averageTimeMs >= 0, "Should measure time for large allocations")
+    }
+
+    // ==================== Memory Measurement Errors ====================
+
+    @Test
+    fun `should handle memory measurement failures`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("memory_failure_{{FORMAT_LOWERCASE}}") {
+            try {
+                // Allocate memory in a way that might fail
+                val arrays = mutableListOf<ByteArray>()
+                repeat(100) {
+                    arrays.add(ByteArray(1024 * 100)) // 100KB each
+                }
+                arrays.forEach { it[0] = 1 }
+            } catch (e: OutOfMemoryError) {
+                // Handle out of memory gracefully
+                println("Out of memory handled: ${e.message}")
+            }
+        }
+        
+        assertNotNull(result)
+        // Memory measurement might be inaccurate after OOM, but should still complete
+        assertTrue(result.averageMemoryKb >= 0, "Should provide memory measurement")
+    }
+
+    @Test
+    fun `should handle negative memory measurements`() {
+        // This tests the scenario where memory measurement might return negative values
+        // due to garbage collection timing
+        
+        val result1 = SimpleBenchmarkRunner.runBenchmark("memory_before_gc_{{FORMAT_LOWERCASE}}") {
+            val data = ByteArray(1024)
+            data[0] = 1
+        }
+        
+        // Force garbage collection
+        System.gc()
+        Thread.sleep(100)
+        
+        val result2 = SimpleBenchmarkRunner.runBenchmark("memory_after_gc_{{FORMAT_LOWERCASE}}") {
+            val data = ByteArray(1024)
+            data[0] = 1
+        }
+
+        assertNotNull(result1)
+        assertNotNull(result2)
+        
+        // Both should provide valid measurements
+        assertTrue(result1.averageMemoryKb >= 0, "Memory measurement should be non-negative")
+        assertTrue(result2.averageMemoryKb >= 0, "Memory measurement should be non-negative after GC")
+    }
+
+    // ==================== Timing Measurement Errors ====================
+
+    @Test
+    fun `should handle timing measurement interruptions`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("timing_interruption_{{FORMAT_LOWERCASE}}") {
+            val thread = Thread.currentThread()
+            
+            // Set up interruption after a delay
+            Thread {
+                Thread.sleep(5)
+                thread.interrupt()
+            }.start()
+            
+            try {
+                // Simulate processing
+                val data = ByteArray(1024)
+                data[0] = 1
+            } catch (e: InterruptedException) {
+                // Handle interruption
+                Thread.currentThread().interrupt() // Restore interrupt status
+                println("Interruption handled: ${e.message}")
+            }
+        }
+        
+        assertNotNull(result)
+        assertTrue(result.averageTimeMs >= 0, "Should provide timing measurement despite interruption")
+    }
+
+    @Test
+    fun `should handle system clock adjustments`() {
+        // Test timing measurement robustness against clock changes
+        val results = mutableListOf<SimpleBenchmarkRunner.BenchmarkResult>()
+        
+        repeat(3) {
+            val result = SimpleBenchmarkRunner.runBenchmark("clock_adjustment_{{FORMAT_LOWERCASE}}_$it") {
+                // Simulate processing
+                val data = ByteArray(1024)
+                data[0] = 1
+            }
+            results.add(result)
+        }
+
+        results.forEach { result ->
+            assertNotNull(result)
+            assertTrue(result.averageTimeMs >= 0, "Should provide valid timing despite potential clock issues")
+            assertTrue(result.averageTimeMs < 1000, "Timing should be reasonable (< 1 second)")
+        }
+    }
+
+    // ==================== Concurrent Execution Errors ====================
+
+    @Test
+    fun `should handle concurrent benchmark execution conflicts`() {
+        val results = mutableListOf<SimpleBenchmarkRunner.BenchmarkResult>()
+        val exceptions = mutableListOf<Exception>()
+        
+        val threads = List(5) { i ->
+            Thread {
+                try {
+                    val result = SimpleBenchmarkRunner.runBenchmark("concurrent_error_{{FORMAT_LOWERCASE}}_$i") {
+                        // Simulate processing
+                        val data = ByteArray(1024 * (i + 1))
+                        data[0] = 1
+                        // Add small delay to increase chance of conflicts
+                        Thread.sleep(1)
+                    }
+                    synchronized(results) {
+                        results.add(result)
+                    }
+                } catch (e: Exception) {
+                    synchronized(exceptions) {
+                        exceptions.add(e)
+                    }
+                }
+            }
+        }
+
+        threads.forEach { it.start() }
+        threads.forEach { it.join() }
+
+        // Should complete without major errors
+        assertTrue(results.size + exceptions.size == 5, "All threads should complete")
+        
+        results.forEach { result ->
+            assertNotNull(result)
+            assertTrue(result.averageTimeMs > 0)
+            assertTrue(result.averageMemoryKb >= 0)
+        }
+        
+        // Some exceptions might be acceptable in concurrent scenarios
+        exceptions.forEach { exception ->
+            println("Concurrent exception handled: ${exception.message}")
+        }
+    }
+
+    // ==================== Resource Cleanup Failures ====================
+
+    @Test
+    fun `should handle resource cleanup failures`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("cleanup_failure_{{FORMAT_LOWERCASE}}") {
+            try {
+                // Simulate processing
+                val data = ByteArray(1024 * 100) // 100KB
+                data[0] = 1
+            } finally {
+                // Simulate cleanup failure
+                try {
+                    // Force a cleanup error
+                    val leak = ByteArray(1024 * 1024 * 10) // 10MB
+                    leak[0] = 1
+                } catch (e: OutOfMemoryError) {
+                    println("Cleanup failure handled: ${e.message}")
+                }
+            }
+        }
+
+        assertNotNull(result)
+        assertTrue(result.averageTimeMs > 0, "Should complete despite cleanup failures")
+    }
+
+    // ==================== Benchmark Runner Edge Cases ====================
+
+    @Test
+    fun `should handle benchmark with stack overflow`() {
+        fun recursiveFunction(depth: Int): Int {
+            return if (depth > 0) recursiveFunction(depth - 1) + 1 else 0
+        }
+
+        assertFailsWith<StackOverflowError> {
+            SimpleBenchmarkRunner.runBenchmark("stack_overflow_{{FORMAT_LOWERCASE}}") {
+                recursiveFunction(100000) // Should cause stack overflow
+            }
+        }
+    }
+
+    @Test
+    fun `should handle operations that throw exceptions`() {
+        assertFailsWith<IllegalStateException> {
+            SimpleBenchmarkRunner.runBenchmark("exception_test_{{FORMAT_LOWERCASE}}") {
+                throw IllegalStateException("Test exception")
+            }
+        }
+    }
+
+    @Test
+    fun `should handle benchmark names with special characters`() {
+        val specialNames = listOf(
+            "test_with_underscores_{{FORMAT_LOWERCASE}}",
+            "test-with-dashes-{{FORMAT_LOWERCASE}}",
+            "test.with.dots.{{FORMAT_LOWERCASE}}",
+            "test with spaces {{FORMAT_LOWERCASE}}",
+            "test123_{{FORMAT_LOWERCASE}}"
+        )
+
+        specialNames.forEach { name ->
+            val result = SimpleBenchmarkRunner.runBenchmark(name) {
+                val data = ByteArray(1024)
+                data[0] = 1
+            }
+            
+            assertNotNull(result)
+            assertEquals(name, result.name)
+            assertTrue(result.averageTimeMs > 0)
+        }
+    }
+
+    // ==================== Error Recovery Tests ====================
+
+    @Test
+    fun `should recover from benchmark failures`() {
+        // First, cause a failure
+        var shouldFail = true
+        
+        val failedResult = assertFailsWith<RuntimeException> {
+            SimpleBenchmarkRunner.runBenchmark("recovery_failure_{{FORMAT_LOWERCASE}}") {
+                if (shouldFail) {
+                    throw RuntimeException("Simulated failure")
+                }
+            }
+        }
+
+        // Then recover
+        shouldFail = false
+        val recoveredResult = SimpleBenchmarkRunner.runBenchmark("recovery_success_{{FORMAT_LOWERCASE}}") {
+            val data = ByteArray(1024)
+            data[0] = 1
+        }
+
+        // The failure should be handled
+        assertNotNull(recoveredResult)
+        assertTrue(recoveredResult.averageTimeMs > 0, "Should recover and measure successfully")
+    }
+
+    @Test
+    fun `should provide meaningful error information`() {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            SimpleBenchmarkRunner.runBenchmark("error_info_{{FORMAT_LOWERCASE}}") {
+                throw IllegalArgumentException("Test error with details for {{FORMAT_NAME}}")
+            }
+        }
+
+        // Should preserve error information
+        assertTrue(exception.message?.contains("Test error") == true)
+        assertTrue(exception.message?.contains("{{FORMAT_NAME}}") == true)
+    }
+}

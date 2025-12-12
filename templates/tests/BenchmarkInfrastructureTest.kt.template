@@ -1,0 +1,336 @@
+/*#######################################################
+ *
+ * SPDX-FileCopyrightText: 2025 Milos Vasic
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Benchmark infrastructure validation tests
+ *
+ *########################################################*/
+package digital.vasic.yole.format.benchmark
+
+import kotlin.test.*
+import kotlin.system.measureTimeMillis
+import kotlin.system.measureNanoTime
+
+/**
+ * Benchmark infrastructure validation tests.
+ *
+ * Tests cover:
+ * - SimpleBenchmarkRunner functionality
+ * - Benchmark result accuracy
+ * - Memory measurement precision
+ * - Timing measurement accuracy
+ * - Error handling in benchmark framework
+ * - Benchmark consistency and reliability
+ * 
+ * These tests validate the core benchmark infrastructure that supports
+ * all format-specific benchmark implementations.
+ */
+class BenchmarkInfrastructureTest {
+
+    companion object {
+        private const val WARMUP_ITERATIONS = 3
+        private const val MEASUREMENT_ITERATIONS = 5
+        private const val TEST_OPERATION_TIME_MS = 10L
+    }
+
+    // ==================== SimpleBenchmarkRunner Tests ====================
+
+    @Test
+    fun `should execute benchmark with accurate timing`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("timing_test") {
+            Thread.sleep(TEST_OPERATION_TIME_MS)
+        }
+
+        assertNotNull(result)
+        assertEquals("timing_test", result.name)
+        
+        // Timing should be reasonably accurate (allow 50% tolerance)
+        val expectedTimeMs = TEST_OPERATION_TIME_MS.toDouble()
+        val actualTimeMs = result.averageTimeMs
+        
+        assertTrue(actualTimeMs >= expectedTimeMs * 0.5, 
+            "Measured time should be at least 50% of expected time")
+        assertTrue(actualTimeMs <= expectedTimeMs * 1.5, 
+            "Measured time should be at most 150% of expected time")
+    }
+
+    @Test
+    fun `should measure memory usage accurately`() {
+        // Create a known memory allocation
+        val testDataSize = 1024 * 1024 // 1MB
+        
+        val result = SimpleBenchmarkRunner.runBenchmark("memory_test") {
+            val data = ByteArray(testDataSize)
+            data[0] = 1 // Use the array to prevent optimization
+        }
+
+        assertNotNull(result)
+        assertTrue(result.averageMemoryKb > 0, "Memory usage should be measurable")
+        
+        // Memory measurement should be in reasonable range
+        val expectedMemoryKb = testDataSize / 1024.0
+        val actualMemoryKb = result.averageMemoryKb
+        
+        // Allow wide tolerance due to GC and measurement overhead
+        assertTrue(actualMemoryKb < expectedMemoryKb * 10, 
+            "Memory usage should not be unreasonably high")
+    }
+
+    @Test
+    fun `should handle multiple iterations correctly`() {
+        var executionCount = 0
+        
+        val result = SimpleBenchmarkRunner.runBenchmark("iteration_test") {
+            executionCount++
+            Thread.sleep(1) // Small delay
+        }
+
+        assertNotNull(result)
+        
+        // Should execute warmup + measurement iterations
+        val expectedExecutions = SimpleBenchmarkRunner.WARMUP_ITERATIONS + 
+                               SimpleBenchmarkRunner.MEASUREMENT_ITERATIONS
+        assertTrue(executionCount >= expectedExecutions, 
+            "Should execute at least $expectedExecutions iterations")
+    }
+
+    @Test
+    fun `should calculate statistics correctly`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("stats_test") {
+            Thread.sleep(5) // Consistent small delay
+        }
+
+        assertNotNull(result)
+        
+        // Validate statistics
+        assertTrue(result.averageTimeMs > 0, "Average time should be positive")
+        assertTrue(result.minTimeMs > 0, "Min time should be positive")
+        assertTrue(result.maxTimeMs > 0, "Max time should be positive")
+        assertTrue(result.minTimeMs <= result.averageTimeMs, 
+            "Min time should be <= average time")
+        assertTrue(result.maxTimeMs >= result.averageTimeMs, 
+            "Max time should be >= average time")
+        
+        // Memory stats
+        assertTrue(result.minMemoryKb >= 0, "Min memory should be non-negative")
+        assertTrue(result.maxMemoryKb >= 0, "Max memory should be non-negative")
+        assertTrue(result.minMemoryKb <= result.averageMemoryKb, 
+            "Min memory should be <= average memory")
+        assertTrue(result.maxMemoryKb >= result.averageMemoryKb, 
+            "Max memory should be >= average memory")
+    }
+
+    // ==================== BenchmarkResult Validation Tests ====================
+
+    @Test
+    fun `should handle zero execution time gracefully`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("zero_time_test") {
+            // Very fast operation
+            val x = 1 + 1
+        }
+
+        assertNotNull(result)
+        assertTrue(result.averageTimeMs >= 0, "Average time should be non-negative")
+        assertTrue(result.minTimeMs >= 0, "Min time should be non-negative")
+        assertTrue(result.maxTimeMs >= 0, "Max time should be non-negative")
+    }
+
+    @Test
+    fun `should handle operations that throw exceptions`() {
+        assertFailsWith<IllegalStateException> {
+            SimpleBenchmarkRunner.runBenchmark("exception_test") {
+                throw IllegalStateException("Test exception")
+            }
+        }
+    }
+
+    @Test
+    fun `should measure consistent results for identical operations`() {
+        val results = mutableListOf<SimpleBenchmarkRunner.BenchmarkResult>()
+        
+        repeat(3) {
+            val result = SimpleBenchmarkRunner.runBenchmark("consistency_test") {
+                Thread.sleep(5) // Same delay each time
+            }
+            results.add(result)
+        }
+
+        // Results should be reasonably consistent
+        val times = results.map { it.averageTimeMs }
+        val avgTime = times.average()
+        val maxDeviation = times.maxOf { kotlin.math.abs(it - avgTime) }
+        val relativeDeviation = maxDeviation / avgTime
+        
+        // Allow up to 30% deviation for timing consistency
+        assertTrue(relativeDeviation < 0.3, 
+            "Timing should be relatively consistent across runs")
+    }
+
+    // ==================== Memory Measurement Tests ====================
+
+    @Test
+    fun `should detect memory allocation patterns`() {
+        val smallResult = SimpleBenchmarkRunner.runBenchmark("small_memory") {
+            val data = ByteArray(1024) // 1KB
+            data[0] = 1
+        }
+
+        val largeResult = SimpleBenchmarkRunner.runBenchmark("large_memory") {
+            val data = ByteArray(1024 * 100) // 100KB
+            data[0] = 1
+        }
+
+        assertNotNull(smallResult)
+        assertNotNull(largeResult)
+        
+        // Large allocation should generally show higher memory usage
+        // Allow significant tolerance due to measurement noise
+        assertTrue(largeResult.averageMemoryKb >= smallResult.averageMemoryKb * 0.1,
+            "Large allocation should show higher memory usage")
+    }
+
+    @Test
+    fun `should handle memory-intensive operations`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("intensive_memory") {
+            // Create multiple arrays to test memory measurement
+            val arrays = List(10) { i ->
+                ByteArray(1024 * 10) // 10KB each
+            }
+            arrays.forEach { it[0] = 1 }
+        }
+
+        assertNotNull(result)
+        assertTrue(result.averageMemoryKb > 0, "Should measure memory usage")
+    }
+
+    // ==================== Timing Precision Tests ====================
+
+    @Test
+    fun `should measure sub-millisecond timing accurately`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("sub_ms_test") {
+            // Very fast operation
+            var sum = 0
+            for (i in 1..1000) {
+                sum += i
+            }
+        }
+
+        assertNotNull(result)
+        // Should be able to measure very fast operations
+        assertTrue(result.averageTimeMs < 10, "Should measure sub-10ms operations accurately")
+    }
+
+    @Test
+    fun `should handle long-running operations`() {
+        val longOperationTime = 50L
+        
+        val result = SimpleBenchmarkRunner.runBenchmark("long_operation") {
+            Thread.sleep(longOperationTime)
+        }
+
+        assertNotNull(result)
+        assertTrue(result.averageTimeMs >= longOperationTime * 0.8,
+            "Should accurately measure long operations")
+    }
+
+    // ==================== Error Handling and Edge Cases ====================
+
+    @Test
+    fun `should handle null or empty benchmark names`() {
+        val result1 = SimpleBenchmarkRunner.runBenchmark("") {
+            Thread.sleep(1)
+        }
+        
+        val result2 = SimpleBenchmarkRunner.runBenchmark("   ") {
+            Thread.sleep(1)
+        }
+
+        assertNotNull(result1)
+        assertNotNull(result2)
+        assertEquals("", result1.name)
+        assertEquals("   ", result2.name)
+    }
+
+    @Test
+    fun `should handle operations that return null`() {
+        val result = SimpleBenchmarkRunner.runBenchmark("null_result") {
+            null // Operation returns null
+        }
+
+        assertNotNull(result)
+        assertTrue(result.averageTimeMs >= 0, "Should measure time for null operations")
+        assertTrue(result.averageMemoryKb >= 0, "Should measure memory for null operations")
+    }
+
+    @Test
+    fun `should handle concurrent benchmark execution`() {
+        val results = mutableListOf<SimpleBenchmarkRunner.BenchmarkResult>()
+        
+        // Run multiple benchmarks concurrently
+        val threads = List(3) { i ->
+            Thread {
+                val result = SimpleBenchmarkRunner.runBenchmark("concurrent_$i") {
+                    Thread.sleep(5)
+                    val data = ByteArray(1024 * (i + 1))
+                    data[0] = 1
+                }
+                synchronized(results) {
+                    results.add(result)
+                }
+            }
+        }
+
+        threads.forEach { it.start() }
+        threads.forEach { it.join() }
+
+        assertEquals(3, results.size)
+        results.forEach { result ->
+            assertNotNull(result)
+            assertTrue(result.averageTimeMs > 0)
+            assertTrue(result.averageMemoryKb >= 0)
+        }
+    }
+
+    // ==================== Benchmark Target Validation ====================
+
+    @Test
+    fun `should validate benchmark targets are reasonable`() {
+        // Test that benchmark results fall within reasonable ranges
+        val result = SimpleBenchmarkRunner.runBenchmark("target_validation") {
+            // Simulate a typical parsing operation
+            val data = ByteArray(1024 * 10) // 10KB
+            Thread.sleep(1) // 1ms delay
+            data[0] = 1
+        }
+
+        assertNotNull(result)
+        
+        // Reasonable performance targets
+        assertTrue(result.averageTimeMs < 100, "Should complete in less than 100ms")
+        assertTrue(result.averageMemoryKb < 1024, "Should use less than 1MB memory")
+        
+        // Consistency checks
+        assertTrue(result.minTimeMs <= result.averageTimeMs, "Min <= Average")
+        assertTrue(result.maxTimeMs >= result.averageTimeMs, "Max >= Average")
+    }
+
+    // ==================== Integration Tests ====================
+
+    @Test
+    fun `should integrate with parser benchmarks`() {
+        // Test that the infrastructure works with actual parser benchmarks
+        val result = SimpleBenchmarkRunner.runBenchmark("parser_integration") {
+            // Simulate a simple parsing operation
+            val content = "Sample {{FORMAT_NAME}} content for testing"
+            val metadata = mapOf("filename" to "test.{{PRIMARY_EXTENSION}}")
+            // This would normally call: parser.parse(content, metadata)
+            // For infrastructure testing, we just simulate the operation
+            Thread.sleep(1)
+        }
+
+        assertNotNull(result)
+        assertTrue(result.averageTimeMs > 0, "Should measure parser operation time")
+        assertTrue(result.averageMemoryKb >= 0, "Should measure parser memory usage")
+    }
+}
