@@ -113,7 +113,7 @@ class InMemoryDatabase : NetworkStorageDatabase {
     }
     
     override suspend fun getCacheEntriesByDocument(documentId: String): Result<List<CacheEntry>> {
-        return Result.success(cacheEntryMap.values.filter { it.documentId == documentId })
+        return Result.success(cacheEntryMap.values.filter { it.remoteDocumentId == documentId })
     }
     
     override suspend fun getAllCacheEntries(): Result<List<CacheEntry>> {
@@ -127,7 +127,7 @@ class InMemoryDatabase : NetworkStorageDatabase {
     
     override suspend fun deleteExpiredCacheEntries(): Result<Int> {
         val currentTime = Clock.System.now()
-        val expiredEntries = cacheEntryMap.values.filter { it.expiresAt < currentTime }
+        val expiredEntries = cacheEntryMap.values.filter { it.expiresAt != null && it.expiresAt!! < currentTime }
         val count = expiredEntries.size
         expiredEntries.forEach { cacheEntryMap.remove(it.id) }
         return Result.success(count)

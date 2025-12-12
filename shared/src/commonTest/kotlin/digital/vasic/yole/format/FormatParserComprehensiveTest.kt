@@ -9,7 +9,7 @@
 package digital.vasic.yole.format
 
 import digital.vasic.yole.format.markdown.MarkdownParser
-import digital.vasic.yole.format.plaintext.PlainTextParser
+import digital.vasic.yole.format.plaintext.PlaintextParser
 import digital.vasic.yole.format.todotxt.TodoTxtParser
 import kotlin.test.*
 
@@ -25,7 +25,7 @@ class FormatParserComprehensiveTest {
 
     private val parsers = listOf(
         MarkdownParser(),
-        PlainTextParser(),
+        PlaintextParser(),
         TodoTxtParser()
     )
 

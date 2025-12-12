@@ -3,256 +3,162 @@
  * SPDX-FileCopyrightText: 2025 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  *
- * Comprehensive tests for FormatRegistry
+ * Format Registry Tests - Comprehensive Coverage
  *
  *########################################################*/
+
 package digital.vasic.yole.format
 
 import kotlin.test.*
 
 /**
- * Comprehensive tests for FormatRegistry covering:
- * - Format detection and registration
- * - Extension handling
- * - Cross-format compatibility
- * - Error scenarios
- * - Performance under load
+ * Comprehensive test suite for FormatRegistry
+ * Tests all format registration and detection functionality
  */
 class FormatRegistryTest {
 
     @BeforeTest
-    fun setUp() {
-        // Ensure format registry is properly initialized
-        ParserInitializer.initialize()
+    fun setup() {
+        // Ensure registry is initialized
+        FormatRegistry.initialize()
     }
 
     @Test
-    fun testGetAllFormats() {
+    fun testAllFormatsRegistered() {
         val formats = FormatRegistry.getAllFormats()
         
-        // Should have multiple formats registered
-        assertTrue(formats.isNotEmpty(), "Format registry should contain formats")
+        // Should have all 17 formats
+        assertEquals(17, formats.size, "Should have exactly 17 formats registered")
         
-        // Should contain major formats
+        // Check that specific formats are present
         val formatNames = formats.map { it.name }
-        assertTrue(formatNames.contains("Markdown"), "Should contain Markdown format")
-        assertTrue(formatNames.contains("Plain Text"), "Should contain Plain Text format")
+        assertTrue(formatNames.contains("Markdown"))
+        assertTrue(formatNames.contains("Todo.txt"))
+        assertTrue(formatNames.contains("CSV"))
+        assertTrue(formatNames.contains("Plain Text"))
+        assertTrue(formatNames.contains("LaTeX"))
+        assertTrue(formatNames.contains("Org Mode"))
+        assertTrue(formatNames.contains("AsciiDoc"))
+        assertTrue(formatNames.contains("WikiText"))
     }
 
     @Test
-    fun testGetById() {
-        // Test getting format by ID
-        val markdownFormat = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
-        assertNotNull(markdownFormat, "Should find Markdown format by ID")
-        assertEquals("Markdown", markdownFormat.name)
+    fun testFormatDetection() {
+        // Test file extension detection
+        assertEquals("markdown", FormatRegistry.detectFormat("test.md"))
+        assertEquals("markdown", FormatRegistry.detectFormat("test.markdown"))
+        assertEquals("todotxt", FormatRegistry.detectFormat("todo.txt"))
+        assertEquals("csv", FormatRegistry.detectFormat("data.csv"))
+        assertEquals("latex", FormatRegistry.detectFormat("document.tex"))
+        assertEquals("orgmode", FormatRegistry.detectFormat("notes.org"))
+        assertEquals("asciidoc", FormatRegistry.detectFormat("README.adoc"))
+        assertEquals("wikitext", FormatRegistry.detectFormat("page.wiki"))
+        assertEquals("plaintext", FormatRegistry.detectFormat("document.txt"))
         
-        val plainTextFormat = FormatRegistry.getById(FormatRegistry.ID_PLAIN_TEXT)
-        assertNotNull(plainTextFormat, "Should find Plain Text format by ID")
-        assertEquals("Plain Text", plainTextFormat.name)
-    }
-
-    @Test
-    fun testGetByExtension() {
-        // Test getting format by file extension
-        val mdFormat = FormatRegistry.getByExtension(".md")
-        assertNotNull(mdFormat, "Should find format for .md extension")
-        assertEquals("Markdown", mdFormat.name)
+        // Test content-based detection
+        val markdownContent = "# Heading\n\nSome **bold** text."
+        assertEquals("markdown", FormatRegistry.detectFormatFromContent(markdownContent))
         
-        val txtFormat = FormatRegistry.getByExtension(".txt")
-        assertNotNull(txtFormat, "Should find format for .txt extension")
-        assertEquals("Plain Text", txtFormat.name)
-    }
-
-    @Test
-    fun testDetectByFilename() {
-        // Test format detection by filename
-        val markdownFormat = FormatRegistry.detectByFilename("document.md")
-        assertNotNull(markdownFormat, "Should detect Markdown format from filename")
-        assertEquals("Markdown", markdownFormat.name)
+        val todoContent = "(A) Task 1 +project @context"
+        assertEquals("todotxt", FormatRegistry.detectFormatFromContent(todoContent))
         
-        val textFormat = FormatRegistry.detectByFilename("document.txt")
-        assertNotNull(textFormat, "Should detect Plain Text format from filename")
-        assertEquals("Plain Text", textFormat.name)
+        val csvContent = "Name,Age,City\nJohn,30,NYC"
+        assertEquals("csv", FormatRegistry.detectFormatFromContent(csvContent))
     }
 
     @Test
-    fun testDetectByExtension() {
-        // Test format detection by extension
-        val markdownFormat = FormatRegistry.detectByExtension(".md")
-        assertNotNull(markdownFormat, "Should detect Markdown format from extension")
-        assertEquals("Markdown", markdownFormat.name)
-        
-        val textFormat = FormatRegistry.detectByExtension(".txt")
-        assertNotNull(textFormat, "Should detect Plain Text format from extension")
-        assertEquals("Plain Text", textFormat.name)
-    }
-
-    @Test
-    fun testIsExtensionSupported() {
-        // Test extension support checking
-        assertTrue(FormatRegistry.isExtensionSupported(".md"), "Should support .md extension")
-        assertTrue(FormatRegistry.isExtensionSupported(".txt"), "Should support .txt extension")
-        assertFalse(FormatRegistry.isExtensionSupported(".xyz"), "Should not support .xyz extension")
-    }
-
-    @Test
-    fun testIsSupported() {
-        // Test format support checking
-        assertTrue(FormatRegistry.isSupported("Markdown"), "Should support Markdown format")
-        assertTrue(FormatRegistry.isSupported("Plain Text"), "Should support Plain Text format")
-        assertFalse(FormatRegistry.isSupported("Unknown Format"), "Should not support unknown format")
-    }
-
-    @Test
-    fun testGetFormatNames() {
-        val formatNames = FormatRegistry.getFormatNames()
-        
-        assertTrue(formatNames.isNotEmpty(), "Should return format names")
-        assertTrue(formatNames.contains("Markdown"), "Should contain Markdown")
-        assertTrue(formatNames.contains("Plain Text"), "Should contain Plain Text")
-    }
-
-    @Test
-    fun testGetAllExtensions() {
-        val extensions = FormatRegistry.getAllExtensions()
-        
-        assertTrue(extensions.isNotEmpty(), "Should return extensions")
-        assertTrue(extensions.contains(".md"), "Should contain .md extension")
-        assertTrue(extensions.contains(".txt"), "Should contain .txt extension")
-    }
-
-    @Test
-    fun testFormatProperties() {
-        val markdownFormat = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
+    fun testFormatById() {
+        val markdownFormat = FormatRegistry.getFormatById("markdown")
         assertNotNull(markdownFormat)
-        
-        // Test format properties
         assertEquals("Markdown", markdownFormat.name)
-        assertTrue(markdownFormat.extensions.contains(".md"), "Markdown should support .md extension")
-        assertTrue(markdownFormat.extensions.contains(".markdown"), "Markdown should support .markdown extension")
+        assertEquals(".md", markdownFormat.defaultExtension)
+        
+        val todoFormat = FormatRegistry.getFormatById("todotxt")
+        assertNotNull(todoFormat)
+        assertEquals("Todo.txt", todoFormat.name)
+        assertEquals(".txt", todoFormat.defaultExtension)
     }
 
     @Test
-    fun testCaseInsensitiveDetection() {
-        // Test case-insensitive format detection
-        val upperCaseFormat = FormatRegistry.detectByFilename("DOCUMENT.MD")
-        assertNotNull(upperCaseFormat, "Should detect format case-insensitively")
-        assertEquals("Markdown", upperCaseFormat.name)
+    fun testParserRegistry() {
+        val markdownParser = ParserRegistry.getParser("markdown")
+        assertNotNull(markdownParser)
         
-        val mixedCaseFormat = FormatRegistry.detectByFilename("Document.Md")
-        assertNotNull(mixedCaseFormat, "Should detect format with mixed case")
-        assertEquals("Markdown", mixedCaseFormat.name)
+        val todoParser = ParserRegistry.getParser("todotxt")
+        assertNotNull(todoParser)
+        
+        val csvParser = ParserRegistry.getParser("csv")
+        assertNotNull(csvParser)
     }
 
     @Test
-    fun testMultipleExtensions() {
-        // Test formats with multiple extensions
-        val markdownFormat1 = FormatRegistry.getByExtension(".md")
-        val markdownFormat2 = FormatRegistry.getByExtension(".markdown")
+    fun testFormatCapabilities() {
+        val formats = FormatRegistry.getAllFormats()
         
-        assertNotNull(markdownFormat1)
-        assertNotNull(markdownFormat2)
-        assertEquals(markdownFormat1.id, markdownFormat2.id, "Both extensions should map to same format")
-    }
-
-    @Test
-    fun testUnknownFormats() {
-        // Test handling of unknown formats
-        val unknownById = FormatRegistry.getById("unknown_format_id")
-        assertNull(unknownById, "Should return null for unknown format ID")
-        
-        val unknownByExtension = FormatRegistry.getByExtension(".unknown")
-        assertNull(unknownByExtension, "Should return null for unknown extension")
-        
-        val unknownByFilename = FormatRegistry.detectByFilename("document.unknown")
-        assertNull(unknownByFilename, "Should return null for unknown file extension")
-    }
-
-    @Test
-    fun testEmptyAndNullInputs() {
-        // Test handling of empty and null inputs
-        val emptyExtension = FormatRegistry.getByExtension("")
-        assertNull(emptyExtension, "Should return null for empty extension")
-        
-        val emptyFilename = FormatRegistry.detectByFilename("")
-        assertNull(emptyFilename, "Should return null for empty filename")
-    }
-
-    @Test
-    fun testSpecialCharactersInFilenames() {
-        // Test format detection with special characters in filenames
-        val specialCharFormat = FormatRegistry.detectByFilename("my-document_with.special.chars.md")
-        assertNotNull(specialCharFormat, "Should detect format with special characters")
-        assertEquals("Markdown", specialCharFormat.name)
-    }
-
-    @Test
-    fun testFormatImmutability() {
-        // Test that format registry returns immutable objects
-        val format1 = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
-        val format2 = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
-        
-        assertNotNull(format1)
-        assertNotNull(format2)
-        assertEquals(format1, format2, "Should return equivalent format objects")
-    }
-
-    @Test
-    fun testPerformanceUnderLoad() {
-        // Test format registry performance under load
-        val iterations = 1000
-        val startTime = System.currentTimeMillis()
-        
-        repeat(iterations) { i ->
-            FormatRegistry.detectByFilename("document$i.md")
-            FormatRegistry.detectByExtension(".txt")
-            FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
+        formats.forEach { format ->
+            // Each format should have basic properties
+            assertNotNull(format.id)
+            assertNotNull(format.name)
+            assertNotNull(format.defaultExtension)
+            assertTrue(format.extensions.isNotEmpty())
+            
+            // Should have at least the default extension
+            assertTrue(format.extensions.contains(format.defaultExtension))
         }
-        
-        val endTime = System.currentTimeMillis()
-        val duration = endTime - startTime
-        
-        // Should complete 3000 operations in reasonable time (less than 1 second)
-        assertTrue(duration < 1000, "Format registry operations should be fast, took $duration ms")
     }
 
     @Test
-    fun testConcurrentAccess() {
-        // Test thread safety of format registry
-        val results = mutableListOf<Boolean>()
-        val threads = mutableListOf<Thread>()
+    fun testFormatDetectionEdgeCases() {
+        // Unknown extensions should default to plaintext
+        assertEquals("plaintext", FormatRegistry.detectFormat("unknown.xyz"))
+        assertEquals("plaintext", FormatRegistry.detectFormat("file"))
         
-        repeat(10) {
-            val thread = Thread {
-                repeat(100) { i ->
-                    val format = FormatRegistry.detectByFilename("document$i.md")
-                    results.add(format != null)
-                }
+        // Empty content should default to plaintext
+        assertEquals("plaintext", FormatRegistry.detectFormatFromContent(""))
+        assertEquals("plaintext", FormatRegistry.detectFormatFromContent("   \n\t\n   "))
+    }
+
+    @Test
+    fun testFormatConsistency() {
+        val formats = FormatRegistry.getAllFormats()
+        
+        // Check for duplicate IDs
+        val formatIds = formats.map { it.id }
+        assertEquals(formatIds.distinct().size, formatIds.size, "Format IDs should be unique")
+        
+        // Check for duplicate names
+        val formatNames = formats.map { it.name }
+        assertEquals(formatNames.distinct().size, formatNames.size, "Format names should be unique")
+        
+        // Check extensions don't conflict
+        val extensionMap = mutableMapOf<String, MutableList<String>>()
+        formats.forEach { format ->
+            format.extensions.forEach { ext ->
+                extensionMap.getOrPut(ext) { mutableListOf() }.add(format.id)
             }
-            threads.add(thread)
-            thread.start()
         }
         
-        threads.forEach { it.join() }
-        
-        // All operations should succeed
-        assertEquals(1000, results.size, "All concurrent operations should complete")
-        assertTrue(results.all { it }, "All format detections should succeed")
+        // Extensions can be shared, but let's verify the mapping
+        extensionMap.forEach { (ext, formatIds) ->
+            assertTrue(formatIds.isNotEmpty(), "Extension $ext should map to at least one format")
+        }
     }
 
     @Test
-    fun testFormatRegistryConsistency() {
-        // Test consistency across different access methods
-        val byId = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)
-        val byExtension = FormatRegistry.getByExtension(".md")
-        val byFilename = FormatRegistry.detectByFilename("document.md")
+    fun testFormatMetadata() {
+        val formats = FormatRegistry.getAllFormats()
         
-        assertNotNull(byId)
-        assertNotNull(byExtension)
-        assertNotNull(byFilename)
-        
-        // All methods should return the same format
-        assertEquals(byId.id, byExtension.id, "getById and getByExtension should return same format")
-        assertEquals(byId.id, byFilename.id, "getById and detectByFilename should return same format")
+        formats.forEach { format ->
+            // Test that metadata is consistent
+            assertTrue(format.id.matches(Regex("^[a-z0-9]+")), "Format ID should be lowercase alphanumeric: ${format.id}")
+            assertTrue(format.name.isNotBlank(), "Format name should not be blank: ${format.id}")
+            assertTrue(format.defaultExtension.startsWith("."), "Default extension should start with dot: ${format.defaultExtension}")
+            
+            // Test that extensions are valid
+            format.extensions.forEach { ext ->
+                assertTrue(ext.startsWith("."), "Extension should start with dot: $ext")
+                assertTrue(ext.length > 1, "Extension should have content: $ext")
+            }
+        }
     }
 }

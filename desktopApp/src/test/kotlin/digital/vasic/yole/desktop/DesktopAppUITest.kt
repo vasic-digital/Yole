@@ -9,13 +9,10 @@
 package digital.vasic.yole.desktop
 
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.*
 import digital.vasic.yole.desktop.ui.*
 import digital.vasic.yole.desktop.ui.theme.YoleDesktopTheme
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import kotlin.test.Test
 
 /**
  * UI tests for Yole Desktop Application components.
@@ -29,11 +26,9 @@ import org.junit.runners.JUnit4
  * - Keyboard shortcuts
  * - Accessibility features
  */
-@RunWith(JUnit4::class)
 class DesktopAppUITest {
 
-    @get:Rule
-    val composeTestRule = createComposeRule()
+    private val composeTestRule = createComposeRule()
 
     // ==================== Main App Tests ====================
 

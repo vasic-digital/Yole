@@ -14,11 +14,8 @@ import digital.vasic.yole.desktop.shortcut.KeyShortcut
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
+import kotlin.test.Test
+import kotlin.test.BeforeTest
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -27,7 +24,7 @@ import kotlin.test.assertFalse
 /**
  * Tests for DesktopKeyboardShortcuts functionality.
  */
-@RunWith(JUnit4::class)
+
 class DesktopKeyboardShortcutsTest {
 
     private lateinit var keyboardShortcuts: DesktopKeyboardShortcuts
@@ -218,7 +215,7 @@ class DesktopKeyboardShortcutsTest {
 
     @Test
     fun `should return null for non-matching key event`() {
-        val keyEvent = createKeyEvent(Key.F24, ctrl = true, type = KeyEventType.KeyDown)
+        val keyEvent = createKeyEvent(Key.A, ctrl = true, type = KeyEventType.KeyDown)
         
         val action = keyboardShortcuts.findActionForShortcut(keyEvent)
         
@@ -381,12 +378,10 @@ class DesktopKeyboardShortcutsTest {
         return KeyEvent(
             key = key,
             type = type,
-            modifiers = KeyModifiers(
-                isCtrlPressed = ctrl,
-                isAltPressed = alt,
-                isShiftPressed = shift,
-                isMetaPressed = meta
-            )
+            isCtrlPressed = ctrl,
+            isAltPressed = alt,
+            isShiftPressed = shift,
+            isMetaPressed = meta
         )
     }
 
