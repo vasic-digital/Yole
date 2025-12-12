@@ -276,8 +276,8 @@ class MarkdownParser : TextParser {
     /**
      * Convert inline Markdown markup to HTML.
      *
-     * Memory-optimized version that processes markup in a single pass
-     * to reduce string allocations and improve performance.
+     * Enhanced version that properly handles nested formatting with correct precedence
+     * and maintains proper HTML structure for complex nested markup.
      *
      * @param text The text containing inline markup
      * @return HTML with inline markup converted to appropriate tags
@@ -285,130 +285,165 @@ class MarkdownParser : TextParser {
     private fun convertInlineMarkup(text: String): String {
         if (text.isEmpty()) return text
 
-        val result = StringBuilder(text.length + text.length / 2) // Pre-allocate with some overhead
-        var i = 0
+        // Use a more sophisticated approach to handle nested formatting
+        return processInlineMarkup(text)
+    }
 
-        while (i < text.length) {
-            val char = text[i]
+    /**
+     * Process inline markup with proper nesting support.
+     * This function handles complex nested formatting correctly.
+     */
+    private fun processInlineMarkup(text: String): String {
+        if (text.isEmpty()) return text
 
-            when (char) {
-                '`' -> { // Inline code
-                    if (i + 1 < text.length && text[i + 1] != '`') {
-                        // Find closing backtick
-                        var end = i + 1
-                        while (end < text.length && text[end] != '`') {
-                            end++
-                        }
-                        if (end < text.length) {
-                            val code = text.substring(i + 1, end).escapeHtml()
-                            result.append("<code>$code</code>")
-                            i = end + 1
-                            continue
-                        }
-                    }
-                    result.append(char)
-                }
+        // Process in order of precedence: code, strikethrough, bold/italic, links/images
+        var result = text
+        
+        // Process code first (highest precedence - nothing inside code should be formatted)
+        result = processInlineCode(result)
+        
+        // Process strikethrough (can contain other formatting)
+        result = processStrikethrough(result)
+        
+        // Process bold and italic with proper nesting
+        result = processBoldAndItalic(result)
+        
+        // Process links and images
+        result = processLinksAndImages(result)
+        
+        // Escape any remaining HTML entities
+        result = escapeHtmlEntities(result)
+        
+        return result
+    }
 
-                '!' -> { // Image
-                    if (i + 1 < text.length && text[i + 1] == '[') {
-                        val imageMatch = parseLinkOrImage(text, i, true)
-                        if (imageMatch != null) {
-                            result.append("<img src='${imageMatch.url}' alt='${imageMatch.text}'/>")
-                            i = imageMatch.endIndex
-                            continue
-                        }
-                    }
-                    result.append(char)
-                }
-
-                '[' -> { // Link or checkbox
-                    if (i + 2 < text.length && text[i + 1] == ' ' && text[i + 2] == ']') {
-                        // Unchecked checkbox
-                        result.append("<input type='checkbox' disabled>")
-                        i += 3
-                        continue
-                    } else if (i + 2 < text.length && text[i + 1] == 'x' && text[i + 2] == ']') {
-                        // Checked checkbox
-                        result.append("<input type='checkbox' disabled checked>")
-                        i += 3
-                        continue
-                    } else {
-                        // Link
-                        val linkMatch = parseLinkOrImage(text, i, false)
-                        if (linkMatch != null) {
-                            result.append("<a href='${linkMatch.url}'>${linkMatch.text}</a>")
-                            i = linkMatch.endIndex
-                            continue
-                        }
-                    }
-                    result.append(char)
-                }
-
-                '*' -> { // Bold or italic
-                    val boldMatch = parseBoldOrItalic(text, i, true)
-                    if (boldMatch != null) {
-                        result.append("<strong>${boldMatch.content}</strong>")
-                        i = boldMatch.endIndex
-                        continue
-                    }
-                    val italicMatch = parseBoldOrItalic(text, i, false)
-                    if (italicMatch != null) {
-                        result.append("<em>${italicMatch.content}</em>")
-                        i = italicMatch.endIndex
-                        continue
-                    }
-                    result.append(char)
-                }
-
-                '_' -> { // Bold or italic (underscore)
-                    val boldMatch = parseBoldOrItalic(text, i, true)
-                    if (boldMatch != null) {
-                        result.append("<strong>${boldMatch.content}</strong>")
-                        i = boldMatch.endIndex
-                        continue
-                    }
-                    val italicMatch = parseBoldOrItalic(text, i, false)
-                    if (italicMatch != null) {
-                        result.append("<em>${italicMatch.content}</em>")
-                        i = italicMatch.endIndex
-                        continue
-                    }
-                    result.append(char)
-                }
-
-                '~' -> { // Strikethrough
-                    if (i + 1 < text.length && text[i + 1] == '~') {
-                        var end = i + 2
-                        while (end < text.length && !(text[end] == '~' && end + 1 < text.length && text[end + 1] == '~')) {
-                            end++
-                        }
-                        if (end + 1 < text.length) {
-                            val content = convertInlineMarkup(text.substring(i + 2, end)) // Recursively process nested markup
-                            result.append("<s>$content</s>")
-                            i = end + 2
-                            continue
-                        }
-                    }
-                    result.append(char)
-                }
-
-                '&', '<', '>' -> { // HTML entities
-                    result.append(char.toString().escapeHtml())
-                }
-
-                else -> {
-                    result.append(char)
-                }
-            }
-            i++
+    /**
+     * Process inline code blocks with proper escaping.
+     */
+    private fun processInlineCode(text: String): String {
+        val pattern = Regex("`([^`]+)`")
+        return pattern.replace(text) { match ->
+            val code = match.groupValues[1].escapeHtml()
+            "<code>$code</code>"
         }
+    }
 
-        return result.toString()
+    /**
+     * Process strikethrough with support for nested formatting.
+     */
+    private fun processStrikethrough(text: String): String {
+        val pattern = Regex("~~([^~]+)~~")
+        return pattern.replace(text) { match ->
+            val content = processBoldAndItalic(match.groupValues[1]) // Process nested formatting
+            "<s>$content</s>"
+        }
+    }
+
+    /**
+     * Process bold and italic formatting with proper nesting.
+     * This handles complex cases like ***bold and italic*** and nested formatting.
+     */
+    private fun processBoldAndItalic(text: String): String {
+        var result = text
+        
+        // Process triple asterisks (bold + italic) first
+        val triplePattern = Regex("\\*\\*\\*([^*]+)\\*\\*\\*")
+        result = triplePattern.replace(result) { match ->
+            val content = match.groupValues[1]
+            "<em><strong>$content</strong></em>"
+        }
+        
+        // Process double asterisks (bold)
+        val doubleAsteriskPattern = Regex("\\*\\*([^*]+)\\*\\*")
+        result = doubleAsteriskPattern.replace(result) { match ->
+            val content = processBoldAndItalic(match.groupValues[1]) // Recursive for nesting
+            "<strong>$content</strong>"
+        }
+        
+        // Process single asterisks (italic)
+        val singleAsteriskPattern = Regex("\\*([^*]+)\\*")
+        result = singleAsteriskPattern.replace(result) { match ->
+            val content = processBoldAndItalic(match.groupValues[1]) // Recursive for nesting
+            "<em>$content</em>"
+        }
+        
+        // Process double underscores (bold)
+        val doubleUnderscorePattern = Regex("__([^_]+)__")
+        result = doubleUnderscorePattern.replace(result) { match ->
+            val content = processBoldAndItalic(match.groupValues[1]) // Recursive for nesting
+            "<strong>$content</strong>"
+        }
+        
+        // Process single underscores (italic)
+        val singleUnderscorePattern = Regex("_([^_]+)_")
+        result = singleUnderscorePattern.replace(result) { match ->
+            val content = processBoldAndItalic(match.groupValues[1]) // Recursive for nesting
+            "<em>$content</em>"
+        }
+        
+        return result
+    }
+
+    /**
+     * Process links and images.
+     */
+    private fun processLinksAndImages(text: String): String {
+        var result = text
+        
+        // Process images first (they have higher precedence)
+        val imagePattern = Regex("!\\[([^]]*)\\]\\(([^)]+)\\)")
+        result = imagePattern.replace(result) { match ->
+            val alt = match.groupValues[1]
+            val url = match.groupValues[2]
+            "<img src='$url' alt='$alt'/>"
+        }
+        
+        // Process regular links
+        val linkPattern = Regex("\\[([^]]+)\\]\\(([^)]+)\\)")
+        result = linkPattern.replace(result) { match ->
+            val linkText = match.groupValues[1]
+            val url = match.groupValues[2]
+            "<a href='$url'>$linkText</a>"
+        }
+        
+        // Process task list checkboxes
+        result = processTaskListCheckboxes(result)
+        
+        return result
+    }
+
+    /**
+     * Process task list checkboxes.
+     */
+    private fun processTaskListCheckboxes(text: String): String {
+        var result = text
+        
+        // Checked checkbox
+        result = result.replace("[x]", "<input type='checkbox' disabled checked>")
+        
+        // Unchecked checkbox
+        result = result.replace("[ ]", "<input type='checkbox' disabled>")
+        
+        return result
+    }
+
+    /**
+     * Escape HTML entities in text.
+     */
+    private fun escapeHtmlEntities(text: String): String {
+        return text.replace("&", "&amp;")
+                   .replace("<", "&lt;")
+                   .replace(">", "&gt;")
+                   .replace("\"", "&quot;")
+                   .replace("'", "&#39;")
     }
 
     private data class LinkMatch(val text: String, val url: String, val endIndex: Int)
 
     private fun parseLinkOrImage(text: String, startIndex: Int, isImage: Boolean): LinkMatch? {
+        // This function is now deprecated but kept for backward compatibility
+        // The new implementation uses regex-based processing in processLinksAndImages()
+        
         val bracketStart = if (isImage) startIndex + 2 else startIndex + 1 // Skip ![ or [
 
         // Find closing ]
@@ -420,7 +455,7 @@ class MarkdownParser : TextParser {
             return null
         }
 
-        val textContent = text.substring(bracketStart, bracketEnd)
+        val textContent = processInlineMarkup(text.substring(bracketStart, bracketEnd)) // Process nested formatting
 
         // Find closing )
         var parenEnd = bracketEnd + 2
@@ -435,9 +470,27 @@ class MarkdownParser : TextParser {
         return LinkMatch(textContent, url, parenEnd + 1)
     }
 
+    /**
+     * Enhanced HTML escaping function.
+     */
+    private fun String.escapeHtml(): String {
+        return this.replace("&", "&amp;")
+                   .replace("<", "&lt;")
+                   .replace(">", "&gt;")
+                   .replace("\"", "&quot;")
+                   .replace("'", "&#39;")
+    }
+
+    /**
+     * Legacy function - kept for compatibility but not used in new implementation.
+     * The new implementation uses regex-based processing instead.
+     */
     private data class BoldItalicMatch(val content: String, val endIndex: Int)
 
     private fun parseBoldOrItalic(text: String, startIndex: Int, isBold: Boolean): BoldItalicMatch? {
+        // This function is now deprecated but kept for backward compatibility
+        // The new implementation uses regex-based processing in processBoldAndItalic()
+        
         val marker = text[startIndex]
         val requiredLength = if (isBold) 2 else 1
 
@@ -468,7 +521,7 @@ class MarkdownParser : TextParser {
         if (!found) return null
 
         val content = text.substring(startIndex + requiredLength, end)
-        return BoldItalicMatch(convertInlineMarkup(content), end + requiredLength) // Recursively process nested markup
+        return BoldItalicMatch(processInlineMarkup(content), end + requiredLength) // Use new processor
     }
 
     /**

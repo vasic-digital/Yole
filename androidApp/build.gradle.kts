@@ -89,6 +89,17 @@ dependencies {
     // Material Design 3
     implementation(libs.compose.material3)
 
+    // PDF Export
+    implementation("com.itextpdf:itextpdf:5.5.13.3")
+    
+    // Backup/Restore
+    implementation(libs.gson)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.datetime)
+    
+    // File operations
+    implementation(libs.commons.io)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.junit)

@@ -1,16 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> for more readable itemization -->
-        <exclude domain="sharedpref" path="."/>
-        <exclude domain="database" path="."/>
-        <exclude domain="file" path="."/>
-        <exclude domain="external" path="."/>
+        <!-- Include specific files and directories for cloud backup -->
+        <include domain="external" path="Documents/" />
+        <include domain="external" path="backups/" />
+        <include domain="external" path="exported_pdfs/" />
+        <include domain="sharedpref" path="yole_settings.xml" />
+        
+        <!-- Exclude cache and temporary files -->
+        <exclude domain="external" path="Android/data/digital.vasic.yole.android/cache/" />
+        <exclude domain="cache" path="." />
+        <exclude domain="database" path="webview.db" />
+        <exclude domain="database" path="webviewCache.db" />
     </cloud-backup>
     <device-transfer>
-        <exclude domain="sharedpref" path="."/>
-        <exclude domain="database" path="."/>
-        <exclude domain="file" path="."/>
-        <exclude domain="external" path="."/>
+        <!-- Include all user data for device transfer -->
+        <include domain="external" path="Documents/" />
+        <include domain="external" path="backups/" />
+        <include domain="external" path="exported_pdfs/" />
+        <include domain="sharedpref" path="yole_settings.xml" />
+        <include domain="file" path="." />
+        
+        <!-- Exclude cache and temporary files -->
+        <exclude domain="cache" path="." />
+        <exclude domain="database" path="webview.db" />
+        <exclude domain="database" path="webviewCache.db" />
     </device-transfer>
 </data-extraction-rules>

@@ -16,7 +16,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
+import androidx.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -49,6 +49,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.documentfile.provider.DocumentFile
+import androidx.core.content.FileProvider
+import android.content.Intent
+import android.widget.Toast
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import digital.vasic.opoc.model.GsSharedPreferencesPropertyBackend
@@ -61,6 +64,8 @@ import digital.vasic.yole.ui.ScreenTransitions
 import digital.vasic.yole.ui.ListAnimations
 import digital.vasic.yole.ui.LoadingStateWrapper
 import digital.vasic.yole.ui.LoadingAnimations
+import digital.vasic.yole.android.util.PdfExportUtil
+import digital.vasic.yole.android.util.BackupRestoreUtil
 import java.io.File
 
 /**
@@ -138,8 +143,6 @@ fun deleteFile(filePath: String): Boolean {
     }
 }
 
-
-
 enum class Screen {
     FILES,
     TODO,
@@ -176,6 +179,7 @@ fun YoleApp() {
 fun MainScreen() {
     val context = LocalContext.current
     val settings = remember { YoleSettings(context) }
+    val coroutineScope = rememberCoroutineScope()
 
     var currentScreen by remember { mutableStateOf(Screen.FILES) }
     var currentSubScreen by remember { mutableStateOf<SubScreen?>(null) }
@@ -186,12 +190,12 @@ fun MainScreen() {
     var fileSearchQuery by remember { mutableStateOf("") }
     var fileSortBy by remember { mutableStateOf("name") }
 
-    // TODO screen state
+    // Complete screen state management for TODO screen
     var showTodoSearch by remember { mutableStateOf(false) }
     var todoSearchQuery by remember { mutableStateOf("") }
     var showTodoFilter by remember { mutableStateOf(false) }
     var todoFilterType by remember { mutableStateOf("all") } // all, active, completed
-    var todoItems by remember { mutableStateOf(listOf<String>()) }
+    var todoItems by remember { mutableStateOf(listOf<TodoItem>()) }
 
     // Editor state
     var editorHistory by remember { mutableStateOf(listOf<String>()) }
@@ -200,6 +204,8 @@ fun MainScreen() {
     // Dialog states
     var showAboutDialog by remember { mutableStateOf(false) }
     var showBackupDialog by remember { mutableStateOf(false) }
+    var showExportDialog by remember { mutableStateOf(false) }
+    var exportInProgress by remember { mutableStateOf(false) }
 
     // Load settings
     var themeMode by remember { mutableStateOf(settings.getThemeMode()) }
@@ -207,9 +213,40 @@ fun MainScreen() {
     var autoSave by remember { mutableStateOf(settings.getAutoSave()) }
     var animationsEnabled by remember { mutableStateOf(settings.getAnimationsEnabled()) }
 
+    // File pickers
+    val backupFilePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { backupUri ->
+            coroutineScope.launch {
+                val result = BackupRestoreUtil.restoreBackup(context, backupUri, settings)
+                if (result.isSuccess) {
+                    Toast.makeText(context, "Backup restored successfully", Toast.LENGTH_SHORT).show()
+                    // Refresh current screen
+                    when (currentScreen) {
+                        Screen.FILES -> {
+                            // Trigger file list refresh
+                            fileSearchQuery = fileSearchQuery
+                        }
+                        Screen.TODO -> {
+                            // Trigger todo list refresh
+                            todoItems = todoItems
+                        }
+                        else -> {}
+                    }
+                } else {
+                    Toast.makeText(context, "Failed to restore backup: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
     // Initialize parsers with lazy loading for faster startup
     LaunchedEffect(Unit) {
         digital.vasic.yole.format.ParserInitializer.registerAllParsersLazy()
+        // Cleanup old PDFs and backups periodically
+        PdfExportUtil.cleanupOldPdfs(context)
+        BackupRestoreUtil.cleanupOldBackups(context)
     }
 
     // Keyboard shortcuts
@@ -230,9 +267,11 @@ fun MainScreen() {
                             try {
                                 File(filePath).writeText(fileContent)
                                 // Announce save success
-                                println("File saved: $selectedFile")
+                                if (settings.getAnnounceChanges()) {
+                                    Toast.makeText(context, "File saved: $selectedFile", Toast.LENGTH_SHORT).show()
+                                }
                             } catch (e: Exception) {
-                                println("Failed to save file: ${e.message}")
+                                Toast.makeText(context, "Failed to save file: ${e.message}", Toast.LENGTH_LONG).show()
                             }
                         }
                         true
@@ -268,7 +307,11 @@ fun MainScreen() {
                             if (!docsDir.exists()) docsDir.mkdirs()
                             val filePath = File(docsDir, fileName).absolutePath
                             if (saveFile(filePath, fileContent)) {
-                                // Could show a success snackbar here
+                                if (settings.getAnnounceChanges()) {
+                                    Toast.makeText(context, "File saved successfully", Toast.LENGTH_SHORT).show()
+                                }
+                            } else {
+                                Toast.makeText(context, "Failed to save file", Toast.LENGTH_LONG).show()
                             }
                         }
                     },
@@ -278,7 +321,8 @@ fun MainScreen() {
                 SubScreen.PREVIEW -> PreviewTopBar(
                     fileName = selectedFile ?: "Untitled",
                     onEditClick = { currentSubScreen = SubScreen.EDITOR },
-                    onBackClick = { currentSubScreen = null }
+                    onBackClick = { currentSubScreen = null },
+                    onExportClick = { showExportDialog = true }
                 )
                 SubScreen.SETTINGS -> SettingsTopBar(
                     onBackClick = { currentSubScreen = null }
@@ -308,7 +352,11 @@ fun MainScreen() {
                                 if (!docsDir.exists()) docsDir.mkdirs()
                                 val filePath = File(docsDir, "quicknote.md").absolutePath
                                 if (saveFile(filePath, quickNoteContent)) {
-                                    // Could show success message
+                                    if (settings.getAnnounceChanges()) {
+                                        Toast.makeText(context, "Quick note saved", Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    Toast.makeText(context, "Failed to save quick note", Toast.LENGTH_LONG).show()
                                 }
                             },
                             onMoreClick = { currentSubScreen = SubScreen.SETTINGS }
@@ -337,7 +385,16 @@ fun MainScreen() {
                         }
                         Screen.TODO -> {
                             // Add new todo item
-                            todoItems = todoItems + "New task"
+                            val newItem = TodoItem(
+                                id = System.currentTimeMillis().toString(),
+                                text = "New task",
+                                completed = false,
+                                priority = null,
+                                projects = emptyList(),
+                                contexts = emptyList(),
+                                dueDate = null
+                            )
+                            todoItems = todoItems + newItem
                         }
                         Screen.QUICKNOTE -> {
                             // Quick note functionality - clear content
@@ -394,17 +451,7 @@ fun MainScreen() {
                             fileName = selectedFile ?: "Untitled",
                             content = fileContent,
                             onBackClick = { currentSubScreen = null },
-                            onExportClick = {
-                                // TODO: Implement actual PDF export using iText or PDFDocument
-                                // For now, just save as text file with .pdf extension
-                                selectedFile?.let { fileName ->
-                                    val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-                                    if (!docsDir.exists()) docsDir.mkdirs()
-                                    val pdfName = fileName.replace(Regex("\\.[^.]*$"), ".txt") // Save as .txt for now
-                                    val filePath = File(docsDir, pdfName).absolutePath
-                                    saveFile(filePath, "Exported from Yole\n\n$fileContent")
-                                }
-                            }
+                            onExportClick = { showExportDialog = true }
                         )
                         SubScreen.SETTINGS -> SettingsScreen(
                             onBackClick = { currentSubScreen = null },
@@ -461,7 +508,18 @@ fun MainScreen() {
                                         },
                                         onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
                                     )
-                                    Screen.TODO -> TodoScreen()
+                                    Screen.TODO -> TodoScreen(
+                                        searchQuery = todoSearchQuery,
+                                        filterType = todoFilterType,
+                                        showSearch = showTodoSearch,
+                                        showFilter = showTodoFilter,
+                                        onSearchQueryChanged = { todoSearchQuery = it },
+                                        onFilterTypeChanged = { todoFilterType = it },
+                                        onShowSearchChanged = { showTodoSearch = it },
+                                        onShowFilterChanged = { showTodoFilter = it },
+                                        todoItems = todoItems,
+                                        onTodoItemsChanged = { todoItems = it }
+                                    )
                                     Screen.QUICKNOTE -> QuickNoteScreen(
                                         content = quickNoteContent,
                                         onContentChanged = { quickNoteContent = it },
@@ -506,16 +564,7 @@ fun MainScreen() {
                         fileName = selectedFile ?: "Untitled",
                         content = fileContent,
                         onBackClick = { currentSubScreen = null },
-                        onExportClick = {
-                            // PDF export functionality
-                            selectedFile?.let { fileName ->
-                                val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-                                if (!docsDir.exists()) docsDir.mkdirs()
-                                val pdfName = fileName.replace(Regex("\\.[^.]*$"), ".txt") // Save as .txt for now
-                                val filePath = File(docsDir, pdfName).absolutePath
-                                saveFile(filePath, "Exported from Yole\n\n$fileContent")
-                            }
-                        }
+                        onExportClick = { showExportDialog = true }
                     )
                     SubScreen.SETTINGS -> SettingsScreen(
                         onBackClick = { currentSubScreen = null },
@@ -556,7 +605,18 @@ fun MainScreen() {
                                 },
                                 onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
                             )
-                            Screen.TODO -> TodoScreen()
+                            Screen.TODO -> TodoScreen(
+                                searchQuery = todoSearchQuery,
+                                filterType = todoFilterType,
+                                showSearch = showTodoSearch,
+                                showFilter = showTodoFilter,
+                                onSearchQueryChanged = { todoSearchQuery = it },
+                                onFilterTypeChanged = { todoFilterType = it },
+                                onShowSearchChanged = { showTodoSearch = it },
+                                onShowFilterChanged = { showTodoFilter = it },
+                                todoItems = todoItems,
+                                onTodoItemsChanged = { todoItems = it }
+                            )
                             Screen.QUICKNOTE -> QuickNoteScreen(
                                 content = quickNoteContent,
                                 onContentChanged = { quickNoteContent = it },
@@ -609,6 +669,82 @@ fun MainScreen() {
             )
         }
 
+        // Export Dialog
+        if (showExportDialog) {
+            AlertDialog(
+                onDismissRequest = { showExportDialog = false },
+                title = { Text("Export to PDF") },
+                text = {
+                    Column {
+                        Text("Export your document as a PDF file that can be shared or printed.")
+                        Spacer(modifier = Modifier.height(16.dp))
+                        if (exportInProgress) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text("Exporting...")
+                            }
+                        } else {
+                            Text("Choose export format:")
+                        }
+                    }
+                },
+                confirmButton = {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(
+                            onClick = {
+                                if (!exportInProgress && selectedFile != null) {
+                                    exportInProgress = true
+                                    coroutineScope.launch {
+                                        val format = FormatRegistry.detectByFilename(selectedFile!!)
+                                        val result = PdfExportUtil.exportToPdf(
+                                            context = context,
+                                            content = fileContent,
+                                            fileName = selectedFile!!,
+                                            format = format.id
+                                        )
+                                        
+                                        exportInProgress = false
+                                        showExportDialog = false
+                                        
+                                        if (result.isSuccess) {
+                                            val pdfUri = result.getOrNull()
+                                            if (pdfUri != null) {
+                                                // Share the PDF
+                                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                                    type = "application/pdf"
+                                                    putExtra(Intent.EXTRA_STREAM, pdfUri)
+                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                    putExtra(Intent.EXTRA_SUBJECT, "Yole Document: $selectedFile")
+                                                    putExtra(Intent.EXTRA_TEXT, "Here's the PDF export of my document from Yole.")
+                                                }
+                                                context.startActivity(Intent.createChooser(shareIntent, "Share PDF"))
+                                                Toast.makeText(context, "PDF exported successfully", Toast.LENGTH_SHORT).show()
+                                            }
+                                        } else {
+                                            Toast.makeText(context, "Failed to export PDF: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                }
+                            },
+                            enabled = !exportInProgress
+                        ) {
+                            Text("Export")
+                        }
+                        TextButton(
+                            onClick = { showExportDialog = false },
+                            enabled = !exportInProgress
+                        ) {
+                            Text("Cancel")
+                        }
+                    }
+                }
+            )
+        }
+
         // Backup & Restore Dialog
         if (showBackupDialog) {
             AlertDialog(
@@ -624,13 +760,32 @@ fun MainScreen() {
                 confirmButton = {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         TextButton(onClick = {
-                            // TODO: Implement backup functionality
-                            showBackupDialog = false
+                            coroutineScope.launch {
+                                val result = BackupRestoreUtil.createBackup(context, settings)
+                                showBackupDialog = false
+                                if (result.isSuccess) {
+                                    val backupUri = result.getOrNull()
+                                    if (backupUri != null) {
+                                        // Share the backup
+                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "application/zip"
+                                            putExtra(Intent.EXTRA_STREAM, backupUri)
+                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            putExtra(Intent.EXTRA_SUBJECT, "Yole Backup")
+                                            putExtra(Intent.EXTRA_TEXT, "Here's my Yole backup file.")
+                                        }
+                                        context.startActivity(Intent.createChooser(shareIntent, "Share Backup"))
+                                        Toast.makeText(context, "Backup created successfully", Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    Toast.makeText(context, "Failed to create backup: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                                }
+                            }
                         }) {
                             Text("Backup Now")
                         }
                         TextButton(onClick = {
-                            // TODO: Implement restore functionality
+                            backupFilePicker.launch(arrayOf("application/zip"))
                             showBackupDialog = false
                         }) {
                             Text("Restore")
@@ -863,6 +1018,7 @@ fun FileBrowserScreen(
         uri?.let {
             val documentFile = DocumentFile.fromTreeUri(context, it)
             // For now, just show a message - full implementation would require more work
+            Toast.makeText(context, "Directory selected: ${documentFile?.name}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -961,55 +1117,55 @@ fun FileBrowserScreen(
                                     .fillMaxWidth()
                                     .padding(vertical = 2.dp)
                                     .pressScale(scale = 0.97f), // Add press animation
-                            onClick = {
-                                if (isDirectory) {
-                                    // Navigate into directory with loading state
-                                    isLoadingFiles = true
-                                    currentDirectory = file
-                                    coroutineScope.launch {
-                                        delay(200) // Brief delay for loading animation
-                                        allFiles = file.listFiles()?.toList() ?: emptyList()
-                                        isLoadingFiles = false
-                                    }
-                                } else {
-                                    // Try to read file content
-                                    try {
-                                        val content = file.readText()
-                                        onFileSelected(fileName, content)
-                                    } catch (e: Exception) {
-                                        // If reading fails, show empty content
-                                        onFileSelected(fileName, "")
+                                onClick = {
+                                    if (isDirectory) {
+                                        // Navigate into directory with loading state
+                                        isLoadingFiles = true
+                                        currentDirectory = file
+                                        coroutineScope.launch {
+                                            delay(200) // Brief delay for loading animation
+                                            allFiles = file.listFiles()?.toList() ?: emptyList()
+                                            isLoadingFiles = false
+                                        }
+                                    } else {
+                                        // Try to read file content
+                                        try {
+                                            val content = file.readText()
+                                            onFileSelected(fileName, content)
+                                        } catch (e: Exception) {
+                                            // If reading fails, show empty content
+                                            onFileSelected(fileName, "")
+                                        }
                                     }
                                 }
-                            }
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Row(horizontalArrangement = Arrangement.Start) {
-                                    Text(
-                                        text = if (isDirectory) "📁" else "📄",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = fileName,
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(horizontalArrangement = Arrangement.Start) {
+                                        Text(
+                                            text = if (isDirectory) "📁" else "📄",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = fileName,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    }
 
-                                if (!isDirectory && fileSize.isNotEmpty()) {
-                                    Text(
-                                        text = fileSize,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                    )
+                                    if (!isDirectory && fileSize.isNotEmpty()) {
+                                        Text(
+                                            text = fileSize,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                    }
                                 }
                             }
-                        }
                         }
                     }
                 }
@@ -1215,7 +1371,12 @@ fun ActionButton(text: String, description: String, onClick: () -> Unit) {
 }
 
 @Composable
-fun PreviewScreen(fileName: String, content: String, onBackClick: () -> Unit = {}, onExportClick: () -> Unit = {}) {
+fun PreviewScreen(
+    fileName: String, 
+    content: String, 
+    onBackClick: () -> Unit = {}, 
+    onExportClick: () -> Unit = {}
+) {
     val context = LocalContext.current
     val format = remember(fileName) { FormatRegistry.detectByFilename(fileName) }
 
@@ -1394,7 +1555,7 @@ fun SettingsScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             RadioButton(
                 selected = themeMode == "light",
-                onClick = { onThemeModeChanged("light") }
+                onClick: { onThemeModeChanged("light") }
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text("Light theme")
@@ -1663,7 +1824,8 @@ fun EditorTopBar(
 fun PreviewTopBar(
     fileName: String,
     onEditClick: () -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onExportClick: () -> Unit
 ) {
     TopAppBar(
         title = { Text("$fileName (Preview)", maxLines = 1) },
@@ -1673,6 +1835,9 @@ fun PreviewTopBar(
             }
         },
         actions = {
+            IconButton(onClick = onExportClick) {
+                Icon(Icons.Filled.Share, contentDescription = "Export")
+            }
             IconButton(onClick = onEditClick) {
                 Icon(Icons.Outlined.Edit, contentDescription = "Edit")
             }
@@ -1718,13 +1883,102 @@ fun FilesScreen(
 }
 
 @Composable
-fun TodoScreen() {
-    var todoItems by remember { mutableStateOf(listOf<TodoItem>()) }
+fun TodoScreen(
+    searchQuery: String,
+    filterType: String,
+    showSearch: Boolean,
+    showFilter: Boolean,
+    onSearchQueryChanged: (String) -> Unit,
+    onFilterTypeChanged: (String) -> Unit,
+    onShowSearchChanged: (Boolean) -> Unit,
+    onShowFilterChanged: (Boolean) -> Unit,
+    todoItems: List<TodoItem>,
+    onTodoItemsChanged: (List<TodoItem>) -> Unit
+) {
     var newTodoText by remember { mutableStateOf("") }
-    var showCompleted by remember { mutableStateOf(true) }
+    val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Filter/Sort Row
+        // Search and Filter Row
+        if (showSearch || showFilter) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (showSearch) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = onSearchQueryChanged,
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Search todos...") },
+                        leadingIcon = {
+                            Icon(Icons.Filled.Search, contentDescription = "Search")
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { onSearchQueryChanged("") }) {
+                                    Icon(Icons.Filled.Clear, contentDescription = "Clear")
+                                }
+                            }
+                        }
+                    )
+                }
+                
+                if (showFilter) {
+                    var expanded by remember { mutableStateOf(false) }
+                    
+                    Box {
+                        OutlinedButton(onClick = { expanded = true }) {
+                            Text(
+                                text = when (filterType) {
+                                    "all" -> "All Tasks"
+                                    "active" -> "Active"
+                                    "completed" -> "Completed"
+                                    else -> "Filter"
+                                }
+                            )
+                            Icon(
+                                Icons.Filled.ArrowDropDown,
+                                contentDescription = "Filter options",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("All Tasks") },
+                                onClick = {
+                                    onFilterTypeChanged("all")
+                                    expanded = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Active Tasks") },
+                                onClick = {
+                                    onFilterTypeChanged("active")
+                                    expanded = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Completed Tasks") },
+                                onClick = {
+                                    onFilterTypeChanged("completed")
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Header and Filter Row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1738,8 +1992,24 @@ fun TodoScreen() {
             )
 
             Row {
-                TextButton(onClick = { showCompleted = !showCompleted }) {
-                    Text(if (showCompleted) "Hide Done" else "Show Done")
+                TextButton(onClick = { 
+                    onFilterTypeChanged(
+                        when (filterType) {
+                            "all" -> "active"
+                            "active" -> "completed"
+                            "completed" -> "all"
+                            else -> "all"
+                        }
+                    )
+                }) {
+                    Text(
+                        when (filterType) {
+                            "all" -> "Show Active"
+                            "active" -> "Show Completed"
+                            "completed" -> "Show All"
+                            else -> "Filter"
+                        }
+                    )
                 }
             }
         }
@@ -1771,7 +2041,7 @@ fun TodoScreen() {
                             contexts = emptyList(),
                             dueDate = null
                         )
-                        todoItems = todoItems + newItem
+                        onTodoItemsChanged(todoItems + newItem)
                         newTodoText = ""
                     }
                 },
@@ -1781,21 +2051,38 @@ fun TodoScreen() {
             }
         }
 
+        // Filter todos based on search and filter type
+        val filteredTodos = todoItems.filter { item ->
+            val matchesSearch = searchQuery.isEmpty() || 
+                item.text.contains(searchQuery, ignoreCase = true)
+            
+            val matchesFilter = when (filterType) {
+                "active" -> !item.completed
+                "completed" -> item.completed
+                else -> true // "all"
+            }
+            
+            matchesSearch && matchesFilter
+        }
+
         // Todo list or empty state
-        val filteredTodos = todoItems.filter { showCompleted || !it.completed }
         if (filteredTodos.isEmpty() && todoItems.isEmpty()) {
             // No todos at all
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 EmptyTodoListState()
             }
         } else if (filteredTodos.isEmpty()) {
-            // All todos are completed and hidden
+            // All todos are completed and hidden or no search results
             Box(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "All tasks completed! 🎉",
+                    text = if (searchQuery.isNotEmpty()) {
+                        "No tasks match your search."
+                    } else {
+                        "No tasks in this filter view."
+                    },
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
@@ -1816,12 +2103,14 @@ fun TodoScreen() {
                         TodoItemRow(
                             item = item,
                             onToggleComplete = { completed ->
-                                todoItems = todoItems.map {
-                                    if (it.id == item.id) it.copy(completed = completed) else it
-                                }
+                                onTodoItemsChanged(
+                                    todoItems.map {
+                                        if (it.id == item.id) it.copy(completed = completed) else it
+                                    }
+                                )
                             },
                             onDelete = {
-                                todoItems = todoItems.filter { it.id != item.id }
+                                onTodoItemsChanged(todoItems.filter { it.id != item.id })
                             }
                         )
                     }
