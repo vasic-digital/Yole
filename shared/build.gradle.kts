@@ -167,8 +167,8 @@ kotlin {
             dependencies {
                 // iOS-specific dependencies (inherited from commonMain)
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-                // Native SQLite for iOS
-                implementation("co.touchlab:sqliter:1.3.1")
+                // Native SQLite for iOS - Using platform-specific implementation
+                // implementation("co.touchlab:sqliter:1.3.1")
             }
         }
 
