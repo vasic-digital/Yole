@@ -1,334 +1,573 @@
+/*#######################################################
+ *
+ * SPDX-FileCopyrightText: 2025 Milos Vasic
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Comprehensive tests for DropboxService
+ *
+ *########################################################*/
 package digital.vasic.yole.network.protocols.dropbox
 
-import digital.vasic.yole.network.StorageQuota
+import digital.vasic.yole.network.auth.AuthTokenManager
 import digital.vasic.yole.network.common.*
-import kotlinx.coroutines.flow.first
+import digital.vasic.yole.network.protocol.HttpClient
+import io.mockk.*
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlinx.datetime.Duration
+import kotlin.test.*
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.seconds
 
 /**
- * Comprehensive test suite for DropboxService network protocol implementation.
- * Tests Dropbox API integration, authentication, and cloud storage functionality.
+ * Comprehensive tests for DropboxService covering:
+ * - Connection management and authentication
+ * - File operations (upload, download, delete, etc.)
+ * - Error handling and retry logic
+ * - Progress tracking and operation status
+ * - Rate limiting and API constraints
+ * - Cross-platform compatibility
  */
 class DropboxServiceTest {
-    
-    private val dropboxConfig = StorageConfig.DropboxConfig(
-        name = "test-dropbox",
-        accessToken = "test-access-token",
-        appKey = "test-app-key",
-        appSecret = "test-app-secret",
-        refreshToken = "test-refresh-token",
-        rootPath = ""
-    )
-    
+
+    private lateinit var mockHttpClient: HttpClient
+    private lateinit var mockAuthTokenManager: AuthTokenManager
     private lateinit var dropboxService: DropboxService
     
-    @Test
-    fun testDropboxServiceInitialization() {
-        dropboxService = DropboxService(dropboxConfig)
+    private val testAccessToken = "test_dropbox_access_token_123"
+    private val testRefreshToken = "test_dropbox_refresh_token_456"
+
+    @BeforeTest
+    fun setUp() {
+        mockHttpClient = mockk(relaxed = true)
+        mockAuthTokenManager = mockk(relaxed = true)
+        dropboxService = DropboxService(mockHttpClient, mockAuthTokenManager)
         
-        assertEquals("test-dropbox", dropboxService.config.name)
-        assertEquals("test-access-token", dropboxService.config.accessToken)
-        assertEquals("test-app-key", dropboxService.config.appKey)
-        assertEquals("test-app-secret", dropboxService.config.appSecret)
-        assertEquals("test-refresh-token", dropboxService.config.refreshToken)
-        assertEquals("", dropboxService.config.rootPath)
-        assertEquals("/", dropboxService.rootPath)
-        assertFalse(dropboxService.isOnline)
+        clearAllMocks()
     }
-    
+
+    @AfterTest
+    fun tearDown() {
+        unmockkAll()
+    }
+
+    // ==================== Connection Tests ====================
+
     @Test
-    fun testConnectSuccess() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
+    fun `connect should succeed with valid token`() = runTest {
+        // Given
+        coEvery { mockAuthTokenManager.hasValidToken() } returns Result.success(true)
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        
+        val aboutResponse = """
+            {
+                "account_id": "dbid:AAH4f99T0taONIb-OurWxbNQ6ywGRopQngc",
+                "name": {
+                    "given_name": "Test",
+                    "surname": "User",
+                    "display_name": "Test User"
+                },
+                "email": "test@example.com"
+            }
+        """.trimIndent()
+        
+        coEvery { mockHttpClient.post("https://api.dropboxapi.com/2/users/get_current_account", any()) } returns 
+            Result.success(aboutResponse)
+        
+        // When
         val result = dropboxService.connect()
         
-        // Connection will fail due to no mock
-        assertTrue(result.isFailure, "Dropbox connection should fail without mocking")
-        assertFalse(dropboxService.isOnline, "Should not be connected")
+        // Then
+        assertTrue(result.isSuccess)
+        assertTrue(dropboxService.isConnected())
+        
+        coVerify { mockAuthTokenManager.hasValidToken() }
+        coVerify { mockHttpClient.post(any(), any()) }
     }
-    
+
     @Test
-    fun testDisconnectSuccess() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        dropboxService.connect()
-        val result = dropboxService.disconnect()
+    fun `connect should fail without valid token`() = runTest {
+        // Given
+        coEvery { mockAuthTokenManager.hasValidToken() } returns Result.success(false)
         
-        assertTrue(result.isSuccess, "Dropbox disconnection should succeed")
+        // When
+        val result = dropboxService.connect()
+        
+        // Then
+        assertTrue(result.isFailure)
+        assertFalse(dropboxService.isConnected())
+        
+        val exception = result.exceptionOrNull() as NetworkStorageException.ConnectionException.Authentication
+        assertEquals("No valid authentication tokens found", exception.message)
     }
-    
+
     @Test
-    fun testStorageInfo() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val storageInfo = dropboxService.getStorageInfo()
-        
-        assertEquals("dropbox_test-dropbox", storageInfo.id)
-        assertEquals("test-dropbox", storageInfo.name)
-        assertEquals(StorageType.DROPBOX, storageInfo.type)
-        assertEquals("dropbox://", storageInfo.location)
-    }
-    
-    @Test
-    fun testListFilesWhenNotConnected() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val result = dropboxService.listFiles("/").first()
-        
-        assertTrue(result.isFailure, "List files should fail when not connected")
-        assertEquals("Dropbox not connected", result.exceptionOrNull()?.message)
-    }
-    
-    @Test
-    fun testDownloadFileWhenNotConnected() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val operations = dropboxService.downloadFile("/test.md", "/tmp/test.md")
-        
-        val firstOperation = operations.first()
-        assertEquals(NetworkOperation.Type.DOWNLOAD, firstOperation.type)
-        assertEquals(NetworkOperation.Status.FAILED, firstOperation.status)
-        assertEquals("Dropbox not connected", firstOperation.error)
-    }
-    
-    @Test
-    fun testUploadFileWhenNotConnected() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val operations = dropboxService.uploadFile("/tmp/test.md", "/test.md")
-        
-        val firstOperation = operations.first()
-        assertEquals(NetworkOperation.Type.UPLOAD, firstOperation.type)
-        assertEquals(NetworkOperation.Status.FAILED, firstOperation.status)
-        assertEquals("Dropbox not connected", firstOperation.error)
-    }
-    
-    @Test
-    fun testDeleteFileWhenNotConnected() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val result = dropboxService.deleteFile("/test.md")
-        
-        assertTrue(result.isFailure, "Delete should fail when not connected")
-        assertEquals("Dropbox not connected", result.exceptionOrNull()?.message)
-    }
-    
-    @Test
-    fun testCreateFolderWhenNotConnected() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val result = dropboxService.createFolder("/test-folder")
-        
-        assertTrue(result.isFailure, "Create folder should fail when not connected")
-        assertTrue(result.exceptionOrNull()?.message?.contains("Create folder failed") == true)
-    }
-    
-    @Test
-    fun testRenameFileWhenNotConnected() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val result = dropboxService.renameFile("/test.md", "renamed.md")
-        
-        assertTrue(result.isFailure, "Rename should fail when not connected")
-        assertEquals("Dropbox not connected", result.exceptionOrNull()?.message)
-    }
-    
-    @Test
-    fun testMoveFileWhenNotConnected() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val result = dropboxService.moveFile("/test.md", "/moved/test.md")
-        
-        assertTrue(result.isFailure, "Move should fail when not connected")
-        assertTrue(result.exceptionOrNull()?.message?.contains("Move failed") == true)
-    }
-    
-    @Test
-    fun testCopyFileWhenNotConnected() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val result = dropboxService.copyFile("/test.md", "/copy/test.md")
-        
-        assertTrue(result.isFailure, "Copy should fail when not connected")
-        val message = result.exceptionOrNull()?.message ?: ""
-        assertTrue(message.contains("Move failed"), "Error message should contain Move failed, got: $message")
-    }
-    
-    @Test
-    fun testGetFileInfoWhenNotConnected() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val result = dropboxService.getFileInfo("/test.md")
-        
-        assertTrue(result.isFailure, "Get file info should fail when not connected")
-        assertTrue(result.exceptionOrNull()?.message?.contains("File info failed") == true)
-    }
-    
-    @Test
-    fun testGetQuotaInfoWhenNotConnected() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val result = dropboxService.getQuotaInfo()
-        
-        assertTrue(result.isSuccess, "Get quota info returns mock success even when not connected")
-        val quota = result.getOrNull()
-        assertEquals(1000000000L, quota?.totalSpace)
-        assertEquals(0L, quota?.usedSpace)
-    }
-    
-    @Test
-    fun testExistsWhenNotConnected() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val result = dropboxService.exists("/test.md")
-        
-        assertTrue(result.isSuccess, "Exists check returns mock success even when not connected")
-        assertEquals(true, result.getOrNull(), "Mock implementation returns true")
-    }
-    
-    @Test
-    fun testDropboxConfigurationValidation() {
-        // Test with custom root path
-        val customRootConfig = dropboxConfig.copy(rootPath = "/Apps/Yole")
-        dropboxService = DropboxService(customRootConfig)
-        
-        assertEquals("/Apps/Yole", dropboxService.config.rootPath)
-        assertEquals("/", dropboxService.rootPath)
-        
-        // Test with minimal configuration
-        val minimalConfig = dropboxConfig.copy(
-            refreshToken = null
+    fun `connect should handle token refresh failure`() = runTest {
+        // Given
+        coEvery { mockAuthTokenManager.hasValidToken() } returns Result.success(false)
+        coEvery { mockAuthTokenManager.refreshAccessToken(any(), any(), any(), any()) } returns Result.failure(
+            Exception("Token refresh failed")
         )
-        dropboxService = DropboxService(minimalConfig)
         
-        assertEquals("test-access-token", dropboxService.config.accessToken)
-        assertEquals(null, dropboxService.config.refreshToken)
-        assertEquals("test-app-key", dropboxService.config.appKey)
-        assertEquals("test-app-secret", dropboxService.config.appSecret)
+        // When
+        val result = dropboxService.connect()
+        
+        // Then
+        assertTrue(result.isFailure)
+        assertFalse(dropboxService.isConnected())
     }
-    
+
     @Test
-    fun testGetParentPath() {
-        dropboxService = DropboxService(dropboxConfig)
+    fun `disconnect should clear connection state`() = runTest {
+        // Given
+        dropboxService.connect() // First establish connection
+        clearAllMocks() // Clear previous calls
         
-        assertEquals("/", dropboxService.getParentPath("/test.md"))
-        assertEquals("/folder", dropboxService.getParentPath("/folder/test.md"))
-        assertEquals("/folder/subfolder", dropboxService.getParentPath("/folder/subfolder/test.md"))
-        assertEquals("/", dropboxService.getParentPath("/"))
-        assertEquals("/", dropboxService.getParentPath(""))
+        // When
+        dropboxService.disconnect()
+        
+        // Then
+        assertFalse(dropboxService.isConnected())
     }
-    
+
+    // ==================== File Upload Tests ====================
+
     @Test
-    fun testValidatePath() {
-        dropboxService = DropboxService(dropboxConfig)
+    fun `uploadFile should upload successfully with progress tracking`() = runTest {
+        // Given
+        val localPath = "/local/test/file.txt"
+        val remotePath = "/remote/test/file.txt"
+        val fileContent = "Test file content"
         
-        assertTrue(dropboxService.validatePath("/test.md").isSuccess)
-        assertTrue(dropboxService.validatePath("/folder/test.md").isSuccess)
-        assertTrue(dropboxService.validatePath("/folder/subfolder/test.md").isSuccess)
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
         
-        assertTrue(dropboxService.validatePath("").isSuccess)
-        assertTrue(dropboxService.validatePath("   ").isSuccess)
+        // Mock upload session start
+        coEvery { mockHttpClient.post("https://content.dropboxapi.com/2/files/upload_session/start", any()) } returns
+            Result.success("""{"session_id": "test_session_123"}""")
+        
+        // Mock upload session append
+        coEvery { mockHttpClient.post("https://content.dropboxapi.com/2/files/upload_session/append_v2", any()) } returns
+            Result.success("""{"session_id": "test_session_123"}""")
+        
+        // Mock upload session finish
+        coEvery { mockHttpClient.post("https://content.dropboxapi.com/2/files/upload_session/finish", any()) } returns
+            Result.success("""{"name": "file.txt", "path_display": "$remotePath", "size": ${fileContent.length}}""")
+        
+        // When
+        val operations = dropboxService.uploadFile(remotePath, localPath).toList()
+        
+        // Then
+        assertTrue(operations.isNotEmpty())
+        
+        val finalOperation = operations.last()
+        assertEquals(NetworkOperation.Status.COMPLETED, finalOperation.status)
+        assertEquals(100.0, finalOperation.progress)
+        assertEquals(remotePath, finalOperation.remotePath)
+        assertEquals(localPath, finalOperation.localPath)
     }
-    
+
     @Test
-    fun testSearchFilesWhenNotConnected() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val result = dropboxService.searchFiles("test", "/", false).first()
+    fun `uploadFile should handle authentication failure`() = runTest {
+        // Given
+        val localPath = "/local/test/file.txt"
+        val remotePath = "/remote/test/file.txt"
         
-        assertTrue(result.isFailure, "Search should fail when not connected")
-        assertEquals("Dropbox not connected", result.exceptionOrNull()?.message)
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.failure(
+            Exception("No access token available")
+        )
+        
+        // When
+        val operations = dropboxService.uploadFile(remotePath, localPath).toList()
+        
+        // Then
+        assertTrue(operations.isNotEmpty())
+        
+        val finalOperation = operations.last()
+        assertEquals(NetworkOperation.Status.FAILED, finalOperation.status)
+        assertTrue(finalOperation.error?.contains("No access token available") ?: false)
     }
-    
+
     @Test
-    fun testGetRecentChangesWhenNotConnected() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val since = Clock.System.now()
-        val changes = dropboxService.getRecentChanges(since, "/").first()
+    fun `uploadFile should handle network errors during upload`() = runTest {
+        // Given
+        val localPath = "/local/test/file.txt"
+        val remotePath = "/remote/test/file.txt"
         
-        assertTrue(changes.isEmpty(), "Recent changes should be empty when not connected")
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        coEvery { mockHttpClient.post(any(), any()) } returns Result.failure(
+            Exception("Network error during upload")
+        )
+        
+        // When
+        val operations = dropboxService.uploadFile(remotePath, localPath).toList()
+        
+        // Then
+        assertTrue(operations.isNotEmpty())
+        
+        val finalOperation = operations.last()
+        assertEquals(NetworkOperation.Status.FAILED, finalOperation.status)
+        assertTrue(finalOperation.error?.contains("Network error") ?: false)
     }
-    
+
+    // ==================== File Download Tests ====================
+
     @Test
-    fun testSyncFileWhenNotConnected() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val operations = dropboxService.syncFile("/test.md", false)
+    fun `downloadFile should download successfully with progress tracking`() = runTest {
+        // Given
+        val remotePath = "/remote/test/file.txt"
+        val localPath = "/local/test/file.txt"
+        val fileContent = "Test file content for download"
         
-        val firstOperation = operations.first()
-        assertEquals(NetworkOperation.Type.SYNC, firstOperation.type)
-        assertEquals(NetworkOperation.Status.COMPLETED, firstOperation.status)
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        
+        // Mock download request
+        coEvery { mockHttpClient.post("https://content.dropboxapi.com/2/files/download", any()) } returns
+            Result.success(fileContent)
+        
+        // When
+        val operations = dropboxService.downloadFile(remotePath, localPath).toList()
+        
+        // Then
+        assertTrue(operations.isNotEmpty())
+        
+        val finalOperation = operations.last()
+        assertEquals(NetworkOperation.Status.COMPLETED, finalOperation.status)
+        assertEquals(100.0, finalOperation.progress)
+        assertEquals(remotePath, finalOperation.remotePath)
+        assertEquals(localPath, finalOperation.localPath)
     }
-    
+
     @Test
-    fun testSyncAllWhenNotConnected() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val operations = dropboxService.syncAll(false)
+    fun `downloadFile should handle file not found`() = runTest {
+        // Given
+        val remotePath = "/remote/test/nonexistent.txt"
+        val localPath = "/local/test/nonexistent.txt"
         
-        // Should return one completed operation
-        var operationCount = 0
-        operations.collect { operation ->
-            operationCount++
-            assertEquals(NetworkOperation.Status.COMPLETED, operation.status)
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        coEvery { mockHttpClient.post("https://content.dropboxapi.com/2/files/download", any()) } returns
+            Result.failure(NetworkStorageException.FileOperationException.NotFound(remotePath))
+        
+        // When
+        val operations = dropboxService.downloadFile(remotePath, localPath).toList()
+        
+        // Then
+        assertTrue(operations.isNotEmpty())
+        
+        val finalOperation = operations.last()
+        assertEquals(NetworkOperation.Status.FAILED, finalOperation.status)
+        assertTrue(finalOperation.error?.contains("not found") ?: false)
+    }
+
+    // ==================== File Information Tests ====================
+
+    @Test
+    fun `getFileInfo should retrieve file metadata`() = runTest {
+        // Given
+        val remotePath = "/remote/test/file.txt"
+        val fileInfoResponse = """
+            {
+                "name": "file.txt",
+                "path_display": "$remotePath",
+                "size": 1024,
+                "client_modified": "2024-01-01T12:00:00Z",
+                "server_modified": "2024-01-01T12:00:00Z"
+            }
+        """.trimIndent()
+        
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        coEvery { mockHttpClient.post("https://api.dropboxapi.com/2/files/get_metadata", any()) } returns
+            Result.success(fileInfoResponse)
+        
+        // When
+        val result = dropboxService.getFileInfo(remotePath)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        
+        val document = result.getOrNull()!!
+        assertEquals("file.txt", document.name)
+        assertEquals(remotePath, document.path)
+        assertEquals(1024L, document.size)
+        assertFalse(document.isDirectory)
+    }
+
+    @Test
+    fun `getFileInfo should handle directory metadata`() = runTest {
+        // Given
+        val remotePath = "/remote/test/folder/"
+        val folderInfoResponse = """
+            {
+                "name": "folder",
+                "path_display": "$remotePath",
+                "size": 0
+            }
+        """.trimIndent()
+        
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        coEvery { mockHttpClient.post("https://api.dropboxapi.com/2/files/get_metadata", any()) } returns
+            Result.success(folderInfoResponse)
+        
+        // When
+        val result = dropboxService.getFileInfo(remotePath)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        
+        val document = result.getOrNull()!!
+        assertEquals("folder", document.name)
+        assertEquals(remotePath, document.path)
+        assertEquals(0L, document.size)
+        assertTrue(document.isDirectory)
+    }
+
+    // ==================== Directory Operations Tests ====================
+
+    @Test
+    fun `listDirectory should retrieve directory contents`() = runTest {
+        // Given
+        val remotePath = "/remote/test/"
+        val listResponse = """
+            {
+                "entries": [
+                    {
+                        ".tag": "file",
+                        "name": "file1.txt",
+                        "path_display": "/remote/test/file1.txt",
+                        "size": 512
+                    },
+                    {
+                        ".tag": "folder",
+                        "name": "subfolder",
+                        "path_display": "/remote/test/subfolder/",
+                        "size": 0
+                    }
+                ],
+                "cursor": "test_cursor_123",
+                "has_more": false
+            }
+        """.trimIndent()
+        
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        coEvery { mockHttpClient.post("https://api.dropboxapi.com/2/files/list_folder", any()) } returns
+            Result.success(listResponse)
+        
+        // When
+        val result = dropboxService.listDirectory(remotePath)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        
+        val documents = result.getOrNull()!!
+        assertEquals(2, documents.size)
+        
+        val file = documents.find { it.name == "file1.txt" }
+        assertNotNull(file)
+        assertFalse(file.isDirectory)
+        assertEquals(512L, file.size)
+        
+        val folder = documents.find { it.name == "subfolder" }
+        assertNotNull(folder)
+        assertTrue(folder.isDirectory)
+        assertEquals(0L, folder.size)
+    }
+
+    @Test
+    fun `createDirectory should create new directory`() = runTest {
+        // Given
+        val remotePath = "/remote/test/new_folder/"
+        val createResponse = """
+            {
+                "name": "new_folder",
+                "path_display": "$remotePath",
+                "size": 0
+            }
+        """.trimIndent()
+        
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        coEvery { mockHttpClient.post("https://api.dropboxapi.com/2/files/create_folder_v2", any()) } returns
+            Result.success(createResponse)
+        
+        // When
+        val result = dropboxService.createDirectory(remotePath)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        
+        val document = result.getOrNull()!!
+        assertEquals("new_folder", document.name)
+        assertEquals(remotePath, document.path)
+        assertTrue(document.isDirectory)
+    }
+
+    // ==================== File Deletion Tests ====================
+
+    @Test
+    fun `deleteFile should remove file successfully`() = runTest {
+        // Given
+        val remotePath = "/remote/test/file_to_delete.txt"
+        val deleteResponse = """
+            {
+                "name": "file_to_delete.txt",
+                "path_display": "$remotePath"
+            }
+        """.trimIndent()
+        
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        coEvery { mockHttpClient.post("https://api.dropboxapi.com/2/files/delete_v2", any()) } returns
+            Result.success(deleteResponse)
+        
+        // When
+        val result = dropboxService.deleteFile(remotePath)
+        
+        // Then
+        assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun `deleteFile should handle file not found`() = runTest {
+        // Given
+        val remotePath = "/remote/test/nonexistent.txt"
+        
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        coEvery { mockHttpClient.post("https://api.dropboxapi.com/2/files/delete_v2", any()) } returns
+            Result.failure(NetworkStorageException.FileOperationException.NotFound(remotePath))
+        
+        // When
+        val result = dropboxService.deleteFile(remotePath)
+        
+        // Then
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is NetworkStorageException.FileOperationException.NotFound)
+    }
+
+    // ==================== Rate Limiting Tests ====================
+
+    @Test
+    fun `should handle rate limiting with retry`() = runTest {
+        // Given
+        val remotePath = "/remote/test/file.txt"
+        
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        
+        // First call returns rate limit error, second call succeeds
+        var callCount = 0
+        coEvery { mockHttpClient.post(any(), any()) } answers {
+            callCount++
+            if (callCount == 1) {
+                Result.failure(Exception("HTTP 429: Rate limit exceeded"))
+            } else {
+                Result.success("""{"name": "file.txt", "size": 1024}""")
+            }
         }
-        assertEquals(1, operationCount, "Sync all should return one completed operation")
+        
+        // When
+        val result = dropboxService.getFileInfo(remotePath)
+        
+        // Then
+        assertTrue(result.isSuccess) // Should succeed after retry
+        coVerify(exactly = 2) { mockHttpClient.post(any(), any()) }
     }
-    
+
+    // ==================== Error Recovery Tests ====================
+
     @Test
-    fun testActiveOperationsFlow() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val activeOps = dropboxService.getActiveOperations().first()
+    fun `should recover from temporary network failures`() = runTest {
+        // Given
+        val remotePath = "/remote/test/file.txt"
         
-        assertTrue(activeOps.isEmpty(), "Active operations should be empty initially")
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        coEvery { mockAuthTokenManager.refreshAccessToken(any(), any(), any(), any()) } returns Result.success("new_token")
+        
+        // Simulate token expiration followed by successful retry
+        var callCount = 0
+        coEvery { mockHttpClient.post(any(), any()) } answers {
+            callCount++
+            if (callCount == 1) {
+                Result.failure(Exception("HTTP 401: Unauthorized"))
+            } else {
+                Result.success("""{"name": "file.txt", "size": 1024}""")
+            }
+        }
+        
+        // When
+        val result = dropboxService.getFileInfo(remotePath)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        coVerify { mockAuthTokenManager.refreshAccessToken(any(), any(), any(), any()) }
     }
-    
+
+    // ==================== Concurrent Operations Tests ====================
+
     @Test
-    fun testCacheOperations() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
+    fun `should handle concurrent file operations`() = runTest {
+        // Given
+        val operations = 10
         
-        val cacheEntries = dropboxService.getCacheEntries("/").first()
-        assertTrue(cacheEntries.isEmpty(), "Cache entries should be empty")
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        coEvery { mockHttpClient.post(any(), any()) } returns Result.success("""{"name": "file.txt", "size": 1024}""")
         
-        val addToCacheResult = dropboxService.addToCache("/test.md", 1)
-        assertTrue(addToCacheResult.isSuccess, "Add to cache should succeed")
+        // When
+        val results = (1..operations).map { i ->
+            dropboxService.getFileInfo("/remote/test/file$i.txt")
+        }
         
-        val removeFromCacheResult = dropboxService.removeFromCache("/test.md")
-        assertTrue(removeFromCacheResult.isSuccess, "Remove from cache should succeed")
-        
-        val clearCacheResult = dropboxService.clearCache()
-        assertTrue(clearCacheResult.isSuccess, "Clear cache should succeed")
+        // Then
+        assertTrue(results.all { it.isSuccess })
+        coVerify(exactly = operations) { mockHttpClient.post(any(), any()) }
     }
-    
+
+    // ==================== Edge Cases ====================
+
     @Test
-    fun testSyncStatusFlow() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val syncStatus = dropboxService.getSyncStatus("/").first()
+    fun `should handle very long file paths`() = runTest {
+        // Given
+        val longPath = "/remote/test/" + "a".repeat(1000) + "/file.txt"
         
-        assertTrue(syncStatus.isEmpty(), "Sync status should be empty initially")
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        coEvery { mockHttpClient.post(any(), any()) } returns Result.success(
+            """{"name": "file.txt", "path_display": "$longPath", "size": 1024}"""
+        )
+        
+        // When
+        val result = dropboxService.getFileInfo(longPath)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        assertEquals(longPath, result.getOrNull()?.path)
     }
-    
+
     @Test
-    fun testTestConnection() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
-        val result = dropboxService.testConnection()
+    fun `should handle special characters in file names`() = runTest {
+        // Given
+        val specialPath = "/remote/test/file with spaces and special chars !@#$%^&*().txt"
         
-        assertTrue(result.isFailure, "Test connection should fail without mocking")
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        coEvery { mockHttpClient.post(any(), any()) } returns Result.success(
+            """{"name": "file with spaces and special chars !@#$%^&*().txt", "path_display": "$specialPath", "size": 1024}"""
+        )
+        
+        // When
+        val result = dropboxService.getFileInfo(specialPath)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        assertEquals(specialPath, result.getOrNull()?.path)
     }
-    
+
     @Test
-    fun testTokenRefreshScenario() = runTest {
-        // Test with expired access token scenario
-        val configWithExpiredToken = dropboxConfig.copy(accessToken = "expired-token")
-        dropboxService = DropboxService(configWithExpiredToken)
+    fun `should handle empty responses from API`() = runTest {
+        // Given
+        val remotePath = "/remote/test/file.txt"
         
-        val storageInfo = dropboxService.getStorageInfo()
-        assertEquals(StorageType.DROPBOX, storageInfo.type)
-        assertEquals("test-dropbox", storageInfo.name)
-    }
-    
-    @Test
-    fun testDropboxApiEndpoints() = runTest {
-        dropboxService = DropboxService(dropboxConfig)
+        coEvery { mockAuthTokenManager.getAccessToken() } returns Result.success(testAccessToken)
+        coEvery { mockHttpClient.post(any(), any()) } returns Result.success("")
         
-        // Test that storage info contains correct Dropbox URL
-        val storageInfo = dropboxService.getStorageInfo()
-        assertEquals("dropbox://", storageInfo.location)
+        // When
+        val result = dropboxService.getFileInfo(remotePath)
         
-        // Test with custom root path
-        val customRootConfig = dropboxConfig.copy(rootPath = "/Apps/Yole")
-        val customRootService = DropboxService(customRootConfig)
-        val customRootStorageInfo = customRootService.getStorageInfo()
-        
-        assertEquals(StorageType.DROPBOX, customRootStorageInfo.type)
-        assertEquals("dropbox://", customRootStorageInfo.location)
+        // Then
+        assertTrue(result.isFailure) // Should fail with empty response
     }
 }

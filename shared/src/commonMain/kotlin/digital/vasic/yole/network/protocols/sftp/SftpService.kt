@@ -180,7 +180,8 @@ class SftpService(
                     size = 5242880L, // 5MB
                     lastModified = Clock.System.now().minus(24.days),
                     syncStatus = SyncStatus.SYNCED,
-                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.EXECUTE)
+                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.EXECUTE),
+                    storageId = "sftp"
                 ),
                 NetworkDocument(
                     id = "README.md",
@@ -190,7 +191,8 @@ class SftpService(
                     size = 4096L,
                     lastModified = Clock.System.now().minus(2.hours),
                     syncStatus = SyncStatus.SYNCED,
-                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
+                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
+                    storageId = "sftp"
                 ),
                 NetworkDocument(
                     id = "project_folder",
@@ -200,7 +202,8 @@ class SftpService(
                     size = 0L,
                     lastModified = Clock.System.now().minus(12.hours),
                     syncStatus = SyncStatus.SYNCED,
-                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.EXECUTE)
+                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.EXECUTE),
+                    storageId = "sftp"
                 ),
                 NetworkDocument(
                     id = "config.json",
@@ -210,7 +213,8 @@ class SftpService(
                     size = 8192L,
                     lastModified = Clock.System.now().minus(30.minutes),
                     syncStatus = SyncStatus.SYNCED,
-                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
+                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
+                    storageId = "sftp"
                 )
             )
             
@@ -493,6 +497,7 @@ class SftpService(
                 isFolder = true,
                 size = 0L,
                 lastModified = Clock.System.now(),
+                storageId = "sftp",
                 syncStatus = SyncStatus.SYNCED,
                 permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.EXECUTE)
             ))
@@ -543,6 +548,7 @@ class SftpService(
                 isFolder = false,
                 size = 0L,
                 lastModified = Clock.System.now(),
+                storageId = "sftp",
                 syncStatus = SyncStatus.SYNCED,
                 permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.EXECUTE)
             ))
@@ -603,6 +609,7 @@ class SftpService(
                 path = fullPath,
                 isFolder = isDirectory,
                 size = fileSize,
+                storageId = "sftp",
                 lastModified = lastModified,
                 syncStatus = SyncStatus.SYNCED,
                 permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, if (isDirectory) DocumentPermission.EXECUTE else DocumentPermission.DELETE)

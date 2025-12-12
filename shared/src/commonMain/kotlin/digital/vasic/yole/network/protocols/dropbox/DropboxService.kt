@@ -237,7 +237,8 @@ class DropboxService(
                         size = 0L,
                         lastModified = Clock.System.now(),
                         syncStatus = SyncStatus.SYNCED,
-                        permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE)
+                        permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE),
+                        storageId = "dropbox"
                     )
                     "file" -> NetworkDocument(
                         id = entry.id,
@@ -247,7 +248,8 @@ class DropboxService(
                         size = entry.size ?: 0L,
                         lastModified = entry.serverModified?.let { Instant.parse(it) } ?: Clock.System.now(),
                         syncStatus = SyncStatus.SYNCED,
-                        permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE)
+                        permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE),
+                        storageId = "dropbox"
                     )
                     else -> null
                 }
@@ -486,7 +488,8 @@ class DropboxService(
             path = remotePath,
             isFolder = true,
             syncStatus = SyncStatus.SYNCED,
-            lastModified = Clock.System.now()
+            lastModified = Clock.System.now(),
+            storageId = "dropbox"
         ))
     }
     
@@ -503,7 +506,8 @@ class DropboxService(
             path = destinationPath,
             isFolder = false,
             syncStatus = SyncStatus.SYNCED,
-            lastModified = Clock.System.now()
+            lastModified = Clock.System.now(),
+            storageId = "dropbox"
         ))
     }
     
@@ -520,7 +524,8 @@ class DropboxService(
             path = remotePath,
             isFolder = false,
             syncStatus = SyncStatus.SYNCED,
-            lastModified = Clock.System.now()
+            lastModified = Clock.System.now(),
+            storageId = "dropbox"
         ))
     }
     

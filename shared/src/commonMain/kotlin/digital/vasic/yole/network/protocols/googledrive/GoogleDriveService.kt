@@ -226,7 +226,8 @@ class GoogleDriveService(
                     size = file.size ?: 0L,
                     lastModified = file.modifiedTime?.let { Instant.parse(it) } ?: Clock.System.now(),
                     syncStatus = SyncStatus.SYNCED,
-                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE)
+                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE),
+                    storageId = "googledrive"
                 )
             }
             
@@ -492,7 +493,8 @@ class GoogleDriveService(
             path = remotePath,
             isFolder = true,
             syncStatus = SyncStatus.SYNCED,
-            lastModified = Clock.System.now()
+            lastModified = Clock.System.now(),
+            storageId = "googledrive"
         ))
     }
     
@@ -507,7 +509,8 @@ class GoogleDriveService(
             path = destinationPath,
             isFolder = false,
             syncStatus = SyncStatus.SYNCED,
-            lastModified = Clock.System.now()
+            lastModified = Clock.System.now(),
+            storageId = "googledrive"
         ))
     }
     
@@ -522,7 +525,8 @@ class GoogleDriveService(
             path = remotePath,
             isFolder = false,
             syncStatus = SyncStatus.SYNCED,
-            lastModified = Clock.System.now()
+            lastModified = Clock.System.now(),
+            storageId = "googledrive"
         ))
     }
     

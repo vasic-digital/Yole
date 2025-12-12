@@ -179,6 +179,7 @@ class WebDavService(
             isFolder = true,
             size = 0L,
             lastModified = Clock.System.now(),
+            storageId = "webdav",
             permissions = setOf(
                 DocumentPermission.READ,
                 DocumentPermission.WRITE,
@@ -208,6 +209,7 @@ class WebDavService(
             isFolder = false,
             size = 0L,
             lastModified = Clock.System.now(),
+            storageId = "webdav",
             permissions = setOf(
                 DocumentPermission.READ,
                 DocumentPermission.WRITE,
@@ -231,6 +233,7 @@ class WebDavService(
             isFolder = false,
             size = 0L,
             lastModified = Clock.System.now(),
+            storageId = "webdav",
             permissions = setOf(
                 DocumentPermission.READ,
                 DocumentPermission.WRITE

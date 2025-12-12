@@ -247,6 +247,7 @@ class OneDriveService(
                     size = item.size ?: 0L,
                     lastModified = item.lastModifiedDateTime?.let { Instant.parse(it) } ?: Clock.System.now(),
                     syncStatus = SyncStatus.SYNCED,
+                    storageId = "onedrive",
                     permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE)
                 )
             }
@@ -530,7 +531,8 @@ class OneDriveService(
             path = remotePath,
             isFolder = true,
             syncStatus = SyncStatus.SYNCED,
-            lastModified = Clock.System.now()
+            lastModified = Clock.System.now(),
+            storageId = "onedrive"
         ))
     }
     
@@ -545,7 +547,8 @@ class OneDriveService(
             path = destinationPath,
             isFolder = false,
             syncStatus = SyncStatus.SYNCED,
-            lastModified = Clock.System.now()
+            lastModified = Clock.System.now(),
+            storageId = "onedrive"
         ))
     }
     
@@ -560,7 +563,8 @@ class OneDriveService(
             path = remotePath,
             isFolder = false,
             syncStatus = SyncStatus.SYNCED,
-            lastModified = Clock.System.now()
+            lastModified = Clock.System.now(),
+            storageId = "onedrive"
         ))
     }
     

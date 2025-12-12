@@ -180,6 +180,7 @@ class SmbService(
             isFolder = true,
             size = 0L,
             lastModified = Clock.System.now(),
+            storageId = "smb",
             permissions = setOf(
                 DocumentPermission.READ,
                 DocumentPermission.WRITE,
@@ -209,6 +210,7 @@ class SmbService(
             isFolder = false,
             size = 0L,
             lastModified = Clock.System.now(),
+            storageId = "smb",
             permissions = setOf(
                 DocumentPermission.READ,
                 DocumentPermission.WRITE,
@@ -232,6 +234,7 @@ class SmbService(
             isFolder = false,
             size = 0L,
             lastModified = Clock.System.now(),
+            storageId = "smb",
             permissions = setOf(
                 DocumentPermission.READ,
                 DocumentPermission.WRITE

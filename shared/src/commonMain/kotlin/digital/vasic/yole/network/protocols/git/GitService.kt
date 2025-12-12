@@ -202,6 +202,7 @@ class GitService(
             isFolder = true,
             size = 0L,
             lastModified = Clock.System.now(),
+            storageId = "git",
             permissions = setOf(
                 DocumentPermission.READ,
                 DocumentPermission.WRITE,
@@ -231,6 +232,7 @@ class GitService(
             isFolder = false,
             size = 0L,
             lastModified = Clock.System.now(),
+            storageId = "git",
             permissions = setOf(
                 DocumentPermission.READ,
                 DocumentPermission.WRITE,
@@ -254,6 +256,7 @@ class GitService(
             isFolder = false,
             size = 0L,
             lastModified = Clock.System.now(),
+            storageId = "git",
             permissions = setOf(
                 DocumentPermission.READ,
                 DocumentPermission.WRITE

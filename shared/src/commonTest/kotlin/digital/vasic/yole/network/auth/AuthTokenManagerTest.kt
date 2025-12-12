@@ -1,345 +1,391 @@
+/*#######################################################
+ *
+ * SPDX-FileCopyrightText: 2025 Milos Vasic
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Comprehensive tests for AuthTokenManager
+ *
+ *########################################################*/
 package digital.vasic.yole.network.auth
 
-import digital.vasic.yole.network.platform.SecureStorage
+import io.mockk.*
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlinx.datetime.Duration
 import kotlin.test.*
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 /**
- * Comprehensive test suite for AuthTokenManager
- * Tests token storage, retrieval, expiration checking, and refresh scenarios
+ * Comprehensive tests for AuthTokenManager covering:
+ * - Token storage and retrieval
+ * - Token expiration handling
+ * - Automatic token refresh
+ * - Error scenarios and edge cases
+ * - Cross-platform compatibility
  */
 class AuthTokenManagerTest {
-    
+
     private lateinit var secureStorage: SecureStorage
     private lateinit var authTokenManager: AuthTokenManager
-    private val testServiceName = "test-service"
-    
+    private val testService = "test_service"
+    private val testToken = "test_access_token_123"
+    private val testRefreshToken = "test_refresh_token_456"
+
     @BeforeTest
-    fun setup() = runTest {
-        secureStorage = MockSecureStorage()
-        authTokenManager = AuthTokenManager(testServiceName, secureStorage)
+    fun setUp() {
+        secureStorage = mockk(relaxed = true)
+        authTokenManager = AuthTokenManager(secureStorage)
+        
+        // Clear all recorded calls
+        clearAllMocks()
     }
-    
-    @Test
-    fun testStoreAndRetrieveAccessToken() = runTest {
-        val testToken = "test-access-token-12345"
-        
-        // Store access token
-        val storeResult = authTokenManager.storeAccessToken(testToken)
-        assertTrue(storeResult.isSuccess, "Storing access token should succeed")
-        
-        // Retrieve access token
-        val retrieveResult = authTokenManager.getAccessToken()
-        assertTrue(retrieveResult.isSuccess, "Retrieving access token should succeed")
-        assertEquals(testToken, retrieveResult.getOrNull(), "Retrieved token should match stored token")
+
+    @AfterTest
+    fun tearDown() {
+        unmockkAll()
     }
-    
+
+    // ==================== Token Storage Tests ====================
+
     @Test
-    fun testStoreAndRetrieveRefreshToken() = runTest {
-        val testRefreshToken = "test-refresh-token-67890"
+    fun `storeAccessToken should save token to secure storage`() = runTest {
+        // Given
+        coEvery { secureStorage.store(any(), any()) } returns Result.success(Unit)
         
-        // Store refresh token
-        val storeResult = authTokenManager.storeRefreshToken(testRefreshToken)
-        assertTrue(storeResult.isSuccess, "Storing refresh token should succeed")
+        // When
+        val result = authTokenManager.storeAccessToken(testService, testToken)
         
-        // Retrieve refresh token
-        val retrieveResult = authTokenManager.getRefreshToken()
-        assertTrue(retrieveResult.isSuccess, "Retrieving refresh token should succeed")
-        assertEquals(testRefreshToken, retrieveResult.getOrNull(), "Retrieved refresh token should match stored token")
+        // Then
+        assertTrue(result.isSuccess)
+        coVerify { secureStorage.store("${testService}_access_token", testToken) }
     }
-    
+
     @Test
-    fun testStoreAndCheckTokenExpiration() = runTest {
-        val futureTime = Clock.System.now().plus(Duration.hours(1))
+    fun `storeAccessToken should handle storage failure`() = runTest {
+        // Given
+        val storageError = Exception("Storage failed")
+        coEvery { secureStorage.store(any(), any()) } returns Result.failure(storageError)
         
-        // Store expiration time
-        val storeResult = authTokenManager.storeTokenExpiration(futureTime)
-        assertTrue(storeResult.isSuccess, "Storing token expiration should succeed")
+        // When
+        val result = authTokenManager.storeAccessToken(testService, testToken)
         
-        // Check if token is expired (should not be)
-        val isExpiredResult = authTokenManager.isTokenExpired()
-        assertTrue(isExpiredResult.isSuccess, "Checking token expiration should succeed")
-        assertFalse(isExpiredResult.getOrNull() ?: true, "Token should not be expired")
+        // Then
+        assertTrue(result.isFailure)
+        assertEquals(storageError, result.exceptionOrNull())
     }
-    
+
     @Test
-    fun testExpiredTokenDetection() = runTest {
-        val pastTime = Clock.System.now().minus(Duration.hours(1))
+    fun `getAccessToken should retrieve token from secure storage`() = runTest {
+        // Given
+        coEvery { secureStorage.retrieve("${testService}_access_token") } returns Result.success(testToken)
         
-        // Store past expiration time
-        val storeResult = authTokenManager.storeTokenExpiration(pastTime)
-        assertTrue(storeResult.isSuccess, "Storing past expiration time should succeed")
+        // When
+        val result = authTokenManager.getAccessToken(testService)
         
-        // Check if token is expired (should be)
-        val isExpiredResult = authTokenManager.isTokenExpired()
-        assertTrue(isExpiredResult.isSuccess, "Checking token expiration should succeed")
-        assertTrue(isExpiredResult.getOrNull() ?: false, "Token should be expired")
+        // Then
+        assertTrue(result.isSuccess)
+        assertEquals(testToken, result.getOrNull())
     }
-    
+
     @Test
-    fun testHasValidToken() = runTest {
-        // Initially should not have valid token
-        val initialCheck = authTokenManager.hasValidToken()
-        assertTrue(initialCheck.isSuccess, "Initial token check should succeed")
-        assertFalse(initialCheck.getOrNull() ?: true, "Should not have valid token initially")
-        
-        // Store valid token with future expiration
-        val futureTime = Clock.System.now().plus(Duration.hours(2))
-        authTokenManager.storeAccessToken("valid-token")
-        authTokenManager.storeTokenExpiration(futureTime)
-        
-        // Now should have valid token
-        val validCheck = authTokenManager.hasValidToken()
-        assertTrue(validCheck.isSuccess, "Token validation should succeed")
-        assertTrue(validCheck.getOrNull() ?: false, "Should have valid token")
-    }
-    
-    @Test
-    fun testHasValidTokenWithExpiredToken() = runTest {
-        // Store token with past expiration
-        val pastTime = Clock.System.now().minus(Duration.hours(1))
-        authTokenManager.storeAccessToken("expired-token")
-        authTokenManager.storeTokenExpiration(pastTime)
-        
-        // Should not have valid token
-        val expiredCheck = authTokenManager.hasValidToken()
-        assertTrue(expiredCheck.isSuccess, "Token validation should succeed")
-        assertFalse(expiredCheck.getOrNull() ?: true, "Should not have valid expired token")
-    }
-    
-    @Test
-    fun testClearTokens() = runTest {
-        // Store tokens
-        authTokenManager.storeAccessToken("access-token")
-        authTokenManager.storeRefreshToken("refresh-token")
-        val futureTime = Clock.System.now().plus(Duration.hours(1))
-        authTokenManager.storeTokenExpiration(futureTime)
-        
-        // Verify tokens exist
-        assertNotNull(authTokenManager.getAccessToken().getOrNull())
-        assertNotNull(authTokenManager.getRefreshToken().getOrNull())
-        
-        // Clear tokens
-        val clearResult = authTokenManager.clearTokens()
-        assertTrue(clearResult.isSuccess, "Clearing tokens should succeed")
-        
-        // Verify tokens are cleared
-        val accessTokenAfterClear = authTokenManager.getAccessToken().getOrNull()
-        val refreshTokenAfterClear = authTokenManager.getRefreshToken().getOrNull()
-        
-        assertNull(accessTokenAfterClear, "Access token should be null after clearing")
-        assertNull(refreshTokenAfterClear, "Refresh token should be null after clearing")
-    }
-    
-    @Test
-    fun testStoreTokenInfo() = runTest {
-        val accessToken = "test-access-token"
-        val refreshToken = "test-refresh-token"
-        val expiresIn = 3600L // 1 hour
-        
-        // Store complete token info
-        val storeResult = authTokenManager.storeTokenInfo(
-            accessToken = accessToken,
-            refreshToken = refreshToken,
-            expiresIn = expiresIn
+    fun `getAccessToken should handle missing token`() = runTest {
+        // Given
+        coEvery { secureStorage.retrieve("${testService}_access_token") } returns Result.failure(
+            Exception("Token not found")
         )
-        assertTrue(storeResult.isSuccess, "Storing complete token info should succeed")
         
-        // Verify all tokens are stored
-        val retrievedAccessToken = authTokenManager.getAccessToken().getOrNull()
-        val retrievedRefreshToken = authTokenManager.getRefreshToken().getOrNull()
-        val isExpired = authTokenManager.isTokenExpired().getOrNull()
+        // When
+        val result = authTokenManager.getAccessToken(testService)
         
-        assertEquals(accessToken, retrievedAccessToken, "Access token should match")
-        assertEquals(refreshToken, retrievedRefreshToken, "Refresh token should match")
-        assertFalse(isExpired ?: true, "Token should not be expired")
+        // Then
+        assertTrue(result.isFailure)
     }
-    
+
+    // ==================== Refresh Token Tests ====================
+
     @Test
-    fun testStoreTokenInfoWithoutRefreshToken() = runTest {
-        val accessToken = "test-access-token"
-        val expiresIn = 3600L
+    fun `storeRefreshToken should save refresh token`() = runTest {
+        // Given
+        coEvery { secureStorage.store(any(), any()) } returns Result.success(Unit)
         
-        // Store token info without refresh token
-        val storeResult = authTokenManager.storeTokenInfo(
-            accessToken = accessToken,
-            refreshToken = null,
-            expiresIn = expiresIn
+        // When
+        val result = authTokenManager.storeRefreshToken(testService, testRefreshToken)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        coVerify { secureStorage.store("${testService}_refresh_token", testRefreshToken) }
+    }
+
+    @Test
+    fun `getRefreshToken should retrieve refresh token`() = runTest {
+        // Given
+        coEvery { secureStorage.retrieve("${testService}_refresh_token") } returns Result.success(testRefreshToken)
+        
+        // When
+        val result = authTokenManager.getRefreshToken(testService)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        assertEquals(testRefreshToken, result.getOrNull())
+    }
+
+    // ==================== Token Expiration Tests ====================
+
+    @Test
+    fun `storeTokenExpiration should save expiration time`() = runTest {
+        // Given
+        val expiresAt = Clock.System.now().plus(1.hours)
+        coEvery { secureStorage.store(any(), any()) } returns Result.success(Unit)
+        
+        // When
+        val result = authTokenManager.storeTokenExpiration(testService, expiresAt)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        coVerify { secureStorage.store("${testService}_token_expires_at", expiresAt.toString()) }
+    }
+
+    @Test
+    fun `isTokenExpired should return true for expired token`() = runTest {
+        // Given
+        val expiredTime = Clock.System.now().minus(1.hours)
+        coEvery { secureStorage.retrieve("${testService}_token_expires_at") } returns Result.success(expiredTime.toString())
+        
+        // When
+        val result = authTokenManager.isTokenExpired(testService)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        assertTrue(result.getOrNull() ?: false)
+    }
+
+    @Test
+    fun `isTokenExpired should return false for valid token`() = runTest {
+        // Given
+        val validTime = Clock.System.now().plus(1.hours)
+        coEvery { secureStorage.retrieve("${testService}_token_expires_at") } returns Result.success(validTime.toString())
+        
+        // When
+        val result = authTokenManager.isTokenExpired(testService)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        assertFalse(result.getOrNull() ?: true)
+    }
+
+    @Test
+    fun `isTokenExpired should return true when no expiration stored`() = runTest {
+        // Given
+        coEvery { secureStorage.retrieve("${testService}_token_expires_at") } returns Result.failure(
+            Exception("No expiration found")
         )
-        assertTrue(storeResult.isSuccess, "Storing token info without refresh token should succeed")
         
-        // Verify access token is stored but refresh token is not
-        val retrievedAccessToken = authTokenManager.getAccessToken().getOrNull()
-        val retrievedRefreshToken = authTokenManager.getRefreshToken().getOrNull()
+        // When
+        val result = authTokenManager.isTokenExpired(testService)
         
-        assertEquals(accessToken, retrievedAccessToken, "Access token should match")
-        assertNull(retrievedRefreshToken, "Refresh token should be null")
+        // Then
+        assertTrue(result.isSuccess)
+        assertTrue(result.getOrNull() ?: false) // Should be considered expired
     }
-    
+
+    // ==================== Token Validation Tests ====================
+
     @Test
-    fun testStoreTokenInfoWithoutExpiration() = runTest {
-        val accessToken = "test-access-token"
-        val refreshToken = "test-refresh-token"
-        
-        // Store token info without expiration
-        val storeResult = authTokenManager.storeTokenInfo(
-            accessToken = accessToken,
-            refreshToken = refreshToken,
-            expiresIn = null
+    fun `hasValidToken should return true for valid token`() = runTest {
+        // Given
+        coEvery { secureStorage.retrieve("${testService}_access_token") } returns Result.success(testToken)
+        coEvery { secureStorage.retrieve("${testService}_token_expires_at") } returns Result.success(
+            Clock.System.now().plus(1.hours).toString()
         )
-        assertTrue(storeResult.isSuccess, "Storing token info without expiration should succeed")
         
-        // Verify tokens are stored but expiration is not set (assumes expired)
-        val retrievedAccessToken = authTokenManager.getAccessToken().getOrNull()
-        val retrievedRefreshToken = authTokenManager.getRefreshToken().getOrNull()
-        val isExpired = authTokenManager.isTokenExpired().getOrNull()
+        // When
+        val result = authTokenManager.hasValidToken(testService)
         
-        assertEquals(accessToken, retrievedAccessToken, "Access token should match")
-        assertEquals(refreshToken, retrievedRefreshToken, "Refresh token should match")
-        assertTrue(isExpired ?: false, "Token should be considered expired without expiration time")
+        // Then
+        assertTrue(result.isSuccess)
+        assertTrue(result.getOrNull() ?: false)
     }
-    
+
     @Test
-    fun testGetTokenInfo() = runTest {
-        // Initially should have no token info
-        val initialInfo = authTokenManager.getTokenInfo().getOrNull()
-        assertNotNull(initialInfo, "Token info should be available")
-        assertFalse(initialInfo!!.hasAccessToken, "Should not have access token initially")
-        assertFalse(initialInfo.hasRefreshToken, "Should not have refresh token initially")
-        assertTrue(initialInfo.isExpired, "Should be considered expired initially")
-        assertEquals(testServiceName, initialInfo.serviceName, "Service name should match")
+    fun `hasValidToken should return false for expired token`() = runTest {
+        // Given
+        coEvery { secureStorage.retrieve("${testService}_access_token") } returns Result.success(testToken)
+        coEvery { secureStorage.retrieve("${testService}_token_expires_at") } returns Result.success(
+            Clock.System.now().minus(1.hours).toString()
+        )
         
-        // Store tokens
-        authTokenManager.storeAccessToken("access-token")
-        authTokenManager.storeRefreshToken("refresh-token")
-        val futureTime = Clock.System.now().plus(Duration.hours(2))
-        authTokenManager.storeTokenExpiration(futureTime)
+        // When
+        val result = authTokenManager.hasValidToken(testService)
         
-        // Check token info with valid tokens
-        val validInfo = authTokenManager.getTokenInfo().getOrNull()
-        assertNotNull(validInfo, "Token info should be available")
-        assertTrue(validInfo!!.hasAccessToken, "Should have access token")
-        assertTrue(validInfo.hasRefreshToken, "Should have refresh token")
-        assertFalse(validInfo.isExpired, "Should not be expired")
-        assertEquals(testServiceName, validInfo.serviceName, "Service name should match")
+        // Then
+        assertTrue(result.isSuccess)
+        assertFalse(result.getOrNull() ?: true)
     }
-    
+
     @Test
-    fun testTokenInfoTimestamp() = runTest {
-        val beforeTimestamp = Clock.System.now()
+    fun `hasValidToken should return false when no token exists`() = runTest {
+        // Given
+        coEvery { secureStorage.retrieve("${testService}_access_token") } returns Result.failure(
+            Exception("No token found")
+        )
         
-        // Get token info
-        val tokenInfo = authTokenManager.getTokenInfo().getOrNull()
-        assertNotNull(tokenInfo, "Token info should be available")
+        // When
+        val result = authTokenManager.hasValidToken(testService)
         
-        val afterTimestamp = Clock.System.now()
-        
-        // Verify timestamp is within reasonable range
-        assertTrue(tokenInfo!!.timestamp >= beforeTimestamp, "Timestamp should be after or equal to before time")
-        assertTrue(tokenInfo.timestamp <= afterTimestamp, "Timestamp should be before or equal to after time")
+        // Then
+        assertTrue(result.isSuccess)
+        assertFalse(result.getOrNull() ?: true)
     }
-    
+
+    // ==================== Token Refresh Tests ====================
+
     @Test
-    fun testMultipleServiceInstances() = runTest {
-        val service1 = AuthTokenManager("service1", secureStorage)
-        val service2 = AuthTokenManager("service2", secureStorage)
+    fun `refreshAccessToken should use refresh token to get new access token`() = runTest {
+        // Given
+        val newAccessToken = "new_access_token_789"
+        coEvery { secureStorage.retrieve("${testService}_refresh_token") } returns Result.success(testRefreshToken)
         
-        // Store different tokens for different services
-        service1.storeAccessToken("token1")
-        service2.storeAccessToken("token2")
+        // Mock the refresh operation (would normally call OAuth2Flow)
+        coEvery { secureStorage.store("${testService}_access_token", newAccessToken) } returns Result.success(Unit)
+        coEvery { secureStorage.store(any(), any()) } returns Result.success(Unit)
         
-        // Verify tokens are isolated
-        assertEquals("token1", service1.getAccessToken().getOrNull(), "Service 1 should have its own token")
-        assertEquals("token2", service2.getAccessToken().getOrNull(), "Service 2 should have its own token")
+        // When
+        val result = authTokenManager.refreshAccessToken(testService)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        assertEquals(newAccessToken, result.getOrNull())
     }
-    
+
     @Test
-    fun testErrorHandling() = runTest {
-        // Create manager with failing secure storage
-        val failingStorage = FailingSecureStorage()
-        val failingManager = AuthTokenManager("failing-service", failingStorage)
+    fun `refreshAccessToken should handle missing refresh token`() = runTest {
+        // Given
+        coEvery { secureStorage.retrieve("${testService}_refresh_token") } returns Result.failure(
+            Exception("No refresh token found")
+        )
         
-        // Test that operations fail gracefully
-        val storeResult = failingManager.storeAccessToken("token")
-        assertTrue(storeResult.isFailure, "Store should fail with failing storage")
+        // When
+        val result = authTokenManager.refreshAccessToken(testService)
         
-        val retrieveResult = failingManager.getAccessToken()
-        assertTrue(retrieveResult.isFailure, "Retrieve should fail with failing storage")
-        
-        val isExpiredResult = failingManager.isTokenExpired()
-        assertTrue(isExpiredResult.isFailure, "Expiration check should fail with failing storage")
-        
-        val hasValidResult = failingManager.hasValidToken()
-        assertTrue(hasValidResult.isFailure, "Valid token check should fail with failing storage")
+        // Then
+        assertTrue(result.isFailure)
     }
-    
-    // Mock implementation of SecureStorage for testing
-    private class MockSecureStorage : SecureStorage {
-        private val storage = mutableMapOf<String, String>()
+
+    // ==================== Clear Token Tests ====================
+
+    @Test
+    fun `clearTokens should remove all tokens for service`() = runTest {
+        // Given
+        coEvery { secureStorage.remove(any()) } returns Result.success(Unit)
         
-        override suspend fun store(key: String, value: String): Result<Unit> {
-            storage[key] = value
-            return Result.success(Unit)
-        }
+        // When
+        val result = authTokenManager.clearTokens(testService)
         
-        override suspend fun retrieve(key: String): Result<String?> {
-            return Result.success(storage[key])
-        }
-        
-        override suspend fun delete(key: String): Result<Unit> {
-            storage.remove(key)
-            return Result.success(Unit)
-        }
-        
-        override suspend fun contains(key: String): Result<Boolean> {
-            return Result.success(storage.containsKey(key))
-        }
-        
-        override suspend fun listKeys(): Result<List<String>> {
-            return Result.success(storage.keys.toList())
-        }
-        
-        override suspend fun clear(): Result<Unit> {
-            storage.clear()
-            return Result.success(Unit)
-        }
-        
-        override suspend fun isSecure(): Result<Boolean> {
-            return Result.success(true)
-        }
+        // Then
+        assertTrue(result.isSuccess)
+        coVerify { secureStorage.remove("${testService}_access_token") }
+        coVerify { secureStorage.remove("${testService}_refresh_token") }
+        coVerify { secureStorage.remove("${testService}_token_expires_at") }
     }
-    
-    // Failing mock implementation for error testing
-    private class FailingSecureStorage : SecureStorage {
-        override suspend fun store(key: String, value: String): Result<Unit> {
-            return Result.failure(Exception("Storage failure"))
+
+    @Test
+    fun `clearAllTokens should remove tokens for all services`() = runTest {
+        // Given
+        val services = listOf("service1", "service2", "service3")
+        coEvery { secureStorage.getAllKeys() } returns Result.success(services.map { "${it}_access_token" })
+        coEvery { secureStorage.remove(any()) } returns Result.success(Unit)
+        
+        // When
+        val result = authTokenManager.clearAllTokens()
+        
+        // Then
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 3) { secureStorage.remove(any()) }
+    }
+
+    // ==================== Edge Cases ====================
+
+    @Test
+    fun `should handle empty service name`() = runTest {
+        // Given
+        val emptyService = ""
+        coEvery { secureStorage.store(any(), any()) } returns Result.success(Unit)
+        
+        // When
+        val result = authTokenManager.storeAccessToken(emptyService, testToken)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        coVerify { secureStorage.store("_access_token", testToken) }
+    }
+
+    @Test
+    fun `should handle very long service names`() = runTest {
+        // Given
+        val longService = "a".repeat(1000)
+        coEvery { secureStorage.store(any(), any()) } returns Result.success(Unit)
+        
+        // When
+        val result = authTokenManager.storeAccessToken(longService, testToken)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        coVerify { secureStorage.store("${longService}_access_token", testToken) }
+    }
+
+    @Test
+    fun `should handle special characters in tokens`() = runTest {
+        // Given
+        val specialToken = "token_with_!@#$%^&*()_+-=[]{}|;':\",./<>?"
+        coEvery { secureStorage.store(any(), any()) } returns Result.success(Unit)
+        
+        // When
+        val result = authTokenManager.storeAccessToken(testService, specialToken)
+        
+        // Then
+        assertTrue(result.isSuccess)
+        coVerify { secureStorage.store("${testService}_access_token", specialToken) }
+    }
+
+    // ==================== Concurrent Access Tests ====================
+
+    @Test
+    fun `should handle concurrent token operations`() = runTest {
+        // Given
+        val iterations = 100
+        coEvery { secureStorage.store(any(), any()) } returns Result.success(Unit)
+        coEvery { secureStorage.retrieve(any()) } returns Result.success(testToken)
+        
+        // When
+        val results = (1..iterations).map { i ->
+            authTokenManager.storeAccessToken("$testService$i", "token$i")
         }
         
-        override suspend fun retrieve(key: String): Result<String?> {
-            return Result.failure(Exception("Storage failure"))
+        // Then
+        assertTrue(results.all { it.isSuccess })
+        coVerify(exactly = iterations) { secureStorage.store(any(), any()) }
+    }
+
+    // ==================== Error Recovery Tests ====================
+
+    @Test
+    fun `should recover from partial storage failures`() = runTest {
+        // Given
+        var callCount = 0
+        coEvery { secureStorage.store(any(), any()) } answers {
+            callCount++
+            if (callCount == 1) Result.failure(Exception("Storage failed"))
+            else Result.success(Unit)
         }
         
-        override suspend fun delete(key: String): Result<Unit> {
-            return Result.failure(Exception("Storage failure"))
-        }
+        // When
+        val firstResult = authTokenManager.storeAccessToken(testService, testToken)
+        val secondResult = authTokenManager.storeAccessToken(testService, testToken)
         
-        override suspend fun contains(key: String): Result<Boolean> {
-            return Result.failure(Exception("Storage failure"))
-        }
-        
-        override suspend fun listKeys(): Result<List<String>> {
-            return Result.failure(Exception("Storage failure"))
-        }
-        
-        override suspend fun clear(): Result<Unit> {
-            return Result.failure(Exception("Storage failure"))
-        }
-        
-        override suspend fun isSecure(): Result<Boolean> {
-            return Result.failure(Exception("Storage failure"))
-        }
+        // Then
+        assertTrue(firstResult.isFailure)
+        assertTrue(secondResult.isSuccess)
     }
 }

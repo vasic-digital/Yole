@@ -135,7 +135,8 @@ class FtpService(
                     size = 1024L,
                     lastModified = Clock.System.now(),
                     syncStatus = SyncStatus.SYNCED,
-                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
+                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
+                    storageId = "ftp"
                 ),
                 NetworkDocument(
                     id = "file2.md",
@@ -145,7 +146,8 @@ class FtpService(
                     size = 2048L,
                     lastModified = Clock.System.now(),
                     syncStatus = SyncStatus.SYNCED,
-                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
+                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
+                    storageId = "ftp"
                 ),
                 NetworkDocument(
                     id = "folder1",
@@ -155,7 +157,8 @@ class FtpService(
                     size = 0L,
                     lastModified = Clock.System.now(),
                     syncStatus = SyncStatus.SYNCED,
-                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
+                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
+                    storageId = "ftp"
                 )
             )
             
@@ -402,6 +405,7 @@ class FtpService(
                 isFolder = true,
                 size = 0L,
                 lastModified = Clock.System.now(),
+                storageId = "ftp",
                 syncStatus = SyncStatus.SYNCED,
                 permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
             ))
@@ -452,6 +456,7 @@ class FtpService(
                 isFolder = false,
                 size = 0L,
                 lastModified = Clock.System.now(),
+                storageId = "ftp",
                 syncStatus = SyncStatus.SYNCED,
                 permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
             ))
@@ -495,6 +500,7 @@ class FtpService(
                 isFolder = false, // FTP doesn't reliably distinguish files vs folders
                 size = 1024L, // This would come from SIZE command
                 lastModified = Clock.System.now(), // This would come from MDTM command
+                storageId = "ftp",
                 syncStatus = SyncStatus.SYNCED,
                 permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
             ))
