@@ -10,7 +10,7 @@ package digital.vasic.yole.desktop
 
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
-import digital.vasic.yole.format.ParserInitializer
+
 import digital.vasic.yole.format.TextFormat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -46,8 +46,7 @@ class DesktopAppIntegrationTest {
 
     @Before
     fun setUp() {
-        // Initialize format and parser registries
-        ParserInitializer.initialize()
+        // Format registry is automatically initialized as an object
         
         // Create temporary directory
         tempDir = Files.createTempDirectory("yole_integration_test")
@@ -68,7 +67,7 @@ class DesktopAppIntegrationTest {
         }
         
         // Clear registries
-        ParserRegistry.clear()
+        // FormatRegistry.clear() - method doesn't exist
     }
 
     // ==================== End-to-End Workflows ====================
@@ -416,11 +415,11 @@ class DesktopAppIntegrationTest {
      */
     class DesktopApplication {
         fun initialize() {
-            ParserInitializer.initialize()
+            // Parser initialization handled by FormatRegistry
         }
         
         fun shutdown() {
-            ParserRegistry.clear()
+            // FormatRegistry.clear() - method doesn't exist
         }
     }
 

@@ -199,7 +199,7 @@ object PdfExportUtil {
                     val codeCell = PdfPCell()
                     codeCell.addElement(codeParagraph)
                     codeCell.backgroundColor = BaseColor.LIGHT_GRAY
-                    codeCell.padding = 10f
+                    codeCell.setPadding(10f)
                     codeCell.borderWidth = 0f
                     
                     val codeTable = PdfPTable(1)
@@ -210,9 +210,7 @@ object PdfExportUtil {
                 }
                 line.isNotBlank() -> {
                     // Regular paragraph with inline formatting
-                    val formattedText = formatInlineMarkdown(line)
-                    val contentFont = FontFactory.getFont(FontFactory.HELVETICA, 12f, BaseColor.BLACK)
-                    val paragraph = Paragraph(formattedText, contentFont)
+                    val paragraph = formatInlineMarkdown(line)
                     paragraph.spacingAfter = 10f
                     document.add(paragraph)
                 }
@@ -328,9 +326,9 @@ object PdfExportUtil {
             if (headerRow != null) {
                 val headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12f, BaseColor.BLACK)
                 for (cell in headerRow) {
-                    val cellParagraph = Paragraph(cell, headerFont)
+                    val cellParagraph = Paragraph(cell.toString(), headerFont)
                     val pdfCell = PdfPCell(cellParagraph)
-                    pdfCell.padding = 5f
+                    pdfCell.setPadding(5f)
                     table.addCell(pdfCell)
                 }
             }
@@ -341,9 +339,9 @@ object PdfExportUtil {
                 val row = rows[i]
                 for (j in 0 until numColumns) {
                     val cell = if (j < row.size) row[j] else ""
-                    val cellParagraph = Paragraph(cell, dataFont)
+                    val cellParagraph = Paragraph(cell.toString(), dataFont)
                     val pdfCell = PdfPCell(cellParagraph)
-                    pdfCell.padding = 5f
+                    pdfCell.setPadding(5f)
                     table.addCell(pdfCell)
                 }
             }

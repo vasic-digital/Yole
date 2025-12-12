@@ -16,7 +16,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.animation.togetherWith
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -1555,7 +1555,7 @@ fun SettingsScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             RadioButton(
                 selected = themeMode == "light",
-                onClick: { onThemeModeChanged("light") }
+                onClick = { onThemeModeChanged("light") }
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text("Light theme")

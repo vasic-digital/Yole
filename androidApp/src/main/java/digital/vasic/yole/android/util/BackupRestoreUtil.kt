@@ -278,7 +278,7 @@ object BackupRestoreUtil {
             val settingsBackup = SettingsBackup(
                 themeMode = settings.getThemeMode(),
                 dynamicColorsEnabled = settings.getDynamicColorsEnabled(),
-                customSeedColor = settings.getCustomSeedColor().takeIf { it.isNotEmpty() },
+                customSeedColor = settings.getCustomSeedColor()?.takeIf { it.isNotEmpty() },
                 reduceMotion = settings.getReduceMotion(),
                 highContrast = settings.getHighContrast(),
                 announceChanges = settings.getAnnounceChanges(),
