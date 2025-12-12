@@ -77,21 +77,19 @@ class GoogleDriveService(
         )
     }
     
-    override suspend fun connect(): Result<Unit> {
-        return try {
-            // Check if we have valid tokens
-            val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
-            
-            if (!hasValidToken) {
-                return Result.failure(
-                    NetworkStorageException.ConnectionException.Authentication(
-                        message = "No valid authentication tokens found",
-                        authType = "OAuth2",
-                        username = "googledrive"
-                    )
+    override suspend fun connect(): Result<Unit> = try {
+        // Check if we have valid tokens
+        val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
+        
+        if (!hasValidToken) {
+            Result.failure(
+                NetworkStorageException.ConnectionException.Authentication(
+                    message = "No valid authentication tokens found",
+                    authType = "OAuth2",
+                    username = "googledrive"
                 )
-            }
-            
+            )
+        } else {
             // Test connection by getting about info
             val aboutInfoResult = getAboutInfo()
             if (aboutInfoResult.isSuccess) {
@@ -101,12 +99,12 @@ class GoogleDriveService(
                 // Try to refresh token if connection failed
                 refreshAccessToken()
             }
-        } catch (e: Exception) {
-            Result.failure(NetworkStorageException.ConnectionException.Failed(
-                message = "Google Drive connection failed",
-                cause = e
-            ))
         }
+    } catch (e: Exception) {
+        Result.failure(NetworkStorageException.ConnectionException.Failed(
+            message = "Google Drive connection failed",
+            cause = e
+        ))
     }
     
     private suspend fun testConnectionInternal(): Result<Boolean> = try {

@@ -10,6 +10,10 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -174,7 +178,7 @@ class SftpService(
                     path = "$fullPath/document.pdf",
                     isFolder = false,
                     size = 5242880L, // 5MB
-                    lastModified = Clock.System.now().minus(kotlin.time.Duration.days(24)),
+                    lastModified = Clock.System.now().minus(24.days),
                     syncStatus = SyncStatus.SYNCED,
                     permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.EXECUTE)
                 ),
@@ -184,7 +188,7 @@ class SftpService(
                     path = "$fullPath/README.md",
                     isFolder = false,
                     size = 4096L,
-                    lastModified = Clock.System.now().minus(kotlin.time.Duration.hours(2)),
+                    lastModified = Clock.System.now().minus(2.hours),
                     syncStatus = SyncStatus.SYNCED,
                     permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
                 ),
@@ -194,7 +198,7 @@ class SftpService(
                     path = "$fullPath/project_folder",
                     isFolder = true,
                     size = 0L,
-                    lastModified = Clock.System.now().minus(kotlin.time.Duration.hours(12)),
+                    lastModified = Clock.System.now().minus(12.hours),
                     syncStatus = SyncStatus.SYNCED,
                     permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.EXECUTE)
                 ),
@@ -204,7 +208,7 @@ class SftpService(
                     path = "$fullPath/config.json",
                     isFolder = false,
                     size = 8192L,
-                    lastModified = Clock.System.now().minus(kotlin.time.Duration.minutes(30)),
+                    lastModified = Clock.System.now().minus(30.minutes),
                     syncStatus = SyncStatus.SYNCED,
                     permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
                 )
@@ -520,61 +524,66 @@ class SftpService(
         }
     }
     
-    override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> = try {
-        if (!_isConnected) {
-            return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
-                message = "SFTP not connected"
+    override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> {
+        return try {
+            if (!_isConnected) {
+                return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
+                    message = "SFTP not connected"
+                ))
+            }
+            
+            // SFTP supports direct rename/move operations
+            val newName = destinationPath.substringAfterLast("/")
+            renameFile(sourcePath, newName).getOrThrow()
+            
+            Result.success(NetworkDocument(
+                id = destinationPath,
+                name = newName,
+                path = destinationPath,
+                isFolder = false,
+                size = 0L,
+                lastModified = Clock.System.now(),
+                syncStatus = SyncStatus.SYNCED,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.EXECUTE)
+            ))
+        } catch (e: Exception) {
+            Result.failure(NetworkStorageException.FileOperationException.MoveFailed(
+                sourcePath = sourcePath,
+                targetPath = destinationPath,
+                cause = e
             ))
         }
-        
-        // SFTP supports direct rename/move operations
-        val newName = destinationPath.substringAfterLast("/")
-        renameFile(sourcePath, newName).getOrThrow()
-        
-        Result.success(NetworkDocument(
-            id = destinationPath,
-            name = newName,
-            path = destinationPath,
-            isFolder = false,
-            size = 0L,
-            lastModified = Clock.System.now(),
-            syncStatus = SyncStatus.SYNCED,
-            permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.EXECUTE)
-        ))
-    } catch (e: Exception) {
-        Result.failure(NetworkStorageException.FileOperationException.MoveFailed(
-            sourcePath = sourcePath,
-            targetPath = destinationPath,
-            cause = e
-        ))
     }
     
-    override suspend fun copyFile(sourcePath: String, destinationPath: String): Result<Unit> = try {
-        if (!_isConnected) {
-            return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
-                message = "SFTP not connected"
+    override suspend fun copyFile(sourcePath: String, destinationPath: String): Result<Unit> {
+        return try {
+            if (!_isConnected) {
+                return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
+                    message = "SFTP not connected"
+                ))
+            }
+            
+            // SFTP supports copy operations through SSH_FXP_EXTENDED
+            // In a real implementation, this would use the copy-data extension
+            delay(200) // Simulate secure copy operation
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(NetworkStorageException.FileOperationException.CopyFailed(
+                sourcePath = sourcePath,
+                targetPath = destinationPath,
+                cause = e
             ))
         }
-        
-        // SFTP supports copy operations through SSH_FXP_EXTENDED
-        // In a real implementation, this would use the copy-data extension
-        delay(200) // Simulate secure copy operation
-        
-        Result.success(Unit)
-    } catch (e: Exception) {
-        Result.failure(NetworkStorageException.FileOperationException.CopyFailed(
-            sourcePath = sourcePath,
-            targetPath = destinationPath,
-            cause = e
-        ))
     }
     
-    override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> = try {
-        if (!_isConnected) {
-            return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
-                message = "SFTP not connected"
-            ))
-        }
+    override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> {
+        return try {
+            if (!_isConnected) {
+                return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
+                    message = "SFTP not connected"
+                ))
+            }
         
         val fullPath = normalizePath(remotePath)
         
@@ -586,23 +595,24 @@ class SftpService(
         // Mock file attributes (would come from SSH_FXP_ATTRS)
         val isDirectory = fullPath.endsWith("/") // Simplified check
         val fileSize = if (isDirectory) 0L else 8192L
-        val lastModified = Clock.System.now().minus(kotlin.time.Duration.hours(2))
+        val lastModified = Clock.System.now().minus(2.hours)
         
-        Result.success(NetworkDocument(
-            id = fullPath,
-            name = fullPath.substringAfterLast("/"),
-            path = fullPath,
-            isFolder = isDirectory,
-            size = fileSize,
-            lastModified = lastModified,
-            syncStatus = SyncStatus.SYNCED,
-            permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, if (isDirectory) DocumentPermission.EXECUTE else DocumentPermission.DELETE)
-        ))
-    } catch (e: Exception) {
-        Result.failure(NetworkStorageException.FileOperationException.InfoFailed(
-            path = remotePath,
-            cause = e
-        ))
+            Result.success(NetworkDocument(
+                id = fullPath,
+                name = fullPath.substringAfterLast("/"),
+                path = fullPath,
+                isFolder = isDirectory,
+                size = fileSize,
+                lastModified = lastModified,
+                syncStatus = SyncStatus.SYNCED,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, if (isDirectory) DocumentPermission.EXECUTE else DocumentPermission.DELETE)
+            ))
+        } catch (e: Exception) {
+            Result.failure(NetworkStorageException.FileOperationException.InfoFailed(
+                path = remotePath,
+                cause = e
+            ))
+        }
     }
     
     override fun getActiveOperations(): Flow<List<NetworkOperation>> = flow {

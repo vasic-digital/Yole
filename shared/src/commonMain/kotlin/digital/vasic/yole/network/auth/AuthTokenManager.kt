@@ -180,7 +180,7 @@ class AuthTokenManager(
                 
                 // Store expiration if provided
                 expiresIn?.let {
-                    val expiresAt = Clock.System.now().plus(seconds(expiresIn.toLong()))
+                    val expiresAt = Clock.System.now().plus(it.seconds)
                     results.add(storeTokenExpiration(expiresAt))
                 }
                 

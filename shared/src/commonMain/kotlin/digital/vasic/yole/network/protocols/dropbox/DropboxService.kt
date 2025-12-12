@@ -276,12 +276,13 @@ class DropboxService(
         
         val fullPath = normalizePath(remotePath)
         
+        var initialOperation: NetworkOperation? = null
         try {
             val accessToken = authTokenManager.getAccessToken().getOrNull()
                 ?: throw Exception("No access token available")
             
             // Start operation
-            val initialOperation = NetworkOperation(
+            initialOperation = NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.DOWNLOAD,
                 status = NetworkOperation.Status.IN_PROGRESS,
@@ -318,7 +319,7 @@ class DropboxService(
                 val bytes = response.bodyAsBytes()
                 
                 // Simulate progress updates
-                emit(initialOperation.copy(progress = 0.5, bytesTransferred = bytes.size.toLong() / 2))
+                emit(initialOperation.copy(progress = 0.5, bytesTransferred = bytes.size.toLong() / 2L))
                 
                 // Here you would write the bytes to the local file system
                 // For now, we'll just simulate the operation
@@ -344,17 +345,11 @@ class DropboxService(
                 emit(errorOperation)
             }
         } catch (e: Exception) {
-            val errorOperation = NetworkOperation(
-                id = operationId,
-                type = NetworkOperation.Type.UPLOAD,
+            val errorOperation = initialOperation?.copy(
                 status = NetworkOperation.Status.FAILED,
-                remotePath = remotePath,
-                localPath = localPath,
                 error = e.message ?: "Unknown error",
-                createdAt = Clock.System.now(),
-                startedAt = Clock.System.now(),
                 completedAt = Clock.System.now()
-            )
+            ) ?: createFailedOperation(operationId, NetworkOperation.Type.DOWNLOAD, remotePath, localPath, e.message ?: "Unknown error")
             
             removeActiveOperation(operationId)
             emit(errorOperation)
@@ -373,13 +368,14 @@ class DropboxService(
         }
         
         val fullPath = normalizePath(remotePath)
+        var initialOperation: NetworkOperation? = null
         
         try {
             val accessToken = authTokenManager.getAccessToken().getOrNull()
                 ?: throw Exception("No access token available")
             
             // Start operation
-            val initialOperation = NetworkOperation(
+            initialOperation = NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.UPLOAD,
                 status = NetworkOperation.Status.IN_PROGRESS,
@@ -397,7 +393,7 @@ class DropboxService(
             // For now, we'll simulate with empty bytes
             val fileBytes = byteArrayOf() // This would be read from localPath
             
-            emit(initialOperation.copy(progress = 0.5, bytesTransferred = fileBytes.size.toLong() / 2))
+            emit(initialOperation.copy(progress = 0.5, bytesTransferred = fileBytes.size.toLong() / 2L))
             
             val response = httpClient.post {
                 url {
@@ -433,17 +429,11 @@ class DropboxService(
                 emit(errorOperation)
             }
         } catch (e: Exception) {
-            val errorOperation = NetworkOperation(
-                id = operationId,
-                type = NetworkOperation.Type.UPLOAD,
+            val errorOperation = initialOperation?.copy(
                 status = NetworkOperation.Status.FAILED,
-                remotePath = remotePath,
-                localPath = localPath,
                 error = e.message ?: "Unknown error",
-                createdAt = Clock.System.now(),
-                startedAt = Clock.System.now(),
                 completedAt = Clock.System.now()
-            )
+            ) ?: createFailedOperation(operationId, NetworkOperation.Type.UPLOAD, remotePath, localPath, e.message ?: "Unknown error")
             
             removeActiveOperation(operationId)
             emit(errorOperation)
