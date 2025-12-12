@@ -28,7 +28,7 @@ abstract class CommonDatabase : DatabaseInterface {
     
     protected val mutex = Mutex()
     protected val _isReady = MutableStateFlow(false)
-    override val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
+    override suspend fun isReady(): Boolean = _isReady.value
     
     protected var initialized = false
     protected var closed = false
@@ -129,7 +129,7 @@ abstract class CommonDatabase : DatabaseInterface {
     
     // Common utility methods
     protected fun generateId(prefix: String = "id"): String {
-        return "$prefix-${currentTimeMillis()}-${(Math.random() * 10000).toInt()}"
+        return "$prefix-${currentTimeMillis()}-${(kotlin.random.Random.nextDouble() * 10000).toInt()}"
     }
     
     protected fun currentTimeMillis(): Long {
