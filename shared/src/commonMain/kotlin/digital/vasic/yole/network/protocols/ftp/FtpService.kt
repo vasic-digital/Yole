@@ -6,6 +6,8 @@ import digital.vasic.yole.network.common.*
 import digital.vasic.yole.network.platform.SecureStorageFactory
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import io.ktor.client.*
@@ -47,7 +49,8 @@ class FtpService(
         )
     }
     
-    override suspend fun connect(): Result<Unit> = try {
+    override suspend fun connect(): Result<Unit> {
+        return try {
         // Test FTP connection
         val connectionTest = testFtpConnection()
         if (connectionTest.isSuccess) {
@@ -60,17 +63,20 @@ class FtpService(
             ))
         }
     } catch (e: Exception) {
-        Result.failure(NetworkStorageException.ConnectionException.Failed(
-            message = "FTP connection failed",
-            cause = e
-        ))
+            Result.failure(NetworkStorageException.ConnectionException.Failed(
+                message = "FTP connection failed",
+                cause = e
+            ))
+        }
     }
     
-    override suspend fun disconnect(): Result<Unit> = try {
+    override suspend fun disconnect(): Result<Unit> {
+        return try {
         _isConnected = false
-        Result.success(Unit)
-    } catch (e: Exception) {
-        Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
+        }
     }
     
     override suspend fun testConnection(): Result<Boolean> {
@@ -220,9 +226,15 @@ class FtpService(
             emit(completedOperation)
             
         } catch (e: Exception) {
-            val errorOperation = initialOperation.copy(
+            val errorOperation = NetworkOperation(
+                id = operationId,
+                type = NetworkOperation.Type.DOWNLOAD,
                 status = NetworkOperation.Status.FAILED,
+                remotePath = remotePath,
+                localPath = localPath,
                 error = e.message ?: "FTP download failed",
+                createdAt = Clock.System.now(),
+                startedAt = Clock.System.now(),
                 completedAt = Clock.System.now()
             )
             
@@ -295,9 +307,15 @@ class FtpService(
             emit(completedOperation)
             
         } catch (e: Exception) {
-            val errorOperation = initialOperation.copy(
+            val errorOperation = NetworkOperation(
+                id = operationId,
+                type = NetworkOperation.Type.UPLOAD,
                 status = NetworkOperation.Status.FAILED,
+                remotePath = remotePath,
+                localPath = localPath,
                 error = e.message ?: "FTP upload failed",
+                createdAt = Clock.System.now(),
+                startedAt = Clock.System.now(),
                 completedAt = Clock.System.now()
             )
             
@@ -338,104 +356,112 @@ class FtpService(
         }
     }
     
-    override suspend fun deleteFile(remotePath: String): Result<Unit> = try {
-        if (!_isConnected) {
-            return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
-                message = "FTP not connected"
+    override suspend fun deleteFile(remotePath: String): Result<Unit> {
+        return try {
+            if (!_isConnected) {
+                return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
+                    message = "FTP not connected"
+                ))
+            }
+            
+            val fullPath = normalizePath(remotePath)
+            
+            // Simulate FTP DELE command
+            // In a real implementation, this would send DELE command to FTP server
+            delay(100)
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(NetworkStorageException.FileOperationException.DeleteFailed(
+                path = remotePath,
+                cause = e
             ))
         }
-        
-        val fullPath = normalizePath(remotePath)
-        
-        // Simulate FTP DELE command
-        // In a real implementation, this would send DELE command to FTP server
-        delay(100)
-        
-        Result.success(Unit)
-    } catch (e: Exception) {
-        Result.failure(NetworkStorageException.FileOperationException.DeleteFailed(
-            path = remotePath,
-            cause = e
-        ))
     }
     
-    override suspend fun createFolder(remotePath: String): Result<NetworkDocument> = try {
-        if (!_isConnected) {
-            return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
-                message = "FTP not connected"
+    override suspend fun createFolder(remotePath: String): Result<NetworkDocument> {
+        return try {
+            if (!_isConnected) {
+                return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
+                    message = "FTP not connected"
+                ))
+            }
+            
+            val fullPath = normalizePath(remotePath)
+            
+            // Note: Basic FTP doesn't have reliable folder creation support
+            // This is a limitation of the FTP protocol itself
+            // Some FTP servers support MKD command, but it's not universally supported
+            
+            delay(100) // Simulate operation
+            
+            Result.success(NetworkDocument(
+                id = fullPath,
+                name = fullPath.substringAfterLast("/"),
+                path = fullPath,
+                isFolder = true,
+                size = 0L,
+                lastModified = Clock.System.now(),
+                syncStatus = SyncStatus.SYNCED,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
+            ))
+        } catch (e: Exception) {
+            Result.failure(NetworkStorageException.FileOperationException.CreateFolderFailed(
+                path = remotePath,
+                cause = e
             ))
         }
-        
-        val fullPath = normalizePath(remotePath)
-        
-        // Note: Basic FTP doesn't have reliable folder creation support
-        // This is a limitation of the FTP protocol itself
-        // Some FTP servers support MKD command, but it's not universally supported
-        
-        delay(100) // Simulate operation
-        
-        Result.success(NetworkDocument(
-            id = fullPath,
-            name = fullPath.substringAfterLast("/"),
-            path = fullPath,
-            isFolder = true,
-            size = 0L,
-            lastModified = Clock.System.now(),
-            syncStatus = SyncStatus.SYNCED,
-            permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
-        ))
-    } catch (e: Exception) {
-        Result.failure(NetworkStorageException.FileOperationException.CreateFolderFailed(
-            path = remotePath,
-            cause = e
-        ))
     }
     
-    override suspend fun renameFile(remotePath: String, newName: String): Result<Unit> = try {
-        if (!_isConnected) {
-            return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
-                message = "FTP not connected"
-            ))
+    override suspend fun renameFile(remotePath: String, newName: String): Result<Unit> {
+        return try {
+            if (!_isConnected) {
+                return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
+                    message = "FTP not connected"
+                ))
+            }
+            
+            val fullPath = normalizePath(remotePath)
+            
+            // Simulate FTP RNFR/RNTO commands
+            // In a real implementation, this would send RNFR and RNTO commands to FTP server
+            delay(100)
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(NetworkStorageException.fromThrowable(e, "renameFile"))
         }
-        
-        val fullPath = normalizePath(remotePath)
-        
-        // Simulate FTP RNFR/RNTO commands
-        // In a real implementation, this would send RNFR and RNTO commands to FTP server
-        delay(100)
-        
-        Result.success(Unit)
-    } catch (e: Exception) {
-        Result.failure(NetworkStorageException.fromThrowable(e, "renameFile"))
     }
     
-    override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> = try {
-        if (!_isConnected) {
-            return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
-                message = "FTP not connected"
+    override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> {
+        return try {
+            if (!_isConnected) {
+                return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
+                    message = "FTP not connected"
+                ))
+            }
+            
+            // FTP doesn't have a direct move command, so we simulate it with rename
+            val newName = destinationPath.substringAfterLast("/")
+            renameFile(sourcePath, newName).getOrThrow()
+            
+            Result.success(NetworkDocument(
+                id = destinationPath,
+                name = newName,
+                path = destinationPath,
+                isFolder = false,
+                size = 0L,
+                lastModified = Clock.System.now(),
+                syncStatus = SyncStatus.SYNCED,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
+            ))
+        } catch (e: Exception) {
+            Result.failure(NetworkStorageException.FileOperationException.MoveFailed(
+                sourcePath = sourcePath,
+                targetPath = destinationPath,
+                cause = e
             ))
         }
-        
-        // FTP doesn't have a direct move command, so we simulate it with rename
-        val newName = destinationPath.substringAfterLast("/")
-        renameFile(sourcePath, newName).getOrThrow()
-        
-        Result.success(NetworkDocument(
-            id = destinationPath,
-            name = newName,
-            path = destinationPath,
-            isFolder = false,
-            size = 0L,
-            lastModified = Clock.System.now(),
-            syncStatus = SyncStatus.SYNCED,
-            permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
-        ))
-    } catch (e: Exception) {
-        Result.failure(NetworkStorageException.FileOperationException.MoveFailed(
-            sourcePath = sourcePath,
-            targetPath = destinationPath,
-            cause = e
-        ))
     }
     
     override suspend fun copyFile(sourcePath: String, destinationPath: String): Result<Unit> {
@@ -448,40 +474,43 @@ class FtpService(
         )
     }
     
-    override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> = try {
-        if (!_isConnected) {
-            return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
-                message = "FTP not connected"
+    override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> {
+        return try {
+            if (!_isConnected) {
+                return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
+                    message = "FTP not connected"
+                ))
+            }
+            
+            val fullPath = normalizePath(remotePath)
+            
+            // Simulate FTP SIZE and MDTM commands
+            // In a real implementation, this would send SIZE and MDTM commands to FTP server
+            delay(50)
+            
+            Result.success(NetworkDocument(
+                id = fullPath,
+                name = fullPath.substringAfterLast("/"),
+                path = fullPath,
+                isFolder = false, // FTP doesn't reliably distinguish files vs folders
+                size = 1024L, // This would come from SIZE command
+                lastModified = Clock.System.now(), // This would come from MDTM command
+                syncStatus = SyncStatus.SYNCED,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
+            ))
+        } catch (e: Exception) {
+            Result.failure(NetworkStorageException.FileOperationException.InfoFailed(
+                path = remotePath,
+                cause = e
             ))
         }
-        
-        val fullPath = normalizePath(remotePath)
-        
-        // Simulate FTP SIZE and MDTM commands
-        // In a real implementation, this would send SIZE and MDTM commands to FTP server
-        delay(50)
-        
-        Result.success(NetworkDocument(
-            id = fullPath,
-            name = fullPath.substringAfterLast("/"),
-            path = fullPath,
-            isFolder = false, // FTP doesn't reliably distinguish files vs folders
-            size = 1024L, // This would come from SIZE command
-            lastModified = Clock.System.now(), // This would come from MDTM command
-            syncStatus = SyncStatus.SYNCED,
-            permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
-        ))
-    } catch (e: Exception) {
-        Result.failure(NetworkStorageException.FileOperationException.InfoFailed(
-            path = remotePath,
-            cause = e
-        ))
     }
     
     override fun getActiveOperations(): Flow<List<NetworkOperation>> = flow {
-        operationsMutex.withLock {
-            emit(activeOperations.values.toList())
+        val operations = operationsMutex.withLock {
+            activeOperations.values.toList()
         }
+        emit(operations)
     }
     
     override suspend fun cancelOperation(operationId: Long): Result<Unit> {

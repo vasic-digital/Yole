@@ -13,9 +13,12 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.json.Json
 
 /**
@@ -75,34 +78,36 @@ class OneDriveService(
         )
     }
     
-    override suspend fun connect(): Result<Unit> = try {
-        // Check if we have valid tokens
-        val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
-        
-        if (!hasValidToken) {
-            return Result.failure(
-                NetworkStorageException.ConnectionException.Authentication(
-                    message = "No valid authentication tokens found",
-                    authType = "OAuth2",
-                    username = "onedrive"
+    override suspend fun connect(): Result<Unit> {
+        return try {
+            // Check if we have valid tokens
+            val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
+            
+            if (!hasValidToken) {
+                return Result.failure(
+                    NetworkStorageException.ConnectionException.Authentication(
+                        message = "No valid authentication tokens found",
+                        authType = "OAuth2",
+                        username = "onedrive"
+                    )
                 )
-            )
+            }
+            
+            // Test connection by getting drive info
+            val driveInfoResult = getDriveInfo()
+            if (driveInfoResult.isSuccess) {
+                _isConnected = true
+                Result.success(Unit)
+            } else {
+                // Try to refresh token if connection failed
+                refreshAccessToken()
+            }
+        } catch (e: Exception) {
+            Result.failure(NetworkStorageException.ConnectionException.Failed(
+                message = "OneDrive connection failed",
+                cause = e
+            ))
         }
-        
-        // Test connection by getting drive info
-        val driveInfoResult = getDriveInfo()
-        if (driveInfoResult.isSuccess) {
-            _isConnected = true
-            Result.success(Unit)
-        } else {
-            // Try to refresh token if connection failed
-            refreshAccessToken()
-        }
-    } catch (e: Exception) {
-        Result.failure(NetworkStorageException.ConnectionException.Failed(
-            message = "OneDrive connection failed",
-            cause = e
-        ))
     }
     
     private suspend fun testConnectionInternal(): Result<Boolean> = try {
@@ -360,9 +365,15 @@ class OneDriveService(
                 throw Exception("Download failed: ${downloadResponse.status}")
             }
         } catch (e: Exception) {
-            val errorOperation = initialOperation.copy(
+            val errorOperation = NetworkOperation(
+                id = operationId,
+                type = NetworkOperation.Type.DOWNLOAD,
                 status = NetworkOperation.Status.FAILED,
+                remotePath = remotePath,
+                localPath = localPath,
                 error = e.message ?: "Unknown error",
+                createdAt = Clock.System.now(),
+                startedAt = Clock.System.now(),
                 completedAt = Clock.System.now()
             )
             
@@ -458,9 +469,15 @@ class OneDriveService(
                 throw Exception("Upload failed: ${uploadResponse.status}")
             }
         } catch (e: Exception) {
-            val errorOperation = initialOperation.copy(
+            val errorOperation = NetworkOperation(
+                id = operationId,
+                type = NetworkOperation.Type.UPLOAD,
                 status = NetworkOperation.Status.FAILED,
+                remotePath = remotePath,
+                localPath = localPath,
                 error = e.message ?: "Unknown error",
+                createdAt = Clock.System.now(),
+                startedAt = Clock.System.now(),
                 completedAt = Clock.System.now()
             )
             
@@ -548,9 +565,10 @@ class OneDriveService(
     }
     
     override fun getActiveOperations(): Flow<List<NetworkOperation>> = flow {
-        operationsMutex.withLock {
-            emit(activeOperations.values.toList())
+        val operations = operationsMutex.withLock {
+            activeOperations.values.toList()
         }
+        emit(operations)
     }
     
     override suspend fun cancelOperation(operationId: Long): Result<Unit> {
@@ -685,7 +703,8 @@ class OneDriveService(
     @Serializable
     private data class OneDriveItemList(
         val value: List<OneDriveItem>,
-        val @odata.nextLink: String? = null
+        @SerialName("@odata.nextLink")
+        val nextLink: String? = null
     )
     
     @Serializable

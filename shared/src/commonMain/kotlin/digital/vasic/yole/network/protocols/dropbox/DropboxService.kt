@@ -13,7 +13,10 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -77,34 +80,36 @@ class DropboxService(
         )
     }
     
-    override suspend fun connect(): Result<Unit> = try {
-        // Check if we have valid tokens
-        val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
-        
-        if (!hasValidToken) {
-            return Result.failure(
-                NetworkStorageException.ConnectionException.Authentication(
-                    message = "No valid authentication tokens found",
-                    authType = "OAuth2",
-                    username = "dropbox"
+    override suspend fun connect(): Result<Unit> {
+        return try {
+            // Check if we have valid tokens
+            val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
+            
+            if (!hasValidToken) {
+                return Result.failure(
+                    NetworkStorageException.ConnectionException.Authentication(
+                        message = "No valid authentication tokens found",
+                        authType = "OAuth2",
+                        username = "dropbox"
+                    )
                 )
-            )
+            }
+            
+            // Test connection by getting account info
+            val accountInfoResult = getAccountInfo()
+            if (accountInfoResult.isSuccess) {
+                _isConnected = true
+                Result.success(Unit)
+            } else {
+                // Try to refresh token if connection failed
+                refreshAccessToken()
+            }
+        } catch (e: Exception) {
+            Result.failure(NetworkStorageException.ConnectionException.Failed(
+                message = "Dropbox connection failed",
+                cause = e
+            ))
         }
-        
-        // Test connection by getting account info
-        val accountInfoResult = getAccountInfo()
-        if (accountInfoResult.isSuccess) {
-            _isConnected = true
-            Result.success(Unit)
-        } else {
-            // Try to refresh token if connection failed
-            refreshAccessToken()
-        }
-    } catch (e: Exception) {
-        Result.failure(NetworkStorageException.ConnectionException.Failed(
-            message = "Dropbox connection failed",
-            cause = e
-        ))
     }
     
     private suspend fun testConnectionInternal(): Result<Boolean> = try {
@@ -114,11 +119,13 @@ class DropboxService(
         Result.success(false)
     }
     
-    override suspend fun disconnect(): Result<Unit> = try {
+    override suspend fun disconnect(): Result<Unit> {
+        return try {
         _isConnected = false
-        Result.success(Unit)
-    } catch (e: Exception) {
-        Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
+        }
     }
     
     override suspend fun testConnection(): Result<Boolean> {
@@ -311,7 +318,7 @@ class DropboxService(
                 val bytes = response.bodyAsBytes()
                 
                 // Simulate progress updates
-                emit(initialOperation.copy(progress = 0.5, bytesTransferred = bytes.size / 2))
+                emit(initialOperation.copy(progress = 0.5, bytesTransferred = bytes.size.toLong() / 2))
                 
                 // Here you would write the bytes to the local file system
                 // For now, we'll just simulate the operation
@@ -337,9 +344,15 @@ class DropboxService(
                 emit(errorOperation)
             }
         } catch (e: Exception) {
-            val errorOperation = initialOperation.copy(
+            val errorOperation = NetworkOperation(
+                id = operationId,
+                type = NetworkOperation.Type.UPLOAD,
                 status = NetworkOperation.Status.FAILED,
+                remotePath = remotePath,
+                localPath = localPath,
                 error = e.message ?: "Unknown error",
+                createdAt = Clock.System.now(),
+                startedAt = Clock.System.now(),
                 completedAt = Clock.System.now()
             )
             
@@ -384,7 +397,7 @@ class DropboxService(
             // For now, we'll simulate with empty bytes
             val fileBytes = byteArrayOf() // This would be read from localPath
             
-            emit(initialOperation.copy(progress = 0.5, bytesTransferred = fileBytes.size / 2))
+            emit(initialOperation.copy(progress = 0.5, bytesTransferred = fileBytes.size.toLong() / 2))
             
             val response = httpClient.post {
                 url {
@@ -420,9 +433,15 @@ class DropboxService(
                 emit(errorOperation)
             }
         } catch (e: Exception) {
-            val errorOperation = initialOperation.copy(
+            val errorOperation = NetworkOperation(
+                id = operationId,
+                type = NetworkOperation.Type.UPLOAD,
                 status = NetworkOperation.Status.FAILED,
+                remotePath = remotePath,
+                localPath = localPath,
                 error = e.message ?: "Unknown error",
+                createdAt = Clock.System.now(),
+                startedAt = Clock.System.now(),
                 completedAt = Clock.System.now()
             )
             
@@ -516,9 +535,10 @@ class DropboxService(
     }
     
     override fun getActiveOperations(): Flow<List<NetworkOperation>> = flow {
-        operationsMutex.withLock {
-            emit(activeOperations.values.toList())
+        val operations = operationsMutex.withLock {
+            activeOperations.values.toList()
         }
+        emit(operations)
     }
     
     override suspend fun cancelOperation(operationId: Long): Result<Unit> {

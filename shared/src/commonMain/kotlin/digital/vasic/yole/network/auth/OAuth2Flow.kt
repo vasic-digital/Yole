@@ -13,7 +13,7 @@ import kotlinx.serialization.json.jsonPrimitive
 /**
  * OAuth2 flow implementation for cloud storage services
  */
-class OAuth2Flow(
+open class OAuth2Flow(
     private val httpClient: HttpClient,
     private val clientId: String,
     private val clientSecret: String,

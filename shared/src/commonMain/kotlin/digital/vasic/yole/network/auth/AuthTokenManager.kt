@@ -6,6 +6,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Manages authentication tokens for cloud storage services.
@@ -178,7 +180,7 @@ class AuthTokenManager(
                 
                 // Store expiration if provided
                 expiresIn?.let {
-                    val expiresAt = Clock.System.now().plus(kotlinx.datetime.Duration.seconds(expiresIn))
+                    val expiresAt = Clock.System.now().plus(seconds(expiresIn.toLong()))
                     results.add(storeTokenExpiration(expiresAt))
                 }
                 
