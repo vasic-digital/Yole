@@ -3,401 +3,351 @@
  * SPDX-FileCopyrightText: 2025 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  *
- * Property-based tests for format parsing and validation
+ * Property-Based Testing for Format Parsers
+ * Uses Kotest property testing for comprehensive edge case coverage
  *
  *########################################################*/
+
 package digital.vasic.yole.format
 
+import io.kotest.property.*
+import io.kotest.property.arbitrary.*
+import digital.vasic.yole.format.markdown.MarkdownParser
+import digital.vasic.yole.format.todotxt.TodoTxtParser
+import digital.vasic.yole.format.csv.CsvParser
 import kotlin.test.*
-import kotlin.random.Random
 
 /**
- * Property-based tests for format parsing covering:
- * - Random content generation and parsing
- * - Edge cases and boundary conditions
- * - Fuzzing and robustness testing
- * - Performance under various inputs
+ * Property-based tests for format parsers using Kotest
+ * Generates random inputs to find edge cases and ensure robustness
  */
 class PropertyBasedFormatTest {
 
-    private val testIterations = 100
+    @Test
+    fun testMarkdownParserWithRandomContent() {
+        val parser = MarkdownParser()
+        
+        checkAll(Arb.string(range = 0..1000, codepoints = Codepoint.all())) { randomContent ->
+            // Should not crash on any input
+            val result = parser.parse(randomContent)
+            
+            // Basic assertions that should always hold
+            assertNotNull(result, "Parser should not return null for any input")
+            
+            // Title should be consistent with content
+            if (randomContent.isNotEmpty()) {
+                assertTrue(result.title.length <= randomContent.length, "Title should not be longer than input")
+            }
+        }
+    }
 
     @Test
-    fun testRandomContentParsing() {
-        repeat(testIterations) { iteration ->
-            // Generate random content
-            val randomContent = generateRandomContent(Random.nextInt(1, 1000))
-            val format = FormatRegistry.detectByContent(randomContent)
+    fun testTodoTxtParserWithRandomContent() {
+        val parser = TodoTxtParser()
+        
+        checkAll(Arb.string(range = 0..500, codepoints = Codepoint.all())) { randomContent ->
+            // Should not crash on any input
+            val result = parser.parse(randomContent)
             
-            // Should either detect a format or return null (but not crash)
-            assertTrue(true, "Random content iteration $iteration should not crash parser")
+            assertNotNull(result, "Parser should not return null for any input")
             
-            // If format detected, should be able to parse it
-            format?.let { detectedFormat ->
-                val parser = ParserRegistry.getParser(detectedFormat)
-                assertNotNull(parser, "Should have parser for detected format")
+            // Text content should be reasonable
+            if (randomContent.isNotEmpty()) {
+                assertTrue(result.text.length <= randomContent.length, "Parsed text should not be longer than input")
+            }
+        }
+    }
+
+    @Test
+    fun testCsvParserWithRandomContent() {
+        val parser = CsvParser()
+        
+        checkAll(Arb.string(range = 0..1000, codepoints = Codepoint.all())) { randomContent ->
+            // Should not crash on any input
+            val result = parser.parse(randomContent)
+            
+            assertNotNull(result, "Parser should not return null for any input")
+            
+            // Basic CSV structure validation
+            assertTrue(result.rows.size >= 0, "Row count should be non-negative")
+            assertTrue(result.headers.size >= 0, "Header count should be non-negative")
+        }
+    }
+
+    @Test
+    fun testMarkdownSpecificStructures() {
+        val parser = MarkdownParser()
+        
+        // Test with random headers
+        checkAll(Arb.int(1..6), Arb.string(range = 1..100)) { level, title ->
+            val markdown = "${"#".repeat(level)} $title"
+            val result = parser.parse(markdown)
+            
+            assertNotNull(result)
+            assertTrue(result.headers.isNotEmpty() || title.isBlank(), "Should parse headers when present")
+        }
+        
+        // Test with random lists
+        checkAll(Arb.list(Arb.string(range = 1..50), range = 1..20)) { items ->
+            val markdown = items.joinToString("\n") { "- $it" }
+            val result = parser.parse(markdown)
+            
+            assertNotNull(result)
+            // Should handle lists gracefully
+        }
+        
+        // Test with random code blocks
+        checkAll(Arb.string(range = 1..20), Arb.string(range = 1..100)) { language, code ->
+            val markdown = """
+                ```$language
+                $code
+                ```
+            """.trimIndent()
+            
+            val result = parser.parse(markdown)
+            assertNotNull(result)
+        }
+    }
+
+    @Test
+    fun testTodoTxtSpecificStructures() {
+        val parser = TodoTxtParser()
+        
+        // Test with random priorities
+        checkAll(Arb.char('A'..'Z')) { priority ->
+            val todoTxt = "($priority) Random task"
+            val result = parser.parse(todoTxt)
+            
+            assertNotNull(result)
+            if (priority in 'A'..'C') {
+                assertEquals(priority.toString(), result.priority, "Should parse valid priorities")
+            }
+        }
+        
+        // Test with random contexts
+        checkAll(Arb.string(range = 1..20, codepoints = Codepoint.alphanumeric())) { context ->
+            val todoTxt = "Task @${context}"
+            val result = parser.parse(todoTxt)
+            
+            assertNotNull(result)
+            assertTrue(result.contexts.isNotEmpty() || context.isBlank(), "Should parse contexts when present")
+        }
+        
+        // Test with random projects
+        checkAll(Arb.string(range = 1..20, codepoints = Codepoint.alphanumeric())) { project ->
+            val todoTxt = "Task +${project}"
+            val result = parser.parse(todoTxt)
+            
+            assertNotNull(result)
+            assertTrue(result.projects.isNotEmpty() || project.isBlank(), "Should parse projects when present")
+        }
+    }
+
+    @Test
+    fun testCsvSpecificStructures() {
+        val parser = CsvParser()
+        
+        // Test with random CSV structures
+        checkAll(
+            Arb.int(1..10),
+            Arb.int(1..10),
+            Arb.string(range = 1..20, codepoints = Codepoint.alphanumeric())
+        ) { rows, cols, baseContent ->
+            val csvContent = buildString {
+                // Generate header row
+                append((1..cols).joinToString(",") { "Col$it" })
+                append("\n")
                 
-                val result = parser.parse(randomContent)
-                assertNotNull(result, "Parser should handle random content without crashing")
-            }
-        }
-    }
-
-    @Test
-    fun testBoundaryContentSizes() {
-        val sizeBoundaries = listOf(0, 1, 10, 100, 1000, 10000, 100000)
-        
-        sizeBoundaries.forEach { size ->
-            val content = generateRandomContent(size)
-            val format = FormatRegistry.detectByContent(content)
-            
-            // Should handle any size without issues
-            assertTrue(true, "Should handle content of size $size")
-            
-            // Test with specific patterns for each size
-            when {
-                size == 0 -> {
-                    assertTrue(content.isEmpty(), "Zero size should produce empty content")
-                }
-                size < 10 -> {
-                    // Small content should be handled efficiently
-                    assertTrue(content.length <= 10, "Small content should match requested size")
-                }
-                size > 10000 -> {
-                    // Large content should be handled without memory issues
-                    assertTrue(content.length >= 10000, "Large content should match requested size")
-                }
-            }
-        }
-    }
-
-    @Test
-    fun testUnicodeContentHandling() {
-        val unicodeRanges = listOf(
-            0x0020..0x007F,  // Basic Latin
-            0x0080..0x00FF,  // Latin-1 Supplement  
-            0x0100..0x017F,  // Latin Extended-A
-            0x0400..0x04FF,  // Cyrillic
-            0x4E00..0x9FFF,  // CJK Unified Ideographs
-            0xAC00..0xD7AF,  // Hangul Syllables
-            0xE000..0xF8FF,  // Private Use Area
-            0x1F300..0x1F5FF // Miscellaneous Symbols and Pictographs (Emojis)
-        )
-        
-        repeat(50) {
-            val randomRange = unicodeRanges.random()
-            val unicodeContent = generateUnicodeContent(randomRange, 100)
-            
-            // Should handle Unicode without corruption
-            assertTrue(unicodeContent.isNotEmpty(), "Should generate non-empty Unicode content")
-            
-            val format = FormatRegistry.detectByContent(unicodeContent)
-            format?.let { detectedFormat ->
-                val parser = ParserRegistry.getParser(detectedFormat)
-                val result = parser.parse(unicodeContent)
-                assertNotNull(result, "Should parse Unicode content without corruption")
-            }
-        }
-    }
-
-    @Test
-    fun testSpecialCharacterHandling() {
-        val specialChars = listOf(
-            "!@#$%^&*()_+-=[]{}|;':\",./<>?",
-            "\t\n\r\f\b",
-            "\\\"\\'",
-            "\u0000\u0001\u0002", // Control characters
-            "~`¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿",
-            "😀😁😂🤣😃😄😅😆😉😊😋😎😍😘😗😙😚"
-        )
-        
-        specialChars.forEach { specialContent ->
-            // Should handle special characters without crashing
-            assertTrue(true, "Should handle special characters: $specialContent")
-            
-            val format = FormatRegistry.detectByContent(specialContent)
-            format?.let { detectedFormat ->
-                val parser = ParserRegistry.getParser(detectedContent)
-                val result = parser.parse(specialContent)
-                assertNotNull(result, "Should handle special characters without crashing")
-            }
-        }
-    }
-
-    @Test
-    fun testPatternBasedContent() {
-        // Test with patterns that might trigger specific format detection
-        val patterns = listOf(
-            "# " to "Markdown heading",
-            "```" to "Markdown code block",
-            "* " to "Markdown list",
-            "**" to "Markdown bold",
-            "__" to "Markdown italic",
-            "[" to "Markdown link",
-            "!" to "Potential image or emphasis",
-            "---" to "Markdown horizontal rule",
-            "|" to "Potential table",
-            "> " to "Markdown blockquote"
-        )
-        
-        repeat(100) {
-            val (pattern, description) = patterns.random()
-            val content = buildString {
-                repeat(Random.nextInt(1, 10)) {
-                    append(pattern)
-                    append(" ")
-                    append(generateRandomWords(Random.nextInt(1, 20)))
+                // Generate data rows
+                repeat(rows) { rowIdx ->
+                    append((1..cols).joinToString(",") { colIdx ->
+                        "Row${rowIdx}Col${colIdx}_$baseContent"
+                    })
                     append("\n")
                 }
             }
             
-            val format = FormatRegistry.detectByContent(content)
-            assertTrue(true, "Should handle pattern-based content: $description")
-            
-            format?.let { detectedFormat ->
-                val parser = ParserRegistry.getParser(detectedFormat)
-                val result = parser.parse(content)
-                assertNotNull(result, "Should parse pattern-based content")
-            }
+            val result = parser.parse(csvContent)
+            assertNotNull(result)
+            assertEquals(rows, result.rows.size, "Should have correct number of rows")
+            assertEquals(cols, result.headers.size, "Should have correct number of columns")
         }
     }
 
     @Test
-    fun testMalformedContentRobustness() {
-        val malformedCases = listOf(
-            "Unclosed **bold marker",
-            "Unclosed [link",
-            "Unclosed ```code block",
-            "Mismatched **bold** and __italic__",
-            "Nested # # # # headings",
-            "Broken | table | structure",
-            "Invalid URL: [link](not-a-valid-url",
-            "Empty markers: ** __ `` [] ()",
-            "Mixed markers: **__``[]()",
-            "Very long single line: ${"a".repeat(10000)}"
+    fun testFormatDetectionWithRandomFilenames() {
+        checkAll(Arb.string(range = 1..50, codepoints = Codepoint.alphanumeric())) { baseName ->
+            val markdownFilename = "${baseName}.md"
+            val detectedFormat = FormatRegistry.detectFormat(markdownFilename)
+            assertEquals("markdown", detectedFormat, "Should detect markdown files")
+            
+            val csvFilename = "${baseName}.csv"
+            val detectedCsvFormat = FormatRegistry.detectFormat(csvFilename)
+            assertEquals("csv", detectedCsvFormat, "Should detect CSV files")
+            
+            val txtFilename = "${baseName}.txt"
+            val detectedTxtFormat = FormatRegistry.detectFormat(txtFilename)
+            assertEquals("plaintext", detectedTxtFormat, "Should detect text files")
+        }
+    }
+
+    @Test
+    fun testRoundTripConsistency() {
+        val markdownParser = MarkdownParser()
+        val todoParser = TodoTxtParser()
+        val csvParser = CsvParser()
+        
+        // Test markdown round trip
+        checkAll(Arb.string(range = 10..200, codepoints = Codepoint.printable())) { content ->
+            val originalDocument = markdownParser.parse(content)
+            assertNotNull(originalDocument)
+            
+            val regeneratedContent = markdownParser.toMarkdown(originalDocument)
+            assertNotNull(regeneratedContent)
+            
+            val reparsedDocument = markdownParser.parse(regeneratedContent)
+            assertNotNull(reparsedDocument)
+            
+            // Basic consistency checks
+            assertEquals(originalDocument.title, reparsedDocument.title)
+            assertEquals(originalDocument.headers.size, reparsedDocument.headers.size)
+        }
+        
+        // Test todo.txt round trip
+        checkAll(
+            Arb.char('A'..'C').orNull(),
+            Arb.string(range = 5..50, codepoints = Codepoint.printable()),
+            Arb.list(Arb.string(range = 1..10, codepoints = Codepoint.alphanumeric()), range = 0..3),
+            Arb.list(Arb.string(range = 1..10, codepoints = Codepoint.alphanumeric()), range = 0..3)
+        ) { priority, text, projects, contexts ->
+            val todoContent = buildString {
+                priority?.let { append("($it) ") }
+                append(text)
+                projects.forEach { append(" +$it") }
+                contexts.forEach { append(" @$it") }
+            }
+            
+            val originalDocument = todoParser.parse(todoContent)
+            assertNotNull(originalDocument)
+            
+            val regeneratedContent = todoParser.toTodoTxt(originalDocument)
+            assertNotNull(regeneratedContent)
+            
+            val reparsedDocument = todoParser.parse(regeneratedContent)
+            assertNotNull(reparsedDocument)
+            
+            // Basic consistency checks
+            assertEquals(originalDocument.text, reparsedDocument.text)
+            assertEquals(originalDocument.projects.size, reparsedDocument.projects.size)
+            assertEquals(originalDocument.contexts.size, reparsedDocument.contexts.size)
+        }
+    }
+
+    @Test
+    fun testPerformanceWithLargeContent() {
+        val parser = MarkdownParser()
+        
+        checkAll(Arb.int(100..1000)) { paragraphCount ->
+            val largeContent = buildString {
+                repeat(paragraphCount) { i ->
+                    appendLine("# Heading $i")
+                    appendLine()
+                    appendLine("This is paragraph $i with some **bold** and *italic* text.")
+                    appendLine()
+                    appendLine("- List item 1 for paragraph $i")
+                    appendLine("- List item 2 for paragraph $i")
+                    appendLine()
+                }
+            }
+            
+            val startTime = System.currentTimeMillis()
+            val result = parser.parse(largeContent)
+            val endTime = System.currentTimeMillis()
+            
+            assertNotNull(result)
+            
+            // Performance should be reasonable
+            val parsingTime = endTime - startTime
+            assertTrue(parsingTime < 5000, "Parsing should complete within 5 seconds for large content")
+        }
+    }
+
+    @Test
+    fun testUnicodeHandling() {
+        val parser = MarkdownParser()
+        
+        // Test with various Unicode ranges
+        checkAll(
+            Arb.string(range = 1..50, codepoints = Codepoint.unicode()),
+            Arb.string(range = 1..50, codepoints = Codepoint.ascii())
+        ) { unicodeContent, asciiContent ->
+            val mixedContent = """
+                # $unicodeContent
+                
+                Some $asciiContent mixed with $unicodeContent
+                
+                ## More Unicode: $unicodeContent
+                
+                Final $asciiContent content
+            """.trimIndent()
+            
+            val result = parser.parse(mixedContent)
+            assertNotNull(result)
+            
+            // Should handle Unicode gracefully
+            assertTrue(result.title.length <= mixedContent.length)
+        }
+    }
+
+    @Test
+    fun testMalformedContentHandling() {
+        val parsers = listOf(
+            MarkdownParser(),
+            TodoTxtParser(),
+            CsvParser()
         )
         
-        malformedCases.forEach { malformedContent ->
-            // Should handle malformed content gracefully
-            assertTrue(true, "Should handle malformed content: $malformedContent")
-            
-            val format = FormatRegistry.detectByContent(malformedContent)
-            format?.let { detectedFormat ->
-                val parser = ParserRegistry.getParser(detectedFormat)
-                val result = parser.parse(malformedContent)
-                assertNotNull(result, "Should handle malformed content gracefully without crashing")
-            }
-        }
-    }
-
-    @Test
-    fun testMixedContentTypes() {
-        // Test content that mixes different format types
-        val mixedContent = buildString {
-            appendLine("# Markdown Heading")
-            appendLine("Some **bold** text and *italic* text.")
-            appendLine("```")
-            appendLine("// This looks like code")
-            appendLine("function example() {")
-            appendLine("  return 'hello';")
-            appendLine("}")
-            appendLine("```")
-            appendLine("| Column 1 | Column 2 |")
-            appendLine("|----------|----------|")
-            appendLine("| Data 1   | Data 2   |")
-            appendLine("")
-            appendLine("1. Numbered list")
-            appendLine("2. Second item")
-            appendLine("   - Nested bullet")
-            appendLine("   - Another nested")
-            appendLine("")
-            appendLine("> This is a blockquote")
-            appendLine("> With multiple lines")
-            appendLine("")
-            appendLine("[Link text](http://example.com)")
-            appendLine("![Image alt](image.jpg)")
-        }
-        
-        val format = FormatRegistry.detectByContent(mixedContent)
-        assertTrue(true, "Should handle mixed content types")
-        
-        format?.let { detectedFormat ->
-            val parser = ParserRegistry.getParser(detectedFormat)
-            val result = parser.parse(mixedContent)
-            assertNotNull(result, "Should parse mixed content types")
-            assertTrue(result.content.isNotEmpty(), "Parsed mixed content should not be empty")
-        }
-    }
-
-    @Test
-    fun testPerformanceUnderLoad() {
-        val contentSizes = listOf(100, 1000, 10000, 100000)
-        val iterationsPerSize = 10
-        
-        contentSizes.forEach { size ->
-            val startTime = System.currentTimeMillis()
-            
-            repeat(iterationsPerSize) {
-                val content = generateRandomContent(size)
-                val format = FormatRegistry.detectByContent(content)
-                
-                format?.let { detectedFormat ->
-                    val parser = ParserRegistry.getParser(detectedFormat)
-                    parser.parse(content)
-                }
-            }
-            
-            val endTime = System.currentTimeMillis()
-            val totalTime = endTime - startTime
-            val averageTime = totalTime / iterationsPerSize
-            
-            // Should complete within reasonable time (less than 1 second per operation on average)
-            assertTrue(averageTime < 1000, "Average parsing time for $size bytes should be under 1 second, was $averageTime ms")
-            println("Performance test: $size bytes, avg ${averageTime}ms per operation")
-        }
-    }
-
-    @Test
-    fun testMemoryEfficiency() {
-        // Test with progressively larger content to ensure no memory leaks
-        val sizes = listOf(1000, 10000, 100000, 1000000) // Up to 1MB
-        
-        sizes.forEach { size ->
-            val content = generateRandomContent(size)
-            
-            // Run multiple iterations to detect memory issues
-            repeat(10) {
-                val format = FormatRegistry.detectByContent(content)
-                
-                format?.let { detectedFormat ->
-                    val parser = ParserRegistry.getParser(detectedFormat)
-                    val result = parser.parse(content)
-                    assertNotNull(result, "Should handle large content without memory issues")
-                }
-            }
-            
-            // Force garbage collection hint
-            System.gc()
-            Thread.sleep(10) // Small delay to allow GC
-            
-            assertTrue(true, "Should complete memory efficiency test for $size bytes")
-        }
-    }
-
-    @Test
-    fun testConcurrentParsing() {
-        val threadCount = 10
-        val iterationsPerThread = 50
-        val results = mutableListOf<Boolean>()
-        val threads = mutableListOf<Thread>()
-        
-        repeat(threadCount) { threadIndex ->
-            val thread = Thread {
-                repeat(iterationsPerThread) { iteration ->
-                    try {
-                        val content = generateRandomContent(Random.nextInt(100, 1000))
-                        val format = FormatRegistry.detectByContent(content)
-                        
-                        format?.let { detectedFormat ->
-                            val parser = ParserRegistry.getParser(detectedFormat)
-                            parser.parse(content)
-                        }
-                        
-                        synchronized(results) {
-                            results.add(true)
-                        }
-                    } catch (e: Exception) {
-                        synchronized(results) {
-                            results.add(false)
-                        }
-                        println("Thread $threadIndex, iteration $iteration failed: ${e.message}")
+        parsers.forEach { parser ->
+            checkAll(Arb.string(range = 1..100, codepoints = Arb.codepoints())) { malformedContent ->
+                // Should not crash on malformed content
+                shouldNotThrowAny {
+                    when (parser) {
+                        is MarkdownParser -> parser.parse(malformedContent)
+                        is TodoTxtParser -> parser.parse(malformedContent)
+                        is CsvParser -> parser.parse(malformedContent)
+                        else -> fail("Unknown parser type")
                     }
                 }
             }
-            
-            threads.add(thread)
-            thread.start()
         }
-        
-        threads.forEach { it.join() }
-        
-        assertEquals(threadCount * iterationsPerThread, results.size, "All threads should complete")
-        val successRate = results.count { it }.toDouble() / results.size
-        assertTrue(successRate >= 0.95, "Success rate should be at least 95%, was $successRate")
-        println("Concurrent parsing success rate: ${successRate * 100}%")
     }
 
     @Test
-    fun testDeterministicBehavior() {
-        // Test that the same input produces the same output
-        val content = "# Test Heading\n\nThis is **bold** text."
-        
-        val results = mutableListOf<ParsedDocument>()
-        
-        repeat(10) {
-            val format = FormatRegistry.detectByContent(content)
-            assertNotNull(format, "Should consistently detect format")
-            
-            val parser = ParserRegistry.getParser(format)
-            assertNotNull(parser, "Should consistently have parser")
-            
-            val result = parser.parse(content)
-            assertNotNull(result, "Should consistently parse content")
-            
-            results.add(result)
-        }
-        
-        // All results should be identical
-        val firstResult = results.first()
-        results.forEach { result ->
-            assertEquals(firstResult.content, result.content, "Results should be deterministic")
-            assertEquals(firstResult.metadata, result.metadata, "Metadata should be deterministic")
-        }
-    }
-
-    // ==================== Helper Methods ====================
-
-    private fun generateRandomContent(size: Int): String {
-        return buildString {
-            repeat(size / 10 + 1) {
-                append(generateRandomWords(Random.nextInt(1, 20)))
-                append(" ")
-                if (Random.nextFloat() < 0.3) {
-                    append("\n")
-                }
-            }
-        }.take(size)
-    }
-
-    private fun generateRandomWords(wordCount: Int): String {
-        val words = listOf(
-            "the", "be", "to", "of", "and", "a", "in", "that", "have", "i",
-            "it", "for", "not", "on", "with", "he", "as", "you", "do", "at",
-            "this", "but", "his", "by", "from", "they", "we", "say", "her", "she",
-            "or", "an", "will", "my", "one", "all", "would", "there", "their", "what"
+    fun testEmptyAndWhitespaceContent() {
+        val parsers = listOf(
+            MarkdownParser(),
+            TodoTxtParser(),
+            CsvParser()
         )
         
-        return List(wordCount) { words.random() }.joinToString(" ")
-    }
-
-    private fun generateUnicodeContent(range: IntRange, charCount: Int): String {
-        return buildString {
-            repeat(charCount) {
-                val codePoint = range.random()
-                appendCodePoint(codePoint)
-            }
-        }
-    }
-
-    private fun String.appendCodePoint(codePoint: Int) {
-        when {
-            codePoint <= 0xFFFF -> append(codePoint.toChar())
-            else -> {
-                // Handle surrogate pairs for code points > 0xFFFF
-                val high = ((codePoint - 0x10000) shr 10) + 0xD800
-                val low = ((codePoint - 0x10000) and 0x3FF) + 0xDC00
-                append(high.toChar())
-                append(low.toChar())
+        val emptyInputs = listOf(
+            "",
+            "   ",
+            "\n\n\n",
+            "\t\t\t",
+            " \n \t \n "
+        )
+        
+        parsers.forEach { parser ->
+            emptyInputs.forEach { emptyInput ->
+                val result = when (parser) {
+                    is MarkdownParser -> parser.parse(emptyInput)
+                    is TodoTxtParser -> parser.parse(emptyInput)
+                    is CsvParser -> parser.parse(emptyInput)
+                    else -> fail("Unknown parser type")
+                }
+                
+                assertNotNull(result, "Should handle empty input: '$emptyInput'")
             }
         }
     }

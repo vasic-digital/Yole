@@ -45,6 +45,9 @@ import org.w3c.files.FileReader
  */
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
+    // Initialize PWA features
+    PWAFeatures.initialize()
+    
     CanvasBasedWindow(canvasElementId = "yoleCanvas", title = "Yole - Web Editor") {
         MaterialTheme {
             YoleWebApp()
