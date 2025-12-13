@@ -561,8 +561,8 @@ class JupyterParserTest {
         assertNotNull(result)
         assertEquals(TextFormat.ID_JUPYTER, result.format.id)
         assertEquals("0", result.metadata["cells"])
-        assertEquals("python3", result.metadata["kernel"]) // Default
-        assertEquals("python", result.metadata["language"]) // Default
+        assertEquals("python3", result.metadata["kernel"]) // Default kernel
+        assertEquals("python", result.metadata["language"]) // Default language
     }
 
     @Test
@@ -837,34 +837,34 @@ class JupyterParserTest {
 
     @Test
     fun `should parse large Jupyter notebooks efficiently`() {
-        // Create a large notebook with many cells
-        val largeContent = buildString {
-            appendLine("{")
-            appendLine("  \"cells\": [")
-            
-            // Generate 50 cells
-            repeat(50) { cellIndex ->
-                if (cellIndex > 0) appendLine(",")
-                appendLine("    {")
-                appendLine("      \"cell_type\": \"code\",")
-                appendLine("      \"execution_count\": ${cellIndex + 1},")
-                appendLine("      \"metadata\": {},")
-                appendLine("      \"outputs\": [],")
-                appendLine("      \"source\": [\"# Cell ${cellIndex + 1}\\n\", \"print('Result: ${cellIndex * 2}')\"]")
-                appendLine("    }")
+        // Create a large notebook with many cells using a simpler approach
+        val cells = (1..50).joinToString(",\n                ") { cellIndex ->
+            """
+            {
+              "cell_type": "code",
+              "execution_count": $cellIndex,
+              "metadata": {},
+              "outputs": [],
+              "source": ["# Cell $cellIndex\\n", "print('Result: ${cellIndex * 2}')"]
             }
-            
-            appendLine("  ],")
-            appendLine("  \"metadata\": {")
-            appendLine("    \"kernelspec\": {")
-            appendLine("      \"name\": \"python3\","")
-            appendLine("      \"display_name\": \"Python 3\"")
-            appendLine("    }")
-            appendLine("  },")
-            appendLine("  \"nbformat\": 4,")
-            appendLine("  \"nbformat_minor\": 2")
-            appendLine("}")
+            """.trimIndent()
         }
+        
+        val largeContent = """
+            {
+              "cells": [
+                $cells
+              ],
+              "metadata": {
+                "kernelspec": {
+                  "name": "python3",
+                  "display_name": "Python 3"
+                }
+              },
+              "nbformat": 4,
+              "nbformat_minor": 2
+            }
+        """.trimIndent()
 
         val startTime = System.currentTimeMillis()
         val result = parser.parse(largeContent)
@@ -881,41 +881,41 @@ class JupyterParserTest {
 
     @Test
     fun `should convert large notebooks to HTML efficiently`() {
-        // Create a large notebook
-        val largeContent = buildString {
-            appendLine("{")
-            appendLine("  \"cells\": [")
-            
-            // Generate 30 cells with content
-            repeat(30) { cellIndex ->
-                if (cellIndex > 0) appendLine(",")
-                appendLine("    {")
-                appendLine("      \"cell_type\": \"code\",")
-                appendLine("      \"execution_count\": ${cellIndex + 1},")
-                appendLine("      \"metadata\": {},")
-                appendLine("      \"outputs\": [")
-                appendLine("        {")
-                appendLine("          \"name\": \"stdout\",")
-                appendLine("          \"output_type\": \"stream\",")
-                appendLine("          \"text\": [\"Output from cell ${cellIndex + 1}\\n\"]")
-                appendLine("        }")
-                appendLine("      ],")
-                appendLine("      \"source\": [\"# Computation ${cellIndex + 1}\\n\", \"result = ${cellIndex} * 10\\n\", \"print(f'Output from cell ${cellIndex + 1}')\"]")
-                appendLine("    }")
+        // Create a large notebook using a simpler approach
+        val cells = (1..30).joinToString(",\n                ") { cellIndex ->
+            """
+            {
+              "cell_type": "code",
+              "execution_count": $cellIndex,
+              "metadata": {},
+              "outputs": [
+                {
+                  "name": "stdout",
+                  "output_type": "stream",
+                  "text": ["Output from cell $cellIndex\\n"]
+                }
+              ],
+              "source": ["# Computation $cellIndex\\n", "result = ${cellIndex} * 10\\n", "print(f'Output from cell $cellIndex')"]
             }
-            
-            appendLine("  ],")
-            appendLine("  \"metadata\": {")
-            appendLine("    \"title\": \"Large Analysis\","")
-            appendLine("    \"kernelspec\": {")
-            appendLine("      \"name\": \"python3\","")
-            appendLine("      \"display_name\": \"Python 3\"")
-            appendLine("    }")
-            appendLine("  },")
-            appendLine("  \"nbformat\": 4,")
-            appendLine("  \"nbformat_minor\": 2")
-            appendLine("}")
+            """.trimIndent()
         }
+        
+        val largeContent = """
+            {
+              "cells": [
+                $cells
+              ],
+              "metadata": {
+                "title": "Large Analysis",
+                "kernelspec": {
+                  "name": "python3",
+                  "display_name": "Python 3"
+                }
+              },
+              "nbformat": 4,
+              "nbformat_minor": 2
+            }
+        """.trimIndent()
 
         val document = parser.parse(largeContent)
         
