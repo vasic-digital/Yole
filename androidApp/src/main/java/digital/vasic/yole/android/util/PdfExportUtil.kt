@@ -61,27 +61,43 @@ object PdfExportUtil {
             val pdfFileName = fileName.replace(Regex("\\.[^.]*$"), "") + "_$timestamp.pdf"
             val pdfFile = File(pdfDir, pdfFileName)
 
-            // Create PDF document
+            // Create PDF document with proper resource management
             val document = Document(PageSize.A4)
-            val pdfWriter = PdfWriter.getInstance(document, FileOutputStream(pdfFile))
-            
-            document.open()
+            val outputStream = FileOutputStream(pdfFile)
 
-            // Add metadata
-            document.addTitle("Yole Export - $fileName")
-            document.addAuthor("Yole Text Editor")
-            document.addSubject("Exported document from Yole")
-            document.addCreator("Yole Android App")
+            try {
+                PdfWriter.getInstance(document, outputStream)
+                document.open()
 
-            // Format and add content based on file type
-            when (format.lowercase()) {
-                "markdown" -> addMarkdownContent(document, content)
-                "todotxt" -> addTodoTxtContent(document, content)
-                "csv" -> addCsvContent(document, content)
-                else -> addPlainTextContent(document, content)
+                // Add metadata
+                document.addTitle("Yole Export - $fileName")
+                document.addAuthor("Yole Text Editor")
+                document.addSubject("Exported document from Yole")
+                document.addCreator("Yole Android App")
+
+                // Format and add content based on file type
+                when (format.lowercase()) {
+                    "markdown" -> addMarkdownContent(document, content)
+                    "todotxt" -> addTodoTxtContent(document, content)
+                    "csv" -> addCsvContent(document, content)
+                    else -> addPlainTextContent(document, content)
+                }
+            } finally {
+                // Ensure document is closed even if an exception occurs
+                try {
+                    if (document.isOpen) {
+                        document.close()
+                    }
+                } catch (closeException: Exception) {
+                    // Log but don't throw - we want to close outputStream too
+                }
+                // Ensure output stream is closed
+                try {
+                    outputStream.close()
+                } catch (closeException: Exception) {
+                    // Ignore close exception
+                }
             }
-
-            document.close()
 
             // Create content URI for sharing
             val uri = FileProvider.getUriForFile(context, PDF_AUTHORITY, pdfFile)

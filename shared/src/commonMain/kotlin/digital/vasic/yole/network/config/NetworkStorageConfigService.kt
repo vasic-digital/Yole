@@ -191,20 +191,20 @@ class NetworkStorageConfigService {
     /**
      * Set a storage as active
      */
-    suspend fun setActiveStorage(storageId: String): Result<Unit> {
+    suspend fun setActiveStorage(storageId: String): Result<Unit> = mutex.withLock {
         return try {
             val storage = _configuredStorages.value.find { it.id == storageId }
                 ?: return Result.failure(NetworkStorageException.GenericError(
                     message = "Storage not found",
                     context = mapOf("storageId" to storageId)
                 ))
-            
+
             val service = configuredServices[storageId]
                 ?: return Result.failure(NetworkStorageException.GenericError(
                     message = "Storage service not found",
                     context = mapOf("storageId" to storageId)
                 ))
-            
+
             // Ensure it's connected
             if (!service.isOnline) {
                 val connectResult = service.connect()
@@ -212,7 +212,7 @@ class NetworkStorageConfigService {
                     return Result.failure(connectResult.exceptionOrNull() ?: Exception("Connection failed"))
                 }
             }
-            
+
             _activeStorage.value = storage
             Result.success(Unit)
         } catch (e: Exception) {
@@ -451,24 +451,22 @@ class NetworkStorageConfigService {
     /**
      * Refresh connection status for all storages
      */
-    suspend fun refreshConnectionStatus(): Result<Unit> {
+    suspend fun refreshConnectionStatus(): Result<Unit> = mutex.withLock {
         return try {
-            val secureStorage = SecureStorageFactory.create().getOrThrow()
             val statusMap = mutableMapOf<String, Boolean>()
-            
-            for (storage in _configuredStorages.value) {
+
+            // Take a snapshot of storages while holding the lock
+            val storages = _configuredStorages.value.toList()
+
+            for (storage in storages) {
                 val service = configuredServices[storage.id]
                 val isOnline = service?.isOnline == true
                 statusMap[storage.id] = isOnline
-                
-                val currentStatus = _connectionStatus.value[storage.id] ?: false
-                if (currentStatus != isOnline) {
-                    val newStatus = _connectionStatus.value.toMutableMap()
-                    newStatus[storage.id] = isOnline
-                    _connectionStatus.value = newStatus
-                }
             }
-            
+
+            // Update connection status in a single operation
+            _connectionStatus.value = statusMap
+
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(NetworkStorageException.fromThrowable(e, "refreshConnectionStatus"))

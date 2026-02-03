@@ -18,14 +18,18 @@ import kotlinx.serialization.json.*
 /**
  * Enhanced settings storage for desktop application.
  * Provides comprehensive settings management with backup and restore functionality.
+ * Thread-safe implementation using synchronized blocks for all preference operations.
  */
 class DesktopSettingsStorage {
-    private val prefs = Preferences.userNodeForPackage(DesktopSettingsStorage::class.java)
-    private val json = Json { 
+    // Lazy initialization to avoid blocking constructor
+    private val prefs by lazy { Preferences.userNodeForPackage(DesktopSettingsStorage::class.java) }
+    private val json = Json {
         encodeDefaults = true
         ignoreUnknownKeys = true
         prettyPrint = true
     }
+    // Lock object for thread-safe preference access
+    private val settingsLock = Any()
     
     companion object {
         private const val SETTINGS_VERSION = "1.0"
@@ -133,51 +137,69 @@ class DesktopSettingsStorage {
     
     /**
      * Saves the complete application settings.
+     * Thread-safe: Uses synchronized block for preference access.
      */
     fun saveSettings(settings: AppSettings) {
-        try {
-            val settingsJson = json.encodeToString(settings)
-            prefs.put(SETTINGS_KEY, settingsJson)
-            
-            // Also update legacy settings for compatibility
-            updateLegacySettings(settings)
-        } catch (e: Exception) {
-            // Handle error saving settings
-            println("Error saving settings: ${e.message}")
+        synchronized(settingsLock) {
+            try {
+                val settingsJson = json.encodeToString(settings)
+                prefs.put(SETTINGS_KEY, settingsJson)
+
+                // Also update legacy settings for compatibility
+                updateLegacySettings(settings)
+            } catch (e: Exception) {
+                // Handle error saving settings
+                println("Error saving settings: ${e.message}")
+            }
         }
     }
-    
+
     /**
      * Loads the complete application settings.
+     * Thread-safe: Uses synchronized block for preference access.
      */
     fun loadSettings(): AppSettings {
-        return try {
-            val settingsJson = prefs.get(SETTINGS_KEY, null)
-            if (settingsJson != null) {
-                json.decodeFromString<AppSettings>(settingsJson)
-            } else {
-                // Create default settings
-                val defaultSettings = AppSettings()
-                saveSettings(defaultSettings)
-                defaultSettings
+        return synchronized(settingsLock) {
+            try {
+                val settingsJson = prefs.get(SETTINGS_KEY, null)
+                if (settingsJson != null) {
+                    json.decodeFromString<AppSettings>(settingsJson)
+                } else {
+                    // Create default settings
+                    val defaultSettings = AppSettings()
+                    saveSettingsInternal(defaultSettings)
+                    defaultSettings
+                }
+            } catch (e: Exception) {
+                // Return default settings if loading fails
+                AppSettings()
             }
-        } catch (e: Exception) {
-            // Return default settings if loading fails
-            AppSettings()
         }
     }
-    
+
+    /**
+     * Internal save without locking - must be called from within synchronized block.
+     */
+    private fun saveSettingsInternal(settings: AppSettings) {
+        val settingsJson = json.encodeToString(settings)
+        prefs.put(SETTINGS_KEY, settingsJson)
+        updateLegacySettings(settings)
+    }
+
     /**
      * Resets settings to default values.
+     * Thread-safe: Uses synchronized block for preference access.
      */
     fun resetSettings() {
-        try {
-            prefs.remove(SETTINGS_KEY)
-            // Create and save default settings
-            val defaultSettings = AppSettings()
-            saveSettings(defaultSettings)
-        } catch (e: Exception) {
-            // Handle error resetting settings
+        synchronized(settingsLock) {
+            try {
+                prefs.remove(SETTINGS_KEY)
+                // Create and save default settings
+                val defaultSettings = AppSettings()
+                saveSettingsInternal(defaultSettings)
+            } catch (e: Exception) {
+                // Handle error resetting settings
+            }
         }
     }
     
@@ -211,33 +233,42 @@ class DesktopSettingsStorage {
     
     /**
      * Creates a backup of current settings.
+     * Thread-safe: Uses synchronized block for preference access.
      */
     fun backupSettings(): Boolean {
-        return try {
-            val settings = loadSettings()
-            val settingsJson = json.encodeToString(settings)
-            prefs.put(BACKUP_KEY, settingsJson)
-            true
-        } catch (e: Exception) {
-            false
-        }
-    }
-    
-    /**
-     * Restores settings from backup.
-     */
-    fun restoreSettings(): Boolean {
-        return try {
-            val backupJson = prefs.get(BACKUP_KEY, null)
-            if (backupJson != null) {
-                val settings = json.decodeFromString<AppSettings>(backupJson)
-                saveSettings(settings)
-                true
-            } else {
+        return synchronized(settingsLock) {
+            try {
+                val settingsJson = prefs.get(SETTINGS_KEY, null)
+                if (settingsJson != null) {
+                    prefs.put(BACKUP_KEY, settingsJson)
+                    true
+                } else {
+                    false
+                }
+            } catch (e: Exception) {
                 false
             }
-        } catch (e: Exception) {
-            false
+        }
+    }
+
+    /**
+     * Restores settings from backup.
+     * Thread-safe: Uses synchronized block for preference access.
+     */
+    fun restoreSettings(): Boolean {
+        return synchronized(settingsLock) {
+            try {
+                val backupJson = prefs.get(BACKUP_KEY, null)
+                if (backupJson != null) {
+                    val settings = json.decodeFromString<AppSettings>(backupJson)
+                    saveSettingsInternal(settings)
+                    true
+                } else {
+                    false
+                }
+            } catch (e: Exception) {
+                false
+            }
         }
     }
     

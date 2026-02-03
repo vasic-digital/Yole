@@ -29,6 +29,44 @@ class AuthTokenManager(
         }
     }
     
+    // ==================== Internal (non-locking) methods ====================
+    // These methods do NOT acquire the mutex and must only be called from within
+    // a mutex.withLock block. This prevents deadlocks from nested lock acquisition.
+
+    private suspend fun storeAccessTokenInternal(storage: SecureStorage, token: String): Result<Unit> {
+        return storage.storeToken("${serviceName}_access", token)
+    }
+
+    private suspend fun storeRefreshTokenInternal(storage: SecureStorage, token: String): Result<Unit> {
+        return storage.storeToken("${serviceName}_refresh", token)
+    }
+
+    private suspend fun storeTokenExpirationInternal(storage: SecureStorage, expiresAt: Instant): Result<Unit> {
+        return storage.store("${serviceName}_expires", expiresAt.toEpochMilliseconds().toString())
+    }
+
+    private suspend fun getAccessTokenInternal(storage: SecureStorage): Result<String?> {
+        return storage.retrieveToken(serviceName)
+    }
+
+    private suspend fun getRefreshTokenInternal(storage: SecureStorage): Result<String?> {
+        return storage.retrieveToken("${serviceName}_refresh")
+    }
+
+    private suspend fun isTokenExpiredInternal(storage: SecureStorage): Result<Boolean> {
+        val expiresAtStr = storage.retrieve("${serviceName}_expires").getOrNull()
+
+        return if (expiresAtStr == null) {
+            Result.success(true) // No expiration info, assume expired
+        } else {
+            val expiresAt = Instant.fromEpochMilliseconds(expiresAtStr.toLong())
+            val now = Clock.System.now()
+            Result.success(now >= expiresAt)
+        }
+    }
+
+    // ==================== Public (locking) methods ====================
+
     /**
      * Store access token securely
      */
@@ -36,13 +74,13 @@ class AuthTokenManager(
         return mutex.withLock {
             try {
                 val storage = getSecureStorage()
-                storage.storeToken("${serviceName}_access", token)
+                storeAccessTokenInternal(storage, token)
             } catch (e: Exception) {
                 Result.failure(e)
             }
         }
     }
-    
+
     /**
      * Store refresh token securely
      */
@@ -50,13 +88,13 @@ class AuthTokenManager(
         return mutex.withLock {
             try {
                 val storage = getSecureStorage()
-                storage.storeToken("${serviceName}_refresh", token)
+                storeRefreshTokenInternal(storage, token)
             } catch (e: Exception) {
                 Result.failure(e)
             }
         }
     }
-    
+
     /**
      * Store token expiration time
      */
@@ -64,13 +102,13 @@ class AuthTokenManager(
         return mutex.withLock {
             try {
                 val storage = getSecureStorage()
-                storage.store("${serviceName}_expires", expiresAt.toEpochMilliseconds().toString())
+                storeTokenExpirationInternal(storage, expiresAt)
             } catch (e: Exception) {
                 Result.failure(e)
             }
         }
     }
-    
+
     /**
      * Retrieve access token
      */
@@ -78,13 +116,13 @@ class AuthTokenManager(
         return mutex.withLock {
             try {
                 val storage = getSecureStorage()
-                storage.retrieveToken(serviceName)
+                getAccessTokenInternal(storage)
             } catch (e: Exception) {
                 Result.failure(e)
             }
         }
     }
-    
+
     /**
      * Retrieve refresh token
      */
@@ -92,13 +130,13 @@ class AuthTokenManager(
         return mutex.withLock {
             try {
                 val storage = getSecureStorage()
-                storage.retrieveToken("${serviceName}_refresh")
+                getRefreshTokenInternal(storage)
             } catch (e: Exception) {
                 Result.failure(e)
             }
         }
     }
-    
+
     /**
      * Check if token is expired
      */
@@ -106,41 +144,34 @@ class AuthTokenManager(
         return mutex.withLock {
             try {
                 val storage = getSecureStorage()
-                val expiresAtStr = storage.retrieve("${serviceName}_expires").getOrNull()
-                
-                if (expiresAtStr == null) {
-                    Result.success(true) // No expiration info, assume expired
-                } else {
-                    val expiresAt = Instant.fromEpochMilliseconds(expiresAtStr.toLong())
-                    val now = Clock.System.now()
-                    Result.success(now >= expiresAt)
-                }
+                isTokenExpiredInternal(storage)
             } catch (e: Exception) {
                 Result.failure(e)
             }
         }
     }
-    
+
     /**
      * Check if we have a valid access token
      */
     suspend fun hasValidToken(): Result<Boolean> {
         return mutex.withLock {
             try {
-                val accessTokenResult = getAccessToken()
+                val storage = getSecureStorage()
+                val accessTokenResult = getAccessTokenInternal(storage)
                 if (accessTokenResult.isFailure) return@withLock Result.success(false)
-                
+
                 val accessToken = accessTokenResult.getOrNull()
                 if (accessToken.isNullOrBlank()) return@withLock Result.success(false)
-                
-                val isExpired = isTokenExpired().getOrNull() ?: true
+
+                val isExpired = isTokenExpiredInternal(storage).getOrNull() ?: true
                 Result.success(!isExpired)
             } catch (e: Exception) {
                 Result.failure(e)
             }
         }
     }
-    
+
     /**
      * Clear all tokens for this service
      */
@@ -157,7 +188,7 @@ class AuthTokenManager(
             }
         }
     }
-    
+
     /**
      * Store complete token information
      */
@@ -168,22 +199,23 @@ class AuthTokenManager(
     ): Result<Unit> {
         return mutex.withLock {
             try {
+                val storage = getSecureStorage()
                 val results = mutableListOf<Result<Unit>>()
-                
-                // Store access token
-                results.add(storeAccessToken(accessToken))
-                
+
+                // Store access token (using internal method to avoid nested lock)
+                results.add(storeAccessTokenInternal(storage, accessToken))
+
                 // Store refresh token if provided
                 refreshToken?.let {
-                    results.add(storeRefreshToken(it))
+                    results.add(storeRefreshTokenInternal(storage, it))
                 }
-                
+
                 // Store expiration if provided
                 expiresIn?.let {
                     val expiresAt = Clock.System.now().plus(it.seconds)
-                    results.add(storeTokenExpiration(expiresAt))
+                    results.add(storeTokenExpirationInternal(storage, expiresAt))
                 }
-                
+
                 // Return first failure or success
                 results.firstOrNull { it.isFailure } ?: Result.success(Unit)
             } catch (e: Exception) {
@@ -191,17 +223,18 @@ class AuthTokenManager(
             }
         }
     }
-    
+
     /**
      * Get token info for debugging (without sensitive data)
      */
     suspend fun getTokenInfo(): Result<TokenInfo> {
         return mutex.withLock {
             try {
-                val hasAccessToken = getAccessToken().getOrNull()?.isNotBlank() ?: false
-                val hasRefreshToken = getRefreshToken().getOrNull()?.isNotBlank() ?: false
-                val isExpired = isTokenExpired().getOrNull() ?: true
-                
+                val storage = getSecureStorage()
+                val hasAccessToken = getAccessTokenInternal(storage).getOrNull()?.isNotBlank() ?: false
+                val hasRefreshToken = getRefreshTokenInternal(storage).getOrNull()?.isNotBlank() ?: false
+                val isExpired = isTokenExpiredInternal(storage).getOrNull() ?: true
+
                 Result.success(
                     TokenInfo(
                         hasAccessToken = hasAccessToken,
