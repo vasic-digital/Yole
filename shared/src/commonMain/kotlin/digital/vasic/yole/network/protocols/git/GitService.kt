@@ -19,15 +19,25 @@ import digital.vasic.yole.network.protocol.createHttpClient
 /**
  * Git implementation of NetworkStorageService
  * Provides Git repository integration with proper authentication and sync capabilities
+ *
+ * Resource Management: This class manages an HttpClient that must be properly closed.
+ * Call disconnect() when done using this service, or use it with try-finally blocks.
  */
 class GitService(
     override val config: StorageConfig.GitConfig
 ) : NetworkStorageService {
-    
-    private val httpClient = createHttpClient().config {
-        // Basic authentication setup simplified for compilation
+
+    // Lazy initialization of HttpClient to avoid resource allocation if never used
+    private val httpClient by lazy {
+        createHttpClient().config {
+            // Basic authentication setup simplified for compilation
+        }
     }
-    
+
+    // Track whether httpClient has been initialized to avoid closing uninitialized client
+    @Volatile
+    private var httpClientInitialized = false
+
     private var _isConnected = false
     
     override val isOnline: Boolean
@@ -48,9 +58,13 @@ class GitService(
     }
     
     override suspend fun connect(): Result<Unit> = try {
-        // Test Git connection
-        val response = httpClient.get("https://github.com/example/repo")
-        
+        // Mark httpClient as initialized when accessed
+        httpClientInitialized = true
+
+        // Test Git connection using configured repository URL
+        val repoUrl = config.repositoryUrl.ifBlank { "https://github.com" }
+        val response = httpClient.get(repoUrl)
+
         if (response.status.isSuccess()) {
             _isConnected = true
             Result.success(Unit)
@@ -66,12 +80,20 @@ class GitService(
             cause = e
         ))
     }
-    
+
     override suspend fun disconnect(): Result<Unit> = try {
-        httpClient.close()
+        // Only close httpClient if it was actually initialized
+        if (httpClientInitialized) {
+            try {
+                httpClient.close()
+            } catch (closeException: Exception) {
+                // Log but don't fail disconnect for close errors
+            }
+        }
         _isConnected = false
         Result.success(Unit)
     } catch (e: Exception) {
+        _isConnected = false // Ensure we mark as disconnected even on error
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
     

@@ -106,11 +106,10 @@ fun CompleteDesktopApp() {
     }
     
     fun saveFile() {
-        if (currentFile != null) {
-            saveToFile(currentFile!!)
-        } else {
-            saveAsFile()
-        }
+        // Use let for null-safe access instead of !! operator
+        currentFile?.let { file ->
+            saveToFile(file)
+        } ?: saveAsFile()
     }
     
     fun saveAsFile() {

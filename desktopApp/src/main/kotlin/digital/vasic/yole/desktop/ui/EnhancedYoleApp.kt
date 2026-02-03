@@ -126,17 +126,18 @@ fun EnhancedYoleApp() {
             
             // Editor Area
             Box(modifier = Modifier.weight(1f)) {
-                if (currentWindow != null) {
+                // Use let for null-safe access to currentWindow
+                currentWindow?.let { window ->
                     EnhancedEditorScreen(
-                        window = currentWindow!!,
+                        window = window,
                         fileManager = fileManager,
                         appSettings = appSettings.value,
                         onContentChanged = { content, isModified ->
-                            windowManager.updateWindowContent(currentWindow!!.id, content, isModified)
+                            windowManager.updateWindowContent(window.id, content, isModified)
                         },
                         modifier = Modifier.fillMaxSize()
                     )
-                } else {
+                } ?:
                     WelcomeScreen(
                         onNewFile = { createNewFile(windowManager, fileManager) },
                         onOpenFile = { openFile(windowManager, fileManager) },
