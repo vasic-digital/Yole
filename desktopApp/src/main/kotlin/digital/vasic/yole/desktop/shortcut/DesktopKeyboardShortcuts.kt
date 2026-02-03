@@ -10,14 +10,16 @@
 package digital.vasic.yole.desktop.shortcut
 
 import androidx.compose.ui.input.key.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.prefs.Preferences
 
 /**
  * Comprehensive keyboard shortcut system for Yole desktop application.
  * Supports customizable shortcuts with platform-specific adaptations.
+ * Thread-safe for concurrent access from UI and settings threads.
  */
 class DesktopKeyboardShortcuts {
-    private val prefs = Preferences.userNodeForPackage(DesktopKeyboardShortcuts::class.java)
+    private val prefs by lazy { Preferences.userNodeForPackage(DesktopKeyboardShortcuts::class.java) }
     
     companion object {
         // File operations
@@ -122,7 +124,8 @@ class DesktopKeyboardShortcuts {
         )
     }
     
-    private val customShortcuts = mutableMapOf<String, KeyShortcut>()
+    // Thread-safe map for custom shortcuts
+    private val customShortcuts = ConcurrentHashMap<String, KeyShortcut>()
     
     init {
         loadCustomShortcuts()

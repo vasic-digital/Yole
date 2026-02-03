@@ -381,8 +381,8 @@ object PdfExportUtil {
 
         // Process bold text **text**
         val boldRegex = Regex("\\*\\*(.*?)\\*\\*")
-        while (boldRegex.containsMatchIn(remaining)) {
-            val match = boldRegex.find(remaining)!!
+        var match = boldRegex.find(remaining)
+        while (match != null) {
             val before = remaining.substring(0, match.range.first)
             if (before.isNotEmpty()) {
                 val beforeFont = FontFactory.getFont(FontFactory.HELVETICA, 12f, BaseColor.BLACK)
@@ -391,12 +391,13 @@ object PdfExportUtil {
             val boldFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12f, BaseColor.BLACK)
             paragraph.add(Chunk(match.groupValues[1], boldFont))
             remaining = remaining.substring(match.range.last + 1)
+            match = boldRegex.find(remaining)
         }
 
         // Process italic text *text*
         val italicRegex = Regex("\\*(.*?)\\*")
-        while (italicRegex.containsMatchIn(remaining)) {
-            val match = italicRegex.find(remaining)!!
+        match = italicRegex.find(remaining)
+        while (match != null) {
             val before = remaining.substring(0, match.range.first)
             if (before.isNotEmpty()) {
                 val beforeFont = FontFactory.getFont(FontFactory.HELVETICA, 12f, BaseColor.BLACK)
@@ -405,12 +406,13 @@ object PdfExportUtil {
             val italicFont = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 12f, BaseColor.BLACK)
             paragraph.add(Chunk(match.groupValues[1], italicFont))
             remaining = remaining.substring(match.range.last + 1)
+            match = italicRegex.find(remaining)
         }
 
         // Process code text `text`
         val codeRegex = Regex("`(.*?)`")
-        while (codeRegex.containsMatchIn(remaining)) {
-            val match = codeRegex.find(remaining)!!
+        match = codeRegex.find(remaining)
+        while (match != null) {
             val before = remaining.substring(0, match.range.first)
             if (before.isNotEmpty()) {
                 val beforeFont = FontFactory.getFont(FontFactory.HELVETICA, 12f, BaseColor.BLACK)
@@ -419,6 +421,7 @@ object PdfExportUtil {
             val codeFont = FontFactory.getFont(FontFactory.COURIER, 10f, BaseColor.BLACK)
             paragraph.add(Chunk(match.groupValues[1], codeFont))
             remaining = remaining.substring(match.range.last + 1)
+            match = codeRegex.find(remaining)
         }
 
         // Add remaining text

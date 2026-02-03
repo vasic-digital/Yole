@@ -260,18 +260,20 @@ fun MainScreen() {
                 when (event.key) {
                     Key.S -> {
                         // Save current file (Ctrl+S on desktop, just S on Android)
-                        if (currentSubScreen == SubScreen.EDITOR && selectedFile != null) {
-                            val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-                            if (!docsDir.exists()) docsDir.mkdirs()
-                            val filePath = File(docsDir, selectedFile!!).absolutePath
-                            try {
-                                File(filePath).writeText(fileContent)
-                                // Announce save success
-                                if (settings.getAnnounceChanges()) {
-                                    Toast.makeText(context, "File saved: $selectedFile", Toast.LENGTH_SHORT).show()
+                        if (currentSubScreen == SubScreen.EDITOR) {
+                            selectedFile?.let { file ->
+                                val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
+                                if (!docsDir.exists()) docsDir.mkdirs()
+                                val filePath = File(docsDir, file).absolutePath
+                                try {
+                                    File(filePath).writeText(fileContent)
+                                    // Announce save success
+                                    if (settings.getAnnounceChanges()) {
+                                        Toast.makeText(context, "File saved: $file", Toast.LENGTH_SHORT).show()
+                                    }
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Failed to save file: ${e.message}", Toast.LENGTH_LONG).show()
                                 }
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "Failed to save file: ${e.message}", Toast.LENGTH_LONG).show()
                             }
                         }
                         true
@@ -696,36 +698,38 @@ fun MainScreen() {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         TextButton(
                             onClick = {
-                                if (!exportInProgress && selectedFile != null) {
-                                    exportInProgress = true
-                                    coroutineScope.launch {
-                                        val format = FormatRegistry.detectByFilename(selectedFile!!)
-                                        val result = PdfExportUtil.exportToPdf(
-                                            context = context,
-                                            content = fileContent,
-                                            fileName = selectedFile!!,
-                                            format = format.id
-                                        )
-                                        
-                                        exportInProgress = false
-                                        showExportDialog = false
-                                        
-                                        if (result.isSuccess) {
-                                            val pdfUri = result.getOrNull()
-                                            if (pdfUri != null) {
-                                                // Share the PDF
-                                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                                    type = "application/pdf"
-                                                    putExtra(Intent.EXTRA_STREAM, pdfUri)
-                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                                    putExtra(Intent.EXTRA_SUBJECT, "Yole Document: $selectedFile")
-                                                    putExtra(Intent.EXTRA_TEXT, "Here's the PDF export of my document from Yole.")
+                                if (!exportInProgress) {
+                                    selectedFile?.let { file ->
+                                        exportInProgress = true
+                                        coroutineScope.launch {
+                                            val format = FormatRegistry.detectByFilename(file)
+                                            val result = PdfExportUtil.exportToPdf(
+                                                context = context,
+                                                content = fileContent,
+                                                fileName = file,
+                                                format = format.id
+                                            )
+
+                                            exportInProgress = false
+                                            showExportDialog = false
+
+                                            if (result.isSuccess) {
+                                                val pdfUri = result.getOrNull()
+                                                if (pdfUri != null) {
+                                                    // Share the PDF
+                                                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                                        type = "application/pdf"
+                                                        putExtra(Intent.EXTRA_STREAM, pdfUri)
+                                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                        putExtra(Intent.EXTRA_SUBJECT, "Yole Document: $file")
+                                                        putExtra(Intent.EXTRA_TEXT, "Here's the PDF export of my document from Yole.")
+                                                    }
+                                                    context.startActivity(Intent.createChooser(shareIntent, "Share PDF"))
+                                                    Toast.makeText(context, "PDF exported successfully", Toast.LENGTH_SHORT).show()
                                                 }
-                                                context.startActivity(Intent.createChooser(shareIntent, "Share PDF"))
-                                                Toast.makeText(context, "PDF exported successfully", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                Toast.makeText(context, "Failed to export PDF: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
                                             }
-                                        } else {
-                                            Toast.makeText(context, "Failed to export PDF: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
                                         }
                                     }
                                 }
