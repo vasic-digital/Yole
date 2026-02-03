@@ -44,14 +44,19 @@ object AndroidAccessibility {
     }
 
     /**
-     * Announces content to TalkBack.
+     * Announces content to TalkBack using AccessibilityEvent.
      */
     fun announceForAccessibility(context: Context, message: String) {
         val accessibilityManager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
         if (accessibilityManager.isEnabled) {
-            // Use AccessibilityManager to announce
-            // Note: In a real implementation, you'd use AccessibilityEvent
-            println("Accessibility announcement: $message")
+            // Use AccessibilityEvent to announce to screen readers
+            val event = android.view.accessibility.AccessibilityEvent.obtain(
+                android.view.accessibility.AccessibilityEvent.TYPE_ANNOUNCEMENT
+            )
+            event.text.add(message)
+            event.className = context.javaClass.name
+            event.packageName = context.packageName
+            accessibilityManager.sendAccessibilityEvent(event)
         }
     }
 

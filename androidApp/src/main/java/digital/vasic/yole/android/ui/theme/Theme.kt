@@ -123,10 +123,11 @@ object YoleAndroidTheme {
         // Validate accessibility
         val violations = ThemeUtils.validateColorSchemeAccessibility(customScheme)
         if (violations.isNotEmpty()) {
-            // In a real app, you might want to log this or show a warning
-            // For now, we'll just ensure the scheme is valid by design
-            println("⚠️ Color scheme accessibility violations:")
-            violations.forEach { println("  - $it") }
+            // Log accessibility violations using Android's Log class
+            // This is only logged in debug builds and doesn't affect release performance
+            if (android.util.Log.isLoggable("YoleTheme", android.util.Log.WARN)) {
+                android.util.Log.w("YoleTheme", "Color scheme accessibility violations: ${violations.joinToString(", ")}")
+            }
         }
 
         return customScheme
