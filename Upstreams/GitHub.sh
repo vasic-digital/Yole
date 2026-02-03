@@ -1,3 +1,3 @@
 #!/bin/bash
 
-export UPSTREAMABLE_REPOSITORY="git@github.com:vasic-digital/Rokram.git"
+export UPSTREAMABLE_REPOSITORY="git@github.com:vasic-digital/Yole.git"
