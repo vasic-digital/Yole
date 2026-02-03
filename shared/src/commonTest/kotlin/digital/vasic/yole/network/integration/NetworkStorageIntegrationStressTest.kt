@@ -1,0 +1,423 @@
+/*
+ *########################################################
+ *
+ * SPDX-FileCopyrightText: 2025 Milos Vasic
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Network Storage Integration Stress Tests
+ *
+ * Comprehensive integration tests for the network storage
+ * system covering multi-service operations, failover scenarios,
+ * and cross-service interactions.
+ *
+ *########################################################*/
+
+package digital.vasic.yole.network.integration
+
+import digital.vasic.yole.network.common.*
+import digital.vasic.yole.network.protocols.dropbox.DropboxService
+import digital.vasic.yole.network.protocols.ftp.FtpService
+import digital.vasic.yole.network.protocols.git.GitService
+import digital.vasic.yole.network.protocols.googledrive.GoogleDriveService
+import digital.vasic.yole.network.protocols.onedrive.OneDriveService
+import digital.vasic.yole.network.protocols.sftp.SftpService
+import digital.vasic.yole.network.protocols.smb.SmbService
+import digital.vasic.yole.network.protocols.webdav.WebDavService
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.runTest
+import kotlin.test.*
+
+/**
+ * Integration stress tests for network storage system.
+ * Tests multi-service operations and cross-service interactions.
+ */
+class NetworkStorageIntegrationStressTest {
+
+    // ==================== MULTI-SERVICE INITIALIZATION ====================
+
+    @Test
+    fun `all services can be created concurrently`() = runTest {
+        val services = (1..10).map { i ->
+            async {
+                listOf(
+                    createFtpService("ftp-$i"),
+                    createSmbService("smb-$i"),
+                    createWebDavService("webdav-$i"),
+                    createGitService("git-$i")
+                )
+            }
+        }.awaitAll().flatten()
+
+        assertEquals(40, services.size)
+        services.forEach { service ->
+            assertFalse(service.isOnline)
+        }
+    }
+
+    @Test
+    fun `all service types can coexist`() = runTest {
+        val ftpService = createFtpService("ftp")
+        val smbService = createSmbService("smb")
+        val webdavService = createWebDavService("webdav")
+        val gitService = createGitService("git")
+
+        // All should start disconnected
+        assertFalse(ftpService.isOnline)
+        assertFalse(smbService.isOnline)
+        assertFalse(webdavService.isOnline)
+        assertFalse(gitService.isOnline)
+
+        // All should connect successfully
+        assertTrue(ftpService.connect().isSuccess)
+        assertTrue(smbService.connect().isSuccess)
+        assertTrue(webdavService.connect().isSuccess)
+        // Git may fail due to network, but should not throw
+
+        // Cleanup
+        ftpService.disconnect()
+        smbService.disconnect()
+        webdavService.disconnect()
+        gitService.disconnect()
+    }
+
+    // ==================== CONCURRENT OPERATIONS ACROSS SERVICES ====================
+
+    @Test
+    fun `concurrent file info across multiple services`() = runTest {
+        val services = listOf(
+            createFtpService("ftp"),
+            createSmbService("smb"),
+            createWebDavService("webdav")
+        )
+
+        services.forEach { it.connect() }
+
+        val results = services.flatMap { service ->
+            (1..20).map { i ->
+                async {
+                    service.getFileInfo("/path/file$i.txt")
+                }
+            }
+        }.awaitAll()
+
+        assertEquals(60, results.size)
+        assertTrue(results.all { it.isSuccess })
+
+        services.forEach { it.disconnect() }
+    }
+
+    @Test
+    fun `concurrent folder operations across services`() = runTest {
+        val ftpService = createFtpService("ftp")
+        val smbService = createSmbService("smb")
+
+        ftpService.connect()
+        smbService.connect()
+
+        val jobs = (1..30).map { i ->
+            async {
+                if (i % 2 == 0) {
+                    ftpService.createFolder("/folder$i")
+                } else {
+                    smbService.createFolder("/folder$i")
+                }
+            }
+        }
+
+        val results = jobs.awaitAll()
+        assertEquals(30, results.size)
+        assertTrue(results.all { it.isSuccess })
+
+        ftpService.disconnect()
+        smbService.disconnect()
+    }
+
+    // ==================== SERVICE SWITCHING STRESS ====================
+
+    @Test
+    fun `rapid service switching`() = runTest {
+        val ftpService = createFtpService("ftp")
+        val smbService = createSmbService("smb")
+
+        repeat(50) { i ->
+            if (i % 2 == 0) {
+                ftpService.connect()
+                ftpService.getStorageInfo()
+                ftpService.disconnect()
+            } else {
+                smbService.connect()
+                smbService.getStorageInfo()
+                smbService.disconnect()
+            }
+        }
+
+        assertFalse(ftpService.isOnline)
+        assertFalse(smbService.isOnline)
+    }
+
+    @Test
+    fun `interleaved operations across services`() = runTest {
+        val services = listOf(
+            createFtpService("ftp"),
+            createSmbService("smb"),
+            createWebDavService("webdav"),
+            createGitService("git")
+        )
+
+        // Connect all
+        services.forEach { it.connect() }
+
+        // Interleaved operations
+        val operations = (1..100).map { i ->
+            val service = services[i % services.size]
+            async {
+                when (i % 4) {
+                    0 -> service.getFileInfo("/file$i.txt")
+                    1 -> service.createFolder("/folder$i")
+                    2 -> service.exists("/path$i")
+                    else -> service.validatePath("/valid/path$i")
+                }
+            }
+        }
+
+        val results = operations.awaitAll()
+        assertEquals(100, results.size)
+
+        // Disconnect all
+        services.forEach { it.disconnect() }
+    }
+
+    // ==================== QUOTA AND STORAGE INFO ====================
+
+    @Test
+    fun `concurrent quota checks across services`() = runTest {
+        val services = listOf(
+            createFtpService("ftp"),
+            createSmbService("smb"),
+            createWebDavService("webdav"),
+            createGitService("git")
+        )
+
+        val results = services.map { service ->
+            async {
+                service.getQuotaInfo()
+            }
+        }.awaitAll()
+
+        assertEquals(4, results.size)
+        assertTrue(results.all { it.isSuccess })
+
+        // Git has unlimited quota
+        val gitQuota = results[3].getOrNull()
+        assertNotNull(gitQuota)
+        assertEquals(Long.MAX_VALUE, gitQuota.totalSpace)
+    }
+
+    @Test
+    fun `concurrent storage info across services`() = runTest {
+        val services = listOf(
+            createFtpService("ftp"),
+            createSmbService("smb"),
+            createWebDavService("webdav"),
+            createGitService("git")
+        )
+
+        val infos = services.map { service ->
+            async { service.getStorageInfo() }
+        }.awaitAll()
+
+        assertEquals(4, infos.size)
+        assertEquals(StorageType.FTP, infos[0].type)
+        assertEquals(StorageType.SMB, infos[1].type)
+        assertEquals(StorageType.WEBDAV, infos[2].type)
+        assertEquals(StorageType.GIT, infos[3].type)
+    }
+
+    // ==================== CACHE OPERATIONS ACROSS SERVICES ====================
+
+    @Test
+    fun `cache operations across multiple services`() = runTest {
+        val ftpService = createFtpService("ftp")
+        val smbService = createSmbService("smb")
+
+        // Add to cache on both services
+        val addJobs = (1..50).map { i ->
+            async {
+                if (i % 2 == 0) {
+                    ftpService.addToCache("/ftp/file$i.txt", i % 10)
+                } else {
+                    smbService.addToCache("/smb/file$i.txt", i % 10)
+                }
+            }
+        }
+        addJobs.awaitAll()
+
+        // Clear caches
+        assertTrue(ftpService.clearCache().isSuccess)
+        assertTrue(smbService.clearCache().isSuccess)
+    }
+
+    // ==================== SYNC OPERATIONS ====================
+
+    @Test
+    fun `concurrent sync operations`() = runTest {
+        val webdavService = createWebDavService("webdav")
+
+        val syncJobs = (1..30).map { i ->
+            async {
+                webdavService.syncFile("/file$i.txt", forceSync = i % 2 == 0).toList()
+            }
+        }
+
+        val results = syncJobs.awaitAll()
+        assertEquals(30, results.size)
+        assertTrue(results.all { it.isNotEmpty() })
+    }
+
+    // ==================== ERROR HANDLING INTEGRATION ====================
+
+    @Test
+    fun `services handle disconnected operations gracefully`() = runTest {
+        val ftpService = createFtpService("ftp")
+        val smbService = createSmbService("smb")
+        val webdavService = createWebDavService("webdav")
+
+        // Try operations while disconnected
+        val ftpList = ftpService.listFiles("/").toList()
+        val smbList = smbService.listFiles("/").toList()
+        val webdavList = webdavService.listFiles("/").toList()
+
+        // All should return failure results
+        assertTrue(ftpList.all { it.isFailure })
+        assertTrue(smbList.all { it.isFailure })
+        assertTrue(webdavList.all { it.isFailure })
+    }
+
+    @Test
+    fun `services recover after disconnect and reconnect`() = runTest {
+        val ftpService = createFtpService("ftp")
+
+        // Initial connect
+        ftpService.connect()
+        assertTrue(ftpService.isOnline)
+
+        // Disconnect
+        ftpService.disconnect()
+        assertFalse(ftpService.isOnline)
+
+        // Reconnect
+        ftpService.connect()
+        assertTrue(ftpService.isOnline)
+
+        // Operations should work
+        val result = ftpService.getFileInfo("/test.txt")
+        assertTrue(result.isSuccess)
+
+        ftpService.disconnect()
+    }
+
+    // ==================== PATH OPERATIONS ACROSS SERVICES ====================
+
+    @Test
+    fun `path utilities work consistently across services`() = runTest {
+        val services = listOf(
+            createFtpService("ftp"),
+            createSmbService("smb"),
+            createWebDavService("webdav"),
+            createGitService("git")
+        )
+
+        val testPath = "/parent/child/file.txt"
+
+        services.forEach { service ->
+            // Parent path should be consistent
+            assertEquals("/parent/child", service.getParentPath(testPath))
+
+            // Root path handling
+            assertNull(service.getParentPath("/"))
+            assertNull(service.getParentPath(""))
+
+            // Validation should be consistent
+            assertTrue(service.validatePath(testPath).isSuccess)
+            assertTrue(service.validatePath("/").isSuccess)
+            assertTrue(service.validatePath("").isFailure)
+        }
+    }
+
+    // ==================== OPERATION TYPE VERIFICATION ====================
+
+    @Test
+    fun `upload operations have correct type`() = runTest {
+        val ftpService = createFtpService("ftp")
+        ftpService.connect()
+
+        val operations = ftpService.uploadFile("/local/file.txt", "/remote/file.txt").toList()
+        assertTrue(operations.all { it.type == NetworkOperation.Type.UPLOAD })
+
+        ftpService.disconnect()
+    }
+
+    @Test
+    fun `download operations have correct type`() = runTest {
+        val smbService = createSmbService("smb")
+        smbService.connect()
+
+        val operations = smbService.downloadFile("/remote/file.txt", "/local/file.txt").toList()
+        assertTrue(operations.all { it.type == NetworkOperation.Type.DOWNLOAD })
+
+        smbService.disconnect()
+    }
+
+    @Test
+    fun `sync operations have correct type`() = runTest {
+        val webdavService = createWebDavService("webdav")
+
+        val operations = webdavService.syncFile("/file.txt", false).toList()
+        assertTrue(operations.all { it.type == NetworkOperation.Type.SYNC })
+    }
+
+    // ==================== HELPER FUNCTIONS ====================
+
+    private fun createFtpService(name: String) = FtpService(
+        StorageConfig.FtpConfig(
+            name = name,
+            host = "ftp.example.com",
+            port = 21,
+            username = "user",
+            password = "pass",
+            path = "/"
+        )
+    )
+
+    private fun createSmbService(name: String) = SmbService(
+        StorageConfig.SmbConfig(
+            name = name,
+            host = "192.168.1.100",
+            share = "docs",
+            domain = "WORKGROUP",
+            username = "user",
+            password = "pass",
+            path = "/"
+        )
+    )
+
+    private fun createWebDavService(name: String) = WebDavService(
+        StorageConfig.WebDavConfig(
+            name = name,
+            url = "https://webdav.example.com",
+            username = "user",
+            password = "pass"
+        )
+    )
+
+    private fun createGitService(name: String) = GitService(
+        StorageConfig.GitConfig(
+            name = name,
+            repositoryUrl = "https://github.com/example/repo.git",
+            branch = "main",
+            username = "user",
+            personalAccessToken = "token"
+        )
+    )
+}
