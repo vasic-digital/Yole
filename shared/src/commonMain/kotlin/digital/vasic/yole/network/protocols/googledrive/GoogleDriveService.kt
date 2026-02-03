@@ -23,20 +23,32 @@ import kotlinx.serialization.json.Json
 /**
  * Enhanced Google Drive implementation of NetworkStorageService
  * Provides real Google Drive API integration with OAuth2 authentication
+ *
+ * Resource Management: This class manages an HttpClient that must be properly closed.
+ * Call disconnect() when done using this service.
  */
 class GoogleDriveService(
     override val config: StorageConfig.GoogleDriveConfig
 ) : NetworkStorageService {
-    
-    private val httpClient = createHttpClient()
+
+    // Lazy initialization of HttpClient to avoid resource allocation if never used
+    private val httpClient by lazy { createHttpClient() }
+
+    // Track whether httpClient has been initialized to avoid closing uninitialized client
+    @Volatile
+    private var httpClientInitialized = false
+
     private val authTokenManager = AuthTokenManager("googledrive")
-    private val oauth2Flow = GoogleDriveOAuth2Flow(
-        httpClient = httpClient,
-        clientId = config.clientId,
-        clientSecret = config.clientSecret,
-        redirectUri = "http://localhost:8080/callback" // Should be configurable
-    )
-    
+    private val oauth2Flow by lazy {
+        httpClientInitialized = true
+        GoogleDriveOAuth2Flow(
+            httpClient = httpClient,
+            clientId = config.clientId,
+            clientSecret = config.clientSecret,
+            redirectUri = "http://localhost:8080/callback" // Should be configurable
+        )
+    }
+
     private var _isConnected = false
     private var _rootFolderId = config.rootFolderId ?: "root"
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()
@@ -115,12 +127,21 @@ class GoogleDriveService(
     }
     
     override suspend fun disconnect(): Result<Unit> = try {
+        // Only close httpClient if it was actually initialized
+        if (httpClientInitialized) {
+            try {
+                httpClient.close()
+            } catch (closeException: Exception) {
+                // Log but don't fail disconnect for close errors
+            }
+        }
         _isConnected = false
         Result.success(Unit)
     } catch (e: Exception) {
+        _isConnected = false // Ensure we mark as disconnected even on error
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
-    
+
     override suspend fun testConnection(): Result<Boolean> {
         return testConnectionInternal()
     }

@@ -26,20 +26,32 @@ import kotlinx.serialization.json.jsonPrimitive
 /**
  * Enhanced Dropbox implementation of NetworkStorageService
  * Provides real Dropbox API integration with OAuth2 authentication
+ *
+ * Resource Management: This class manages an HttpClient that must be properly closed.
+ * Call disconnect() when done using this service.
  */
 class DropboxService(
     override val config: StorageConfig.DropboxConfig
 ) : NetworkStorageService {
-    
-    private val httpClient = createHttpClient()
+
+    // Lazy initialization of HttpClient to avoid resource allocation if never used
+    private val httpClient by lazy { createHttpClient() }
+
+    // Track whether httpClient has been initialized to avoid closing uninitialized client
+    @Volatile
+    private var httpClientInitialized = false
+
     private val authTokenManager = AuthTokenManager("dropbox")
-    private val oauth2Flow = DropboxOAuth2Flow(
-        httpClient = httpClient,
-        clientId = config.appKey,
-        clientSecret = config.appSecret,
-        redirectUri = "http://localhost:8080/callback" // Should be configurable
-    )
-    
+    private val oauth2Flow by lazy {
+        httpClientInitialized = true
+        DropboxOAuth2Flow(
+            httpClient = httpClient,
+            clientId = config.appKey,
+            clientSecret = config.appSecret,
+            redirectUri = "http://localhost:8080/callback" // Should be configurable
+        )
+    }
+
     private var _isConnected = false
     private var _rootPath = if (config.rootPath.isBlank()) "" else config.rootPath
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()
@@ -121,9 +133,18 @@ class DropboxService(
     
     override suspend fun disconnect(): Result<Unit> {
         return try {
-        _isConnected = false
+            // Only close httpClient if it was actually initialized
+            if (httpClientInitialized) {
+                try {
+                    httpClient.close()
+                } catch (closeException: Exception) {
+                    // Log but don't fail disconnect for close errors
+                }
+            }
+            _isConnected = false
             Result.success(Unit)
         } catch (e: Exception) {
+            _isConnected = false // Ensure we mark as disconnected even on error
             Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
         }
     }

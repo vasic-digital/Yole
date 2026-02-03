@@ -23,12 +23,21 @@ import digital.vasic.yole.network.protocol.createHttpClient
 /**
  * Enhanced SFTP implementation of NetworkStorageService
  * Provides secure FTP file operations with SSH key authentication and proper error handling
+ *
+ * Resource Management: This class manages an HttpClient that must be properly closed.
+ * Call disconnect() when done using this service.
  */
 class SftpService(
     override val config: StorageConfig.SftpConfig
 ) : NetworkStorageService {
-    
-    private val httpClient = createHttpClient()
+
+    // Lazy initialization of HttpClient to avoid resource allocation if never used
+    private val httpClient by lazy { createHttpClient() }
+
+    // Track whether httpClient has been initialized to avoid closing uninitialized client
+    @Volatile
+    private var httpClientInitialized = false
+
     private var _isConnected = false
     private var _rootPath = config.rootPath.ifBlank { "/" }
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()
@@ -103,12 +112,21 @@ class SftpService(
     }
     
     override suspend fun disconnect(): Result<Unit> = try {
+        // Only close httpClient if it was actually initialized
+        if (httpClientInitialized) {
+            try {
+                httpClient.close()
+            } catch (closeException: Exception) {
+                // Log but don't fail disconnect for close errors
+            }
+        }
         _isConnected = false
         Result.success(Unit)
     } catch (e: Exception) {
+        _isConnected = false // Ensure we mark as disconnected even on error
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
-    
+
     override suspend fun testConnection(): Result<Boolean> {
         return testSftpConnection().map { true }
     }

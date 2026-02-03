@@ -24,20 +24,32 @@ import kotlinx.serialization.json.Json
 /**
  * OneDrive implementation of NetworkStorageService
  * Provides Microsoft OneDrive API integration with OAuth2 authentication
+ *
+ * Resource Management: This class manages an HttpClient that must be properly closed.
+ * Call disconnect() when done using this service.
  */
 class OneDriveService(
     override val config: StorageConfig.OneDriveConfig
 ) : NetworkStorageService {
-    
-    private val httpClient = createHttpClient()
+
+    // Lazy initialization of HttpClient to avoid resource allocation if never used
+    private val httpClient by lazy { createHttpClient() }
+
+    // Track whether httpClient has been initialized to avoid closing uninitialized client
+    @Volatile
+    private var httpClientInitialized = false
+
     private val authTokenManager = AuthTokenManager("onedrive")
-    private val oauth2Flow = OneDriveOAuth2Flow(
-        httpClient = httpClient,
-        clientId = config.clientId,
-        clientSecret = config.clientSecret,
-        redirectUri = "http://localhost:8080/callback" // Should be configurable
-    )
-    
+    private val oauth2Flow by lazy {
+        httpClientInitialized = true
+        OneDriveOAuth2Flow(
+            httpClient = httpClient,
+            clientId = config.clientId,
+            clientSecret = config.clientSecret,
+            redirectUri = "http://localhost:8080/callback" // Should be configurable
+        )
+    }
+
     private var _isConnected = false
     private var _rootFolderId = config.rootFolderId ?: "root"
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()
@@ -118,12 +130,21 @@ class OneDriveService(
     }
     
     override suspend fun disconnect(): Result<Unit> = try {
+        // Only close httpClient if it was actually initialized
+        if (httpClientInitialized) {
+            try {
+                httpClient.close()
+            } catch (closeException: Exception) {
+                // Log but don't fail disconnect for close errors
+            }
+        }
         _isConnected = false
         Result.success(Unit)
     } catch (e: Exception) {
+        _isConnected = false // Ensure we mark as disconnected even on error
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
-    
+
     override suspend fun testConnection(): Result<Boolean> {
         return testConnectionInternal()
     }

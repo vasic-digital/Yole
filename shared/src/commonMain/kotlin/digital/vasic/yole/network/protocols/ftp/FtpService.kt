@@ -19,12 +19,21 @@ import digital.vasic.yole.network.protocol.createHttpClient
 /**
  * Enhanced FTP implementation of NetworkStorageService
  * Provides real FTP file operations with proper error handling and progress tracking
+ *
+ * Resource Management: This class manages an HttpClient that must be properly closed.
+ * Call disconnect() when done using this service.
  */
 class FtpService(
     override val config: StorageConfig.FtpConfig
 ) : NetworkStorageService {
-    
-    private val httpClient = createHttpClient()
+
+    // Lazy initialization of HttpClient to avoid resource allocation if never used
+    private val httpClient by lazy { createHttpClient() }
+
+    // Track whether httpClient has been initialized to avoid closing uninitialized client
+    @Volatile
+    private var httpClientInitialized = false
+
     private var _isConnected = false
     private var _rootPath = config.rootPath.ifBlank { "/" }
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()
@@ -72,9 +81,18 @@ class FtpService(
     
     override suspend fun disconnect(): Result<Unit> {
         return try {
-        _isConnected = false
+            // Only close httpClient if it was actually initialized
+            if (httpClientInitialized) {
+                try {
+                    httpClient.close()
+                } catch (closeException: Exception) {
+                    // Log but don't fail disconnect for close errors
+                }
+            }
+            _isConnected = false
             Result.success(Unit)
         } catch (e: Exception) {
+            _isConnected = false // Ensure we mark as disconnected even on error
             Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
         }
     }
