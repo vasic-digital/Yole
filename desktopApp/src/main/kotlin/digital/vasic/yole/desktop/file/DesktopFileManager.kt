@@ -23,11 +23,14 @@ import java.util.concurrent.ConcurrentHashMap
  * recent files tracking, and format detection.
  */
 class DesktopFileManager {
-    private val prefs = Preferences.userNodeForPackage(DesktopFileManager::class.java)
+    private val prefs by lazy { Preferences.userNodeForPackage(DesktopFileManager::class.java) }
     private val recentFiles = mutableListOf<File>()
+    private val recentFilesLock = Any()
     private val openDocuments = ConcurrentHashMap<String, DesktopDocument>()
     private val maxRecentFiles = 20
-    
+    @Volatile
+    private var recentFilesLoaded = false
+
     companion object {
         private const val RECENT_FILES_KEY = "recent_files"
         private const val MAX_RECENT_FILES = 20
@@ -62,8 +65,16 @@ class DesktopFileManager {
         )
     }
     
-    init {
-        loadRecentFiles()
+    // Recent files are loaded lazily on first access to avoid blocking construction
+    private fun ensureRecentFilesLoaded() {
+        if (!recentFilesLoaded) {
+            synchronized(recentFilesLock) {
+                if (!recentFilesLoaded) {
+                    loadRecentFilesInternal()
+                    recentFilesLoaded = true
+                }
+            }
+        }
     }
     
     /**
@@ -208,24 +219,30 @@ class DesktopFileManager {
      * Adds a file to the recent files list.
      */
     fun addToRecentFiles(file: File) {
-        synchronized(recentFiles) {
+        ensureRecentFilesLoaded()
+        val filePaths: List<String>
+        synchronized(recentFilesLock) {
             recentFiles.remove(file)
             recentFiles.add(0, file)
-            
+
             // Limit to max recent files
             while (recentFiles.size > maxRecentFiles) {
                 recentFiles.removeAt(recentFiles.size - 1)
             }
-            
-            saveRecentFiles()
+
+            // Copy paths while holding lock, then release before I/O
+            filePaths = recentFiles.map { it.absolutePath }
         }
+        // Save outside the lock to avoid blocking other operations during I/O
+        saveRecentFilesAsync(filePaths)
     }
     
     /**
      * Gets the list of recent files.
      */
     fun getRecentFiles(): List<File> {
-        synchronized(recentFiles) {
+        ensureRecentFilesLoaded()
+        synchronized(recentFilesLock) {
             return recentFiles.filter { it.exists() && it.isFile }
         }
     }
@@ -234,40 +251,40 @@ class DesktopFileManager {
      * Clears non-existent files from recent files list.
      */
     fun cleanRecentFiles() {
-        synchronized(recentFiles) {
+        ensureRecentFilesLoaded()
+        val filePaths: List<String>
+        synchronized(recentFilesLock) {
             recentFiles.removeIf { !it.exists() || !it.isFile }
-            saveRecentFiles()
+            filePaths = recentFiles.map { it.absolutePath }
         }
+        saveRecentFilesAsync(filePaths)
     }
     
     /**
-     * Loads recent files from preferences.
+     * Loads recent files from preferences (internal, called during lazy init).
+     * Must be called while holding recentFilesLock.
      */
-    private fun loadRecentFiles() {
+    private fun loadRecentFilesInternal() {
         try {
             val recentFilesJson = prefs.get(RECENT_FILES_KEY, "[]")
             val filePaths = recentFilesJson.removeSurrounding("[", "]")
                 .split(",")
                 .map { it.trim().removeSurrounding("\"") }
                 .filter { it.isNotEmpty() }
-            
-            synchronized(recentFiles) {
-                recentFiles.clear()
-                recentFiles.addAll(filePaths.map { File(it) }.filter { it.exists() })
-            }
+
+            recentFiles.clear()
+            recentFiles.addAll(filePaths.map { File(it) }.filter { it.exists() })
         } catch (e: Exception) {
             // Ignore errors loading recent files
         }
     }
     
     /**
-     * Saves recent files to preferences.
+     * Saves recent files to preferences asynchronously.
+     * Takes a pre-copied list to avoid holding locks during I/O.
      */
-    private fun saveRecentFiles() {
+    private fun saveRecentFilesAsync(filePaths: List<String>) {
         try {
-            val filePaths = synchronized(recentFiles) {
-                recentFiles.map { it.absolutePath }
-            }
             val recentFilesJson = filePaths.joinToString(",", "[", "]") { "\"$it\"" }
             prefs.put(RECENT_FILES_KEY, recentFilesJson)
         } catch (e: Exception) {
