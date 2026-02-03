@@ -144,10 +144,10 @@ object BackupRestoreUtil {
             val inputStream = context.contentResolver.openInputStream(backupUri)
                 ?: return Result.failure(Exception("Cannot open backup file"))
 
-            val result = restoreFromBackupZip(context, inputStream, settings)
-            inputStream.close()
-            
-            result
+            // Use .use {} to ensure stream is closed even if exception occurs
+            inputStream.use { stream ->
+                restoreFromBackupZip(context, stream, settings)
+            }
 
         } catch (e: Exception) {
             Result.failure(e)

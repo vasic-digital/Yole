@@ -534,14 +534,6 @@ private fun processOfflineChanges(state: dynamic) {
     console.log("Processing offline changes:", state)
 }
 
-private fun showOfflineReadyNotification() {
-    PWAFeatures.showOfflineReadyNotification()
-}
-
-private fun showOnlineNotification() {
-    PWAFeatures.showOnlineNotification()
-}
-
-private fun showOfflineNotification() {
-    PWAFeatures.showOfflineNotification()
-}
+// Note: Notification helper functions removed to prevent confusion.
+// Use PWAFeatures.showNotification() methods directly from within the PWAFeatures object.
+// The private notification methods in PWAFeatures handle all notification display.

@@ -21,6 +21,7 @@ import digital.vasic.yole.desktop.file.DesktopFileManager
 import digital.vasic.yole.format.TextFormat
 import java.io.File
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Manages multiple windows for the Yole desktop application.
@@ -28,7 +29,7 @@ import java.util.UUID
  */
 class DesktopWindowManager {
     private val windows = mutableStateListOf<DesktopWindow>()
-    private var nextWindowId = 1
+    private val nextWindowId = AtomicInteger(1)
     
     companion object {
         private const val MAX_WINDOWS = 10
@@ -39,7 +40,7 @@ class DesktopWindowManager {
      * Creates a new window with the specified file.
      */
     fun createWindow(file: File? = null, content: String = ""): DesktopWindow {
-        val windowId = "window_${nextWindowId++}"
+        val windowId = "window_${nextWindowId.getAndIncrement()}"
         val window = DesktopWindow(
             id = windowId,
             title = file?.name ?: "Untitled ${windows.size + 1}",
