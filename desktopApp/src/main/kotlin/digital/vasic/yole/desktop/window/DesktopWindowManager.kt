@@ -81,16 +81,21 @@ class DesktopWindowManager {
     
     /**
      * Gets all open windows.
+     * Returns a copy to ensure thread safety.
      */
     fun getWindows(): List<DesktopWindow> {
-        return windows.toList()
+        synchronized(windows) {
+            return windows.toList()
+        }
     }
-    
+
     /**
      * Gets a specific window by ID.
      */
     fun getWindow(windowId: String): DesktopWindow? {
-        return windows.find { it.id == windowId }
+        synchronized(windows) {
+            return windows.find { it.id == windowId }
+        }
     }
     
     /**
@@ -139,14 +144,19 @@ class DesktopWindowManager {
      * Checks if any window has unsaved changes.
      */
     fun hasUnsavedChanges(): Boolean {
-        return windows.any { it.isModified }
+        synchronized(windows) {
+            return windows.any { it.isModified }
+        }
     }
-    
+
     /**
      * Gets windows with unsaved changes.
+     * Returns a copy to ensure thread safety.
      */
     fun getWindowsWithUnsavedChanges(): List<DesktopWindow> {
-        return windows.filter { it.isModified }
+        synchronized(windows) {
+            return windows.filter { it.isModified }
+        }
     }
 }
 
