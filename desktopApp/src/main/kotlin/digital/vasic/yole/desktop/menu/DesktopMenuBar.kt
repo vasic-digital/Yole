@@ -241,11 +241,19 @@ private fun handleMenuKeyboardShortcuts(
     return when (event.key) {
         Key.N -> if (ctrlPressed) { onNewFile(); true } else false
         Key.O -> if (ctrlPressed) { onOpenFile(); true } else false
-        Key.S -> if (ctrlPressed && !shiftPressed) { onSaveFile(); true } else false
-        Key.S -> if (ctrlPressed && shiftPressed) { /* Save As */ true } else false
-        Key.Z -> if (ctrlPressed && !shiftPressed) { onUndo(); true } else false
+        // Merged: Ctrl+S for save, Ctrl+Shift+S for save as
+        Key.S -> when {
+            ctrlPressed && shiftPressed -> { /* Save As - handled elsewhere */ true }
+            ctrlPressed -> { onSaveFile(); true }
+            else -> false
+        }
+        // Merged: Ctrl+Z for undo, Ctrl+Shift+Z for redo
+        Key.Z -> when {
+            ctrlPressed && shiftPressed -> { onRedo(); true }
+            ctrlPressed -> { onUndo(); true }
+            else -> false
+        }
         Key.Y -> if (ctrlPressed) { onRedo(); true } else false
-        Key.Z -> if (ctrlPressed && shiftPressed) { onRedo(); true } else false
         Key.X -> if (ctrlPressed) { onCut(); true } else false
         Key.C -> if (ctrlPressed) { onCopy(); true } else false
         Key.V -> if (ctrlPressed) { onPaste(); true } else false
@@ -258,19 +266,16 @@ private fun handleMenuKeyboardShortcuts(
 
 /**
  * Loads a recent file and opens it in the editor.
+ * Returns the content if successful, null otherwise.
  */
-private fun loadRecentFile(file: File, fileManager: DesktopFileManager) {
-    try {
-        val content = fileManager.loadFile(file)
-        if (content != null) {
-            // Open file in editor - this would be handled by the main application
-            println("Opening recent file: ${file.name}")
-        } else {
-            // Show error message
-            println("Could not load file: ${file.name}")
-        }
+private fun loadRecentFile(file: File, fileManager: DesktopFileManager): String? {
+    return try {
+        fileManager.loadFile(file)
+        // Note: The actual opening in editor is handled by the callback in DesktopMenuBar
+        // This just loads and returns the content for the main application to handle
     } catch (e: Exception) {
-        // Show error message
-        println("Error loading file: ${e.message}")
+        // Error loading file - return null to indicate failure
+        // The calling code should handle the error appropriately
+        null
     }
 }

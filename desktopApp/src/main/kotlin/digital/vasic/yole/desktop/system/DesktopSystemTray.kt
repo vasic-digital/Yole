@@ -22,27 +22,41 @@ import java.io.File
  * Provides native system tray integration with context menu.
  */
 class DesktopSystemTray(
-    private val fileManager: DesktopFileManager,
-    private val onNewFile: () -> Unit,
-    private val onOpenFile: () -> Unit,
-    private val onShowWindow: () -> Unit,
-    private val onExit: () -> Unit
+    private val fileManager: DesktopFileManager? = null,
+    private val onNewFile: () -> Unit = {},
+    private val onOpenFile: () -> Unit = {},
+    private val onShowWindow: () -> Unit = {},
+    private val onExit: () -> Unit = {}
 ) {
+    // Notification listeners for UI integration
+    private val notificationListeners = mutableListOf<(String, String, NotificationType) -> Unit>()
+
     companion object {
         private const val TOOLTIP = "Yole - Text Editor"
         private const val ICON_PATH = "icons/icon.png"
     }
-    
+
+    /**
+     * Adds a listener to receive notification events.
+     */
+    fun addNotificationListener(listener: (String, String, NotificationType) -> Unit) {
+        notificationListeners.add(listener)
+    }
+
     /**
      * Shows a system notification.
+     * Notifies all registered listeners.
      */
     fun showNotification(title: String, message: String, type: NotificationType = NotificationType.INFO) {
-        try {
-            println("[$title] $message")
-        } catch (e: Exception) {
-            // Fallback to console notification
-            println("[$title] $message")
+        // Notify all registered listeners (for UI integration)
+        notificationListeners.forEach { listener ->
+            try {
+                listener(title, message, type)
+            } catch (e: Exception) {
+                // Listener error - continue with other listeners
+            }
         }
+        // Note: Actual system tray notification would be handled by platform-specific code
     }
     
     /**

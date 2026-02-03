@@ -62,13 +62,31 @@ object DesktopAccessibility {
         )
     }
 
+    // Listeners for accessibility announcements (allows UI to subscribe)
+    private val announcementListeners = mutableListOf<(String) -> Unit>()
+
+    /**
+     * Adds a listener for accessibility announcements.
+     */
+    fun addAnnouncementListener(listener: (String) -> Unit) {
+        announcementListeners.add(listener)
+    }
+
     /**
      * Announces content to screen readers.
+     * Notifies all registered listeners for platform-specific handling.
      */
     fun announceForAccessibility(message: String) {
         // Desktop screen reader announcement
         // This would use platform-specific APIs (Windows UIA, macOS NSAccessibility)
-        println("Desktop accessibility announcement: $message")
+        // Notify all registered listeners for actual implementation
+        announcementListeners.forEach { listener ->
+            try {
+                listener(message)
+            } catch (e: Exception) {
+                // Listener error - continue with other listeners
+            }
+        }
     }
 }
 
