@@ -1,0 +1,92 @@
+# Yole Development & Security Scanning Infrastructure
+# Supports both Docker and Podman (podman-compose)
+#
+# Usage:
+#   docker compose up -d          # Start all services
+#   docker compose up sonarqube   # Start SonarQube only
+#   podman-compose up -d          # Using Podman
+#
+# Access:
+#   SonarQube: http://localhost:9000 (admin/admin on first login)
+
+version: '3.8'
+
+services:
+  # SonarQube for code quality and security analysis
+  sonarqube:
+    image: sonarqube:lts-community
+    container_name: yole-sonarqube
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+      - SONAR_JDBC_URL=jdbc:postgresql://sonarqube-db:5432/sonar
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_extensions:/opt/sonarqube/extensions
+    depends_on:
+      - sonarqube-db
+    networks:
+      - yole-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/api/system/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # PostgreSQL database for SonarQube
+  sonarqube-db:
+    image: postgres:15-alpine
+    container_name: yole-sonarqube-db
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_DB=sonar
+    volumes:
+      - sonarqube_db:/var/lib/postgresql/data
+    networks:
+      - yole-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonar"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Dependency-Track for SBOM and vulnerability management
+  dependency-track:
+    image: dependencytrack/bundled:latest
+    container_name: yole-dependency-track
+    ports:
+      - "8080:8080"
+    volumes:
+      - dependency_track_data:/data
+    networks:
+      - yole-network
+    profiles:
+      - full
+
+  # OWASP ZAP for dynamic security testing (optional)
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    container_name: yole-zap
+    command: zap.sh -daemon -host 0.0.0.0 -port 8090
+    ports:
+      - "8090:8090"
+    networks:
+      - yole-network
+    profiles:
+      - security
+
+networks:
+  yole-network:
+    driver: bridge
+
+volumes:
+  sonarqube_data:
+  sonarqube_logs:
+  sonarqube_extensions:
+  sonarqube_db:
+  dependency_track_data:

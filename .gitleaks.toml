@@ -1,0 +1,123 @@
+# Gitleaks configuration for Yole
+# https://github.com/gitleaks/gitleaks
+
+title = "Yole Secret Scanning Configuration"
+
+[extend]
+# Use the default gitleaks config as base
+useDefault = true
+
+[allowlist]
+description = "Global allowlist"
+paths = [
+    '''(.*)?test(.*)''',
+    '''(.*)?mock(.*)''',
+    '''(.*)?fake(.*)''',
+    '''(.*)?stub(.*)''',
+    '''(.*)?fixture(.*)''',
+    '''(.*)?example(.*)''',
+    '''(.*)?sample(.*)''',
+    '''\.md$''',
+    '''\.txt$''',
+    '''CHANGELOG''',
+    '''NEWS''',
+]
+
+# Allowlist specific commits (add commit hashes if needed)
+commits = []
+
+# Allowlist specific regexes that are false positives
+regexes = [
+    '''example\.com''',
+    '''localhost''',
+    '''127\.0\.0\.1''',
+    '''0\.0\.0\.0''',
+    '''test[_-]?key''',
+    '''fake[_-]?key''',
+    '''mock[_-]?key''',
+    '''sample[_-]?key''',
+    '''placeholder''',
+    '''your[_-]?api[_-]?key''',
+    '''INSERT[_-]?YOUR''',
+    '''REPLACE[_-]?WITH''',
+]
+
+# Custom rules for Yole-specific patterns
+[[rules]]
+id = "yole-api-key"
+description = "Yole API Key"
+regex = '''(?i)(yole[_-]?api[_-]?key|YOLE_API_KEY)\s*[=:]\s*['"][a-zA-Z0-9]{32,}['"]'''
+tags = ["key", "api", "yole"]
+keywords = ["yole"]
+
+[[rules]]
+id = "oauth-client-secret"
+description = "OAuth Client Secret"
+regex = '''(?i)(client[_-]?secret|CLIENT_SECRET)\s*[=:]\s*['"][a-zA-Z0-9\-_]{20,}['"]'''
+tags = ["oauth", "secret"]
+keywords = ["client_secret", "clientsecret"]
+
+[[rules]]
+id = "dropbox-token"
+description = "Dropbox Access Token"
+regex = '''(?i)(dropbox[_-]?token|DROPBOX_TOKEN)\s*[=:]\s*['"]sl\.[a-zA-Z0-9\-_]{100,}['"]'''
+tags = ["dropbox", "token"]
+keywords = ["dropbox"]
+
+[[rules]]
+id = "google-api-key"
+description = "Google API Key"
+regex = '''AIza[0-9A-Za-z\-_]{35}'''
+tags = ["google", "api"]
+
+[[rules]]
+id = "firebase-config"
+description = "Firebase Configuration"
+regex = '''(?i)(firebase[_-]?api[_-]?key|FIREBASE_API_KEY)\s*[=:]\s*['"][a-zA-Z0-9\-_]{30,}['"]'''
+tags = ["firebase", "google"]
+keywords = ["firebase"]
+
+[[rules]]
+id = "onedrive-client-secret"
+description = "OneDrive/Microsoft Client Secret"
+regex = '''(?i)(microsoft[_-]?secret|MICROSOFT_SECRET|onedrive[_-]?secret)\s*[=:]\s*['"][a-zA-Z0-9\-_~.]{30,}['"]'''
+tags = ["microsoft", "onedrive"]
+keywords = ["microsoft", "onedrive"]
+
+[[rules]]
+id = "encryption-key"
+description = "Encryption Key or Password"
+regex = '''(?i)(encryption[_-]?key|master[_-]?password|ENCRYPTION_KEY|MASTER_PASSWORD)\s*[=:]\s*['"][^'"]{16,}['"]'''
+tags = ["encryption", "key"]
+keywords = ["encryption", "master"]
+
+[[rules]]
+id = "private-key-file"
+description = "Private Key File Reference"
+regex = '''(?i)(private[_-]?key[_-]?file|PRIVATE_KEY_FILE|key[_-]?path)\s*[=:]\s*['"][^'"]*\.(pem|key|p12|pfx)['"]'''
+tags = ["private-key", "file"]
+keywords = ["private", "key", "pem"]
+
+# Entropy-based detection for high-entropy strings
+[[rules]]
+id = "high-entropy-base64"
+description = "High Entropy Base64 String"
+regex = '''[A-Za-z0-9+/]{40,}={0,2}'''
+entropy = 4.5
+tags = ["entropy", "base64"]
+allowlist = { regexes = ['''[A-Za-z0-9+/]{40,}={0,2}'''] }
+
+# Path-specific rules
+[[rules]]
+id = "hardcoded-credentials-kotlin"
+description = "Hardcoded credentials in Kotlin files"
+regex = '''(?i)(password|passwd|pwd|secret|token|apikey|api_key)\s*=\s*"[^"]{8,}"'''
+path = '''\.kt$'''
+tags = ["credentials", "kotlin"]
+
+[[rules]]
+id = "hardcoded-credentials-java"
+description = "Hardcoded credentials in Java files"
+regex = '''(?i)(password|passwd|pwd|secret|token|apikey|api_key)\s*=\s*"[^"]{8,}"'''
+path = '''\.java$'''
+tags = ["credentials", "java"]
