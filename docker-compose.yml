@@ -1,18 +1,49 @@
-# Yole Development & Security Scanning Infrastructure
-# Supports both Docker and Podman (podman-compose)
-#
-# Usage:
-#   docker compose up -d          # Start all services
-#   docker compose up sonarqube   # Start SonarQube only
-#   podman-compose up -d          # Using Podman
-#
-# Access:
-#   SonarQube: http://localhost:9000 (admin/admin on first login)
-
+# Yole Build Environment
 version: '3.8'
 
 services:
-  # SonarQube for code quality and security analysis
+  # Main build container
+  build:
+    build: 
+      context: .
+      dockerfile: docker/yole-build/Dockerfile
+    image: yole-build:latest
+    container_name: yole-build
+    privileged: true
+    volumes:
+      - .:/workspace
+      - ./releases:/workspace/releases
+    environment:
+      - ANDROID_SDK_ROOT=/opt/android-sdk
+      - JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+      - GRADLE_HOME=/opt/gradle
+    working_dir: /workspace
+    tty: true
+    networks:
+      - yole-network
+
+  # Android Emulator
+  android-emulator:
+    image: yole-build:latest
+    container_name: yole-android-emulator
+    privileged: true
+    volumes:
+      - ./releases:/workspace/releases
+    environment:
+      - ANDROID_SDK_ROOT=/opt/android-sdk
+      - ANDROID_EMULATOR_DEVICE=Pixel_5
+    command: >
+      bash -c "
+        $ANDROID_SDK_ROOT/emulator/emulator -avd yole_emulator -no-window -no-audio -no-boot-anim -wipe-data &
+        sleep 30
+        adb wait-for-device
+        echo 'Emulator ready'
+        tail -f /dev/null
+      "
+    networks:
+      - yole-network
+
+  # SonarQube for code analysis
   sonarqube:
     image: sonarqube:lts-community
     container_name: yole-sonarqube
@@ -26,18 +57,14 @@ services:
     volumes:
       - sonarqube_data:/opt/sonarqube/data
       - sonarqube_logs:/opt/sonarqube/logs
-      - sonarqube_extensions:/opt/sonarqube/extensions
     depends_on:
       - sonarqube-db
     networks:
       - yole-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/api/system/status"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+    profiles:
+      - full
 
-  # PostgreSQL database for SonarQube
+  # PostgreSQL for SonarQube
   sonarqube-db:
     image: postgres:15-alpine
     container_name: yole-sonarqube-db
@@ -49,13 +76,10 @@ services:
       - sonarqube_db:/var/lib/postgresql/data
     networks:
       - yole-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sonar"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    profiles:
+      - full
 
-  # Dependency-Track for SBOM and vulnerability management
+  # Dependency-Track for vulnerability scanning
   dependency-track:
     image: dependencytrack/bundled:latest
     container_name: yole-dependency-track
@@ -68,7 +92,7 @@ services:
     profiles:
       - full
 
-  # OWASP ZAP for dynamic security testing (optional)
+  # OWASP ZAP for security testing
   zap:
     image: ghcr.io/zaproxy/zaproxy:stable
     container_name: yole-zap
@@ -78,7 +102,7 @@ services:
     networks:
       - yole-network
     profiles:
-      - security
+      - full
 
 networks:
   yole-network:
