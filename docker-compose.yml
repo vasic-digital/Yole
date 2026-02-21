@@ -2,115 +2,24 @@
 version: '3.8'
 
 services:
-  # Main build container
+  # Build container using pre-built Android SDK image
   build:
-    build: 
-      context: .
-      dockerfile: docker/yole-build/Dockerfile
-    image: yole-build:latest
+    image: cirrusci/android-sdk:latest
     container_name: yole-build
     privileged: true
     volumes:
       - .:/workspace
       - ./releases:/workspace/releases
-    environment:
-      - ANDROID_SDK_ROOT=/opt/android-sdk
-      - JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-      - GRADLE_HOME=/opt/gradle
     working_dir: /workspace
-    tty: true
-    networks:
-      - yole-network
+    command: sleep infinity
 
-  # Android Emulator
-  android-emulator:
-    image: yole-build:latest
-    container_name: yole-android-emulator
+  # Alternative using thyrlian/android-sdk
+  build-alt:
+    image: thyrlian/android-sdk:latest
+    container_name: yole-build-alt
     privileged: true
     volumes:
+      - .:/workspace
       - ./releases:/workspace/releases
-    environment:
-      - ANDROID_SDK_ROOT=/opt/android-sdk
-      - ANDROID_EMULATOR_DEVICE=Pixel_5
-    command: >
-      bash -c "
-        $ANDROID_SDK_ROOT/emulator/emulator -avd yole_emulator -no-window -no-audio -no-boot-anim -wipe-data &
-        sleep 30
-        adb wait-for-device
-        echo 'Emulator ready'
-        tail -f /dev/null
-      "
-    networks:
-      - yole-network
-
-  # SonarQube for code analysis
-  sonarqube:
-    image: sonarqube:lts-community
-    container_name: yole-sonarqube
-    ports:
-      - "9000:9000"
-    environment:
-      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
-      - SONAR_JDBC_URL=jdbc:postgresql://sonarqube-db:5432/sonar
-      - SONAR_JDBC_USERNAME=sonar
-      - SONAR_JDBC_PASSWORD=sonar
-    volumes:
-      - sonarqube_data:/opt/sonarqube/data
-      - sonarqube_logs:/opt/sonarqube/logs
-    depends_on:
-      - sonarqube-db
-    networks:
-      - yole-network
-    profiles:
-      - full
-
-  # PostgreSQL for SonarQube
-  sonarqube-db:
-    image: postgres:15-alpine
-    container_name: yole-sonarqube-db
-    environment:
-      - POSTGRES_USER=sonar
-      - POSTGRES_PASSWORD=sonar
-      - POSTGRES_DB=sonar
-    volumes:
-      - sonarqube_db:/var/lib/postgresql/data
-    networks:
-      - yole-network
-    profiles:
-      - full
-
-  # Dependency-Track for vulnerability scanning
-  dependency-track:
-    image: dependencytrack/bundled:latest
-    container_name: yole-dependency-track
-    ports:
-      - "8080:8080"
-    volumes:
-      - dependency_track_data:/data
-    networks:
-      - yole-network
-    profiles:
-      - full
-
-  # OWASP ZAP for security testing
-  zap:
-    image: ghcr.io/zaproxy/zaproxy:stable
-    container_name: yole-zap
-    command: zap.sh -daemon -host 0.0.0.0 -port 8090
-    ports:
-      - "8090:8090"
-    networks:
-      - yole-network
-    profiles:
-      - full
-
-networks:
-  yole-network:
-    driver: bridge
-
-volumes:
-  sonarqube_data:
-  sonarqube_logs:
-  sonarqube_extensions:
-  sonarqube_db:
-  dependency_track_data:
+    working_dir: /workspace
+    command: sleep infinity
