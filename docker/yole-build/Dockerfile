@@ -9,6 +9,9 @@ ENV ANDROID_SDK_ROOT=/opt/android-sdk
 ENV GRADLE_HOME=/opt/gradle
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
+# Enable i386 architecture for Android SDK
+RUN dpkg --add-architecture i386
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     # Java 17
@@ -18,12 +21,10 @@ RUN apt-get update && apt-get install -y \
     curl \
     unzip \
     git \
-    # Android dependencies
+    # Android dependencies (i386) - available packages only
     libc6:i386 \
     libncurses5:i386 \
     libstdc++6:i386 \
-    lib32gcc-s1 \
-    lib32stdc++6 \
     # Desktop dependencies
     libxcb1 \
     libxcb-xkb1 \
