@@ -145,10 +145,11 @@ jobs:
           name: detekt-report
           path: build/reports/detekt/
 
-  # SonarQube analysis (requires self-hosted or SonarCloud)
+  # SonarQube analysis (supports both local and SonarCloud)
   sonarqube:
     name: SonarQube Analysis
     runs-on: ubuntu-latest
+    # Use SonarCloud for PRs, local/self-hosted for pushes
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout code
@@ -169,6 +170,7 @@ jobs:
         run: ./gradlew test koverXmlReport --info
 
       - name: SonarQube Scan
+        if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -180,6 +182,15 @@ jobs:
             -Dsonar.sources=shared/src/commonMain/kotlin
             -Dsonar.tests=shared/src/commonTest/kotlin
             -Dsonar.coverage.jacoco.xmlReportPaths=build/reports/kover/report.xml
+
+      - name: Local SonarQube Scan
+        if: env.SONAR_TOKEN == ''
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'http://localhost:9000' }}
+          SONAR_PROJECT_KEY: yole
+          SONAR_SOURCES: shared/src/commonMain/kotlin
+          SONAR_TESTS: shared/src/commonTest/kotlin
 
   # License compliance check
   license-check:

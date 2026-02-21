@@ -46,6 +46,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import digital.vasic.yole.model.Document
 import digital.vasic.yole.format.FormatRegistry
 import kotlinx.coroutines.*
+import kotlinx.datetime.Clock
 import platform.Foundation.NSUserDefaults
 
 /**
@@ -135,8 +136,19 @@ fun YoleAppContent() {
                     when (screen) {
                         AppScreen.Documents -> DocumentsScreen(
                             documents = documents,
-                            onDocumentSelected = { /* TODO */ },
-                            onCreateDocument = { /* TODO */ }
+                            onDocumentSelected = { document ->
+                                currentScreen = AppScreen.Editor
+                            },
+                            onCreateDocument = {
+                                val newDoc = Document(
+                                    title = "New Document",
+                                    content = "",
+                                    format = FormatRegistry.getById(FormatRegistry.ID_PLAINTEXT)!!,
+                                    createdAt = Clock.System.now().toString(),
+                                    modifiedAt = Clock.System.now().toString()
+                                )
+                                documents = documents + newDoc
+                            }
                         )
                         AppScreen.Editor -> EditorScreen()
                         AppScreen.Settings -> SettingsScreen(
@@ -168,8 +180,19 @@ fun YoleAppContent() {
                 when (currentScreen) {
                     AppScreen.Documents -> DocumentsScreen(
                         documents = documents,
-                        onDocumentSelected = { /* TODO */ },
-                        onCreateDocument = { /* TODO */ }
+                        onDocumentSelected = { document ->
+                            currentScreen = AppScreen.Editor
+                        },
+                        onCreateDocument = {
+                            val newDoc = Document(
+                                title = "New Document",
+                                content = "",
+                                format = FormatRegistry.getById(FormatRegistry.ID_PLAINTEXT)!!,
+                                createdAt = Clock.System.now().toString(),
+                                modifiedAt = Clock.System.now().toString()
+                            )
+                            documents = documents + newDoc
+                        }
                     )
                     AppScreen.Editor -> EditorScreen()
                     AppScreen.Settings -> SettingsScreen(
