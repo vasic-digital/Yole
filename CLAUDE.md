@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## MANDATORY: Build and Test in Containers
+
+**ALL builds and tests MUST be executed inside Docker/Podman containers, NOT directly on the host machine!**
+
+This ensures consistent environment, proper dependencies, reproducible builds, Android emulator access, and all integration services.
+
+```bash
+# Build container
+docker compose build build
+
+# Run tests in container
+docker compose run --rm build ./docker/scripts/test-all.sh
+
+# Build releases in container
+docker compose run --rm build ./docker/scripts/build.sh
+```
+
 ## Project Overview
 
 **Yole** is a cross-platform text editor supporting 17+ text formats (Markdown, todo.txt, CSV, LaTeX, Org Mode, etc.) built with Kotlin Multiplatform (KMP). The app is offline-first with optional cloud storage integration.

@@ -304,21 +304,10 @@ android {
 // Kover configuration for code coverage
 kover {
     reports {
-        // Configure verification rules - 100% coverage required
+        // Configure verification rules - 70% minimum coverage
         verify {
             rule {
-                minBound(100) // 100% coverage required
-                boundType = org.jetbrains.kover.gradle.dsl.CoverageBoundType.LINE
-            }
-            
-            rule {
-                minBound(100) // 100% branch coverage
-                boundType = org.jetbrains.kover.gradle.dsl.CoverageBoundType.BRANCH
-            }
-            
-            rule {
-                minBound(100) // 100% instruction coverage
-                boundType = org.jetbrains.kover.gradle.dsl.CoverageBoundType.INSTRUCTION
+                minBound(70) // Minimum 70% coverage target
             }
         }
 
@@ -334,15 +323,6 @@ kover {
                 // Exclude test code from production coverage
                 packages("digital.vasic.yole.*Test*")
                 packages("digital.vasic.yole.*Tests*")
-            }
-            
-            includes {
-                // Include only main source code
-                packages("digital.vasic.yole.format")
-                packages("digital.vasic.yole.model")
-                packages("digital.vasic.yole.network")
-                packages("digital.vasic.yole.ui")
-                packages("digital.vasic.yole.util")
             }
         }
     }

@@ -1,5 +1,27 @@
 # Yole - Development Guide for AI Agents
 
+## MANDATORY: Build and Test in Containers
+
+**ALL builds and tests MUST be executed inside Docker/Podman containers, NOT directly on the host machine!**
+
+This is required to ensure:
+- Consistent environment across all platforms
+- Proper dependency management
+- Reproducible builds
+- Proper Android emulator access
+- All integration services available
+
+```bash
+# Build the container first
+docker compose build build
+
+# Run tests inside container
+docker compose run --rm build ./docker/scripts/test-all.sh
+
+# Build releases inside container
+docker compose run --rm build ./docker/scripts/build.sh
+```
+
 ## Project Overview
 
 **Yole** is a cross-platform text editor built with Kotlin Multiplatform (KMP), supporting Android (production), Desktop (beta), iOS/Web (development). Supports 17 text formats.
