@@ -80,7 +80,9 @@ class JupyterParser : TextParser {
     private fun parseNotebook(json: JsonElement): JupyterNotebook {
         val obj = json.jsonObject
         
-        val cells = obj["cells"]?.jsonArray?.map { parseCell(it) } ?: emptyList()
+        val cells = obj["cells"]?.let { 
+            if (it is JsonArray) it.map { cell -> parseCell(cell) } else emptyList() 
+        } ?: emptyList()
         val metadata = obj["metadata"]?.jsonObject ?: JsonObject(emptyMap())
         val nbformat = obj["nbformat"]?.jsonPrimitive?.intOrNull ?: 4
         val nbformatMinor = obj["nbformat_minor"]?.jsonPrimitive?.intOrNull ?: 0
