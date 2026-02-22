@@ -86,7 +86,9 @@ class JupyterParser : TextParser {
         val nbformatMinor = obj["nbformat_minor"]?.jsonPrimitive?.intOrNull ?: 0
         
         val kernel = metadata["kernelspec"]?.jsonObject?.get("name")?.jsonPrimitive?.content ?: "python3"
-        val language = metadata["language_info"]?.jsonObject?.get("name")?.jsonPrimitive?.content ?: "python"
+        val language = metadata["language_info"]?.jsonObject?.get("name")?.jsonPrimitive?.content
+            ?: metadata["kernelspec"]?.jsonObject?.get("language")?.jsonPrimitive?.content
+            ?: "python"
         val title = metadata["title"]?.jsonPrimitive?.content
         
         return JupyterNotebook(
