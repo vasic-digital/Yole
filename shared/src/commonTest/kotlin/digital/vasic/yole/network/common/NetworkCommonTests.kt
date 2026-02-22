@@ -115,7 +115,8 @@ class NetworkCommonTests {
 
     @Test
     fun `SyncStatus enum works correctly`() {
-        assertEquals(10, SyncStatus.values().size)
+        assertEquals(11, SyncStatus.values().size)
+        assertTrue(SyncStatus.values().contains(SyncStatus.UNKNOWN))
         assertTrue(SyncStatus.values().contains(SyncStatus.SYNCED))
         assertTrue(SyncStatus.values().contains(SyncStatus.PENDING_UPLOAD))
         assertTrue(SyncStatus.values().contains(SyncStatus.PENDING_DOWNLOAD))
