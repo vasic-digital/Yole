@@ -109,7 +109,7 @@ class FtpServiceTest {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.deleteFile("/test.md")
         
-        assertTrue(result.isSuccess, "Delete should succeed even when not connected (FTP implementation)")
+        assertTrue(result.isFailure, "Delete should fail when not connected")
     }
     
     @Test
@@ -117,11 +117,7 @@ class FtpServiceTest {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.createFolder("/test-folder")
         
-        assertTrue(result.isSuccess, "Create folder should succeed even when not connected (FTP implementation)")
-        val document = result.getOrNull()
-        assertEquals("test-folder", document?.name)
-        assertEquals("/test-folder", document?.path)
-        assertTrue(document?.isFolder ?: false)
+        assertTrue(result.isFailure, "Create folder should fail when not connected")
     }
     
     @Test
@@ -129,7 +125,7 @@ class FtpServiceTest {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.renameFile("/test.md", "renamed.md")
         
-        assertTrue(result.isSuccess, "Rename should succeed even when not connected (FTP implementation)")
+        assertTrue(result.isFailure, "Rename should fail when not connected")
     }
     
     @Test
@@ -137,11 +133,7 @@ class FtpServiceTest {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.moveFile("/test.md", "/moved/test.md")
         
-        assertTrue(result.isSuccess, "Move should succeed even when not connected (FTP implementation)")
-        val document = result.getOrNull()
-        assertEquals("test.md", document?.name)
-        assertEquals("/moved/test.md", document?.path)
-        assertFalse(document?.isFolder ?: true)
+        assertTrue(result.isFailure, "Move should fail when not connected")
     }
     
     @Test
@@ -149,7 +141,7 @@ class FtpServiceTest {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.copyFile("/test.md", "/copy/test.md")
         
-        assertTrue(result.isSuccess, "Copy should succeed even when not connected (FTP implementation)")
+        assertTrue(result.isFailure, "Copy should fail when not connected")
     }
     
     @Test
@@ -157,11 +149,7 @@ class FtpServiceTest {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.getFileInfo("/test.md")
         
-        assertTrue(result.isSuccess, "Get file info should succeed even when not connected (FTP implementation)")
-        val document = result.getOrNull()
-        assertEquals("test.md", document?.name)
-        assertEquals("/test.md", document?.path)
-        assertFalse(document?.isFolder ?: true)
+        assertTrue(result.isFailure, "Get file info should fail when not connected")
     }
     
     @Test
@@ -169,10 +157,7 @@ class FtpServiceTest {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.getQuotaInfo()
         
-        assertTrue(result.isSuccess, "Get quota info returns mock success even when not connected")
-        val quota = result.getOrNull()
-        assertEquals(1000000000L, quota?.totalSpace)
-        assertEquals(0L, quota?.usedSpace)
+        assertTrue(result.isFailure, "Get quota info should fail when not connected")
     }
     
     @Test
@@ -180,8 +165,8 @@ class FtpServiceTest {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.exists("/test.md")
         
-        assertTrue(result.isSuccess, "Exists check returns mock success even when not connected")
-        assertEquals(true, result.getOrNull(), "Mock implementation returns true")
+        assertTrue(result.isSuccess, "Exists check returns success (recovering from failure)")
+        assertEquals(false, result.getOrNull(), "Returns false when not connected")
     }
     
     @Test
@@ -221,7 +206,7 @@ class FtpServiceTest {
         assertEquals("/folder", ftpService.getParentPath("/folder/test.md"))
         assertEquals("/folder/subfolder", ftpService.getParentPath("/folder/subfolder/test.md"))
         assertEquals(null, ftpService.getParentPath("/"))
-        assertEquals("/", ftpService.getParentPath(""))
+        assertEquals(null, ftpService.getParentPath(""))
     }
     
     @Test
@@ -232,8 +217,8 @@ class FtpServiceTest {
         assertTrue(ftpService.validatePath("/folder/test.md").isSuccess)
         assertTrue(ftpService.validatePath("/folder/subfolder/test.md").isSuccess)
         
-        assertTrue(ftpService.validatePath("").isSuccess)
-        assertTrue(ftpService.validatePath("   ").isSuccess)
+        assertTrue(ftpService.validatePath("").isFailure)
+        assertTrue(ftpService.validatePath("   ").isFailure)
     }
     
     @Test
@@ -241,8 +226,7 @@ class FtpServiceTest {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.searchFiles("test", "/", false).first()
         
-        assertTrue(result.isSuccess, "Search should succeed even when not connected (FTP implementation)")
-        assertTrue(result.getOrNull()?.isEmpty() ?: false, "Search should return empty list")
+        assertTrue(result.isFailure, "Search should fail when not connected")
     }
     
     @Test

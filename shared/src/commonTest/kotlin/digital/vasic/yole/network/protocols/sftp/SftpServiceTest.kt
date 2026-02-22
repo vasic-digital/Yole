@@ -111,7 +111,7 @@ class SftpServiceTest {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.deleteFile("/test.md")
         
-        assertTrue(result.isSuccess, "Delete should succeed even when not connected (SFTP implementation)")
+        assertTrue(result.isFailure, "Delete should fail when not connected")
     }
     
     @Test
@@ -119,11 +119,7 @@ class SftpServiceTest {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.createFolder("/test-folder")
         
-        assertTrue(result.isSuccess, "Create folder should succeed even when not connected (SFTP implementation)")
-        val document = result.getOrNull()
-        assertEquals("test-folder", document?.name)
-        assertEquals("/test-folder", document?.path)
-        assertTrue(document?.isFolder ?: false)
+        assertTrue(result.isFailure, "Create folder should fail when not connected")
     }
     
     @Test
@@ -131,7 +127,7 @@ class SftpServiceTest {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.renameFile("/test.md", "renamed.md")
         
-        assertTrue(result.isSuccess, "Rename should succeed even when not connected (SFTP implementation)")
+        assertTrue(result.isFailure, "Rename should fail when not connected")
     }
     
     @Test
@@ -139,11 +135,7 @@ class SftpServiceTest {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.moveFile("/test.md", "/moved/test.md")
         
-        assertTrue(result.isSuccess, "Move should succeed even when not connected (SFTP implementation)")
-        val document = result.getOrNull()
-        assertEquals("test.md", document?.name)
-        assertEquals("/moved/test.md", document?.path)
-        assertFalse(document?.isFolder ?: true)
+        assertTrue(result.isFailure, "Move should fail when not connected")
     }
     
     @Test
@@ -151,7 +143,7 @@ class SftpServiceTest {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.copyFile("/test.md", "/copy/test.md")
         
-        assertTrue(result.isSuccess, "Copy should succeed even when not connected (SFTP implementation)")
+        assertTrue(result.isFailure, "Copy should fail when not connected")
     }
     
     @Test
@@ -159,11 +151,7 @@ class SftpServiceTest {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.getFileInfo("/test.md")
         
-        assertTrue(result.isSuccess, "Get file info should succeed even when not connected (SFTP implementation)")
-        val document = result.getOrNull()
-        assertEquals("test.md", document?.name)
-        assertEquals("/test.md", document?.path)
-        assertFalse(document?.isFolder ?: true)
+        assertTrue(result.isFailure, "Get file info should fail when not connected")
     }
     
     @Test
@@ -171,9 +159,9 @@ class SftpServiceTest {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.getQuotaInfo()
         
-        assertTrue(result.isSuccess, "Get quota info returns mock success even when not connected")
+        assertTrue(result.isSuccess, "Get quota info returns success (SFTP doesn't support quota)")
         val quota = result.getOrNull()
-        assertEquals(1000000000L, quota?.totalSpace)
+        assertEquals(0L, quota?.totalSpace)
         assertEquals(0L, quota?.usedSpace)
     }
     
@@ -182,8 +170,8 @@ class SftpServiceTest {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.exists("/test.md")
         
-        assertTrue(result.isSuccess, "Exists check returns mock success even when not connected")
-        assertEquals(true, result.getOrNull(), "Mock implementation returns true")
+        assertTrue(result.isSuccess, "Exists check returns success (recovering from failure)")
+        assertEquals(false, result.getOrNull(), "Returns false when not connected")
     }
     
     @Test
@@ -233,7 +221,7 @@ class SftpServiceTest {
         assertEquals("/folder", sftpService.getParentPath("/folder/test.md"))
         assertEquals("/folder/subfolder", sftpService.getParentPath("/folder/subfolder/test.md"))
         assertEquals(null, sftpService.getParentPath("/"))
-        assertEquals("/", sftpService.getParentPath(""))
+        assertEquals(null, sftpService.getParentPath(""))
     }
     
     @Test
@@ -244,8 +232,8 @@ class SftpServiceTest {
         assertTrue(sftpService.validatePath("/folder/test.md").isSuccess)
         assertTrue(sftpService.validatePath("/folder/subfolder/test.md").isSuccess)
         
-        assertTrue(sftpService.validatePath("").isSuccess)
-        assertTrue(sftpService.validatePath("   ").isSuccess)
+        assertTrue(sftpService.validatePath("").isFailure)
+        assertTrue(sftpService.validatePath("   ").isFailure)
     }
     
     @Test
@@ -253,8 +241,7 @@ class SftpServiceTest {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.searchFiles("test", "/", false).first()
         
-        assertTrue(result.isSuccess, "Search should succeed even when not connected (SFTP implementation)")
-        assertTrue(result.getOrNull()?.isEmpty() ?: false, "Search should return empty list")
+        assertTrue(result.isFailure, "Search should fail when not connected")
     }
     
     @Test

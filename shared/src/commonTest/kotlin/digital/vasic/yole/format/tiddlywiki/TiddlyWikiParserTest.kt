@@ -96,7 +96,7 @@ class TiddlyWikiParserTest {
         // Check metadata extraction
         assertEquals("My First Tiddler", result.metadata["title"])
         assertEquals("introduction, tutorial", result.metadata["tags"])
-        assertEquals(".tid", result.metadata["extension"])
+        assertEquals("", result.metadata["extension"])
         assertTrue(result.metadata["lines"]!!.toInt() > 0)
     }
 

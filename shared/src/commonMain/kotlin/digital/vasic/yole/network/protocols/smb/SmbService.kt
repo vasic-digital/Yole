@@ -355,7 +355,10 @@ class SmbService(
     
     override fun getParentPath(remotePath: String): String? {
         if (remotePath == "/" || remotePath.isBlank()) return null
-        val parent = remotePath.substringBeforeLast("/")
+        // Remove trailing slash for consistent handling
+        val normalized = remotePath.trimEnd('/')
+        if (normalized.isEmpty() || normalized == "/") return null
+        val parent = normalized.substringBeforeLast("/")
         return if (parent.isEmpty()) "/" else parent
     }
     

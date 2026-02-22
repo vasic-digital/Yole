@@ -48,6 +48,10 @@ class TiddlyWikiParser : TextParser {
             if (metadata.tags.isNotEmpty()) {
                 put("tags", metadata.tags.joinToString(", "))
             }
+            metadata.type?.let { put("type", it) }
+            metadata.created?.let { put("created", it) }
+            metadata.modified?.let { put("modified", it) }
+            metadata.customFields.forEach { (key, value) -> put(key, value) }
         }
 
         return ParsedDocument(

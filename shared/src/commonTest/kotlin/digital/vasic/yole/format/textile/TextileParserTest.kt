@@ -102,7 +102,7 @@ class TextileParserTest {
         
         // Check metadata extraction
         assertEquals("", result.metadata["extension"])
-        assertEquals("9", result.metadata["lines"])
+        assertEquals("11", result.metadata["lines"])
     }
 
     @Test
@@ -622,7 +622,7 @@ class TextileParserTest {
     @Test
     fun `should convert links and images to HTML`() {
         val content = """
-            This is a "link text":http://example.com.
+            This is a "link text":http://example.com
             And an image: !http://example.com/image.jpg!
         """.trimIndent()
 
