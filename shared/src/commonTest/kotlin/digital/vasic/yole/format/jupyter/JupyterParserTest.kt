@@ -435,7 +435,7 @@ class JupyterParserTest {
         assertEquals(TextFormat.ID_JUPYTER, result.format.id)
         
         val html = result.parsedContent
-        assertTrue(html.contains("<matplotlib.figure.Figure"))
+        assertTrue(html.contains("&lt;matplotlib.figure.Figure"))
     }
 
     // ==================== HTML Conversion Tests ====================
