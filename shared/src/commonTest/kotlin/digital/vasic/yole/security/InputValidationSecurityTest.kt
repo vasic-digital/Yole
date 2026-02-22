@@ -79,7 +79,9 @@ class InputValidationSecurityTest {
 
         val result = parser.parse(content)
 
-        assertFalse(result.parsedContent.contains("onerror"))
+        // The content should be escaped - <img> should not be a valid HTML tag
+        assertFalse(result.parsedContent.contains("<img"))
+        assertTrue(result.parsedContent.contains("onerror")) // As escaped text, not attribute
     }
 
     @Test
