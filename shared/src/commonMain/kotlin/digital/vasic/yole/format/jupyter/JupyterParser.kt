@@ -206,7 +206,29 @@ class JupyterParser : TextParser {
         val outputsHtml = if (cell.outputs.isNotEmpty()) {
             "<div class=\"cell-output\">${
                 cell.outputs.joinToString("\n") { output ->
-                    "<div class=\"output-text\">${escapeHtml(output.text)}</div>"
+                    val content = when {
+                        output.text.isNotEmpty() -> output.text
+                        output.data.containsKey("text/html") -> {
+                            output.data["text/html"]?.let { elem ->
+                                when (elem) {
+                                    is JsonArray -> elem.joinToString("") { it.jsonPrimitive.content }
+                                    is JsonPrimitive -> elem.content
+                                    else -> ""
+                                }
+                            } ?: ""
+                        }
+                        output.data.containsKey("text/plain") -> {
+                            output.data["text/plain"]?.let { elem ->
+                                when (elem) {
+                                    is JsonArray -> elem.joinToString("") { it.jsonPrimitive.content }
+                                    is JsonPrimitive -> elem.content
+                                    else -> ""
+                                }
+                            } ?: ""
+                        }
+                        else -> ""
+                    }
+                    if (content.isNotEmpty()) "<div class=\"output-text\">${escapeHtml(content)}</div>" else ""
                 }
             }</div>"
         } else ""

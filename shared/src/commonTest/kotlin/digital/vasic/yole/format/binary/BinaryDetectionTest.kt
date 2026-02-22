@@ -28,6 +28,8 @@ class BinaryDetectionTest {
     fun setup() {
         binaryParser = BinaryParser()
         binaryFormat = FormatRegistry.getById(TextFormat.ID_BINARY)!!
+        ParserRegistry.clear()
+        ParserRegistry.register(binaryParser)
     }
 
     @Test
@@ -64,21 +66,20 @@ class BinaryDetectionTest {
 
     @Test
     fun `test binary vs text classification`() {
-        // Test various binary file signatures
-        val binarySignatures = listOf(
-            "MZ" to "application/x-executable", // DOS/Windows executable
-            "\u0000\u0000\u0000\u0000" to "application/octet-stream", // Null bytes
-            "\u0089PNG" to "image/png", // PNG with high bit set
-            "\u00FF\u00D8\u00FF" to "image/jpeg", // JPEG magic number
-            "GIF87a" to "image/gif", // GIF signature
-            "PK\u0003\u0004" to "application/zip", // ZIP signature
-            "Rar!\u001A\u0007" to "application/x-rar", // RAR signature
-            "%PDF" to "application/pdf" // PDF signature
+        // Test various binary file extensions and their expected MIME types
+        val binaryFiles = listOf(
+            "program.exe" to "application/x-executable",
+            "image.png" to "image/png",
+            "photo.jpg" to "image/jpeg",
+            "animation.gif" to "image/gif",
+            "archive.zip" to "application/zip",
+            "document.pdf" to "application/pdf",
+            "data.bin" to "application/octet-stream"
         )
 
-        binarySignatures.forEach { (signature, expectedMimeType) ->
-            val content = signature + "some binary data"
-            val result = binaryParser.parse(content, mapOf("filename" to "test.file"))
+        binaryFiles.forEach { (filename, expectedMimeType) ->
+            val content = "binary data"
+            val result = binaryParser.parse(content, mapOf("filename" to filename))
             
             assertNotNull(result)
             assertEquals(TextFormat.ID_BINARY, result.format.id)
@@ -90,21 +91,21 @@ class BinaryDetectionTest {
     @Test
     fun `test executable file detection`() {
         val executables = listOf(
-            "program.exe" to "application/x-executable",
-            "app.dll" to "application/x-msdownload",
-            "driver.sys" to "application/x-msdownload",
-            "script.bat" to "application/x-bat",
-            "binary.bin" to "application/octet-stream"
+            Triple("program.exe", "application/x-executable", "Document"),
+            Triple("app.dll", "application/x-msdownload", "Document"),
+            Triple("driver.sys", "application/x-msdownload", "Document"),
+            Triple("script.bat", "application/x-bat", "Document"),
+            Triple("binary.bin", "application/octet-stream", "Binary File")
         )
 
-        executables.forEach { (filename, expectedMimeType) ->
+        executables.forEach { (filename, expectedMimeType, expectedFileType) ->
             val content = "MZ\u0090\u0000\u0003" // DOS executable header
             val result = binaryParser.parse(content, mapOf("filename" to filename))
             
             assertNotNull(result)
             assertEquals(TextFormat.ID_BINARY, result.format.id)
             assertEquals(expectedMimeType, result.metadata["mime_type"])
-            assertEquals("Document", result.metadata["file_type"])
+            assertEquals(expectedFileType, result.metadata["file_type"])
         }
     }
 

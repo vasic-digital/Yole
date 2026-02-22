@@ -10,6 +10,7 @@
 package digital.vasic.yole.format.binary
 
 import digital.vasic.yole.format.FormatRegistry
+import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.TextFormat
 import kotlin.test.*
 
@@ -24,6 +25,8 @@ class BinaryEdgeCasesTest {
     @BeforeTest
     fun setup() {
         binaryParser = BinaryParser()
+        ParserRegistry.clear()
+        ParserRegistry.register(binaryParser)
     }
 
     @Test

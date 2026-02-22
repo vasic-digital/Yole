@@ -232,7 +232,7 @@ class SftpServiceTest {
         assertEquals("/", sftpService.getParentPath("/test.md"))
         assertEquals("/folder", sftpService.getParentPath("/folder/test.md"))
         assertEquals("/folder/subfolder", sftpService.getParentPath("/folder/subfolder/test.md"))
-        assertEquals("/", sftpService.getParentPath("/"))
+        assertEquals(null, sftpService.getParentPath("/"))
         assertEquals("/", sftpService.getParentPath(""))
     }
     

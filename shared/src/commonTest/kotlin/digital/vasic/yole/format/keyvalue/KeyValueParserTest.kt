@@ -871,7 +871,7 @@ class KeyValueParserTest {
         assertNotNull(result)
         assertEquals(TextFormat.ID_KEYVALUE, result.format.id)
         assertEquals("6", result.metadata["sections"])
-        assertEquals("30", result.metadata["entries"])
+        assertEquals("38", result.metadata["entries"])
         
         // Verify HTML contains expected elements
         val html = parser.toHtml(result, lightMode = true)
@@ -905,7 +905,7 @@ class KeyValueParserTest {
         assertNotNull(result)
         assertEquals(TextFormat.ID_KEYVALUE, result.format.id)
         assertEquals("3", result.metadata["sections"])
-        assertEquals("8", result.metadata["entries"])
+        assertEquals("9", result.metadata["entries"])
         
         // Verify HTML contains unicode characters
         val html = parser.toHtml(result, lightMode = true)

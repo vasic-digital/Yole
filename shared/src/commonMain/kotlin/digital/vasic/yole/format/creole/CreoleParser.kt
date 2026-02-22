@@ -339,16 +339,27 @@ class CreoleParser : TextParser {
 
         val lines = content.lines()
         var inCodeBlock = false
+        var codeBlockStartLine = -1
 
         lines.forEachIndexed { index, line ->
             val trimmed = line.trim()
 
             // Track code blocks
             if (trimmed == "{{{") {
-                inCodeBlock = true
+                if (inCodeBlock) {
+                    errors.add("Line ${index + 1}: Nested code blocks not allowed")
+                } else {
+                    inCodeBlock = true
+                    codeBlockStartLine = index + 1
+                }
                 return@forEachIndexed
             } else if (trimmed == "}}}") {
-                inCodeBlock = false
+                if (!inCodeBlock) {
+                    errors.add("Line ${index + 1}: Unexpected closing brace without opening")
+                } else {
+                    inCodeBlock = false
+                    codeBlockStartLine = -1
+                }
                 return@forEachIndexed
             }
 
@@ -366,6 +377,11 @@ class CreoleParser : TextParser {
             if (openBrackets != closeBrackets) {
                 errors.add("Line ${index + 1}: Unclosed brackets in links")
             }
+        }
+
+        // Check for unclosed code blocks
+        if (inCodeBlock) {
+            errors.add("Line $codeBlockStartLine: Unclosed braces in code block")
         }
 
         return errors

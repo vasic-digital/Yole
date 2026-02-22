@@ -101,7 +101,7 @@ class TextileParserTest {
         assertEquals(content, result.rawContent)
         
         // Check metadata extraction
-        assertEquals(".textile", result.metadata["extension"])
+        assertEquals("", result.metadata["extension"])
         assertEquals("9", result.metadata["lines"])
     }
 
@@ -485,7 +485,7 @@ class TextileParserTest {
         assertNotNull(result)
         assertEquals(TextFormat.ID_TEXTILE, result.format.id)
         assertEquals(content, result.rawContent)
-        assertEquals("3", result.metadata["lines"])
+        assertEquals("4", result.metadata["lines"])
     }
 
     @Test

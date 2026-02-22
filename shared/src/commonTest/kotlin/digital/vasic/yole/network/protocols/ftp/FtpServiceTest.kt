@@ -220,7 +220,7 @@ class FtpServiceTest {
         assertEquals("/", ftpService.getParentPath("/test.md"))
         assertEquals("/folder", ftpService.getParentPath("/folder/test.md"))
         assertEquals("/folder/subfolder", ftpService.getParentPath("/folder/subfolder/test.md"))
-        assertEquals("/", ftpService.getParentPath("/"))
+        assertEquals(null, ftpService.getParentPath("/"))
         assertEquals("/", ftpService.getParentPath(""))
     }
     

@@ -205,8 +205,8 @@ class SmbServiceTest {
     fun testGetParentPath() {
         smbService = SmbService(smbConfig)
         
-        assertEquals("", smbService.getParentPath("/test.md")) // substringBeforeLast returns empty string
-        assertEquals("/folder", smbService.getParentPath("/folder/")) // returns "/folder"
+        assertEquals("/", smbService.getParentPath("/test.md"))
+        assertEquals("/", smbService.getParentPath("/folder/")) // trailing slash means parent is root
         assertEquals("/folder", smbService.getParentPath("/folder/test.md"))
         assertEquals("/folder/subfolder", smbService.getParentPath("/folder/subfolder/test.md"))
         assertEquals(null, smbService.getParentPath("/"))

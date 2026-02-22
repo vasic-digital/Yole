@@ -28,7 +28,7 @@ class TextileParser : TextParser {
 
         val metadata = buildMap {
             put("extension", extension)
-            put("lines", content.lines().size.toString())
+            put("lines", if (content.isEmpty()) "0" else content.lines().size.toString())
         }
 
         return ParsedDocument(
@@ -78,6 +78,12 @@ class TextileParser : TextParser {
                 if (!inPre) {
                     html.append("<pre>")
                     inPre = true
+                    // Check if there's content after "pre."
+                    val afterPre = trimmed.substring(4).trim()
+                    if (afterPre.isNotEmpty()) {
+                        html.append(afterPre.escapeHtml())
+                        html.append("\n")
+                    }
                 }
                 continue
             } else if (inPre && trimmed.isEmpty()) {
@@ -245,7 +251,7 @@ class TextileParser : TextParser {
             val trimmed = line.trim()
 
             // Check for malformed headings
-            val headingMatch = Regex("^h([0-9])\\.\\.?\\s+").find(trimmed)
+            val headingMatch = Regex("^h([0-9]+)\\.\\.?\\s+").find(trimmed)
             if (headingMatch != null) {
                 val level = headingMatch.groupValues[1].toIntOrNull() ?: 0
                 if (level < 1 || level > 6) {

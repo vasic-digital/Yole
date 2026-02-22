@@ -43,7 +43,7 @@ class TiddlyWikiParser : TextParser {
 
         val documentMetadata = buildMap {
             put("extension", extension)
-            put("lines", content.lines().size.toString())
+            put("lines", if (content.isEmpty()) "0" else content.lines().size.toString())
             metadata.title?.let { put("title", it) }
             if (metadata.tags.isNotEmpty()) {
                 put("tags", metadata.tags.joinToString(", "))

@@ -29,12 +29,13 @@ class BinaryParser : TextParser {
             rawContent = content,
             parsedContent = generateContentPreview(mimeType, filename, content),
             metadata = buildMap {
+                put("filename", filename)
                 put("mime_type", mimeType)
                 put("file_size", formatFileSize(fileSize))
                 put("file_size_bytes", fileSize.toString())
                 put("is_binary", "true")
                 put("file_type", getFileType(mimeType))
-                put("extension", filename.substringAfterLast('.', ""))
+                put("extension", filename.substringAfterLast('.', "").lowercase())
             }
         )
     }
@@ -43,7 +44,8 @@ class BinaryParser : TextParser {
         val themeClass = if (lightMode) "light" else "dark"
         val mimeType = document.metadata["mime_type"] ?: ""
         val filename = document.metadata["filename"] ?: ""
-        val fileSize = document.metadata["file_size"]?.toLongOrNull() ?: 0L
+        val fileSize = document.metadata["file_size_bytes"]?.toLongOrNull() ?: 0L
+        val fileSizeFormatted = document.metadata["file_size"] ?: formatFileSize(fileSize)
         
         return """
             |<div class="binary-file $themeClass">
@@ -51,8 +53,9 @@ class BinaryParser : TextParser {
             |  <h1>Binary File Preview</h1>
             |  <div class="file-info">
             |    <span class="filename">${escapeHtml(filename)}</span>
+            |    <span class="mime-type">${escapeHtml(mimeType)}</span>
             |    <span class="file-type">${getFileType(mimeType)}</span>
-            |    <span class="file-size">${formatFileSize(fileSize)}</span>
+            |    <span class="file-size">$fileSizeFormatted</span>
             |  </div>
             |</div>
             |<div class="binary-content">
@@ -133,18 +136,25 @@ class BinaryParser : TextParser {
             mimeType.startsWith("audio/") -> "Audio"
             mimeType.startsWith("video/") -> "Video"
             mimeType == "application/pdf" -> "PDF Document"
+            mimeType == "application/octet-stream" -> "Binary File"
             mimeType.startsWith("application/") -> "Document"
             else -> "Binary File"
         }
     }
     
     private fun formatFileSize(bytes: Long): String {
+        val tb = 1024L * 1024 * 1024 * 1024
+        val gb = 1024L * 1024 * 1024
+        val mb = 1024L * 1024
+        val kb = 1024L
+        
         return when {
             bytes < 0 -> bytes.toString()
-            bytes < 1024 -> "$bytes B"
-            bytes < 1024 * 1024 -> "${bytes / 1024} KB"
-            bytes < 1024 * 1024 * 1024 -> "${bytes / (1024 * 1024)} MB"
-            else -> "${bytes / (1024 * 1024 * 1024)} GB"
+            bytes < kb -> "$bytes B"
+            bytes < mb -> "${bytes / kb} KB"
+            bytes < gb -> "${bytes / mb} MB"
+            bytes < tb -> "${bytes / gb} GB"
+            else -> "${bytes / tb} TB"
         }
     }
     

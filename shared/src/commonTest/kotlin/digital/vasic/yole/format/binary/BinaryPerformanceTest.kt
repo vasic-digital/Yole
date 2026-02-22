@@ -178,7 +178,8 @@ class BinaryPerformanceTest {
         }
 
         val totalOperations = iterations * testFiles.size
-        val opsPerSecond = totalOperations / totalDuration.inWholeSeconds
+        val durationSeconds = totalDuration.inWholeMilliseconds.toDouble() / 1000.0
+        val opsPerSecond = if (durationSeconds > 0) (totalOperations / durationSeconds).toLong() else totalOperations.toLong()
         
         println("Concurrent binary detection: $totalOperations operations in $totalDuration")
         println("Operations per second: $opsPerSecond")

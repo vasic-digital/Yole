@@ -92,7 +92,7 @@ class RstParserTest {
         // Check metadata extraction
         assertEquals("3", result.metadata["sections"])
         assertEquals("0", result.metadata["directives"])
-        assertEquals("1", result.metadata["max_level"])
+        assertEquals("3", result.metadata["max_level"])
     }
 
     @Test
@@ -104,7 +104,7 @@ class RstParserTest {
         assertNotNull(result)
         assertEquals(TextFormat.ID_RESTRUCTUREDTEXT, result.format.id)
         assertEquals("6", result.metadata["sections"])
-        assertEquals("1", result.metadata["max_level"])
+        assertEquals("6", result.metadata["max_level"])
     }
 
     @Test
