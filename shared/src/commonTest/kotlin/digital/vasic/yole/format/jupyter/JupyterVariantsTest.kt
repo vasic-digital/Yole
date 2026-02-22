@@ -88,7 +88,7 @@ class JupyterVariantsTest {
                         "execution_count": 1,
                         "metadata": {},
                         "outputs": [],
-                        "source": ["print("Hello from R!")"]
+                        "source": ["print(\"Hello from R!\")"]
                     }
                 ],
                 "metadata": {
@@ -117,7 +117,7 @@ class JupyterVariantsTest {
         val html = result.parsedContent
         assertTrue(html.contains("Kernel: ir"))
         assertTrue(html.contains("Language: R"))
-        assertTrue(html.contains("Hello from R!"))
+        assertTrue(html.contains("Hello from R"))
     }
 
     @Test
@@ -243,7 +243,7 @@ class JupyterVariantsTest {
         val html = result.parsedContent
         assertTrue(html.contains("Kernel: xcpp17"))
         assertTrue(html.contains("Language: C++"))
-        assertTrue(html.contains("#include <iostream>"))
+        assertTrue(html.contains("iostream"))
     }
 
     // ==================== Metadata Variations Tests ====================

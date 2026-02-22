@@ -128,13 +128,27 @@ class JupyterParser : TextParser {
         val obj = outputJson.jsonObject
         val outputType = obj["output_type"]?.jsonPrimitive?.content ?: ""
         val data = obj["data"]?.jsonObject ?: JsonObject(emptyMap())
-        val text = obj["text"]?.let { 
-            when (it) {
-                is JsonArray -> it.joinToString("") { elem -> elem.jsonPrimitive.content }
-                is JsonPrimitive -> it.content
-                else -> ""
+        
+        val text = when (outputType) {
+            "error" -> {
+                val ename = obj["ename"]?.jsonPrimitive?.content ?: ""
+                val evalue = obj["evalue"]?.jsonPrimitive?.content ?: ""
+                val traceback = obj["traceback"]?.let {
+                    when (it) {
+                        is JsonArray -> it.joinToString("\n") { elem -> elem.jsonPrimitive.content }
+                        else -> ""
+                    }
+                } ?: ""
+                "$ename: $evalue\n$traceback"
             }
-        } ?: ""
+            else -> obj["text"]?.let { 
+                when (it) {
+                    is JsonArray -> it.joinToString("") { elem -> elem.jsonPrimitive.content }
+                    is JsonPrimitive -> it.content
+                    else -> ""
+                }
+            } ?: ""
+        }
         
         return CellOutput(
             outputType = outputType,

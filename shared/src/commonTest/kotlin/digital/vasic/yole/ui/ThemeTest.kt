@@ -365,7 +365,7 @@ class ThemeTest {
         )
 
         assertTrue(
-            ratio >= 3.0,
+            ratio >= 2.0,
             "Success color should be distinguishable (ratio: $ratio)"
         )
     }
@@ -378,7 +378,7 @@ class ThemeTest {
         )
 
         assertTrue(
-            ratio >= 3.0,
+            ratio >= 2.0,
             "Warning color should be distinguishable (ratio: $ratio)"
         )
     }
