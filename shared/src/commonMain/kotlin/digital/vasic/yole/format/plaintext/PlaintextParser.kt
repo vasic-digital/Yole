@@ -108,10 +108,10 @@ class PlaintextParser : TextParser {
     private fun detectType(extension: String, content: String): PlaintextType {
         return when {
             extension in HTML_EXTENSIONS -> PlaintextType.HTML
-            extension in CODE_EXTENSIONS -> PlaintextType.CODE
             extension == ".json" -> PlaintextType.JSON
             extension == ".xml" || extension == ".xlf" -> PlaintextType.XML
             extension in listOf(".md", ".markdown") -> PlaintextType.MARKDOWN
+            extension in CODE_EXTENSIONS -> PlaintextType.CODE
             else -> PlaintextType.PLAIN
         }
     }
