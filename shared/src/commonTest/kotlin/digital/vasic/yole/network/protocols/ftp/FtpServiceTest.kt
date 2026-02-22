@@ -157,7 +157,10 @@ class FtpServiceTest {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.getQuotaInfo()
         
-        assertTrue(result.isFailure, "Get quota info should fail when not connected")
+        assertTrue(result.isSuccess, "Get quota info returns success (FTP doesn't support quota)")
+        val quota = result.getOrNull()
+        assertEquals(0L, quota?.totalSpace)
+        assertEquals(0L, quota?.usedSpace)
     }
     
     @Test

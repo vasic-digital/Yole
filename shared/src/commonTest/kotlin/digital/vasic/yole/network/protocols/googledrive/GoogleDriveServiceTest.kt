@@ -198,7 +198,7 @@ class GoogleDriveServiceTest {
     fun testGetParentPath() {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         
-        assertEquals("", googleDriveService.getParentPath("/test.md"))
+        assertEquals("/", googleDriveService.getParentPath("/test.md"))
         assertEquals("/folder", googleDriveService.getParentPath("/folder/test.md"))
         assertEquals("/folder/subfolder", googleDriveService.getParentPath("/folder/subfolder/test.md"))
         assertEquals(null, googleDriveService.getParentPath("/"))

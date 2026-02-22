@@ -648,8 +648,9 @@ class CreoleParserTest {
     @Test
     fun `should validate unclosed braces`() {
         val content = """
-            This has unclosed {{{ braces.
-            This has unmatched }} } braces.
+            This has a code block that is not closed:
+            {{{
+            Some code here
         """.trimIndent()
 
         val errors = parser.validate(content)

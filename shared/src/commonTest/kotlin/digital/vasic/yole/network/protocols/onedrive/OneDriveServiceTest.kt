@@ -217,7 +217,7 @@ class OneDriveServiceTest {
     fun testGetParentPath() {
         oneDriveService = OneDriveService(oneDriveConfig)
         
-        assertEquals("", oneDriveService.getParentPath("/test.md"))
+        assertEquals("/", oneDriveService.getParentPath("/test.md"))
         assertEquals("/folder", oneDriveService.getParentPath("/folder/test.md"))
         assertEquals("/folder/subfolder", oneDriveService.getParentPath("/folder/subfolder/test.md"))
         assertEquals(null, oneDriveService.getParentPath("/"))

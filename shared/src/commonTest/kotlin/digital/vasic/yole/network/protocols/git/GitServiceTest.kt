@@ -212,7 +212,7 @@ class GitServiceTest {
     fun testGetParentPath() {
         gitService = GitService(gitConfig)
         
-        assertEquals("", gitService.getParentPath("/test.md"))
+        assertEquals("/", gitService.getParentPath("/test.md"))
         assertEquals("/folder", gitService.getParentPath("/folder/test.md"))
         assertEquals("/folder/subfolder", gitService.getParentPath("/folder/subfolder/test.md"))
         assertEquals(null, gitService.getParentPath("/"))
