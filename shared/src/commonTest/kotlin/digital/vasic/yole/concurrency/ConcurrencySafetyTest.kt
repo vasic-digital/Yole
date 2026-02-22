@@ -41,7 +41,7 @@ class ConcurrencySafetyTest {
                     FormatRegistry.getById(FormatRegistry.ID_TODOTXT),
                     FormatRegistry.getByExtension(".md"),
                     FormatRegistry.getByExtension(".csv"),
-                    FormatRegistry.getAllFormats()
+                    FormatRegistry.formats
                 )
             }
         }
@@ -122,7 +122,7 @@ class ConcurrencySafetyTest {
         val configs = listOf(
             StorageConfig.FtpConfig(
                 name = "ftp", host = "ftp.example.com", port = 21,
-                username = "user", password = "pass", path = "/"
+                username = "user", password = "pass", rootPath = "/"
             ),
             StorageConfig.SmbConfig(
                 name = "smb", host = "smb.example.com", share = "docs",
@@ -134,7 +134,8 @@ class ConcurrencySafetyTest {
             ),
             StorageConfig.GitConfig(
                 name = "git", repositoryUrl = "https://github.com/test/repo",
-                branch = "main", username = "user", personalAccessToken = "token"
+                branch = "main", username = "user", personalAccessToken = "token",
+                localCachePath = "/tmp/git-cache"
             )
         )
 

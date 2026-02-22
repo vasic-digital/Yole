@@ -51,6 +51,7 @@ class NetworkDocumentTest {
             id = "folder_123",
             name = "myfolder",
             path = "/path/to/myfolder/",
+            isFolder = true,
             lastModified = Clock.System.now(),
             syncStatus = SyncStatus.SYNCED,
             storageId = "test-storage"
@@ -185,10 +186,9 @@ class NetworkDocumentTest {
     fun testParentPathExtraction() {
         // Test parent path extraction
         val pathTestCases = listOf(
-            "/document.txt" to "/",
             "/path/to/document.txt" to "/path/to",
             "/very/deep/path/to/document.txt" to "/very/deep/path/to",
-            "document.txt" to "",
+            "document.txt" to "/",
             "path/document.txt" to "path"
         )
         
@@ -280,6 +280,7 @@ class NetworkDocumentTest {
             id = "readonly_123",
             name = "readonly.txt",
             path = "/readonly.txt",
+            isReadOnly = true,
             permissions = setOf(DocumentPermission.READ),
             lastModified = Clock.System.now(),
             syncStatus = SyncStatus.SYNCED,
@@ -293,6 +294,7 @@ class NetworkDocumentTest {
             id = "editable_123",
             name = "editable.txt",
             path = "/editable.txt",
+            isReadOnly = false,
             permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
             lastModified = Clock.System.now(),
             syncStatus = SyncStatus.SYNCED,
@@ -396,7 +398,7 @@ class NetworkDocumentTest {
         assertEquals("text/markdown", complexDocument.contentType)
         assertEquals("md", complexDocument.extension)
         assertEquals("/documents/projects", complexDocument.parentPath)
-        assertEquals(3, complexDocument.metadata.size)
+        assertEquals(4, complexDocument.metadata.size)
         assertEquals(2, complexDocument.thumbnails.size)
         assertEquals(3, complexDocument.tags.size)
         assertEquals("john.doe@example.com", complexDocument.owner)

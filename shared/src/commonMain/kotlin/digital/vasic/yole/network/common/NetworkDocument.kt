@@ -20,7 +20,7 @@ data class NetworkDocument(
     /**
      * Full path to the document within the storage
      */
-    val path: String,
+    val path: String = "",
     
     /**
      * Whether this is a folder
@@ -35,12 +35,12 @@ data class NetworkDocument(
     /**
      * Last modification timestamp
      */
-    val lastModified: Instant,
+    val lastModified: Instant? = null,
     
     /**
      * Current synchronization status
      */
-    val syncStatus: SyncStatus,
+    val syncStatus: SyncStatus = SyncStatus.UNKNOWN,
     
     /**
      * Associated local document ID (null if not linked to local document)
@@ -115,7 +115,12 @@ data class NetworkDocument(
     /**
      * Storage ID this document belongs to
      */
-    val storageId: String
+    val storageId: String = "",
+    
+    /**
+     * Author of the document
+     */
+    val author: String? = null
 ) {
     /**
      * Whether this document is a text file that can be edited

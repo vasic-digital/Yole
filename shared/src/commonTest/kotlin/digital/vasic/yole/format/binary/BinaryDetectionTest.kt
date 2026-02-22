@@ -55,7 +55,8 @@ class BinaryDetectionTest {
         assertEquals(TextFormat.ID_BINARY, result.format.id)
         assertEquals(content, result.rawContent)
         assertEquals("application/x-executable", result.metadata["mime_type"])
-        assertEquals("1024", result.metadata["file_size"])
+        assertEquals("1 KB", result.metadata["file_size"])
+        assertEquals("1024", result.metadata["file_size_bytes"])
         assertEquals("true", result.metadata["is_binary"])
         assertEquals("Document", result.metadata["file_type"])
         assertEquals("exe", result.metadata["extension"])
@@ -240,7 +241,7 @@ class BinaryDetectionTest {
         assertNotNull(result)
         assertEquals(TextFormat.ID_BINARY, result.format.id)
         assertEquals("", result.rawContent)
-        assertEquals("0", result.metadata["file_size"])
+        assertEquals("0 B", result.metadata["file_size"])
         assertEquals("application/octet-stream", result.metadata["mime_type"])
     }
 

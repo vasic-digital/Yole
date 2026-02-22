@@ -22,6 +22,23 @@ docker compose run --rm build ./docker/scripts/test-all.sh
 docker compose run --rm build ./docker/scripts/build.sh
 ```
 
+## MANDATORY: Never Remove or Disable Tests
+
+**NO test may ever be removed, disabled, skipped, or left broken!**
+
+All issues must be fixed by addressing the root causes:
+- Fix the source code to match tests if tests are correct
+- Fix the tests to match source code if source is correct
+- Add missing classes/methods to make code compile
+- Add missing imports to tests
+- Fix syntax errors
+- Fix parameter name mismatches
+
+Any fix applied must be:
+- Covered by all supported test types in depth
+- Verified by running all challenges
+- Properly documented
+
 ## Project Overview
 
 **Yole** is a cross-platform text editor built with Kotlin Multiplatform (KMP), supporting Android (production), Desktop (beta), iOS/Web (development). Supports 17 text formats.

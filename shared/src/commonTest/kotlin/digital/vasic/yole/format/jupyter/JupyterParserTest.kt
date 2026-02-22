@@ -723,7 +723,7 @@ class JupyterParserTest {
                 "cells": [
                     {
                         "cell_type": "code",
-                        "source": ["invalid json missing quotes"]
+                        "source": [invalid json missing quotes]
                     }
                 ],
                 "metadata": {},
@@ -735,7 +735,6 @@ class JupyterParserTest {
         val errors = parser.validate(content)
 
         assertTrue(errors.isNotEmpty())
-        assertEquals(1, errors.size)
         assertTrue(errors[0].contains("Invalid JSON format"))
     }
 

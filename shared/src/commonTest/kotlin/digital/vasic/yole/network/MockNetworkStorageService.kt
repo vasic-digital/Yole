@@ -412,7 +412,7 @@ class MockNetworkStorageService(
         
         try {
             val documents = mockDocuments.values.filter { 
-                it.lastModified > since &&
+                it.lastModified?.let { lm -> lm > since } ?: false &&
                 (path == null || it.path.startsWith(path))
             }
             emit(documents)

@@ -385,7 +385,7 @@ class ApiConsistencyTest {
             port = 21,
             username = "user",
             password = "pass",
-            path = "/"
+            rootPath = "/"
         )
     )
 
@@ -416,7 +416,8 @@ class ApiConsistencyTest {
             repositoryUrl = "https://github.com/example/repo.git",
             branch = "main",
             username = "user",
-            personalAccessToken = "token"
+            personalAccessToken = "token",
+            localCachePath = "/tmp/git-cache"
         )
     )
 }

@@ -296,8 +296,8 @@ class MarkdownParser : TextParser {
     private fun processInlineMarkup(text: String): String {
         if (text.isEmpty()) return text
 
-        // Process in order of precedence: code, strikethrough, bold/italic, links/images
-        var result = text
+        // First, escape HTML entities in raw text (before adding any HTML tags)
+        var result = escapeHtmlEntities(text)
         
         // Process code first (highest precedence - nothing inside code should be formatted)
         result = processInlineCode(result)
@@ -311,19 +311,17 @@ class MarkdownParser : TextParser {
         // Process links and images
         result = processLinksAndImages(result)
         
-        // Escape any remaining HTML entities
-        result = escapeHtmlEntities(result)
-        
         return result
     }
 
     /**
      * Process inline code blocks with proper escaping.
+     * Note: HTML escaping is already done in processInlineMarkup before this is called.
      */
     private fun processInlineCode(text: String): String {
         val pattern = Regex("`([^`]+)`")
         return pattern.replace(text) { match ->
-            val code = match.groupValues[1].escapeHtml()
+            val code = match.groupValues[1]
             "<code>$code</code>"
         }
     }

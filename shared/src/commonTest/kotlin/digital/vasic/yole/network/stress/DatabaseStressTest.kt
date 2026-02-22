@@ -464,18 +464,20 @@ class DatabaseStressTest {
         path = "/test/$id.txt",
         name = "$id.txt",
         size = 1024L,
-        modified = Clock.System.now(),
-        type = DocumentType.FILE,
+        lastModified = Clock.System.now(),
         permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
     )
 
     private fun createTestCacheEntry(id: String, expired: Boolean = false) = CacheEntry(
         id = id,
-        documentId = "doc-$id",
+        remoteDocumentId = "doc-$id",
         localPath = "/cache/$id",
+        remotePath = "/remote/$id",
         size = 1024L,
-        created = Clock.System.now(),
-        expires = if (expired) {
+        createdAt = Clock.System.now(),
+        lastAccessed = Clock.System.now(),
+        lastModified = Clock.System.now(),
+        expiresAt = if (expired) {
             kotlinx.datetime.Instant.fromEpochMilliseconds(0)
         } else {
             kotlinx.datetime.Instant.fromEpochMilliseconds(Long.MAX_VALUE - 1000)
@@ -486,12 +488,12 @@ class DatabaseStressTest {
     private fun createTestOperation(id: Long, completed: Boolean = false) = NetworkOperation(
         id = id,
         type = NetworkOperation.Type.UPLOAD,
-        sourcePath = "/local/file.txt",
-        destinationPath = "/remote/file.txt",
-        totalBytes = 1024L,
-        transferredBytes = if (completed) 1024L else 0L,
-        status = if (completed) OperationStatus.COMPLETED else OperationStatus.IN_PROGRESS,
-        startTime = Clock.System.now()
+        remotePath = "/remote/file.txt",
+        localPath = "/local/file.txt",
+        totalSize = 1024L,
+        bytesTransferred = if (completed) 1024L else 0L,
+        status = if (completed) NetworkOperation.Status.COMPLETED else NetworkOperation.Status.IN_PROGRESS,
+        createdAt = Clock.System.now()
     )
 }
 
@@ -577,7 +579,7 @@ class InMemoryTestDatabase : NetworkStorageDatabase {
     }
 
     override suspend fun getCacheEntriesByDocument(documentId: String): Result<List<CacheEntry>> {
-        return Result.success(cacheEntries.values.filter { it.documentId == documentId })
+        return Result.success(cacheEntries.values.filter { it.remoteDocumentId == documentId })
     }
 
     override suspend fun getAllCacheEntries(): Result<List<CacheEntry>> {
@@ -591,7 +593,7 @@ class InMemoryTestDatabase : NetworkStorageDatabase {
 
     override suspend fun deleteExpiredCacheEntries(): Result<Int> {
         val now = Clock.System.now()
-        val expired = cacheEntries.filter { it.value.expires < now }.keys
+        val expired = cacheEntries.filter { (it.value.expiresAt ?: kotlinx.datetime.Instant.DISTANT_FUTURE) < now }.keys
         expired.forEach { cacheEntries.remove(it) }
         return Result.success(expired.size)
     }
@@ -615,7 +617,7 @@ class InMemoryTestDatabase : NetworkStorageDatabase {
     }
 
     override suspend fun getActiveOperations(): Result<List<NetworkOperation>> {
-        return Result.success(operations.values.filter { it.status == OperationStatus.IN_PROGRESS })
+        return Result.success(operations.values.filter { it.status == NetworkOperation.Status.IN_PROGRESS })
     }
 
     override suspend fun deleteOperation(id: Long): Result<Unit> {
@@ -624,7 +626,7 @@ class InMemoryTestDatabase : NetworkStorageDatabase {
     }
 
     override suspend fun clearCompletedOperations(): Result<Int> {
-        val completed = operations.filter { it.value.status == OperationStatus.COMPLETED }.keys
+        val completed = operations.filter { it.value.status == NetworkOperation.Status.COMPLETED }.keys
         completed.forEach { operations.remove(it) }
         return Result.success(completed.size)
     }

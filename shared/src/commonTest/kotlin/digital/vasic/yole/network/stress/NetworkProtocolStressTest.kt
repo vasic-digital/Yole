@@ -39,7 +39,7 @@ class NetworkProtocolStressTest {
             port = 21,
             username = "user",
             password = "pass",
-            path = "/"
+            rootPath = "/"
         )
         val service = FtpService(config)
 
@@ -68,7 +68,7 @@ class NetworkProtocolStressTest {
             port = 21,
             username = "user",
             password = "pass",
-            path = "/"
+            rootPath = "/"
         )
         val service = FtpService(config)
         service.connect()
@@ -93,7 +93,7 @@ class NetworkProtocolStressTest {
             port = 21,
             username = "user",
             password = "pass",
-            path = "/"
+            rootPath = "/"
         )
         val service = FtpService(config)
 
@@ -269,7 +269,8 @@ class NetworkProtocolStressTest {
             repositoryUrl = "https://github.com/example/repo.git",
             branch = "main",
             username = "user",
-            personalAccessToken = "token"
+            personalAccessToken = "token",
+            localCachePath = "/tmp/git-cache"
         )
         val service = GitService(config)
 
@@ -290,7 +291,8 @@ class NetworkProtocolStressTest {
             repositoryUrl = "https://github.com/example/repo.git",
             branch = "main",
             username = "user",
-            personalAccessToken = "token"
+            personalAccessToken = "token",
+            localCachePath = "/tmp/git-cache"
         )
         val service = GitService(config)
 
@@ -311,7 +313,8 @@ class NetworkProtocolStressTest {
             repositoryUrl = "https://github.com/example/repo.git",
             branch = "main",
             username = "user",
-            personalAccessToken = "token"
+            personalAccessToken = "token",
+            localCachePath = "/tmp/git-cache"
         )
         val service = GitService(config)
 
@@ -332,7 +335,7 @@ class NetworkProtocolStressTest {
     fun `Multiple protocols concurrent operations`() = runTest {
         val ftpConfig = StorageConfig.FtpConfig(
             name = "ftp", host = "ftp.example.com", port = 21,
-            username = "user", password = "pass", path = "/"
+            username = "user", password = "pass", rootPath = "/"
         )
         val smbConfig = StorageConfig.SmbConfig(
             name = "smb", host = "192.168.1.100", share = "docs",
@@ -344,7 +347,8 @@ class NetworkProtocolStressTest {
         )
         val gitConfig = StorageConfig.GitConfig(
             name = "git", repositoryUrl = "https://github.com/example/repo.git",
-            branch = "main", username = "user", personalAccessToken = "token"
+            branch = "main", username = "user", personalAccessToken = "token",
+            localCachePath = "/tmp/git-cache"
         )
 
         val ftpService = FtpService(ftpConfig)
@@ -374,7 +378,7 @@ class NetworkProtocolStressTest {
     fun `Rapid protocol switching`() = runTest {
         val ftpConfig = StorageConfig.FtpConfig(
             name = "ftp", host = "ftp.example.com", port = 21,
-            username = "user", password = "pass", path = "/"
+            username = "user", password = "pass", rootPath = "/"
         )
         val smbConfig = StorageConfig.SmbConfig(
             name = "smb", host = "192.168.1.100", share = "docs",
@@ -408,7 +412,7 @@ class NetworkProtocolStressTest {
     fun `Stress test with empty paths`() = runTest {
         val config = StorageConfig.FtpConfig(
             name = "ftp", host = "ftp.example.com", port = 21,
-            username = "user", password = "pass", path = "/"
+            username = "user", password = "pass", rootPath = "/"
         )
         val service = FtpService(config)
 

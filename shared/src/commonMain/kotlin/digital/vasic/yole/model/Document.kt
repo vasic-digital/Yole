@@ -44,6 +44,11 @@ import kotlinx.serialization.Transient
 @Serializable
 data class Document(
     /**
+     * Unique identifier for the document
+     */
+    val id: String = "",
+
+    /**
      * Absolute path to the document file
      */
     val path: String,
@@ -57,6 +62,21 @@ data class Document(
      * File extension (e.g., "md", "txt", "tex")
      */
     val extension: String,
+
+    /**
+     * Document content (for in-memory documents)
+     */
+    val content: String = "",
+
+    /**
+     * Document author (null if unknown)
+     */
+    val author: String? = null,
+
+    /**
+     * Tags or labels associated with the document
+     */
+    val tags: List<String> = emptyList(),
 
     /**
      * Format identifier (e.g., "markdown", "plaintext", "latex")

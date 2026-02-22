@@ -11,18 +11,19 @@ package digital.vasic.yole.util
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import java.util.concurrent.atomic.*
+import java.util.concurrent.Semaphore
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Rate Limiter using Semaphore
  * Limits concurrent operations to prevent overwhelming resources
  *
  * @param maxConcurrent Maximum number of concurrent operations
- * @param scope Coroutine scope for operations
  */
 class RateLimiter(
-    private val maxConcurrent: Int = 5,
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
+    private val maxConcurrent: Int = 5
 ) {
     private val semaphore = Semaphore(maxConcurrent)
     private val activeCount = AtomicInteger(0)

@@ -211,8 +211,11 @@ class FormatRegistryStressTest {
         // With higher maxLines, might detect markdown
         val resultExtended = FormatRegistry.detectByContent(content, maxLines = 25)
 
-        // Results may differ based on maxLines
-        assertNotNull(resultDefault) || assertNotNull(resultExtended) || assertTrue(true)
+        // Results may differ based on maxLines - at least one should succeed
+        assertTrue(
+            resultDefault != null || resultExtended != null,
+            "At least one detection should succeed"
+        )
     }
 
     @Test

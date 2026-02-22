@@ -21,6 +21,9 @@ import digital.vasic.yole.format.todotxt.TodoTxtParser
 import digital.vasic.yole.network.common.*
 import digital.vasic.yole.network.protocols.ftp.FtpService
 import digital.vasic.yole.network.protocols.smb.SmbService
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 
@@ -106,7 +109,7 @@ class InputValidationSecurityTest {
                 port = 21,
                 username = "user",
                 password = "pass",
-                path = "/"
+                rootPath = "/"
             )
         )
 
@@ -271,7 +274,7 @@ class InputValidationSecurityTest {
                 port = 21,
                 username = "",
                 password = "",
-                path = "/"
+                rootPath = "/"
             ),
             StorageConfig.SmbConfig(
                 name = "test",
@@ -306,7 +309,7 @@ class InputValidationSecurityTest {
                 port = 21,
                 username = "user@domain.com",
                 password = "p@ss\"word'with<special>&chars",
-                path = "/"
+                rootPath = "/"
             )
         )
 
@@ -344,16 +347,16 @@ class InputValidationSecurityTest {
                 port = 21,
                 username = "user",
                 password = "pass",
-                path = "/"
+                rootPath = "/"
             )
         )
 
         // Many concurrent quota requests
         val results = (1..100).map {
-            kotlinx.coroutines.async {
+            async {
                 service.getQuotaInfo()
             }
-        }.map { it.await() }
+        }.awaitAll()
 
         assertEquals(100, results.size)
     }
@@ -368,8 +371,8 @@ class InputValidationSecurityTest {
             path = "/test<script>.txt",
             name = "test<script>.txt",
             size = 100L,
-            modified = kotlinx.datetime.Clock.System.now(),
-            type = DocumentType.FILE,
+            lastModified = kotlinx.datetime.Clock.System.now(),
+            syncStatus = SyncStatus.SYNCED,
             metadata = mapOf(
                 "key" to "<script>alert(1)</script>"
             ),
@@ -385,7 +388,7 @@ class InputValidationSecurityTest {
         val info = StorageInfo(
             id = "test",
             name = "<script>alert('xss')</script>",
-            type = StorageType.FTP
+            storageType = StorageType.FTP
         )
 
         assertNotNull(info.name)

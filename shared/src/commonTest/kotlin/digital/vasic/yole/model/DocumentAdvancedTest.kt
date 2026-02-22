@@ -137,7 +137,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should support copy with path change`() {
-        val doc = Document("/path/doc.md", "doc", "md", Document.FORMAT_MARKDOWN)
+        val doc = Document(path = "/path/doc.md", title = "doc", extension = "md", format = Document.FORMAT_MARKDOWN)
         val copied = doc.copy(path = "/new/path/doc.md")
 
         assertEquals("/new/path/doc.md", copied.path)
@@ -148,7 +148,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should support copy with title change`() {
-        val doc = Document("/path/doc.md", "doc", "md")
+        val doc = Document(path = "/path/doc.md", title = "doc", extension = "md")
         val copied = doc.copy(title = "newdoc")
 
         assertEquals("/path/doc.md", copied.path)
@@ -157,7 +157,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should support copy with extension change`() {
-        val doc = Document("/path/doc.md", "doc", "md")
+        val doc = Document(path = "/path/doc.md", title = "doc", extension = "md")
         val copied = doc.copy(extension = "txt")
 
         assertEquals("txt", copied.extension)
@@ -165,7 +165,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should support copy with format change`() {
-        val doc = Document("/path/doc.md", "doc", "md", Document.FORMAT_MARKDOWN)
+        val doc = Document(path = "/path/doc.md", title = "doc", extension = "md", format = Document.FORMAT_MARKDOWN)
         val copied = doc.copy(format = Document.FORMAT_LATEX)
 
         assertEquals(Document.FORMAT_LATEX, copied.format)
@@ -173,7 +173,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should support copy with no changes`() {
-        val doc = Document("/path/doc.md", "doc", "md", Document.FORMAT_MARKDOWN)
+        val doc = Document(path = "/path/doc.md", title = "doc", extension = "md", format = Document.FORMAT_MARKDOWN)
         val copied = doc.copy()
 
         assertEquals(doc, copied)
@@ -182,50 +182,51 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should generate consistent hashCode`() {
-        val doc1 = Document("/path/doc.md", "doc", "md", Document.FORMAT_MARKDOWN)
-        val doc2 = Document("/path/doc.md", "doc", "md", Document.FORMAT_MARKDOWN)
+        val doc1 = Document(path = "/path/doc.md", title = "doc", extension = "md", format = Document.FORMAT_MARKDOWN)
+        val doc2 = Document(path = "/path/doc.md", title = "doc", extension = "md", format = Document.FORMAT_MARKDOWN)
 
         assertEquals(doc1.hashCode(), doc2.hashCode())
     }
 
     @Test
     fun `should generate different hashCode for different documents`() {
-        val doc1 = Document("/path/doc1.md", "doc1", "md")
-        val doc2 = Document("/path/doc2.md", "doc2", "md")
+        val doc1 = Document(path = "/path/doc1.md", title = "doc1", extension = "md")
+        val doc2 = Document(path = "/path/doc2.md", title = "doc2", extension = "md")
 
         assertNotEquals(doc1.hashCode(), doc2.hashCode())
     }
 
     @Test
     fun `should support destructuring`() {
-        val doc = Document("/path/doc.md", "doc", "md", Document.FORMAT_MARKDOWN)
-        val (path, title, extension, format) = doc
+        val doc = Document(path = "/path/doc.md", title = "doc", extension = "md", format = Document.FORMAT_MARKDOWN)
+        val (id, path, title, extension) = doc
 
+        assertEquals("", id)
         assertEquals("/path/doc.md", path)
         assertEquals("doc", title)
         assertEquals("md", extension)
-        assertEquals(Document.FORMAT_MARKDOWN, format)
+        assertEquals(Document.FORMAT_MARKDOWN, doc.format)
     }
 
     // ==================== Filename Edge Cases ====================
 
     @Test
     fun `should handle filename with multiple extensions`() {
-        val doc = Document("/path/archive.tar.gz", "archive.tar", "gz")
+        val doc = Document(path = "/path/archive.tar.gz", title = "archive.tar", extension = "gz")
 
         assertEquals("archive.tar.gz", doc.filename)
     }
 
     @Test
     fun `should handle filename with special characters`() {
-        val doc = Document("/path/my-file_v2.md", "my-file_v2", "md")
+        val doc = Document(path = "/path/my-file_v2.md", title = "my-file_v2", extension = "md")
 
         assertEquals("my-file_v2.md", doc.filename)
     }
 
     @Test
     fun `should handle filename with spaces`() {
-        val doc = Document("/path/my document.md", "my document", "md")
+        val doc = Document(path = "/path/my document.md", title = "my document", extension = "md")
 
         assertEquals("my document.md", doc.filename)
     }
@@ -233,21 +234,21 @@ class DocumentAdvancedTest {
     @Test
     fun `should handle very long filename`() {
         val longTitle = "a".repeat(200)
-        val doc = Document("/path/$longTitle.md", longTitle, "md")
+        val doc = Document(path = "/path/$longTitle.md", title = longTitle, extension = "md")
 
         assertEquals("$longTitle.md", doc.filename)
     }
 
     @Test
     fun `should handle filename with Unicode`() {
-        val doc = Document("/path/文档.md", "文档", "md")
+        val doc = Document(path = "/path/文档.md", title = "文档", extension = "md")
 
         assertEquals("文档.md", doc.filename)
     }
 
     @Test
     fun `should handle filename with emoji`() {
-        val doc = Document("/path/doc 🚀.md", "doc 🚀", "md")
+        val doc = Document(path = "/path/doc 🚀.md", title = "doc 🚀", extension = "md")
 
         assertEquals("doc 🚀.md", doc.filename)
     }
@@ -256,7 +257,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should detect format from csv extension`() {
-        val doc = Document("/path/data.csv", "data", "csv")
+        val doc = Document(path = "/path/data.csv", title = "data", extension = "csv")
         doc.detectFormatByExtension()
 
         assertEquals(Document.FORMAT_CSV, doc.format)
@@ -264,7 +265,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should detect format from txt extension`() {
-        val doc = Document("/path/notes.txt", "notes", "txt")
+        val doc = Document(path = "/path/notes.txt", title = "notes", extension = "txt")
         doc.detectFormatByExtension()
 
         assertEquals(Document.FORMAT_PLAINTEXT, doc.format)
@@ -272,7 +273,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should detect format from org extension`() {
-        val doc = Document("/path/tasks.org", "tasks", "org")
+        val doc = Document(path = "/path/tasks.org", title = "tasks", extension = "org")
         doc.detectFormatByExtension()
 
         assertEquals(Document.FORMAT_ORGMODE, doc.format)
@@ -280,7 +281,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should detect format from wiki extension`() {
-        val doc = Document("/path/page.wiki", "page", "wiki")
+        val doc = Document(path = "/path/page.wiki", title = "page", extension = "wiki")
         doc.detectFormatByExtension()
 
         assertEquals(Document.FORMAT_WIKITEXT, doc.format)
@@ -288,7 +289,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should detect format from rst extension`() {
-        val doc = Document("/path/README.rst", "README", "rst")
+        val doc = Document(path = "/path/README.rst", title = "README", extension = "rst")
         doc.detectFormatByExtension()
 
         assertEquals(Document.FORMAT_RESTRUCTUREDTEXT, doc.format)
@@ -296,7 +297,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should detect format from asciidoc extension`() {
-        val doc = Document("/path/doc.adoc", "doc", "adoc")
+        val doc = Document(path = "/path/doc.adoc", title = "doc", extension = "adoc")
         doc.detectFormatByExtension()
 
         assertEquals(Document.FORMAT_ASCIIDOC, doc.format)
@@ -304,7 +305,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should detect format from taskpaper extension`() {
-        val doc = Document("/path/tasks.taskpaper", "tasks", "taskpaper")
+        val doc = Document(path = "/path/tasks.taskpaper", title = "tasks", extension = "taskpaper")
         doc.detectFormatByExtension()
 
         assertEquals(Document.FORMAT_TASKPAPER, doc.format)
@@ -312,7 +313,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should detect format from uppercase extension`() {
-        val doc = Document("/path/DOC.MD", "DOC", "MD")
+        val doc = Document(path = "/path/DOC.MD", title = "DOC", extension = "MD")
         doc.detectFormatByExtension()
 
         assertEquals(Document.FORMAT_MARKDOWN, doc.format)
@@ -320,7 +321,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should detect latex content`() {
-        val doc = Document("/path/doc.txt", "doc", "txt")
+        val doc = Document(path = "/path/doc.txt", title = "doc", extension = "txt")
         val content = "\\documentclass{article}\n\\begin{document}\nTest\\end{document}"
 
         val detected = doc.detectFormatByContent(content)
@@ -331,7 +332,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should detect todotxt content`() {
-        val doc = Document("/path/tasks.txt", "tasks", "txt")
+        val doc = Document(path = "/path/tasks.txt", title = "tasks", extension = "txt")
         val content = "(A) Important task\nx 2024-01-01 Completed task"
 
         val detected = doc.detectFormatByContent(content)
@@ -342,7 +343,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should detect CSV content`() {
-        val doc = Document("/path/data.txt", "data", "txt")
+        val doc = Document(path = "/path/data.txt", title = "data", extension = "txt")
         val content = "Name,Age,City\nJohn,30,NYC\nJane,25,LA"
 
         val detected = doc.detectFormatByContent(content)
@@ -353,7 +354,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should not detect format from plain text`() {
-        val doc = Document("/path/notes.txt", "notes", "txt")
+        val doc = Document(path = "/path/notes.txt", title = "notes", extension = "txt")
         val content = "Just some ordinary plain text without any special formatting."
 
         val detected = doc.detectFormatByContent(content)
@@ -364,7 +365,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should not detect format from empty content`() {
-        val doc = Document("/path/empty.txt", "empty", "txt")
+        val doc = Document(path = "/path/empty.txt", title = "empty", extension = "txt")
 
         val detected = doc.detectFormatByContent("")
 
@@ -375,7 +376,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should indicate changed when modTime is negative`() {
-        val doc = Document("/path/doc.md", "doc", "md")
+        val doc = Document(path = "/path/doc.md", title = "doc", extension = "md")
         doc.modTime = -1
         doc.touchTime = 1000
 
@@ -384,7 +385,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should indicate changed when touchTime is negative`() {
-        val doc = Document("/path/doc.md", "doc", "md")
+        val doc = Document(path = "/path/doc.md", title = "doc", extension = "md")
         doc.modTime = 1000
         doc.touchTime = -1
 
@@ -393,7 +394,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should reset both times when reset is called`() {
-        val doc = Document("/path/doc.md", "doc", "md")
+        val doc = Document(path = "/path/doc.md", title = "doc", extension = "md")
         doc.modTime = 5000
         doc.touchTime = 6000
 
@@ -405,7 +406,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should update touchTime when touched`() {
-        val doc = Document("/path/doc.md", "doc", "md")
+        val doc = Document(path = "/path/doc.md", title = "doc", extension = "md")
         val before = currentTimeMillis()
 
         doc.touch()
@@ -416,7 +417,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should handle multiple touches`() {
-        val doc = Document("/path/doc.md", "doc", "md")
+        val doc = Document(path = "/path/doc.md", title = "doc", extension = "md")
 
         doc.touch()
         val firstTouch = doc.touchTime
@@ -432,7 +433,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should get correct TextFormat for markdown`() {
-        val doc = Document("/path/doc.md", "doc", "md", Document.FORMAT_MARKDOWN)
+        val doc = Document(path = "/path/doc.md", title = "doc", extension = "md", format = Document.FORMAT_MARKDOWN)
 
         val format = doc.getTextFormat()
 
@@ -443,7 +444,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should get correct TextFormat for latex`() {
-        val doc = Document("/path/paper.tex", "paper", "tex", Document.FORMAT_LATEX)
+        val doc = Document(path = "/path/paper.tex", title = "paper", extension = "tex", format = Document.FORMAT_LATEX)
 
         val format = doc.getTextFormat()
 
@@ -453,7 +454,7 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should get fallback format for invalid format ID`() {
-        val doc = Document("/path/doc.txt", "doc", "txt", "invalid_format_id")
+        val doc = Document(path = "/path/doc.txt", title = "doc", extension = "txt", format = "invalid_format_id")
 
         val format = doc.getTextFormat()
 
@@ -465,53 +466,53 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should be equal to itself`() {
-        val doc = Document("/path/doc.md", "doc", "md")
+        val doc = Document(path = "/path/doc.md", title = "doc", extension = "md")
 
         assertEquals(doc, doc)
     }
 
     @Test
     fun `should not be equal to null`() {
-        val doc = Document("/path/doc.md", "doc", "md")
+        val doc = Document(path = "/path/doc.md", title = "doc", extension = "md")
 
         assertFalse(doc.equals(null))
     }
 
     @Test
     fun `should not be equal to different type`() {
-        val doc = Document("/path/doc.md", "doc", "md")
+        val doc = Document(path = "/path/doc.md", title = "doc", extension = "md")
 
         assertFalse(doc.equals("string"))
     }
 
     @Test
     fun `should not be equal when path differs`() {
-        val doc1 = Document("/path1/doc.md", "doc", "md", Document.FORMAT_MARKDOWN)
-        val doc2 = Document("/path2/doc.md", "doc", "md", Document.FORMAT_MARKDOWN)
+        val doc1 = Document(path = "/path1/doc.md", title = "doc", extension = "md", format = Document.FORMAT_MARKDOWN)
+        val doc2 = Document(path = "/path2/doc.md", title = "doc", extension = "md", format = Document.FORMAT_MARKDOWN)
 
         assertNotEquals(doc1, doc2)
     }
 
     @Test
     fun `should not be equal when title differs`() {
-        val doc1 = Document("/path/doc1.md", "doc1", "md", Document.FORMAT_MARKDOWN)
-        val doc2 = Document("/path/doc2.md", "doc2", "md", Document.FORMAT_MARKDOWN)
+        val doc1 = Document(path = "/path/doc1.md", title = "doc1", extension = "md", format = Document.FORMAT_MARKDOWN)
+        val doc2 = Document(path = "/path/doc2.md", title = "doc2", extension = "md", format = Document.FORMAT_MARKDOWN)
 
         assertNotEquals(doc1, doc2)
     }
 
     @Test
     fun `should not be equal when format differs`() {
-        val doc1 = Document("/path/doc.md", "doc", "md", Document.FORMAT_MARKDOWN)
-        val doc2 = Document("/path/doc.md", "doc", "md", Document.FORMAT_LATEX)
+        val doc1 = Document(path = "/path/doc.md", title = "doc", extension = "md", format = Document.FORMAT_MARKDOWN)
+        val doc2 = Document(path = "/path/doc.md", title = "doc", extension = "md", format = Document.FORMAT_LATEX)
 
         assertNotEquals(doc1, doc2)
     }
 
     @Test
     fun `should be equal when all key properties match`() {
-        val doc1 = Document("/path/doc.md", "doc", "md", Document.FORMAT_MARKDOWN, 1000, 2000)
-        val doc2 = Document("/path/doc.md", "doc", "md", Document.FORMAT_MARKDOWN, 3000, 4000)
+        val doc1 = Document(path = "/path/doc.md", title = "doc", extension = "md", format = Document.FORMAT_MARKDOWN, modTime = 1000, touchTime = 2000)
+        val doc2 = Document(path = "/path/doc.md", title = "doc", extension = "md", format = Document.FORMAT_MARKDOWN, modTime = 3000, touchTime = 4000)
 
         // Equality doesn't consider timestamps (they're @Transient)
         assertEquals(doc1, doc2)
@@ -521,28 +522,28 @@ class DocumentAdvancedTest {
 
     @Test
     fun `should handle absolute Unix path`() {
-        val doc = Document("/home/user/documents/file.md", "file", "md")
+        val doc = Document(path = "/home/user/documents/file.md", title = "file", extension = "md")
 
         assertEquals("/home/user/documents/file.md", doc.path)
     }
 
     @Test
     fun `should handle absolute Windows path`() {
-        val doc = Document("C:\\Users\\user\\Documents\\file.md", "file", "md")
+        val doc = Document(path = "C:\\Users\\user\\Documents\\file.md", title = "file", extension = "md")
 
         assertEquals("C:\\Users\\user\\Documents\\file.md", doc.path)
     }
 
     @Test
     fun `should handle relative path`() {
-        val doc = Document("../documents/file.md", "file", "md")
+        val doc = Document(path = "../documents/file.md", title = "file", extension = "md")
 
         assertEquals("../documents/file.md", doc.path)
     }
 
     @Test
     fun `should handle path with spaces`() {
-        val doc = Document("/path with spaces/my file.md", "my file", "md")
+        val doc = Document(path = "/path with spaces/my file.md", title = "my file", extension = "md")
 
         assertEquals("/path with spaces/my file.md", doc.path)
     }
@@ -550,7 +551,7 @@ class DocumentAdvancedTest {
     @Test
     fun `should handle very long path`() {
         val longPath = "/a".repeat(100) + "/file.md"
-        val doc = Document(longPath, "file", "md")
+        val doc = Document(path = longPath, title = "file", extension = "md")
 
         assertEquals(longPath, doc.path)
     }

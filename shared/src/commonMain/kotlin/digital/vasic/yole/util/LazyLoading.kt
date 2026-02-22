@@ -18,15 +18,13 @@ import kotlinx.coroutines.flow.*
  *
  * @param T The type of document content
  * @param chunkSize Number of lines to load per chunk
- * @param scope Coroutine scope for loading operations
  */
-class LazyDocumentLoader<T>(
-    private val chunkSize: Int = 1000,
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
+open class LazyDocumentLoader<T>(
+    protected val chunkSize: Int = 1000
 ) {
-    private val _chunks = mutableMapOf<Int, T>()
+    private val _chunks = mutableMapOf<Int, T?>()
     private var totalChunks: Int = 0
-    private var loadingChunks = mutableSetOf<Int>()
+    private val loadingChunks = mutableSetOf<Int>()
     
     /**
      * Initialize with total content size

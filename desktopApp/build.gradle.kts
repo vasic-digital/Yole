@@ -21,6 +21,15 @@ kotlin {
 
     compilerOptions {
         freeCompilerArgs.add("-opt-in=org.jetbrains.compose.ExperimentalComposeLibrary")
+        freeCompilerArgs.add("-Xsuppress-version-warnings")
+    }
+    
+    sourceSets {
+        test {
+            compilerOptions {
+                freeCompilerArgs.add("-Xallow-unstable-dependencies")
+            }
+        }
     }
 }
 

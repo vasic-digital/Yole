@@ -297,6 +297,7 @@ sealed class StorageConfig {
         val branch: String = "main",
         val username: String? = null,
         val password: String? = null,
+        val personalAccessToken: String? = null,
         val privateKeyPath: String? = null,
         val privateKeyPassphrase: String? = null,
         val localCachePath: String,

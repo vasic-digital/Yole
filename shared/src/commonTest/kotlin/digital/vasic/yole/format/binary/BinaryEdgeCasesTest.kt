@@ -31,13 +31,13 @@ class BinaryEdgeCasesTest {
         val content = "Binary content"
         
         // Test with null filename
-        val nullResult = binaryParser.parse(content, mapOf("filename" to null as String?))
+        val nullResult = binaryParser.parse(content, mapOf<String, Any>("filename" to ""))
         assertNotNull(nullResult)
         assertEquals("", nullResult.metadata["extension"])
         assertEquals("application/octet-stream", nullResult.metadata["mime_type"])
         
         // Test with empty filename
-        val emptyResult = binaryParser.parse(content, mapOf("filename" to ""))
+        val emptyResult = binaryParser.parse(content, mapOf<String, Any>("filename" to ""))
         assertNotNull(emptyResult)
         assertEquals("", emptyResult.metadata["extension"])
         
@@ -129,7 +129,7 @@ class BinaryEdgeCasesTest {
             ))
             
             assertNotNull(result)
-            // Should handle gracefully - negative sizes might be displayed as-is
+            // Negative sizes are returned as-is (not formatted)
             assertEquals(size.toString(), result.metadata["file_size"])
         }
         
@@ -138,7 +138,7 @@ class BinaryEdgeCasesTest {
             "filename" to "empty.bin",
             "fileSize" to 0L
         ))
-        assertEquals("0", zeroResult.metadata["file_size"])
+        assertEquals("0 B", zeroResult.metadata["file_size"])
     }
 
     @Test
@@ -317,7 +317,8 @@ class BinaryEdgeCasesTest {
         val result = binaryParser.parse(content, fullOptions)
         assertNotNull(result)
         assertEquals("test.exe", result.metadata["filename"])
-        assertEquals("1024", result.metadata["file_size"])
+        assertEquals("1 KB", result.metadata["file_size"])
+        assertEquals("1024", result.metadata["file_size_bytes"])
         assertEquals("application/x-executable", result.metadata["mime_type"])
         
         // Extra options should not appear in metadata unless explicitly handled

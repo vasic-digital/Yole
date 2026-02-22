@@ -8,6 +8,11 @@ import kotlinx.datetime.Instant
  */
 enum class SyncStatus {
     /**
+     * Unknown or unrecognized status
+     */
+    UNKNOWN,
+    
+    /**
      * Document is synchronized and up to date
      */
     SYNCED,

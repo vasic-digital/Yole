@@ -86,7 +86,7 @@ object FormatRegistry {
             id = ID_CREOLE,
             name = "Creole",
             defaultExtension = ".creole",
-            extensions = listOf(".creole"),
+            extensions = listOf(".creole", ".txt"),
             detectionPatterns = listOf("^=+ ", "^\\*\\* ")
         ),
         TextFormat(
@@ -139,7 +139,7 @@ object FormatRegistry {
             id = ID_TEXTILE,
             name = "Textile",
             defaultExtension = ".textile",
-            extensions = listOf(".textile"),
+            extensions = listOf(".textile", ".txt"),
             detectionPatterns = listOf("^h[1-6]\\. ", "^\\*+ ")
         ),
 

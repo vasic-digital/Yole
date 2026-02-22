@@ -384,6 +384,20 @@ class DesktopFileManager {
             false
         }
     }
+    
+    /**
+     * Reads content from a file. Alias for loadFile.
+     */
+    fun readFile(file: File, encoding: String? = null): String? {
+        return loadFile(file, encoding)
+    }
+    
+    /**
+     * Writes content to a file. Alias for saveFile.
+     */
+    fun writeFile(file: File, content: String, encoding: String = DEFAULT_ENCODING): Boolean {
+        return saveFile(file, content, encoding)
+    }
 }
 
 /**

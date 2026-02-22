@@ -234,9 +234,9 @@ class TodoTxtParser : TextParser {
 
         // Extract priority
         var priority: Char? = null
-        val priorityMatch = Regex("^\\(([A-Za-z])\\)\\s+").find(remaining)
+        val priorityMatch = Regex("^\\(([A-Z])\\)\\s+").find(remaining)
         if (priorityMatch != null) {
-            priority = priorityMatch.groupValues[1].uppercase()[0]
+            priority = priorityMatch.groupValues[1][0]
             remaining = remaining.substring(priorityMatch.value.length)
         }
 

@@ -17,7 +17,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
-import org.assertj.core.api.Assertions.assertThat
 
 /**
  * Comprehensive unit tests for AsciiDoc format parser.
@@ -45,8 +44,8 @@ class AsciidocParserTest {
         val format = FormatRegistry.getByExtension(".adoc")
 
         assertNotNull(format)
-        assertThat(format.id).isEqualTo(TextFormat.ID_ASCIIDOC)
-        assertThat(format.name).isEqualTo("AsciiDoc")
+        assertEquals(TextFormat.ID_ASCIIDOC, format?.id)
+        assertEquals("AsciiDoc", format?.name)
     }
 
     @Test
@@ -54,7 +53,7 @@ class AsciidocParserTest {
         val format = FormatRegistry.getByExtension(".asciidoc")
 
         assertNotNull(format)
-        assertThat(format.id).isEqualTo(TextFormat.ID_ASCIIDOC)
+        assertEquals(TextFormat.ID_ASCIIDOC, format?.id)
     }
 
     @Test
@@ -62,7 +61,7 @@ class AsciidocParserTest {
         val format = FormatRegistry.detectByFilename("document.adoc")
 
         assertNotNull(format)
-        assertThat(format.id).isEqualTo(TextFormat.ID_ASCIIDOC)
+        assertEquals(TextFormat.ID_ASCIIDOC, format?.id)
     }
 
     @Test
@@ -72,7 +71,7 @@ class AsciidocParserTest {
         extensions.forEach { ext ->
             val format = FormatRegistry.getByExtension(ext)
             assertNotNull(format, "Extension $ext should be recognized")
-            assertThat(format.id).isEqualTo(TextFormat.ID_ASCIIDOC)
+            assertEquals(TextFormat.ID_ASCIIDOC, format?.id)
         }
     }
 

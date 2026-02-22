@@ -10,47 +10,36 @@ package digital.vasic.yole.desktop
 
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.TextFormat
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
-import org.junit.After
+import kotlin.test.Test
+import kotlin.test.BeforeTest
+import kotlin.test.AfterTest
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.test.assertNull
 import kotlin.test.assertFalse
 
 /**
  * File operations tests for Yole Desktop Application.
- *
- * Tests cover:
- * - File save operations
- * - File load operations
- * - Recent files management
- * - File format detection
- * - File validation and security
- * - Error handling for file operations
- * - Cross-platform file path handling
  */
-@RunWith(JUnit4::class)
 class DesktopFileOperationsTest {
 
     private lateinit var tempDir: Path
     private lateinit var testFile: Path
     private val testContent = "# Test Document\n\nThis is test content for Yole desktop application."
 
-    @Before
+    @BeforeTest
     fun setUp() {
         // Create temporary directory for test files
         tempDir = Files.createTempDirectory("yole_test")
         testFile = tempDir.resolve("test.md")
     }
 
-    @After
+    @AfterTest
     fun tearDown() {
         // Clean up temporary files
         Files.walk(tempDir)
@@ -65,9 +54,9 @@ class DesktopFileOperationsTest {
         val fileManager = DesktopFileManager()
         val result = fileManager.saveFile(testFile.toFile(), testContent)
 
-        assertThat(result).isTrue()
-        assertThat(Files.exists(testFile)).isTrue()
-        assertThat(Files.readString(testFile)).isEqualTo(testContent)
+        assertTrue(result)
+        assertTrue(Files.exists(testFile))
+        assertEquals(testContent, Files.readString(testFile))
     }
 
     @Test
@@ -79,7 +68,7 @@ class DesktopFileOperationsTest {
         val content = fileManager.loadFile(testFile.toFile())
 
         assertNotNull(content)
-        assertThat(content).isEqualTo(testContent)
+        assertEquals(testContent, content)
     }
 
     @Test
@@ -91,7 +80,7 @@ class DesktopFileOperationsTest {
         val content = fileManager.loadFile(emptyFile.toFile())
 
         assertNotNull(content)
-        assertThat(content).isEqualTo("")
+        assertEquals("", content)
     }
 
     @Test
@@ -104,7 +93,7 @@ class DesktopFileOperationsTest {
         val content = fileManager.loadFile(largeFile.toFile())
 
         assertNotNull(content)
-        assertThat(content).isEqualTo(largeContent)
+        assertEquals(largeContent, content)
     }
 
     // ==================== File Format Detection ====================
@@ -114,10 +103,10 @@ class DesktopFileOperationsTest {
         val markdownFile = tempDir.resolve("document.md")
         Files.writeString(markdownFile, "# Markdown Content")
         
-        val format = DesktopFileManager.detectFormatFromFile(markdownFile.toFile())
+        val format = detectFormatFromFile(markdownFile.toFile())
         
         assertNotNull(format)
-        assertThat(format.id).isEqualTo(FormatRegistry.ID_MARKDOWN)
+        assertEquals(FormatRegistry.ID_MARKDOWN, format.id)
     }
 
     @Test
@@ -125,10 +114,10 @@ class DesktopFileOperationsTest {
         val csvFile = tempDir.resolve("data.csv")
         Files.writeString(csvFile, "name,age\nJohn,30\nJane,25")
         
-        val format = DesktopFileManager.detectFormatFromFile(csvFile.toFile())
+        val format = detectFormatFromFile(csvFile.toFile())
         
         assertNotNull(format)
-        assertThat(format.id).isEqualTo(FormatRegistry.ID_CSV)
+        assertEquals(FormatRegistry.ID_CSV, format.id)
     }
 
     @Test
@@ -136,10 +125,10 @@ class DesktopFileOperationsTest {
         val latexFile = tempDir.resolve("document.tex")
         Files.writeString(latexFile, "\\documentclass{article}")
         
-        val format = DesktopFileManager.detectFormatFromFile(latexFile.toFile())
+        val format = detectFormatFromFile(latexFile.toFile())
         
         assertNotNull(format)
-        assertThat(format.id).isEqualTo(FormatRegistry.ID_LATEX)
+        assertEquals(FormatRegistry.ID_LATEX, format.id)
     }
 
     @Test
@@ -147,10 +136,10 @@ class DesktopFileOperationsTest {
         val txtFile = tempDir.resolve("document.txt")
         Files.writeString(txtFile, "# Markdown Header\n\nThis looks like markdown.")
         
-        val format = DesktopFileManager.detectFormatFromContent(txtFile.toFile())
+        val format = detectFormatFromContent(txtFile.toFile())
         
         assertNotNull(format)
-        assertThat(format.id).isEqualTo(FormatRegistry.ID_MARKDOWN)
+        assertEquals(FormatRegistry.ID_MARKDOWN, format.id)
     }
 
     @Test
@@ -158,10 +147,10 @@ class DesktopFileOperationsTest {
         val txtFile = tempDir.resolve("tasks.txt")
         Files.writeString(txtFile, "(A) Important task @work +project\n(B) Less important task")
         
-        val format = DesktopFileManager.detectFormatFromContent(txtFile.toFile())
+        val format = detectFormatFromContent(txtFile.toFile())
         
         assertNotNull(format)
-        assertThat(format.id).isEqualTo(FormatRegistry.ID_TODOTXT)
+        assertEquals(FormatRegistry.ID_TODOTXT, format.id)
     }
 
     // ==================== Recent Files Management ====================
@@ -175,7 +164,7 @@ class DesktopFileOperationsTest {
         fileManager.addToRecentFiles(testFile)
         
         val recentFiles = fileManager.getRecentFiles()
-        assertThat(recentFiles).contains(testFile)
+        assertTrue(recentFiles.contains(testFile))
     }
 
     @Test
@@ -191,7 +180,7 @@ class DesktopFileOperationsTest {
         }
         
         val recentFiles = fileManager.getRecentFiles()
-        assertThat(recentFiles.size).isLessThanOrEqualTo(maxFiles)
+        assertTrue(recentFiles.size <= maxFiles)
     }
 
     @Test
@@ -208,8 +197,8 @@ class DesktopFileOperationsTest {
         fileManager.cleanRecentFiles()
         
         val recentFiles = fileManager.getRecentFiles()
-        assertThat(recentFiles).contains(existingFile)
-        assertThat(recentFiles).doesNotContain(nonExistentFile)
+        assertTrue(recentFiles.contains(existingFile))
+        assertFalse(recentFiles.contains(nonExistentFile))
     }
 
     // ==================== File Validation Tests ====================
@@ -221,7 +210,7 @@ class DesktopFileOperationsTest {
         
         val result = fileManager.saveFile(invalidFile, "content")
         
-        assertThat(result).isFalse()
+        assertFalse(result)
     }
 
     @Test
@@ -231,7 +220,7 @@ class DesktopFileOperationsTest {
         
         val content = fileManager.loadFile(nonExistentFile)
         
-        assertThat(content).isNull()
+        assertNull(content)
     }
 
     @Test
@@ -243,7 +232,7 @@ class DesktopFileOperationsTest {
         val fileManager = DesktopFileManager()
         val result = fileManager.saveFile(readonlyFile, "New content")
         
-        assertThat(result).isFalse()
+        assertFalse(result)
     }
 
     // ==================== Security Tests ====================
@@ -256,7 +245,7 @@ class DesktopFileOperationsTest {
         
         val result = fileManager.saveFile(maliciousFile, "malicious content")
         
-        assertThat(result).isFalse()
+        assertFalse(result)
     }
 
     @Test
@@ -265,20 +254,20 @@ class DesktopFileOperationsTest {
         val unsafePath = "file<script>alert('xss')</script>.md"
         val safePath = fileManager.sanitizeFileName(unsafePath)
         
-        assertThat(safePath).doesNotContain("<script>")
-        assertThat(safePath).doesNotContain(">")
-        assertThat(safePath).doesNotContain("<")
+        assertFalse(safePath.contains("<script>"))
+        assertFalse(safePath.contains(">"))
+        assertFalse(safePath.contains("<"))
     }
 
     @Test
     fun `should validate file extensions`() {
         val fileManager = DesktopFileManager()
         
-        assertThat(fileManager.isValidExtension(".md")).isTrue()
-        assertThat(fileManager.isValidExtension(".txt")).isTrue()
-        assertThat(fileManager.isValidExtension(".exe")).isFalse()
-        assertThat(fileManager.isValidExtension(".bat")).isFalse()
-        assertThat(fileManager.isValidExtension(".sh")).isFalse()
+        assertTrue(fileManager.isValidExtension(".md"))
+        assertTrue(fileManager.isValidExtension(".txt"))
+        assertFalse(fileManager.isValidExtension(".exe"))
+        assertFalse(fileManager.isValidExtension(".bat"))
+        assertFalse(fileManager.isValidExtension(".sh"))
     }
 
     // ==================== Cross-Platform Tests ====================
@@ -295,19 +284,19 @@ class DesktopFileOperationsTest {
         val crlfFile = tempDir.resolve("crlf.md").toFile()
         fileManager.saveFile(crlfFile, contentWithCRLF)
         val crlfContent = fileManager.loadFile(crlfFile)
-        assertThat(crlfContent).isEqualTo(contentWithCRLF)
+        assertEquals(contentWithCRLF, crlfContent)
         
         // Test LF
         val lfFile = tempDir.resolve("lf.md").toFile()
         fileManager.saveFile(lfFile, contentWithLF)
         val lfContent = fileManager.loadFile(lfFile)
-        assertThat(lfContent).isEqualTo(contentWithLF)
+        assertEquals(contentWithLF, lfContent)
         
         // Test CR
         val crFile = tempDir.resolve("cr.md").toFile()
         fileManager.saveFile(crFile, contentWithCR)
         val crContent = fileManager.loadFile(crFile)
-        assertThat(crContent).isEqualTo(contentWithCR)
+        assertEquals(contentWithCR, crContent)
     }
 
     @Test
@@ -319,9 +308,9 @@ class DesktopFileOperationsTest {
         val saveResult = fileManager.saveFile(unicodeFile, content)
         val loadContent = fileManager.loadFile(unicodeFile)
         
-        assertThat(saveResult).isTrue()
-        assertThat(loadContent).isEqualTo(content)
-        assertThat(unicodeFile.exists()).isTrue()
+        assertTrue(saveResult)
+        assertEquals(content, loadContent)
+        assertTrue(unicodeFile.exists())
     }
 
     // ==================== Performance Tests ====================
@@ -340,14 +329,14 @@ class DesktopFileOperationsTest {
             fileManager.saveFile(file, content)
             val loadedContent = fileManager.loadFile(file)
             
-            assertThat(loadedContent).isEqualTo(content)
+            assertEquals(content, loadedContent)
         }
         
         val endTime = System.currentTimeMillis()
         val duration = endTime - startTime
         
         // Should complete within reasonable time (less than 5 seconds for 100 operations)
-        assertThat(duration).isLessThan(5000)
+        assertTrue(duration < 5000)
     }
 
     @Test
@@ -380,8 +369,8 @@ class DesktopFileOperationsTest {
         threads.forEach { it.join() }
         
         // All operations should succeed
-        assertThat(results).hasSize(threadCount * filesPerThread)
-        assertThat(results).containsOnly(true)
+        assertEquals(threadCount * filesPerThread, results.size)
+        assertTrue(results.all { it == true })
     }
 
     // ==================== Mock Implementation ====================
@@ -389,7 +378,7 @@ class DesktopFileOperationsTest {
     /**
      * Mock implementation of DesktopFileManager for testing
      */
-    class DesktopFileManager {
+    inner class DesktopFileManager {
         private val recentFiles = mutableListOf<File>()
         private val maxRecentFiles = 10
         
@@ -470,17 +459,17 @@ class DesktopFileOperationsTest {
             
             return canonicalPath.startsWith(tempDirCanonical)
         }
+    }
+    
+    companion object {
+        fun detectFormatFromFile(file: File): TextFormat? {
+            val extension = file.extension
+            return FormatRegistry.getByExtension(extension)
+        }
         
-        companion object {
-            fun detectFormatFromFile(file: File): TextFormat? {
-                val extension = file.extension
-                return FormatRegistry.getByExtension(extension)
-            }
-            
-            fun detectFormatFromContent(file: File): TextFormat? {
-                val content = file.readText()
-                return FormatRegistry.detectByContent(content)
-            }
+        fun detectFormatFromContent(file: File): TextFormat? {
+            val content = file.readText()
+            return FormatRegistry.detectByContent(content)
         }
     }
 }

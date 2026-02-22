@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import digital.vasic.yole.desktop.storage.DesktopSettingsStorage
-import digital.vasic.yole.desktop.ui.EnhancedYoleApp
+import digital.vasic.yole.desktop.ui.YoleApp
 import digital.vasic.yole.desktop.ui.theme.YoleDesktopTheme
 import digital.vasic.yole.desktop.window.DesktopWindowManager
 import java.awt.Dimension
@@ -78,7 +78,7 @@ fun main() = application {
                 modifier = androidx.compose.ui.Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.background
             ) {
-                EnhancedYoleApp()
+                YoleApp()
             }
         }
     }

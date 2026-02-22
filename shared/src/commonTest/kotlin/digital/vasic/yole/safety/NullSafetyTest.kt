@@ -132,13 +132,12 @@ class NullSafetyTest {
             path = "/test.txt",
             name = "test.txt",
             size = 100L,
-            modified = Clock.System.now(),
-            type = DocumentType.FILE,
-            metadata = null,
+            lastModified = Clock.System.now(),
+            metadata = emptyMap(),
             permissions = emptySet()
         )
 
-        assertNull(doc.metadata)
+        assertNotNull(doc.metadata)
     }
 
     @Test
@@ -149,8 +148,6 @@ class NullSafetyTest {
             path = "/test.txt",
             name = "test.txt",
             size = 100L,
-            modified = Clock.System.now(),
-            type = DocumentType.FILE,
             permissions = emptySet()
         )
 
@@ -164,11 +161,14 @@ class NullSafetyTest {
     fun `CacheEntry handles edge case dates`() {
         val entry = CacheEntry(
             id = "test",
-            documentId = "doc",
+            remoteDocumentId = "doc",
             localPath = "/cache/test",
+            remotePath = "/remote/test",
             size = 100L,
-            created = Clock.System.now(),
-            expires = kotlinx.datetime.Instant.fromEpochMilliseconds(0),
+            createdAt = Clock.System.now(),
+            lastAccessed = Clock.System.now(),
+            lastModified = Clock.System.now(),
+            expiresAt = kotlinx.datetime.Instant.fromEpochMilliseconds(0),
             checksum = null
         )
 
@@ -182,34 +182,34 @@ class NullSafetyTest {
         val op = NetworkOperation(
             id = 1L,
             type = NetworkOperation.Type.UPLOAD,
-            sourcePath = "/source",
-            destinationPath = "/dest",
-            totalBytes = 100L,
-            transferredBytes = 50L,
-            status = OperationStatus.IN_PROGRESS,
-            startTime = Clock.System.now(),
+            remotePath = "/source",
+            localPath = "/dest",
+            totalSize = 100L,
+            bytesTransferred = 50L,
+            status = NetworkOperation.Status.IN_PROGRESS,
+            createdAt = Clock.System.now(),
             error = null
         )
 
         assertNull(op.error)
     }
-
+    
     @Test
     fun `NetworkOperation handles completed state`() {
         val op = NetworkOperation(
             id = 1L,
             type = NetworkOperation.Type.DOWNLOAD,
-            sourcePath = "/source",
-            destinationPath = "/dest",
-            totalBytes = 100L,
-            transferredBytes = 100L,
-            status = OperationStatus.COMPLETED,
-            startTime = Clock.System.now(),
-            endTime = Clock.System.now()
+            remotePath = "/source",
+            localPath = "/dest",
+            totalSize = 100L,
+            bytesTransferred = 100L,
+            status = NetworkOperation.Status.COMPLETED,
+            createdAt = Clock.System.now(),
+            completedAt = Clock.System.now()
         )
 
-        assertNotNull(op.endTime)
-        assertEquals(OperationStatus.COMPLETED, op.status)
+        assertNotNull(op.completedAt)
+        assertEquals(NetworkOperation.Status.COMPLETED, op.status)
     }
 
     // ==================== SERVICE NULL SAFETY ====================
@@ -223,7 +223,7 @@ class NullSafetyTest {
                 port = 21,
                 username = "user",
                 password = "pass",
-                path = "/"
+                rootPath = "/"
             )
         )
 
@@ -256,8 +256,11 @@ class NullSafetyTest {
     fun `Document handles empty content`() {
         val doc = Document(
             id = "test",
+            path = "/test.txt",
+            title = "test",
+            extension = "txt",
             content = "",
-            format = TextFormat.PLAINTEXT
+            format = TextFormat.ID_PLAINTEXT
         )
 
         assertEquals("", doc.content)
@@ -267,14 +270,15 @@ class NullSafetyTest {
     fun `Document handles null metadata fields`() {
         val doc = Document(
             id = "test",
+            path = "/test.md",
+            title = "test",
+            extension = "md",
             content = "content",
-            format = TextFormat.MARKDOWN,
-            title = null,
+            format = TextFormat.ID_MARKDOWN,
             author = null,
             tags = emptyList()
         )
 
-        assertNull(doc.title)
         assertNull(doc.author)
         assertTrue(doc.tags.isEmpty())
     }
@@ -316,7 +320,7 @@ class NullSafetyTest {
             port = 21,
             username = "user",
             password = "pass",
-            path = "/"
+            rootPath = "/"
         )
 
         assertEquals("test", config.name)
@@ -355,26 +359,26 @@ class NullSafetyTest {
     @Test
     fun `QuotaInfo handles unlimited space`() {
         val quota = QuotaInfo(
-            totalSpace = Long.MAX_VALUE,
-            usedSpace = 0L,
-            availableSpace = Long.MAX_VALUE
+            totalBytes = Long.MAX_VALUE,
+            usedBytes = 0L,
+            availableBytes = Long.MAX_VALUE
         )
 
-        assertEquals(Long.MAX_VALUE, quota.totalSpace)
-        assertEquals(Long.MAX_VALUE, quota.availableSpace)
+        assertEquals(Long.MAX_VALUE, quota.totalBytes)
+        assertEquals(Long.MAX_VALUE, quota.availableBytes)
     }
 
     @Test
     fun `QuotaInfo handles zero values`() {
         val quota = QuotaInfo(
-            totalSpace = 0L,
-            usedSpace = 0L,
-            availableSpace = 0L
+            totalBytes = 0L,
+            usedBytes = 0L,
+            availableBytes = 0L
         )
 
-        assertEquals(0L, quota.totalSpace)
-        assertEquals(0L, quota.usedSpace)
-        assertEquals(0L, quota.availableSpace)
+        assertEquals(0L, quota.totalBytes)
+        assertEquals(0L, quota.usedBytes)
+        assertEquals(0L, quota.availableBytes)
     }
 
     // ==================== STORAGE INFO NULL SAFETY ====================
@@ -384,12 +388,12 @@ class NullSafetyTest {
         val info = StorageInfo(
             id = "test",
             name = "Test",
-            type = StorageType.FTP
+            storageType = StorageType.FTP
         )
 
         assertEquals("test", info.id)
         assertEquals("Test", info.name)
-        assertEquals(StorageType.FTP, info.type)
+        assertEquals(StorageType.FTP, info.storageType)
     }
 
     // ==================== FILE INFO NULL SAFETY ====================
@@ -401,8 +405,7 @@ class NullSafetyTest {
             name = "test.txt",
             size = 100L,
             isDirectory = false,
-            modified = Clock.System.now(),
-            permissions = emptySet()
+            lastModified = Clock.System.now().toString()
         )
 
         assertEquals("/test.txt", info.path)
@@ -416,7 +419,7 @@ class NullSafetyTest {
             name = "testdir",
             size = 0L,
             isDirectory = true,
-            modified = Clock.System.now()
+            lastModified = Clock.System.now().toString()
         )
 
         assertTrue(info.isDirectory)

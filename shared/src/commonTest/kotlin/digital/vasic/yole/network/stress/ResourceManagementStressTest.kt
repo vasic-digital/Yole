@@ -455,7 +455,9 @@ class ResourceManagementStressTest {
         val dropboxService = DropboxService(
             StorageConfig.DropboxConfig(
                 name = "dropbox",
-                accessToken = "test-token"
+                accessToken = "test-token",
+                appKey = "test-app-key",
+                appSecret = "test-app-secret"
             )
         )
 
@@ -474,7 +476,7 @@ class ResourceManagementStressTest {
             port = 21,
             username = "user",
             password = "pass",
-            path = "/"
+            rootPath = "/"
         )
     )
 
@@ -505,7 +507,8 @@ class ResourceManagementStressTest {
             repositoryUrl = "https://github.com/example/repo.git",
             branch = "main",
             username = "user",
-            personalAccessToken = "token"
+            personalAccessToken = "token",
+            localCachePath = "/tmp/git-cache"
         )
     )
 }

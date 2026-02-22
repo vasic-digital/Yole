@@ -11,6 +11,9 @@ package digital.vasic.yole.util
 
 import kotlin.test.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.*
 import java.util.concurrent.atomic.*
 import kotlin.concurrent.thread

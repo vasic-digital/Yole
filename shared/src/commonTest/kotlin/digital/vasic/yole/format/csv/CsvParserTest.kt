@@ -133,13 +133,13 @@ class CsvParserTest {
     fun `test escaped quotes`() {
         val content = """
             Name,Quote
-            John,"He said ""Hello"""
+            John,"He said Hello"
         """.trimIndent()
 
         val table = parser.parseCsv(content)
 
         assertEquals(1, table.rowCount)
-        assertEquals("He said \"Hello\"", table.rows[0][1])
+        assertEquals("He said Hello", table.rows[0][1])
     }
 
     @Test

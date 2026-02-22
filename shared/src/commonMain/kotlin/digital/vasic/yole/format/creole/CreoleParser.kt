@@ -346,8 +346,10 @@ class CreoleParser : TextParser {
             // Track code blocks
             if (trimmed == "{{{") {
                 inCodeBlock = true
+                return@forEachIndexed
             } else if (trimmed == "}}}") {
                 inCodeBlock = false
+                return@forEachIndexed
             }
 
             // Skip validation inside code blocks
@@ -363,13 +365,6 @@ class CreoleParser : TextParser {
             val closeBrackets = trimmed.count { it == ']' }
             if (openBrackets != closeBrackets) {
                 errors.add("Line ${index + 1}: Unclosed brackets in links")
-            }
-
-            // Check for unclosed braces
-            val openBraces = trimmed.count { it == '{' }
-            val closeBraces = trimmed.count { it == '}' }
-            if (openBraces != closeBraces) {
-                errors.add("Line ${index + 1}: Unclosed braces")
             }
         }
 

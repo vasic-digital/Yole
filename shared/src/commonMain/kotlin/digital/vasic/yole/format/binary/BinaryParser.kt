@@ -30,7 +30,8 @@ class BinaryParser : TextParser {
             parsedContent = generateContentPreview(mimeType, filename, content),
             metadata = buildMap {
                 put("mime_type", mimeType)
-                put("file_size", fileSize.toString())
+                put("file_size", formatFileSize(fileSize))
+                put("file_size_bytes", fileSize.toString())
                 put("is_binary", "true")
                 put("file_type", getFileType(mimeType))
                 put("extension", filename.substringAfterLast('.', ""))
@@ -111,6 +112,17 @@ class BinaryParser : TextParser {
             "zip" -> "application/zip"
             "tar" -> "application/x-tar"
             "gz" -> "application/gzip"
+            "exe" -> "application/x-executable"
+            "dll" -> "application/x-msdownload"
+            "sys" -> "application/x-msdownload"
+            "bat" -> "application/x-bat"
+            "mkv" -> "video/x-matroska"
+            "flv" -> "video/x-flv"
+            "wmv" -> "video/x-ms-wmv"
+            "flac" -> "audio/flac"
+            "m4a" -> "audio/mp4"
+            "7z" -> "application/x-7z-compressed"
+            "rar" -> "application/x-rar-compressed"
             else -> "application/octet-stream"
         }
     }
@@ -128,6 +140,7 @@ class BinaryParser : TextParser {
     
     private fun formatFileSize(bytes: Long): String {
         return when {
+            bytes < 0 -> bytes.toString()
             bytes < 1024 -> "$bytes B"
             bytes < 1024 * 1024 -> "${bytes / 1024} KB"
             bytes < 1024 * 1024 * 1024 -> "${bytes / (1024 * 1024)} MB"
