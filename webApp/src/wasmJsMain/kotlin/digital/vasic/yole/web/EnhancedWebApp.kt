@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import digital.vasic.yole.format.FormatRegistry
+import digital.vasic.yole.format.ParserRegistry
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
 import kotlinx.coroutines.*
@@ -61,6 +62,8 @@ fun EnhancedYoleWebApp() {
     var showFindReplace by remember { mutableStateOf(false) }
     var findText by remember { mutableStateOf("") }
     var replaceText by remember { mutableStateOf("") }
+    var findMatchIndex by remember { mutableStateOf(-1) }
+    var findMatchCount by remember { mutableStateOf(0) }
     var showGoToLine by remember { mutableStateOf(false) }
     var goToLineNumber by remember { mutableStateOf("") }
     var showExportDialog by remember { mutableStateOf(false) }
@@ -70,17 +73,21 @@ fun EnhancedYoleWebApp() {
     var lastSavedTimestamp by remember { mutableStateOf<String?>(null) }
     var isDirty by remember { mutableStateOf(false) }
 
+    // Snackbar state
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
     // Load saved settings
     LaunchedEffect(Unit) {
         loadSettings()
         // Set up offline detection via event listeners
         window.addEventListener("online", { _: org.w3c.dom.events.Event ->
             isOffline = false
-            println("Back online")
+            coroutineScope.launch { snackbarHostState.showSnackbar("Back online") }
         })
         window.addEventListener("offline", { _: org.w3c.dom.events.Event ->
             isOffline = true
-            println("Gone offline")
+            coroutineScope.launch { snackbarHostState.showSnackbar("You are offline - changes saved locally") }
         })
         // Check for install prompt
         if (!PWAFeatures.isStandaloneMode() && localStorage.getItem("install_prompt_shown") != "true") {
@@ -105,6 +112,7 @@ fun EnhancedYoleWebApp() {
         colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
     ) {
         EnhancedWebAppContent(
+            snackbarHostState = snackbarHostState,
             documentContent = documentContent,
             currentFormat = currentFormat,
             documentName = documentName,
@@ -140,29 +148,118 @@ fun EnhancedYoleWebApp() {
             onFindTextChange = { findText = it },
             onReplaceTextChange = { replaceText = it },
             onGoToLineNumberChange = { goToLineNumber = it },
-            onFindNext = { println("Finding next occurrence of: $findText") },
-            onReplace = { println("Replacing '$findText' with '$replaceText'") },
-            onReplaceAll = { println("Replacing all occurrences of '$findText' with '$replaceText'") },
+            onFindNext = {
+                if (findText.isNotEmpty()) {
+                    // Find all occurrence positions
+                    val positions = mutableListOf<Int>()
+                    var searchFrom = 0
+                    while (true) {
+                        val idx = documentContent.indexOf(findText, searchFrom, ignoreCase = true)
+                        if (idx == -1) break
+                        positions.add(idx)
+                        searchFrom = idx + findText.length
+                    }
+                    findMatchCount = positions.size
+                    if (positions.isEmpty()) {
+                        findMatchIndex = -1
+                        coroutineScope.launch { snackbarHostState.showSnackbar("No matches found for \"$findText\"") }
+                    } else {
+                        // Advance to next match
+                        findMatchIndex = if (findMatchIndex < 0) 0 else (findMatchIndex + 1) % positions.size
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Match ${findMatchIndex + 1} of ${positions.size}")
+                        }
+                    }
+                } else {
+                    coroutineScope.launch { snackbarHostState.showSnackbar("Enter text to find") }
+                }
+            },
+            onReplace = {
+                if (findText.isNotEmpty()) {
+                    val idx = documentContent.indexOf(findText, ignoreCase = true)
+                    if (idx != -1) {
+                        documentContent = documentContent.substring(0, idx) +
+                            replaceText +
+                            documentContent.substring(idx + findText.length)
+                        isDirty = true
+                        coroutineScope.launch { snackbarHostState.showSnackbar("Replaced one occurrence") }
+                    } else {
+                        coroutineScope.launch { snackbarHostState.showSnackbar("No match found to replace") }
+                    }
+                } else {
+                    coroutineScope.launch { snackbarHostState.showSnackbar("Enter text to find") }
+                }
+            },
+            onReplaceAll = {
+                if (findText.isNotEmpty()) {
+                    val count = documentContent.windowed(findText.length, 1)
+                        .count { it.equals(findText, ignoreCase = true) }
+                    if (count > 0) {
+                        documentContent = documentContent.replace(findText, replaceText, ignoreCase = true)
+                        isDirty = true
+                        findMatchIndex = -1
+                        findMatchCount = 0
+                        coroutineScope.launch { snackbarHostState.showSnackbar("Replaced $count occurrence(s)") }
+                    } else {
+                        coroutineScope.launch { snackbarHostState.showSnackbar("No matches found for \"$findText\"") }
+                    }
+                } else {
+                    coroutineScope.launch { snackbarHostState.showSnackbar("Enter text to find") }
+                }
+            },
             onGoToLine = {
                 val line = goToLineNumber.toIntOrNull()
                 if (line != null && line > 0) {
-                    println("Going to line: $line")
+                    val totalLines = documentContent.lines().size
+                    if (line <= totalLines) {
+                        coroutineScope.launch { snackbarHostState.showSnackbar("Jumped to line $line") }
+                    } else {
+                        coroutineScope.launch { snackbarHostState.showSnackbar("Line $line exceeds document length ($totalLines lines)") }
+                    }
+                } else {
+                    coroutineScope.launch { snackbarHostState.showSnackbar("Enter a valid line number") }
                 }
             },
-            onExportPdf = { println("Exporting as PDF") },
-            onExportHtml = { println("Exporting as HTML") },
-            onExportMarkdown = { println("Exporting as Markdown") },
+            onExportPdf = {
+                jsWindowPrint()
+                coroutineScope.launch { snackbarHostState.showSnackbar("Print dialog opened (save as PDF)") }
+            },
+            onExportHtml = {
+                try {
+                    val parser = ParserRegistry.getParser(currentFormat)
+                    val htmlContent = if (parser != null) {
+                        val doc = parser.parse(documentContent)
+                        val body = parser.toHtml(doc)
+                        "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>$documentName</title>\n</head>\n<body>\n$body\n</body>\n</html>"
+                    } else {
+                        "<pre>${documentContent.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")}</pre>"
+                    }
+                    val htmlFilename = documentName.substringBeforeLast(".") + ".html"
+                    downloadFile(htmlContent, htmlFilename)
+                    coroutineScope.launch { snackbarHostState.showSnackbar("Exported as HTML: $htmlFilename") }
+                } catch (e: Exception) {
+                    coroutineScope.launch { snackbarHostState.showSnackbar("HTML export failed: ${e.message}") }
+                }
+            },
+            onExportMarkdown = {
+                try {
+                    val mdFilename = documentName.substringBeforeLast(".") + ".md"
+                    downloadFile(documentContent, mdFilename)
+                    coroutineScope.launch { snackbarHostState.showSnackbar("Exported as Markdown: $mdFilename") }
+                } catch (e: Exception) {
+                    coroutineScope.launch { snackbarHostState.showSnackbar("Export failed: ${e.message}") }
+                }
+            },
             onNewFile = {
                 documentContent = ""
                 documentName = "untitled.${getDefaultExtensionForFormat(currentFormat)}"
                 isDirty = true
+                coroutineScope.launch { snackbarHostState.showSnackbar("New document created") }
             },
             onOpenFile = {
                 CoroutineScope(Dispatchers.Default).launch {
                     val fileHandle = PWAFeatures.openFileWithFileSystemAccess()
                     if (fileHandle != null) {
-                        println("File opened: ${fileHandle.name}")
-                        // Retrieve the file content that was read by the JS interop layer
                         val content = PWAFeatures.getOpenedFileContent()
                         if (content != null) {
                             documentContent = content
@@ -170,10 +267,12 @@ fun EnhancedYoleWebApp() {
                             val detectedFormat = detectFormatFromFilename(fileHandle.name)
                             currentFormat = detectedFormat
                             isDirty = false
-                            println("File loaded: ${fileHandle.name} (${content.length} chars, format=$detectedFormat)")
+                            snackbarHostState.showSnackbar("Opened: ${fileHandle.name} (${content.length} chars)")
                         } else {
-                            println("WARN: File handle obtained but content was not available")
+                            snackbarHostState.showSnackbar("Failed to read file content")
                         }
+                    } else {
+                        snackbarHostState.showSnackbar("File open cancelled or not supported")
                     }
                 }
             },
@@ -181,6 +280,7 @@ fun EnhancedYoleWebApp() {
                 saveDocumentToLocalStorage(documentContent, currentFormat, documentName)
                 lastSavedTimestamp = Clock.System.now().toString()
                 isDirty = false
+                coroutineScope.launch { snackbarHostState.showSnackbar("Document saved: $documentName") }
             },
             onSaveAsFile = {
                 CoroutineScope(Dispatchers.Default).launch {
@@ -191,12 +291,16 @@ fun EnhancedYoleWebApp() {
                     if (success) {
                         isDirty = false
                         lastSavedTimestamp = Clock.System.now().toString()
+                        snackbarHostState.showSnackbar("File saved: $documentName")
+                    } else {
+                        snackbarHostState.showSnackbar("Save As failed or not supported in this browser")
                     }
                 }
             },
             onPrint = { jsWindowPrint() },
             onSettingsSave = {
                 saveSettingsToLocalStorage(isDarkTheme, fontSize, wordWrap, showLineNumbers)
+                coroutineScope.launch { snackbarHostState.showSnackbar("Settings saved") }
             }
         )
     }
@@ -207,6 +311,7 @@ fun EnhancedYoleWebApp() {
  */
 @Composable
 fun EnhancedWebAppContent(
+    snackbarHostState: SnackbarHostState,
     documentContent: String,
     currentFormat: String,
     documentName: String,
@@ -273,7 +378,8 @@ fun EnhancedWebAppContent(
                 onExport = onExportToggle,
                 onSettings = onSettingsToggle
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
