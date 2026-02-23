@@ -9,6 +9,8 @@
  *########################################################*/
 package digital.vasic.yole.format
 
+import digital.vasic.yole.util.platformSynchronized
+
 /**
  * Represents a parsed document with structured content.
  *
@@ -69,16 +71,12 @@ class ParsedDocument(
 ) {
     /**
      * Cached HTML for light mode. Lazily generated on first toHtml(lightMode=true) call.
-     * Marked volatile for thread-safe lazy initialization.
      */
-    @Volatile
     private var _cachedHtmlLight: String? = null
 
     /**
      * Cached HTML for dark mode. Lazily generated on first toHtml(lightMode=false) call.
-     * Marked volatile for thread-safe lazy initialization.
      */
-    @Volatile
     private var _cachedHtmlDark: String? = null
 
     /**
@@ -366,15 +364,13 @@ interface TextParser {
  * ```
  */
 object ParserRegistry {
-    // Thread-safe lock for registration and lazy instantiation
+    // Synchronization lock for thread-safe access
     private val lock = Any()
 
     // Eager storage: Parsers that have been explicitly registered or lazy-loaded
-    // Uses synchronized access via lock for thread safety
     private val parsers = mutableMapOf<String, TextParser>()
 
     // Lazy storage: Factory functions for parsers not yet instantiated
-    // Uses synchronized access via lock for thread safety
     private val parserFactories = mutableMapOf<String, () -> TextParser>()
 
     /**
@@ -391,17 +387,15 @@ object ParserRegistry {
      * ParserRegistry.register(MarkdownParser())
      * ```
      */
-    fun register(parser: TextParser) {
+    fun register(parser: TextParser) = platformSynchronized(lock) {
         val formatId = parser.supportedFormat.id
 
-        synchronized(lock) {
-            // Check for duplicate format registration
-            if (parsers.containsKey(formatId) || parserFactories.containsKey(formatId)) {
-                throw IllegalArgumentException("Parser for format '$formatId' is already registered")
-            }
-
-            parsers[formatId] = parser
+        // Check for duplicate format registration
+        if (parsers.containsKey(formatId) || parserFactories.containsKey(formatId)) {
+            throw IllegalArgumentException("Parser for format '$formatId' is already registered")
         }
+
+        parsers[formatId] = parser
     }
 
     /**
@@ -419,15 +413,13 @@ object ParserRegistry {
      * ParserRegistry.registerLazy("markdown") { MarkdownParser() }
      * ```
      */
-    fun registerLazy(formatId: String, factory: () -> TextParser) {
-        synchronized(lock) {
-            // Check for duplicate format registration
-            if (parsers.containsKey(formatId) || parserFactories.containsKey(formatId)) {
-                throw IllegalArgumentException("Parser for format '$formatId' is already registered")
-            }
-
-            parserFactories[formatId] = factory
+    fun registerLazy(formatId: String, factory: () -> TextParser) = platformSynchronized(lock) {
+        // Check for duplicate format registration
+        if (parsers.containsKey(formatId) || parserFactories.containsKey(formatId)) {
+            throw IllegalArgumentException("Parser for format '$formatId' is already registered")
         }
+
+        parserFactories[formatId] = factory
     }
 
     /**
@@ -445,26 +437,22 @@ object ParserRegistry {
      * val parser = ParserRegistry.getParser(format)
      * ```
      */
-    fun getParser(format: TextFormat): TextParser? {
+    fun getParser(format: TextFormat): TextParser? = platformSynchronized(lock) {
         val formatId = format.id
 
-        synchronized(lock) {
-            // Check if parser is already instantiated
-            parsers[formatId]?.let { return it }
+        // Check if parser is already instantiated
+        parsers[formatId]?.let { return@platformSynchronized it }
 
-            // Check if we have a factory for this format
-            val factory = parserFactories[formatId] ?: run {
-                // Try to find by canParse() for backwards compatibility
-                return parsers.values.firstOrNull { it.canParse(format) }
-            }
+        // Check if we have a factory for this format
+        val factory = parserFactories[formatId]
+            ?: return@platformSynchronized parsers.values.firstOrNull { it.canParse(format) }
 
-            // Lazy instantiate the parser (inside lock to prevent duplicate instantiation)
-            val parser = factory()
-            parsers[formatId] = parser
-            parserFactories.remove(formatId)  // Remove factory after instantiation
+        // Lazy instantiate the parser
+        val parser = factory()
+        parsers[formatId] = parser
+        parserFactories.remove(formatId)  // Remove factory after instantiation
 
-            return parser
-        }
+        parser
     }
 
     /**
@@ -492,13 +480,11 @@ object ParserRegistry {
      * @param format The format to check
      * @return true if a parser exists, false otherwise
      */
-    fun hasParser(format: TextFormat): Boolean {
+    fun hasParser(format: TextFormat): Boolean = platformSynchronized(lock) {
         val formatId = format.id
-        synchronized(lock) {
-            return parsers.containsKey(formatId) ||
-                   parserFactories.containsKey(formatId) ||
-                   parsers.values.any { it.canParse(format) }
-        }
+        parsers.containsKey(formatId) ||
+               parserFactories.containsKey(formatId) ||
+               parsers.values.any { it.canParse(format) }
     }
 
     /**
@@ -510,10 +496,8 @@ object ParserRegistry {
      *
      * @return A list of all instantiated parsers
      */
-    fun getAllParsers(): List<TextParser> {
-        synchronized(lock) {
-            return parsers.values.toList()
-        }
+    fun getAllParsers(): List<TextParser> = platformSynchronized(lock) {
+        parsers.values.toList()
     }
 
     /**
@@ -523,10 +507,8 @@ object ParserRegistry {
      *
      * @return Number of parsers registered but not yet instantiated
      */
-    fun getPendingParserCount(): Int {
-        synchronized(lock) {
-            return parserFactories.size
-        }
+    fun getPendingParserCount(): Int = platformSynchronized(lock) {
+        parserFactories.size
     }
 
     /**
@@ -536,10 +518,8 @@ object ParserRegistry {
      *
      * @return Number of parsers that have been instantiated
      */
-    fun getInstantiatedParserCount(): Int {
-        synchronized(lock) {
-            return parsers.size
-        }
+    fun getInstantiatedParserCount(): Int = platformSynchronized(lock) {
+        parsers.size
     }
 
     /**
@@ -548,11 +528,9 @@ object ParserRegistry {
      * This method is primarily useful for testing scenarios where you need
      * to reset the registry to a clean state.
      */
-    fun clear() {
-        synchronized(lock) {
-            parsers.clear()
-            parserFactories.clear()
-        }
+    fun clear() = platformSynchronized(lock) {
+        parsers.clear()
+        parserFactories.clear()
     }
 }
 

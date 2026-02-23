@@ -370,12 +370,36 @@ fun PreviewScreen(fileName: String, content: String) {
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Use format parsers for preview
+        // Use format parsers for live preview rendering
         val previewContent = remember(content, fileName) {
             try {
                 val format = FormatRegistry.detectByFilename(fileName)
-                // For now, just show the content with format info
-                "Format: ${format.name}\n\n$content"
+                val parser = digital.vasic.yole.format.ParserRegistry.getParser(format)
+                if (parser != null) {
+                    val document = parser.parse(content)
+                    val html = document.toHtml(lightMode = true)
+                    // Strip HTML tags for text-based preview display
+                    val stripped = html
+                        .replace(Regex("<br\\s*/?>"), "\n")
+                        .replace(Regex("</?p>"), "\n")
+                        .replace(Regex("</?div>"), "\n")
+                        .replace(Regex("<li>"), "\n- ")
+                        .replace(Regex("<h[1-6][^>]*>"), "\n")
+                        .replace(Regex("</h[1-6]>"), "\n")
+                        .replace(Regex("<hr\\s*/?>"), "\n---\n")
+                        .replace(Regex("<[^>]+>"), "")
+                        .replace("&lt;", "<")
+                        .replace("&gt;", ">")
+                        .replace("&amp;", "&")
+                        .replace("&quot;", "\"")
+                        .replace("&#39;", "'")
+                        .replace("&nbsp;", " ")
+                        .replace(Regex("\n{3,}"), "\n\n")
+                        .trim()
+                    "Format: ${format.name}\n\n$stripped"
+                } else {
+                    "Format: ${format.name}\n\n$content"
+                }
             } catch (e: Exception) {
                 content // Fallback to raw content
             }

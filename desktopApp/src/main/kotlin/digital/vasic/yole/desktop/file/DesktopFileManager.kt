@@ -323,7 +323,8 @@ class DesktopFileManager {
      * Validates file extension for security.
      */
     fun isValidExtension(extension: String): Boolean {
-        return SUPPORTED_EXTENSIONS.contains(extension.lowercase())
+        val ext = extension.lowercase().let { if (it.startsWith(".")) it else ".$it" }
+        return SUPPORTED_EXTENSIONS.contains(ext)
     }
     
     /**

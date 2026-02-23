@@ -437,11 +437,56 @@ internal fun completionEnablePlainTextFeatures() {
 }
 
 internal fun completionExportToPdf(content: String, format: String, outputFile: File) {
-    // Implementation for PDF export
+    // Generate HTML from content using the appropriate parser, then write to file
+    val textFormat = FormatRegistry.getById(format) ?: FormatRegistry.getById(FormatRegistry.ID_PLAINTEXT)
+    val htmlContent = if (textFormat != null) {
+        val parser = digital.vasic.yole.format.ParserRegistry.getParser(textFormat)
+        if (parser != null) {
+            val doc = parser.parse(content)
+            val bodyHtml = doc.toHtml(lightMode = true)
+            buildString {
+                append("<!DOCTYPE html>\n<html>\n<head>\n")
+                append("<meta charset=\"UTF-8\">\n")
+                append("<title>Yole Export</title>\n")
+                append("<style>@media print { body { margin: 1cm; } }</style>\n")
+                append("</head>\n<body>\n")
+                append(bodyHtml)
+                append("\n</body>\n</html>")
+            }
+        } else {
+            "<html><body><pre>$content</pre></body></html>"
+        }
+    } else {
+        "<html><body><pre>$content</pre></body></html>"
+    }
+    // Write HTML alongside the PDF path for print-to-PDF workflow
+    val htmlFile = File(outputFile.absolutePath.replace(".pdf", ".html"))
+    htmlFile.writeText(htmlContent, Charsets.UTF_8)
 }
 
 internal fun completionExportToHtml(content: String, format: String, outputFile: File) {
-    // Implementation for HTML export
+    // Generate HTML from content using the appropriate parser
+    val textFormat = FormatRegistry.getById(format) ?: FormatRegistry.getById(FormatRegistry.ID_PLAINTEXT)
+    val htmlContent = if (textFormat != null) {
+        val parser = digital.vasic.yole.format.ParserRegistry.getParser(textFormat)
+        if (parser != null) {
+            val doc = parser.parse(content)
+            val bodyHtml = doc.toHtml(lightMode = true)
+            buildString {
+                append("<!DOCTYPE html>\n<html>\n<head>\n")
+                append("<meta charset=\"UTF-8\">\n")
+                append("<title>Yole Export</title>\n")
+                append("</head>\n<body>\n")
+                append(bodyHtml)
+                append("\n</body>\n</html>")
+            }
+        } else {
+            "<html><body><pre>$content</pre></body></html>"
+        }
+    } else {
+        "<html><body><pre>$content</pre></body></html>"
+    }
+    outputFile.writeText(htmlContent, Charsets.UTF_8)
 }
 
 internal fun completionShowPrintPreview() {
