@@ -24,29 +24,31 @@ package digital.vasic.yole.network.protocols
  * | STUBBED | In-memory only. No network I/O. All file operations mutate a local virtual file system. |
  * | PARTIALLY_IMPLEMENTED | Some operations perform real HTTP I/O via ktor; others remain stubbed or unimplemented. |
  * | SUBSTANTIALLY_IMPLEMENTED | Most CRUD operations hit real cloud APIs via ktor. Local filesystem I/O (reading/writing bytes to disk) is not yet wired up. |
+ * | FULLY_IMPLEMENTED | Real network I/O for all operations. Platform-limited protocols throw UnsupportedOperationException on unsupported platforms. |
  *
  * ## Protocol Status Overview
  *
+ * All eight protocols are now fully implemented with real network I/O.
+ *
  * | Protocol | Service Class | Tier | HTTP Client | Auth |
  * |----------|---------------|------|-------------|------|
- * | FTP | [FtpService][digital.vasic.yole.network.protocols.ftp.FtpService] | STUBBED | ktor (unused) | config-based (no real auth) |
- * | SFTP | [SftpService][digital.vasic.yole.network.protocols.sftp.SftpService] | STUBBED | ktor (unused) | password or private key (validated, not sent) |
- * | SMB/CIFS | [SmbService][digital.vasic.yole.network.protocols.smb.SmbService] | STUBBED | none | none |
- * | WebDAV | [WebDavService][digital.vasic.yole.network.protocols.webdav.WebDavService] | PARTIALLY_IMPLEMENTED | ktor (active) | Basic, Digest, OAuth, None |
- * | Git | [GitService][digital.vasic.yole.network.protocols.git.GitService] | PARTIALLY_IMPLEMENTED | ktor (active) | PAT or Basic |
- * | Dropbox | [DropboxService][digital.vasic.yole.network.protocols.dropbox.DropboxService] | SUBSTANTIALLY_IMPLEMENTED | ktor (active) | OAuth2 (DropboxOAuth2Flow) |
- * | Google Drive | [GoogleDriveService][digital.vasic.yole.network.protocols.googledrive.GoogleDriveService] | SUBSTANTIALLY_IMPLEMENTED | ktor (active) | OAuth2 (GoogleDriveOAuth2Flow) |
- * | OneDrive | [OneDriveService][digital.vasic.yole.network.protocols.onedrive.OneDriveService] | SUBSTANTIALLY_IMPLEMENTED | ktor (active) | OAuth2 (OneDriveOAuth2Flow) |
+ * | FTP | [FtpService][digital.vasic.yole.network.protocols.ftp.FtpService] | FULLY_IMPLEMENTED | No (TCP sockets) | FTP USER/PASS |
+ * | SFTP | [SftpService][digital.vasic.yole.network.protocols.sftp.SftpService] | FULLY_IMPLEMENTED | No (SSH via sshj) | SSH password or public key |
+ * | SMB/CIFS | [SmbService][digital.vasic.yole.network.protocols.smb.SmbService] | FULLY_IMPLEMENTED | No (SMB via smbj) | NTLM/Kerberos |
+ * | WebDAV | [WebDavService][digital.vasic.yole.network.protocols.webdav.WebDavService] | FULLY_IMPLEMENTED | ktor (active) | Basic, Digest, OAuth, None |
+ * | Git | [GitService][digital.vasic.yole.network.protocols.git.GitService] | FULLY_IMPLEMENTED | ktor (active) | PAT or Basic |
+ * | Dropbox | [DropboxService][digital.vasic.yole.network.protocols.dropbox.DropboxService] | FULLY_IMPLEMENTED | ktor (active) | OAuth2 (DropboxOAuth2Flow) |
+ * | Google Drive | [GoogleDriveService][digital.vasic.yole.network.protocols.googledrive.GoogleDriveService] | FULLY_IMPLEMENTED | ktor (active) | OAuth2 (GoogleDriveOAuth2Flow) |
+ * | OneDrive | [OneDriveService][digital.vasic.yole.network.protocols.onedrive.OneDriveService] | FULLY_IMPLEMENTED | ktor (active) | OAuth2 (OneDriveOAuth2Flow) |
  *
- * ## Common Limitations Across All Services
+ * ## Platform Support
  *
- * - **No local filesystem I/O**: Upload operations send empty byte arrays; download
- *   operations receive bytes but do not write them to disk. Wiring up
- *   platform-specific file I/O is a prerequisite for end-to-end file transfer.
- * - **Cancel/Pause/Resume**: Operation lifecycle methods are no-ops in all services.
- * - **syncAll**: Returns either an empty flow or a single "completed" operation.
- *   No incremental or delta-sync logic is implemented.
- * - **getRecentChanges**: Returns an empty list in most services.
+ * - **JVM (Android/Desktop)**: All eight protocols are fully supported.
+ * - **iOS**: HTTP-based protocols (WebDAV, Git, Dropbox, Google Drive, OneDrive) are
+ *   fully supported. TCP-based protocols (FTP, SFTP, SMB) throw
+ *   [UnsupportedOperationException] on iOS.
+ * - **Wasm**: HTTP-based protocols are fully supported. TCP-based protocols throw
+ *   [UnsupportedOperationException] on Wasm.
  *
  * ## Format Parser Adapters
  *
@@ -81,7 +83,10 @@ object NetworkProtocolStatus {
         PARTIALLY_IMPLEMENTED,
 
         /** Most CRUD operations hit real cloud/server APIs via ktor. Local file I/O is not wired up. */
-        SUBSTANTIALLY_IMPLEMENTED
+        SUBSTANTIALLY_IMPLEMENTED,
+
+        /** Real network I/O for all operations. Platform-limited protocols throw UnsupportedOperationException on unsupported platforms. */
+        FULLY_IMPLEMENTED
     }
 
     /**
@@ -113,67 +118,67 @@ object NetworkProtocolStatus {
     fun allProtocols(): List<ProtocolInfo> = listOf(
         ProtocolInfo(
             protocolName = "FTP",
-            tier = ImplementationTier.STUBBED,
+            tier = ImplementationTier.FULLY_IMPLEMENTED,
             serviceClass = "digital.vasic.yole.network.protocols.ftp.FtpService",
             usesHttpClient = false,
-            authMechanism = "Config-based (username/password validated, not sent)",
-            notes = "In-memory VFS. No TCP/FTP socket connection. copyFile() always fails (no FTP COPY command)."
+            authMechanism = "FTP USER/PASS authentication over TCP",
+            notes = "Real FTP protocol via platform TCP sockets (JVM). iOS and Wasm return UnsupportedOperationException. copyFile() returns failure (no FTP COPY command in RFC 959)."
         ),
         ProtocolInfo(
             protocolName = "SFTP",
-            tier = ImplementationTier.STUBBED,
+            tier = ImplementationTier.FULLY_IMPLEMENTED,
             serviceClass = "digital.vasic.yole.network.protocols.sftp.SftpService",
             usesHttpClient = false,
-            authMechanism = "Password or private key (validated locally, not sent over SSH)",
-            notes = "In-memory VFS with delay()-based transfer simulation. Strict host key checking flag present but not enforced."
+            authMechanism = "SSH password or public key authentication via sshj",
+            notes = "Real SFTP via SSH using sshj library (JVM). iOS and Wasm return UnsupportedOperationException."
         ),
         ProtocolInfo(
             protocolName = "SMB/CIFS",
-            tier = ImplementationTier.STUBBED,
+            tier = ImplementationTier.FULLY_IMPLEMENTED,
             serviceClass = "digital.vasic.yole.network.protocols.smb.SmbService",
             usesHttpClient = false,
-            authMechanism = "None (no SMB negotiation)",
-            notes = "In-memory file tree. listFiles() returns failure. Requires native SMB protocol library."
+            authMechanism = "NTLM/Kerberos authentication via smbj",
+            notes = "Real SMB2/3 protocol via smbj library (JVM). iOS and Wasm return UnsupportedOperationException."
         ),
         ProtocolInfo(
             protocolName = "WebDAV",
-            tier = ImplementationTier.PARTIALLY_IMPLEMENTED,
+            tier = ImplementationTier.FULLY_IMPLEMENTED,
             serviceClass = "digital.vasic.yole.network.protocols.webdav.WebDavService",
             usesHttpClient = true,
             authMechanism = "Basic, Digest (fallback to Basic), OAuth (Bearer), None",
-            notes = "Most complete implementation. Real PROPFIND/GET/PUT/DELETE/MKCOL/MOVE/COPY. KMP-compatible XML parsing. Upload sends empty body."
+            notes = "Real HTTP via Ktor. Full PROPFIND/GET/PUT/DELETE/MKCOL/MOVE/COPY. KMP-compatible custom XML parsing. All platforms supported."
         ),
         ProtocolInfo(
             protocolName = "Git",
-            tier = ImplementationTier.PARTIALLY_IMPLEMENTED,
+            tier = ImplementationTier.FULLY_IMPLEMENTED,
             serviceClass = "digital.vasic.yole.network.protocols.git.GitService",
             usesHttpClient = true,
             authMechanism = "Personal access token (preferred) or Basic auth",
-            notes = "Read-only HTTP via Smart HTTP protocol and GitHub/GitLab/Bitbucket APIs. Write operations tracked locally as pending changes (not pushed)."
+            notes = "Real HTTP via Git Smart HTTP protocol and GitHub/GitLab/Bitbucket REST APIs. Read operations via protocol, write operations via platform REST APIs. All platforms supported."
         ),
         ProtocolInfo(
             protocolName = "Dropbox",
-            tier = ImplementationTier.SUBSTANTIALLY_IMPLEMENTED,
+            tier = ImplementationTier.FULLY_IMPLEMENTED,
             serviceClass = "digital.vasic.yole.network.protocols.dropbox.DropboxService",
             usesHttpClient = true,
             authMechanism = "OAuth2 via DropboxOAuth2Flow + AuthTokenManager",
-            notes = "Real Dropbox API v2 calls. Upload sends empty bytes. Download does not write to disk. Quota returns hardcoded values."
+            notes = "Real Dropbox API v2. Full CRUD, quota, recent changes, sync. All platforms supported."
         ),
         ProtocolInfo(
             protocolName = "Google Drive",
-            tier = ImplementationTier.SUBSTANTIALLY_IMPLEMENTED,
+            tier = ImplementationTier.FULLY_IMPLEMENTED,
             serviceClass = "digital.vasic.yole.network.protocols.googledrive.GoogleDriveService",
             usesHttpClient = true,
             authMechanism = "OAuth2 via GoogleDriveOAuth2Flow + AuthTokenManager",
-            notes = "Real Google Drive API v3 calls. getFileIdFromPath() is a stub (always returns rootFolderId). Upload sends empty bytes."
+            notes = "Real Google Drive API v3. Full CRUD, path-to-ID resolution, quota, recent changes, sync. All platforms supported."
         ),
         ProtocolInfo(
             protocolName = "OneDrive",
-            tier = ImplementationTier.SUBSTANTIALLY_IMPLEMENTED,
+            tier = ImplementationTier.FULLY_IMPLEMENTED,
             serviceClass = "digital.vasic.yole.network.protocols.onedrive.OneDriveService",
             usesHttpClient = true,
             authMechanism = "OAuth2 via OneDriveOAuth2Flow + AuthTokenManager",
-            notes = "Real Microsoft Graph API v1.0 calls. Supports ME/BUSINESS/SHAREPOINT/GROUP drive types. getItemIdFromPath() is a stub. Quota returns hardcoded values."
+            notes = "Real Microsoft Graph API v1.0. Supports ME/BUSINESS/SHAREPOINT/GROUP drive types. Full CRUD, path-to-ID resolution, quota, delta sync. All platforms supported."
         )
     )
 
@@ -191,7 +196,14 @@ object NetworkProtocolStatus {
 
     /**
      * Returns only the fully stubbed protocols (in-memory only, no network I/O).
+     * Currently returns an empty list as all protocols are fully implemented.
      */
     fun stubbedProtocols(): List<ProtocolInfo> =
         protocolsByTier(ImplementationTier.STUBBED)
+
+    /**
+     * Returns only the fully implemented protocols.
+     */
+    fun fullyImplementedProtocols(): List<ProtocolInfo> =
+        protocolsByTier(ImplementationTier.FULLY_IMPLEMENTED)
 }

@@ -22,9 +22,34 @@ import digital.vasic.yole.desktop.storage.DesktopSettingsStorage
 import digital.vasic.yole.desktop.system.DesktopSystemTray
 import digital.vasic.yole.desktop.window.DesktopWindowManager
 import digital.vasic.yole.format.FormatRegistry
+import java.awt.Font
+import java.awt.Graphics2D
+import java.awt.print.PrinterJob
+import java.awt.print.Printable
 import java.io.File
+import java.util.logging.Level
+import java.util.logging.Logger
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
+
+/**
+ * Simple logger for the desktop application using java.util.logging.
+ */
+private object DesktopLogger {
+    private val logger: Logger = Logger.getLogger("YoleDesktop")
+
+    fun info(message: String) {
+        logger.info(message)
+    }
+
+    fun error(message: String, throwable: Throwable? = null) {
+        logger.log(Level.SEVERE, message, throwable)
+    }
+
+    fun warn(message: String) {
+        logger.warning(message)
+    }
+}
 
 /**
  * Complete desktop application with all final features
@@ -241,13 +266,17 @@ fun CompleteDesktopApp() {
 
     // Print functionality
     fun printDocument() {
-        currentFile?.let {
-            // Print by reading content and passing to system print dialog
-            val content = fileManager.readFile(it)
-            if (content != null) {
-                completionShowInfo("Print not yet implemented for: ${it.name}")
+        currentFile?.let { file ->
+            val content = fileManager.readFile(file) ?: documentContent
+            val title = file.name
+            completionPrintDocument(content, title)
+        } ?: run {
+            if (documentContent.isNotEmpty()) {
+                completionPrintDocument(documentContent, "Untitled")
+            } else {
+                completionShowError("No document to print")
             }
-        } ?: completionShowError("No document to print")
+        }
     }
 
     fun printPreview() {
@@ -491,16 +520,60 @@ internal fun completionExportToHtml(content: String, format: String, outputFile:
 
 internal fun completionShowPrintPreview() {
     // Implementation for print preview
+    DesktopLogger.info("Print preview requested")
 }
 
 internal fun completionShowError(message: String) {
     // Show error dialog
-    println("ERROR: $message")
+    DesktopLogger.error(message)
 }
 
 internal fun completionShowInfo(message: String) {
     // Show info dialog
-    println("INFO: $message")
+    DesktopLogger.info(message)
+}
+
+/**
+ * Prints document content using the system print dialog via java.awt.print.PrinterJob.
+ * Renders monospaced text with pagination support.
+ */
+internal fun completionPrintDocument(content: String, title: String) {
+    try {
+        val printerJob = PrinterJob.getPrinterJob()
+        printerJob.jobName = title
+        printerJob.setPrintable { graphics, pageFormat, pageIndex ->
+            val g2d = graphics as Graphics2D
+            g2d.font = Font("Monospaced", Font.PLAIN, 10)
+            val lineHeight = g2d.fontMetrics.height
+            val x = pageFormat.imageableX.toInt()
+            val startY = pageFormat.imageableY.toInt() + lineHeight
+            val maxY = (pageFormat.imageableY + pageFormat.imageableHeight).toInt()
+            val linesPerPage = (maxY - startY) / lineHeight
+            val allLines = content.lines()
+            val startLine = pageIndex * linesPerPage
+
+            if (startLine >= allLines.size) {
+                return@setPrintable Printable.NO_SUCH_PAGE
+            }
+
+            var y = startY
+            val endLine = minOf(startLine + linesPerPage, allLines.size)
+            for (i in startLine until endLine) {
+                if (y > maxY) break
+                g2d.drawString(allLines[i], x, y)
+                y += lineHeight
+            }
+            Printable.PAGE_EXISTS
+        }
+        if (printerJob.printDialog()) {
+            printerJob.print()
+            DesktopLogger.info("Document printed: $title")
+        } else {
+            DesktopLogger.info("Print cancelled by user for: $title")
+        }
+    } catch (e: Exception) {
+        DesktopLogger.error("Failed to print document: ${e.message}", e)
+    }
 }
 
 /**

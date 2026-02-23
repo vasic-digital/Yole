@@ -2,7 +2,6 @@ package digital.vasic.yole.network.protocols.git
 
 import digital.vasic.yole.network.StorageQuota
 import digital.vasic.yole.network.common.*
-import digital.vasic.yole.network.protocol.MockNetworkStorageService
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
