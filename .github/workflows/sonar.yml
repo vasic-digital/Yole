@@ -6,11 +6,9 @@
 
 name: SonarQube
 
+# DISABLED: All automatic triggers removed. Use workflow_dispatch to run manually.
 on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+  workflow_dispatch:
 
 concurrency:
   group: sonar-${{ github.ref }}

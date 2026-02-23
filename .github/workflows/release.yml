@@ -6,10 +6,9 @@
 
 name: Release
 
+# DISABLED: All automatic triggers removed. Use workflow_dispatch to run manually.
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write

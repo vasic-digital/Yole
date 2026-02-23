@@ -1,0 +1,192 @@
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2025 Milos Vasic
+
+const formats = [
+  {
+    id: "markdown",
+    name: "Markdown",
+    description: "Full GitHub Flavored Markdown (GFM) support including tables, task lists, footnotes, strikethrough, and math expressions.",
+    features: ["Headings, paragraphs, emphasis", "Tables with alignment", "Task lists and checklists", "Footnotes and references", "Math expressions (KaTeX)", "Code blocks with syntax highlighting"],
+    extensions: [".md", ".markdown", ".mkd"],
+  },
+  {
+    id: "todotxt",
+    name: "todo.txt",
+    description: "Plain-text task management following the todo.txt format specification with priorities, projects, contexts, and due dates.",
+    features: ["Priority levels (A)-(Z)", "Projects (+project) and contexts (@context)", "Due dates (due:YYYY-MM-DD)", "Completion tracking", "Query syntax for filtering", "Sorting by priority, date, project"],
+    extensions: [".txt", ".todo"],
+  },
+  {
+    id: "csv",
+    name: "CSV / TSV",
+    description: "Spreadsheet-style editing for comma-separated and tab-separated value files with column alignment.",
+    features: ["Comma and tab delimiters", "Quoted field support", "Column alignment", "Header row detection", "Large file handling"],
+    extensions: [".csv", ".tsv"],
+  },
+  {
+    id: "latex",
+    name: "LaTeX",
+    description: "Scientific typesetting with math equations, bibliography management, and document structuring.",
+    features: ["Math mode (inline and display)", "Document structure commands", "Bibliography with BibTeX", "Cross-references", "Table and figure environments"],
+    extensions: [".tex", ".latex"],
+  },
+  {
+    id: "orgmode",
+    name: "Org Mode",
+    description: "Hierarchical note-taking and task management inspired by Emacs Org Mode.",
+    features: ["Hierarchical headings", "TODO states and priorities", "Tags and properties", "Timestamps and scheduling", "Tables with formulas", "Code blocks"],
+    extensions: [".org"],
+  },
+  {
+    id: "rst",
+    name: "reStructuredText",
+    description: "Python documentation format used by Sphinx, with directives and roles for rich document markup.",
+    features: ["Section headings with underlines", "Directives and roles", "Cross-references", "Code blocks with highlighting", "Tables (grid and simple)"],
+    extensions: [".rst", ".rest"],
+  },
+  {
+    id: "asciidoc",
+    name: "AsciiDoc",
+    description: "Technical documentation format with support for includes, conditional content, and rich formatting.",
+    features: ["Section headings", "Admonition blocks", "Source code blocks", "Include directives", "Cross-references and IDs"],
+    extensions: [".adoc", ".asciidoc", ".asc"],
+  },
+  {
+    id: "textile",
+    name: "Textile",
+    description: "Lightweight markup language with inline formatting and block-level elements.",
+    features: ["Inline formatting", "Block quotes", "Lists (ordered and unordered)", "Tables", "Image and link syntax"],
+    extensions: [".textile"],
+  },
+  {
+    id: "wikitext",
+    name: "WikiText",
+    description: "MediaWiki-compatible syntax for wiki pages with templates, internal links, and structured content.",
+    features: ["Internal and external links", "Template syntax", "Categories", "Tables", "Headings and sections"],
+    extensions: [".wiki", ".mediawiki"],
+  },
+  {
+    id: "tiddlywiki",
+    name: "TiddlyWiki",
+    description: "Non-linear personal wiki format with transclusion and unique tiddler-based organization.",
+    features: ["Tiddler transclusion", "Macros", "Wikilinks", "Styled blocks", "Filter expressions"],
+    extensions: [".tid"],
+  },
+  {
+    id: "fountain",
+    name: "Fountain",
+    description: "Screenplay writing format with automatic detection of scene headings, characters, dialogue, and action.",
+    features: ["Scene headings (INT./EXT.)", "Character and dialogue", "Parentheticals", "Transitions", "Title page metadata"],
+    extensions: [".fountain", ".spmd"],
+  },
+  {
+    id: "ledger",
+    name: "Ledger",
+    description: "Plain-text double-entry accounting format for personal and business financial tracking.",
+    features: ["Transaction records", "Account hierarchies", "Commodity prices", "Balance assertions", "Periodic transactions"],
+    extensions: [".ledger", ".journal"],
+  },
+  {
+    id: "keyvalue",
+    name: "Key-Value",
+    description: "Configuration file formats including .properties, .env, and similar key=value pair formats.",
+    features: [".properties format", ".env format", "Comment support", "Value quoting", "Section headers (INI-style)"],
+    extensions: [".properties", ".env", ".ini", ".cfg"],
+  },
+  {
+    id: "jupyter",
+    name: "Jupyter",
+    description: "Interactive notebook format with code cells, markdown cells, and output display.",
+    features: ["Code cell parsing", "Markdown cells", "Output rendering", "Multi-language support", "Metadata handling"],
+    extensions: [".ipynb"],
+  },
+  {
+    id: "taskpaper",
+    name: "TaskPaper",
+    description: "Plain-text task management with projects, tasks, and tags in a simple indentation-based format.",
+    features: ["Projects (ending with colon)", "Tasks (starting with dash)", "Tags (@tag)", "Notes (plain text)", "Hierarchical indentation"],
+    extensions: [".taskpaper"],
+  },
+  {
+    id: "bibtex",
+    name: "BibTeX",
+    description: "Bibliography and citation management format for academic and scientific writing.",
+    features: ["Entry types (@article, @book, etc.)", "Field parsing", "Key management", "String macros", "Cross-references"],
+    extensions: [".bib"],
+  },
+  {
+    id: "plaintext",
+    name: "Plain Text",
+    description: "Simple plain text editing with line numbers, word wrap, and basic text manipulation.",
+    features: ["Line numbering", "Word wrap", "Character/word/line counts", "Encoding detection", "Line ending handling"],
+    extensions: [".txt", ".text"],
+  },
+];
+
+export default function DocsPage() {
+  return (
+    <div className="container-page py-16">
+      <h1 className="text-4xl font-bold tracking-tight mb-4">Documentation</h1>
+      <p className="text-lg text-[var(--color-text-secondary)] mb-12 max-w-3xl">
+        Yole supports 17+ text formats out of the box. Each format includes parsing,
+        syntax highlighting, and format-specific features.
+      </p>
+
+      <div className="space-y-12">
+        {formats.map((format) => (
+          <section key={format.id} id={format.id} className="scroll-mt-24">
+            <div className="card">
+              <h2 className="text-2xl font-bold mb-2">{format.name}</h2>
+              <p className="text-[var(--color-text-secondary)] mb-4">{format.description}</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-semibold mb-2">Features</h3>
+                  <ul className="space-y-1">
+                    {format.features.map((feature) => (
+                      <li key={feature} className="text-sm text-[var(--color-text-secondary)] flex items-start gap-2">
+                        <span className="text-primary-500 mt-0.5">-</span>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2">File Extensions</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {format.extensions.map((ext) => (
+                      <code key={ext} className="text-sm px-2 py-1 rounded bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+                        {ext}
+                      </code>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <section className="mt-16">
+        <h2 className="text-3xl font-bold tracking-tight mb-4">Architecture</h2>
+        <p className="text-[var(--color-text-secondary)] mb-6 max-w-3xl">
+          Yole is built with Kotlin Multiplatform. All format parsing logic lives in the shared
+          module, while platform-specific UI and features are implemented per target.
+        </p>
+        <div className="card">
+          <pre className="text-sm overflow-x-auto"><code>{`shared/src/commonMain/kotlin/digital/vasic/yole/
+├── format/                    # Format system (17 text formats)
+│   ├── FormatRegistry.kt      # Central format registry
+│   ├── TextFormat.kt          # Format metadata
+│   ├── TextParser.kt          # Parser interface
+│   ├── markdown/              # Markdown parser
+│   ├── todotxt/               # todo.txt parser
+│   ├── csv/                   # CSV/TSV parser
+│   └── ...                    # Other format parsers
+├── model/                     # Document model
+└── network/                   # Cloud storage protocols`}</code></pre>
+        </div>
+      </section>
+    </div>
+  );
+}
