@@ -14,10 +14,20 @@ import digital.vasic.yole.format.ParsedDocument
 import digital.vasic.yole.format.TextFormat
 
 /**
- * Parser for FTP format files
- * 
- * This parser handles FTP-related file format parsing.
- * Currently implements basic text parsing functionality.
+ * Transport-layer adapter for FTP network protocol, registered in the format system.
+ *
+ * **Important**: This is NOT a file format parser. FTP is a network file transfer
+ * protocol (RFC 959), not a text format. This class exists as an adapter so that
+ * the [FormatRegistry][digital.vasic.yole.format.FormatRegistry] can represent
+ * FTP as a storage backend alongside actual text format parsers (Markdown,
+ * CSV, LaTeX, etc.).
+ *
+ * The actual FTP file operations (list, upload, download, etc.) are handled by
+ * [FtpService][digital.vasic.yole.network.protocols.ftp.FtpService].
+ * This parser simply passes content through as plain text.
+ *
+ * The `.ftp` extension is a synthetic placeholder and does not correspond to a
+ * real file format.
  */
 class FtpParser : TextParser {
     
@@ -29,8 +39,8 @@ class FtpParser : TextParser {
     )
     
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
-        // Basic implementation - treat as plain text for now
-        // In a real implementation, this would parse FTP-specific format
+        // Pass-through: FTP is a transport protocol, not a text format.
+        // Content is returned as-is. Actual file operations use FtpService.
         return ParsedDocument(
             format = supportedFormat,
             rawContent = content,

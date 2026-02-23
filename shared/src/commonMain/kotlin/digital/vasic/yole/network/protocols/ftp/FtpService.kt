@@ -17,16 +17,36 @@ import io.ktor.http.*
 import digital.vasic.yole.network.protocol.createHttpClient
 
 /**
- * Enhanced FTP implementation of NetworkStorageService
- * Provides real FTP file operations with proper error handling and progress tracking.
+ * FTP implementation of [NetworkStorageService].
  *
- * Since KMP doesn't have native FTP libraries, this implementation uses ktor HttpClient
- * for FTP-over-HTTP proxy scenarios and maintains an in-memory virtual file system for
- * state tracking. FTP commands (LIST, RETR, STOR, MKD, RNFR/RNTO, DELE) are modeled
- * with proper protocol semantics.
+ * ## Implementation Status
  *
- * Resource Management: This class manages an HttpClient that must be properly closed.
- * Call disconnect() when done using this service.
+ * **STUBBED** -- No actual FTP network I/O is performed. There is no pure Kotlin
+ * Multiplatform FTP client library, so this service maintains an **in-memory virtual
+ * file system** that simulates FTP protocol semantics (LIST, RETR, STOR, MKD,
+ * RNFR/RNTO, DELE, SIZE, MDTM). All file operations mutate only the in-memory
+ * state; no bytes are transferred over the network.
+ *
+ * ### What works (in-memory only, no real I/O):
+ * - [connect] / [disconnect] -- validates config, manages connection flag
+ * - [testConnection] -- validates host and port configuration
+ * - [listFiles] -- returns entries from the virtual file system
+ * - [downloadFile] / [uploadFile] -- simulate chunked transfers with progress
+ * - [deleteFile], [createFolder], [renameFile], [moveFile] -- mutate virtual FS
+ * - [getFileInfo], [exists] -- query virtual FS or return synthesized documents
+ * - [copyFile] -- returns failure (FTP protocol has no copy command)
+ * - Cache and sync status tracking (in-memory maps)
+ *
+ * ### What is NOT implemented (requires a real FTP client):
+ * - Actual TCP socket connection to an FTP server
+ * - FTP control/data channel communication
+ * - Real file content transfer (RETR/STOR)
+ * - Server-side directory listing (LIST)
+ * - Quota information (no standard FTP command)
+ * - Search (no FTP search command in RFC 959)
+ *
+ * Resource Management: This class manages a lazily-initialized [HttpClient] that
+ * must be properly closed. Call [disconnect] when done using this service.
  */
 class FtpService(
     override val config: StorageConfig.FtpConfig
@@ -143,8 +163,11 @@ class FtpService(
 
     /**
      * Test FTP connection by validating host/port configuration.
-     * In a real implementation this would open a control connection on the FTP port
-     * and verify the 220 greeting response, then authenticate with USER/PASS commands.
+     *
+     * TODO("Not yet implemented: open TCP control connection on FTP port,
+     * verify 220 greeting, authenticate with USER/PASS commands")
+     *
+     * Currently only validates that the host is non-blank and port is in range.
      */
     private suspend fun testFtpConnection(): Result<Unit> {
         return try {
@@ -158,15 +181,8 @@ class FtpService(
                 return Result.failure(Exception("Invalid FTP port: ${config.port}"))
             }
 
-            // In a full implementation, this would:
-            // 1. Open TCP connection to config.host:config.port
-            // 2. Read 220 greeting
-            // 3. Send USER config.username
-            // 4. Read 331 response
-            // 5. Send PASS config.password
-            // 6. Read 230 (logged in) response
-            // 7. If config.passiveMode, send PASV and parse response
-            // 8. Send TYPE I for binary mode
+            // TODO("Not yet implemented: FTP handshake sequence")
+            // Requires: TCP connect -> 220 greeting -> USER/PASS -> PASV -> TYPE I
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(NetworkStorageException.ConnectionException.Failed(
@@ -222,10 +238,11 @@ class FtpService(
     }
 
     /**
-     * List files in the given path using the FTP LIST command.
-     * Parses the virtual file system entries matching the requested directory.
-     * In a real implementation, this would send LIST to the FTP server and parse
-     * the Unix-style or DOS-style directory listing response.
+     * List files in the given path.
+     *
+     * **Stubbed**: Returns entries from the in-memory virtual file system.
+     * TODO("Not yet implemented: send FTP LIST command and parse Unix/DOS-style
+     * directory listing response from the server")
      */
     override fun listFiles(path: String): Flow<Result<List<NetworkDocument>>> = flow {
         if (!_isConnected) {
@@ -305,9 +322,11 @@ class FtpService(
     }
 
     /**
-     * Download a file from the FTP server using the RETR command.
-     * Opens a data connection (passive or active mode), sends RETR, and reads the
-     * file content in chunks while reporting progress.
+     * Simulate downloading a file using the FTP RETR command.
+     *
+     * **Stubbed**: Simulates chunked transfer progress using virtual file system sizes.
+     * No actual data connection is opened and no bytes are transferred.
+     * TODO("Not yet implemented: open data connection, send RETR, read file bytes")
      */
     override suspend fun downloadFile(
         remotePath: String,
@@ -411,9 +430,13 @@ class FtpService(
     }
 
     /**
-     * Upload a file to the FTP server using the STOR command.
-     * Opens a data connection, sends STOR, and writes the file content in chunks
-     * while reporting progress.
+     * Simulate uploading a file using the FTP STOR command.
+     *
+     * **Stubbed**: Simulates chunked transfer progress and registers the file in
+     * the virtual file system. No actual data connection is opened, no bytes are
+     * read from disk, and no bytes are transferred to the server.
+     * TODO("Not yet implemented: read local file, open data connection, send STOR,
+     * write file bytes")
      */
     override suspend fun uploadFile(
         localPath: String,
@@ -445,7 +468,7 @@ class FtpService(
             emit(initialOperation)
 
             // Step 1: Determine file size from local file
-            // In a real implementation, this would read the actual file size
+            // TODO("Not yet implemented: read actual file size from localPath")
             val fileSize = 1024L
 
             // Step 2: Send TYPE I (binary mode) if not already set
@@ -582,8 +605,8 @@ class FtpService(
 
             val fullPath = normalizePath(remotePath)
 
-            // Send DELE command for files, RMD for directories
-            // In a real implementation: send "DELE $fullPath\r\n" and check for 250 response
+            // TODO("Not yet implemented: send DELE/RMD command to FTP server")
+            // Would send "DELE $fullPath\r\n" and check for 250 response
             vfsMutex.withLock {
                 virtualFileSystem.remove(fullPath)
             }
@@ -961,11 +984,9 @@ class FtpService(
             syncStatusMap[fullPath] = SyncStatus.SYNCING
         }
 
-        // In a real implementation, this would:
-        // 1. Send SIZE and MDTM to check remote file state
-        // 2. Compare with cached version
-        // 3. Download if changed or if forceSync is true
-        // 4. Update cache entry
+        // TODO("Not yet implemented: FTP sync via SIZE/MDTM comparison")
+        // Would: 1. Send SIZE and MDTM to check remote file state
+        // 2. Compare with cached version, 3. Download if changed, 4. Update cache
 
         // Mark as synced after successful sync
         syncMutex.withLock {
@@ -992,11 +1013,9 @@ class FtpService(
         val operationId = nextOperationId()
         val now = Clock.System.now()
 
-        // In a real implementation, this would:
-        // 1. LIST root directory recursively
-        // 2. Compare each file with cached version
-        // 3. Download changed files
-        // 4. Update all cache entries
+        // TODO("Not yet implemented: recursive FTP LIST and diff-based sync")
+        // Would: 1. LIST root recursively, 2. Compare each file with cache,
+        // 3. Download changed files, 4. Update all cache entries
 
         // Mark all tracked files as synced
         syncMutex.withLock {

@@ -25,11 +25,42 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
- * Enhanced Dropbox implementation of NetworkStorageService
- * Provides real Dropbox API integration with OAuth2 authentication
+ * Dropbox implementation of [NetworkStorageService].
  *
- * Resource Management: This class manages an HttpClient that must be properly closed.
- * Call disconnect() when done using this service.
+ * ## Implementation Status
+ *
+ * **SUBSTANTIALLY IMPLEMENTED** -- Uses ktor [HttpClient] for real Dropbox API v2
+ * calls with OAuth2 authentication via [DropboxOAuth2Flow] and [AuthTokenManager].
+ *
+ * ### What works (real HTTP I/O via ktor against Dropbox API v2):
+ * - OAuth2 authentication flow (token storage, refresh via [AuthTokenManager])
+ * - [connect] -- validates token, fetches account info (2/users/get_current_account)
+ * - [disconnect] -- cancels background tasks, closes HttpClient
+ * - [testConnection] -- verifies account info retrieval
+ * - [listFiles] -- calls 2/files/list_folder, parses JSON response
+ * - [downloadFile] -- calls 2/files/download (content.dropboxapi.com)
+ *   (Note: downloaded bytes are not written to local filesystem)
+ * - [uploadFile] -- calls 2/files/upload (content.dropboxapi.com)
+ *   (Note: sends empty byte array; local file bytes not read from disk)
+ * - [deleteFile] -- calls 2/files/delete_v2
+ * - [createFolder] -- calls 2/files/create_folder_v2
+ * - [renameFile] / [moveFile] -- calls 2/files/move_v2
+ * - [copyFile] -- calls 2/files/copy_v2
+ * - [getFileInfo] -- calls 2/files/get_metadata
+ * - [searchFiles] -- calls 2/files/search_v2
+ * - [exists] -- delegates to [getFileInfo]
+ * - Cache and sync status tracking (in-memory maps)
+ *
+ * ### Limitations:
+ * - [uploadFile] sends empty bytes (local file reading not implemented)
+ * - [downloadFile] does not write bytes to local filesystem
+ * - [cancelOperation] / [pauseOperation] / [resumeOperation] are no-ops
+ * - [getQuotaInfo] returns hardcoded values (does not call Dropbox API)
+ * - [getRecentChanges] returns empty list
+ * - [syncAll] returns a single completed operation (no real sync logic)
+ *
+ * Resource Management: This class manages a lazily-initialized [HttpClient] that
+ * must be properly closed. Call [disconnect] when done using this service.
  */
 class DropboxService(
     override val config: StorageConfig.DropboxConfig
@@ -360,8 +391,7 @@ class DropboxService(
                 // Simulate progress updates
                 emit(initialOperation.copy(progress = 0.5, bytesTransferred = bytes.size.toLong() / 2L))
                 
-                // Here you would write the bytes to the local file system
-                // For now, we'll just simulate the operation
+                // TODO("Not yet implemented: write downloaded bytes to local filesystem")
                 
                 val completedOperation = initialOperation.copy(
                     status = NetworkOperation.Status.COMPLETED,
@@ -428,9 +458,8 @@ class DropboxService(
             addActiveOperation(initialOperation)
             emit(initialOperation)
             
-            // Here you would read the file from local file system
-            // For now, we'll simulate with empty bytes
-            val fileBytes = byteArrayOf() // This would be read from localPath
+            // TODO("Not yet implemented: read file bytes from localPath")
+            val fileBytes = byteArrayOf() // Placeholder: actual file bytes not read from disk
             
             emit(initialOperation.copy(progress = 0.5, bytesTransferred = fileBytes.size.toLong() / 2L))
             
@@ -807,18 +836,18 @@ class DropboxService(
         emit(operations)
     }
     
+    /** No-op. TODO("Not yet implemented: cancel in-flight Dropbox API request") */
     override suspend fun cancelOperation(operationId: Long): Result<Unit> {
-        // Implementation would go here
         return Result.success(Unit)
     }
-    
+
+    /** No-op. TODO("Not yet implemented: pause in-flight transfer") */
     override suspend fun pauseOperation(operationId: Long): Result<Unit> {
-        // Implementation would go here
         return Result.success(Unit)
     }
-    
+
+    /** No-op. TODO("Not yet implemented: resume paused transfer") */
     override suspend fun resumeOperation(operationId: Long): Result<Unit> {
-        // Implementation would go here
         return Result.success(Unit)
     }
     

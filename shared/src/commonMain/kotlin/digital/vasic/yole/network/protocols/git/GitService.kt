@@ -18,18 +18,46 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
- * Git implementation of NetworkStorageService.
- * Provides Git repository integration using the Smart HTTP protocol for
- * listing, downloading, and managing files in remote Git repositories.
+ * Git implementation of [NetworkStorageService].
  *
- * Git-specific behaviors:
- * - Git does not track empty folders; createFolder() tracks intent locally
- * - File uploads simulate git add/commit/push workflow
- * - Deletes, renames, moves, and copies are tracked locally as pending changes
- * - Uses info/refs and tree listing via HTTP for file enumeration
+ * ## Implementation Status
  *
- * Resource Management: This class manages an HttpClient that must be properly closed.
- * Call disconnect() when done using this service, or use it with try-finally blocks.
+ * **PARTIALLY IMPLEMENTED** -- Uses ktor [HttpClient] for read-only operations
+ * via the Git Smart HTTP protocol and platform-specific REST APIs (GitHub, GitLab,
+ * Bitbucket). Write operations are tracked locally as pending changes but are
+ * **not** pushed to the remote repository.
+ *
+ * ### What works (real HTTP I/O via ktor):
+ * - [connect] -- fetches info/refs endpoint to verify Smart HTTP access
+ * - [disconnect] -- closes HttpClient
+ * - [testConnection] -- verifies server reachability
+ * - [listFiles] -- attempts GitHub/GitLab Contents API, falls back to local cache
+ * - [downloadFile] -- fetches raw file content via platform-specific URLs
+ *   (Note: bytes are not written to local filesystem)
+ * - [getFileInfo] -- checks local cache, then HTTP HEAD for file existence
+ * - [exists] -- checks local cache, then HTTP HEAD
+ * - Authentication: personal access token (preferred) or Basic auth
+ * - Git ref parsing from Smart HTTP info/refs response
+ * - JSON tree response parsing for GitHub/GitLab APIs (KMP-compatible)
+ *
+ * ### What works (local tracking only, no push to remote):
+ * - [uploadFile] -- tracks as pending ADD change (git staging area simulation)
+ * - [deleteFile] -- tracks as pending DELETE change
+ * - [renameFile] / [moveFile] -- tracks as DELETE + ADD (git mv simulation)
+ * - [copyFile] -- tracks as pending ADD
+ * - [createFolder] -- Git does not track empty folders; tracked locally only
+ * - [searchFiles] -- searches locally known files by name
+ *
+ * ### What is NOT implemented:
+ * - git commit / git push (changes are never sent to the remote)
+ * - git pull / git fetch (no incremental update mechanism)
+ * - Actual file bytes are not written to disk on download
+ * - [syncAll] returns empty flow
+ * - [getRecentChanges] returns empty list
+ * - [getQuotaInfo] returns MAX_VALUE (Git repos have no quota concept)
+ *
+ * Resource Management: This class manages a lazily-initialized [HttpClient] that
+ * must be properly closed. Call [disconnect] when done, or use try-finally blocks.
  */
 class GitService(
     override val config: StorageConfig.GitConfig
@@ -337,7 +365,7 @@ class GitService(
 
                     if (response.status.isSuccess()) {
                         val contentLength = response.headers["Content-Length"]?.toLongOrNull() ?: 0L
-                        // In a full implementation, bytes would be written to localPath
+                        // TODO("Not yet implemented: write downloaded bytes to localPath")
 
                         emit(operation.copy(
                             status = NetworkOperation.Status.IN_PROGRESS,
@@ -821,8 +849,8 @@ class GitService(
             val pendingChange = changesMutex.withLock { pendingChanges[remotePath] }
 
             if (pendingChange != null && _isConnected) {
-                // In a full implementation, this would commit and push changes
-                // For now, mark the sync as completed
+                // TODO("Not yet implemented: git commit and git push pending changes")
+                // Currently just clears the pending change without committing
                 changesMutex.withLock { pendingChanges.remove(remotePath) }
             }
 

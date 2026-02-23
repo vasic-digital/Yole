@@ -21,11 +21,45 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * Enhanced Google Drive implementation of NetworkStorageService
- * Provides real Google Drive API integration with OAuth2 authentication
+ * Google Drive implementation of [NetworkStorageService].
  *
- * Resource Management: This class manages an HttpClient that must be properly closed.
- * Call disconnect() when done using this service.
+ * ## Implementation Status
+ *
+ * **SUBSTANTIALLY IMPLEMENTED** -- Uses ktor [HttpClient] for real Google Drive
+ * API v3 calls with OAuth2 authentication via [GoogleDriveOAuth2Flow] and
+ * [AuthTokenManager].
+ *
+ * ### What works (real HTTP I/O via ktor against Google Drive API v3):
+ * - OAuth2 authentication flow (token storage, refresh via [AuthTokenManager])
+ * - [connect] -- validates token, fetches about info (drive/v3/about)
+ * - [disconnect] -- cancels background tasks, closes HttpClient
+ * - [testConnection] -- verifies about info retrieval
+ * - [listFiles] -- calls drive/v3/files with parent query, parses JSON
+ * - [downloadFile] -- fetches file metadata, then downloads via alt=media
+ *   (Note: downloaded bytes are not written to local filesystem)
+ * - [uploadFile] -- calls upload/drive/v3/files with uploadType=media
+ *   (Note: sends empty byte array; local file bytes not read from disk)
+ * - [deleteFile] -- calls DELETE drive/v3/files/{fileId}
+ * - [createFolder] -- creates folder with application/vnd.google-apps.folder mimeType
+ * - [renameFile] -- calls PATCH drive/v3/files/{fileId} with new name
+ * - [moveFile] -- calls PATCH with addParents/removeParents parameters
+ * - [copyFile] -- calls POST drive/v3/files/{fileId}/copy
+ * - [getFileInfo] -- calls GET drive/v3/files/{fileId}
+ * - [searchFiles] -- calls drive/v3/files with name/fullText query
+ * - [getQuotaInfo] -- calls drive/v3/about with storageQuota field
+ * - [exists] -- delegates to [getFileInfo]
+ * - Cache and sync status tracking (in-memory maps)
+ *
+ * ### Limitations:
+ * - Path-to-fileId resolution is a stub ([getFileIdFromPath] returns rootFolderId)
+ * - [uploadFile] sends empty bytes (local file reading not implemented)
+ * - [downloadFile] does not write bytes to local filesystem
+ * - [cancelOperation] / [pauseOperation] / [resumeOperation] are no-ops
+ * - [getRecentChanges] returns empty list
+ * - [syncAll] returns a single completed operation (no real sync logic)
+ *
+ * Resource Management: This class manages a lazily-initialized [HttpClient] that
+ * must be properly closed. Call [disconnect] when done using this service.
  */
 class GoogleDriveService(
     override val config: StorageConfig.GoogleDriveConfig
@@ -277,8 +311,14 @@ class GoogleDriveService(
         }
     }
     
+    /**
+     * Resolve a path to a Google Drive file ID.
+     *
+     * **Stubbed**: Always returns [_rootFolderId]. A real implementation would
+     * walk the path segments, querying the Drive API for each folder by name.
+     * TODO("Not yet implemented: recursive path-to-fileId resolution via Drive API")
+     */
     private suspend fun getFileIdFromPath(path: String): Result<String> {
-        // Simplified path resolution - would need proper implementation
         return Result.success(_rootFolderId)
     }
     
@@ -352,8 +392,7 @@ class GoogleDriveService(
                 
                 emit(initialOperation.copy(progress = 0.8, bytesTransferred = bytes.size.toLong()))
                 
-                // Here you would write the bytes to the local file system
-                // For now, we'll just simulate the operation
+                // TODO("Not yet implemented: write downloaded bytes to local filesystem")
                 
                 val completedOperation = initialOperation.copy(
                     status = NetworkOperation.Status.COMPLETED,
@@ -416,9 +455,8 @@ class GoogleDriveService(
             addActiveOperation(initialOperation)
             emit(initialOperation)
             
-            // Here you would read the file from local file system
-            // For now, we'll simulate with empty bytes
-            val fileBytes = byteArrayOf() // This would be read from localPath
+            // TODO("Not yet implemented: read file bytes from localPath")
+            val fileBytes = byteArrayOf() // Placeholder: actual file bytes not read from disk
             val fileName = remotePath.substringAfterLast("/")
             
             emit(initialOperation.copy(progress = 0.3, totalSize = fileBytes.size.toLong()))
@@ -836,14 +874,17 @@ class GoogleDriveService(
         emit(operations)
     }
     
+    /** No-op. TODO("Not yet implemented: cancel in-flight Google Drive API request") */
     override suspend fun cancelOperation(operationId: Long): Result<Unit> {
         return Result.success(Unit)
     }
-    
+
+    /** No-op. TODO("Not yet implemented: pause in-flight transfer") */
     override suspend fun pauseOperation(operationId: Long): Result<Unit> {
         return Result.success(Unit)
     }
-    
+
+    /** No-op. TODO("Not yet implemented: resume paused transfer") */
     override suspend fun resumeOperation(operationId: Long): Result<Unit> {
         return Result.success(Unit)
     }

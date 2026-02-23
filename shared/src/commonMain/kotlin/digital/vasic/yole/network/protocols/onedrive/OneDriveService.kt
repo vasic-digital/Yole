@@ -22,11 +22,46 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.json.Json
 
 /**
- * OneDrive implementation of NetworkStorageService
- * Provides Microsoft OneDrive API integration with OAuth2 authentication
+ * Microsoft OneDrive implementation of [NetworkStorageService].
  *
- * Resource Management: This class manages an HttpClient that must be properly closed.
- * Call disconnect() when done using this service.
+ * ## Implementation Status
+ *
+ * **SUBSTANTIALLY IMPLEMENTED** -- Uses ktor [HttpClient] for real Microsoft
+ * Graph API calls with OAuth2 authentication via [OneDriveOAuth2Flow] and
+ * [AuthTokenManager]. Supports personal (ME), business, SharePoint, and group
+ * drive types.
+ *
+ * ### What works (real HTTP I/O via ktor against Microsoft Graph API v1.0):
+ * - OAuth2 authentication flow (token storage, refresh via [AuthTokenManager])
+ * - [connect] -- validates token, fetches drive info (v1.0/{driveType}/drive)
+ * - [disconnect] -- cancels background tasks, closes HttpClient
+ * - [testConnection] -- verifies drive info retrieval
+ * - [listFiles] -- calls items/{folderId}/children, parses JSON
+ * - [downloadFile] -- fetches metadata, then downloads via items/{id}/content
+ *   (Note: downloaded bytes are not written to local filesystem)
+ * - [uploadFile] -- calls PUT items/{parentId}/children/{name}/content
+ *   (Note: sends empty byte array; local file bytes not read from disk)
+ * - [deleteFile] -- calls DELETE items/{itemId}
+ * - [createFolder] -- creates folder via POST items/{parentId}/children
+ * - [renameFile] -- calls PATCH items/{itemId} with new name
+ * - [moveFile] -- calls PATCH with parentReference and name
+ * - [copyFile] -- calls POST items/{itemId}/copy (returns 202 Accepted)
+ * - [getFileInfo] -- calls GET items/{itemId}
+ * - [searchFiles] -- calls root/search(q='{query}')
+ * - [exists] -- delegates to [getFileInfo]
+ * - Cache and sync status tracking (in-memory maps)
+ *
+ * ### Limitations:
+ * - Path-to-itemId resolution is a stub ([getItemIdFromPath] returns rootFolderId)
+ * - [uploadFile] sends empty bytes (local file reading not implemented)
+ * - [downloadFile] does not write bytes to local filesystem
+ * - [cancelOperation] / [pauseOperation] / [resumeOperation] are no-ops
+ * - [getQuotaInfo] returns hardcoded values (does not call Graph API)
+ * - [getRecentChanges] returns empty list
+ * - [syncAll] returns a single completed operation (no real sync logic)
+ *
+ * Resource Management: This class manages a lazily-initialized [HttpClient] that
+ * must be properly closed. Call [disconnect] when done using this service.
  */
 class OneDriveService(
     override val config: StorageConfig.OneDriveConfig
@@ -298,8 +333,14 @@ class OneDriveService(
         }
     }
     
+    /**
+     * Resolve a path to a OneDrive item ID.
+     *
+     * **Stubbed**: Always returns [_rootFolderId]. A real implementation would
+     * walk the path segments, querying the Graph API for each folder by name.
+     * TODO("Not yet implemented: recursive path-to-itemId resolution via Graph API")
+     */
     private suspend fun getItemIdFromPath(path: String): Result<String> {
-        // Simplified path resolution - would need proper implementation
         return Result.success(_rootFolderId)
     }
     
@@ -385,8 +426,7 @@ class OneDriveService(
                 
                 emit(initialOperation.copy(progress = 0.8, bytesTransferred = bytes.size.toLong()))
                 
-                // Here you would write the bytes to the local file system
-                // For now, we'll just simulate the operation
+                // TODO("Not yet implemented: write downloaded bytes to local filesystem")
                 
                 val completedOperation = initialOperation.copy(
                     status = NetworkOperation.Status.COMPLETED,
@@ -449,9 +489,8 @@ class OneDriveService(
             addActiveOperation(initialOperation)
             emit(initialOperation)
             
-            // Here you would read the file from local file system
-            // For now, we'll simulate with empty bytes
-            val fileBytes = byteArrayOf() // This would be read from localPath
+            // TODO("Not yet implemented: read file bytes from localPath")
+            val fileBytes = byteArrayOf() // Placeholder: actual file bytes not read from disk
             val fileName = remotePath.substringAfterLast("/")
             
             emit(initialOperation.copy(progress = 0.3, totalSize = fileBytes.size.toLong()))
@@ -905,14 +944,17 @@ class OneDriveService(
         emit(operations)
     }
     
+    /** No-op. TODO("Not yet implemented: cancel in-flight Graph API request") */
     override suspend fun cancelOperation(operationId: Long): Result<Unit> {
         return Result.success(Unit)
     }
-    
+
+    /** No-op. TODO("Not yet implemented: pause in-flight transfer") */
     override suspend fun pauseOperation(operationId: Long): Result<Unit> {
         return Result.success(Unit)
     }
-    
+
+    /** No-op. TODO("Not yet implemented: resume paused transfer") */
     override suspend fun resumeOperation(operationId: Long): Result<Unit> {
         return Result.success(Unit)
     }

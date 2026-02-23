@@ -14,10 +14,20 @@ import digital.vasic.yole.format.ParsedDocument
 import digital.vasic.yole.format.TextFormat
 
 /**
- * Parser for Google Drive format files
- * 
- * This parser handles Google Drive-specific file format parsing.
- * Currently implements basic text parsing functionality.
+ * Transport-layer adapter for Google Drive cloud storage, registered in the format system.
+ *
+ * **Important**: This is NOT a file format parser. Google Drive is a cloud storage
+ * service, not a text format. This class exists as an adapter so that the
+ * [FormatRegistry][digital.vasic.yole.format.FormatRegistry] can represent Google
+ * Drive as a storage backend alongside actual text format parsers (Markdown, CSV,
+ * LaTeX, etc.).
+ *
+ * The actual Google Drive file operations (list, upload, download, etc.) are
+ * handled by [GoogleDriveService][digital.vasic.yole.network.protocols.googledrive.GoogleDriveService].
+ * This parser simply passes content through as plain text.
+ *
+ * The `.gdoc`, `.gsheet`, `.gslides` extensions are Google Workspace link files
+ * (JSON pointers to online documents), not parseable text content.
  */
 class GoogleDriveParser : TextParser {
     
@@ -29,8 +39,8 @@ class GoogleDriveParser : TextParser {
     )
     
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
-        // Basic implementation - treat as plain text for now
-        // In a real implementation, this would parse Google Drive-specific format
+        // Pass-through: Google Drive is a cloud storage service, not a text format.
+        // Content is returned as-is. Actual file operations use GoogleDriveService.
         return ParsedDocument(
             format = supportedFormat,
             rawContent = content,

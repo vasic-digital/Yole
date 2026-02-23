@@ -162,7 +162,18 @@ fun EnhancedYoleWebApp() {
                     val fileHandle = PWAFeatures.openFileWithFileSystemAccess()
                     if (fileHandle != null) {
                         println("File opened: ${fileHandle.name}")
-                        // TODO: Read file content when File System Access API is available in Wasm
+                        // Retrieve the file content that was read by the JS interop layer
+                        val content = PWAFeatures.getOpenedFileContent()
+                        if (content != null) {
+                            documentContent = content
+                            documentName = fileHandle.name
+                            val detectedFormat = detectFormatFromFilename(fileHandle.name)
+                            currentFormat = detectedFormat
+                            isDirty = false
+                            println("File loaded: ${fileHandle.name} (${content.length} chars, format=$detectedFormat)")
+                        } else {
+                            println("WARN: File handle obtained but content was not available")
+                        }
                     }
                 }
             },

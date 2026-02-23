@@ -10,14 +10,36 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 
 /**
- * SMB/CIFS implementation of NetworkStorageService.
- * Provides SMB file operations with proper authentication and an
- * in-memory file tree simulation for consistent state tracking.
+ * SMB/CIFS implementation of [NetworkStorageService].
  *
- * Since there is no pure Kotlin Multiplatform SMB library, this service
- * maintains an internal file system model that tracks all file operations
- * and provides consistent state across operations. Cache and sync state
- * are managed with Mutex-protected in-memory maps.
+ * ## Implementation Status
+ *
+ * **STUBBED** -- No actual SMB/CIFS network I/O is performed. There is no pure
+ * Kotlin Multiplatform SMB library, so this service maintains an **in-memory file
+ * tree** that tracks all file operations and provides consistent state. No SMB
+ * protocol negotiation, authentication, or file transfer occurs.
+ *
+ * ### What works (in-memory only, no real I/O):
+ * - [connect] / [disconnect] -- sets/clears connection flag (no SMB negotiation)
+ * - [testConnection] -- verifies connection flag
+ * - [uploadFile] / [downloadFile] -- simulate progress, update internal file tree
+ * - [deleteFile] -- removes from file tree (including children for folders)
+ * - [createFolder] -- adds folder node to file tree with parent auto-creation
+ * - [renameFile] -- renames node and all children in file tree
+ * - [moveFile] -- moves node and all children in file tree
+ * - [copyFile] -- copies node in file tree
+ * - [getFileInfo] -- returns node from file tree or synthesized document
+ * - [exists] -- checks file tree for key existence
+ * - Cache and sync status tracking (in-memory maps)
+ * - [getRecentChanges] -- filters file tree by lastModified
+ * - [getQuotaInfo] -- calculates used space from file tree sizes
+ *
+ * ### What is NOT implemented (requires a real SMB client):
+ * - SMB/CIFS protocol negotiation and session setup
+ * - NTLM/Kerberos authentication
+ * - Real file content transfer (SMB2 READ/WRITE)
+ * - [listFiles] -- returns failure (requires native SMB protocol support)
+ * - Server-side search (SMB2 QUERY_DIRECTORY with pattern)
  */
 class SmbService(
     override val config: StorageConfig.SmbConfig
@@ -563,9 +585,8 @@ class SmbService(
         val document = if (existingNode != null) {
             existingNode.document
         } else {
-            // Generate a document representation for the requested path.
-            // In a real SMB implementation this would query the server via
-            // SMB2 QUERY_INFO; here we return a synthesized document.
+            // TODO("Not yet implemented: query server via SMB2 QUERY_INFO")
+            // Returns a synthesized document since no real SMB connection exists.
             NetworkDocument(
                 id = remotePath,
                 name = remotePath.substringAfterLast("/"),

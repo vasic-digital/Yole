@@ -21,17 +21,38 @@ import io.ktor.http.*
 import digital.vasic.yole.network.protocol.createHttpClient
 
 /**
- * Enhanced SFTP implementation of NetworkStorageService
- * Provides secure FTP file operations with SSH key authentication and proper error handling.
+ * SFTP (SSH File Transfer Protocol) implementation of [NetworkStorageService].
  *
- * Since KMP doesn't have native SSH/SFTP libraries, this implementation maintains an
- * in-memory virtual file system for state tracking and models SFTP operations using
- * the SSH File Transfer Protocol semantics (SSH_FXP_* packet types). The implementation
- * properly tracks file state, handles errors, manages progress with realistic chunked
- * transfers, and provides in-memory cache and sync status storage protected by Mutex.
+ * ## Implementation Status
  *
- * Resource Management: This class manages an HttpClient that must be properly closed.
- * Call disconnect() when done using this service.
+ * **STUBBED** -- No actual SSH/SFTP network I/O is performed. There is no pure
+ * Kotlin Multiplatform SSH library, so this service maintains an **in-memory
+ * virtual file system** that simulates SFTP operations using SSH File Transfer
+ * Protocol semantics (SSH_FXP_* packet types). All file operations mutate only
+ * the in-memory state; no bytes are transferred over the network.
+ *
+ * ### What works (in-memory only, no real I/O):
+ * - [connect] / [disconnect] -- validates config (host, port, auth), manages flag
+ * - [testConnection] -- validates host, port, and authentication credentials
+ * - Authentication validation (password or private key)
+ * - [listFiles] -- returns entries from the virtual file system
+ * - [downloadFile] / [uploadFile] -- simulate chunked encrypted transfers with
+ *   progress and delay()-based timing
+ * - [deleteFile], [createFolder], [renameFile], [moveFile], [copyFile] -- mutate
+ *   virtual FS
+ * - [getFileInfo], [exists] -- query virtual FS or return synthesized documents
+ * - Cache and sync status tracking (in-memory maps)
+ *
+ * ### What is NOT implemented (requires a real SSH/SFTP client):
+ * - Actual TCP/SSH connection and key exchange
+ * - SSH authentication (password or public key)
+ * - Real encrypted file content transfer
+ * - Server-side directory listing (SSH_FXP_READDIR)
+ * - Quota information (non-standard "statvfs@openssh.com" extension)
+ * - Search (no SFTP search command)
+ *
+ * Resource Management: This class manages a lazily-initialized [HttpClient] that
+ * must be properly closed. Call [disconnect] when done using this service.
  */
 class SftpService(
     override val config: StorageConfig.SftpConfig
@@ -177,14 +198,12 @@ class SftpService(
     }
 
     /**
-     * Test SFTP connection by validating configuration and simulating SSH handshake.
-     * In a real implementation this would:
-     * 1. Open TCP connection to config.host:config.port
-     * 2. Exchange SSH version strings
-     * 3. Perform key exchange (KEX)
-     * 4. Authenticate with password or public key
-     * 5. Open an SFTP subsystem channel
-     * 6. Exchange SSH_FXP_INIT / SSH_FXP_VERSION
+     * Test SFTP connection by validating configuration.
+     *
+     * **Stubbed**: Only validates host, port, authentication credentials, and
+     * strict host key checking configuration. No actual SSH handshake occurs.
+     * TODO("Not yet implemented: SSH handshake (version exchange, KEX,
+     * authentication, SFTP subsystem channel, SSH_FXP_INIT/VERSION)")
      */
     private suspend fun testSftpConnection(): Result<Unit> {
         return try {
@@ -1073,11 +1092,9 @@ class SftpService(
             syncStatusMap[fullPath] = SyncStatus.SYNCING
         }
 
-        // In a real implementation, this would:
-        // 1. Send SSH_FXP_STAT to get remote file attributes
-        // 2. Compare with cached version (size, mtime)
-        // 3. If changed or forceSync, download the updated file
-        // 4. Update cache entry with new checksum
+        // TODO("Not yet implemented: SFTP sync via SSH_FXP_STAT comparison")
+        // Would: 1. SSH_FXP_STAT for remote attrs, 2. Compare size/mtime with cache,
+        // 3. Download if changed, 4. Update cache entry with new checksum
 
         // Mark as synced after successful sync
         syncMutex.withLock {
@@ -1105,11 +1122,9 @@ class SftpService(
         val operationId = nextOperationId()
         val now = Clock.System.now()
 
-        // In a real implementation, this would:
-        // 1. Recursively SSH_FXP_OPENDIR / SSH_FXP_READDIR from root
-        // 2. SSH_FXP_STAT each file to check for changes
-        // 3. Download changed files
-        // 4. Update all cache entries
+        // TODO("Not yet implemented: recursive SFTP directory walk and diff-based sync")
+        // Would: 1. Recursively SSH_FXP_OPENDIR/READDIR, 2. SSH_FXP_STAT each file,
+        // 3. Download changed files, 4. Update all cache entries
 
         // Mark all tracked files as synced
         syncMutex.withLock {

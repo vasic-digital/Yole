@@ -17,15 +17,44 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
- * WebDAV implementation of NetworkStorageService.
- * Provides support for WebDAV-based cloud storage services including
+ * WebDAV implementation of [NetworkStorageService].
+ *
+ * ## Implementation Status
+ *
+ * **PARTIALLY IMPLEMENTED** -- This is the most complete protocol implementation.
+ * It uses ktor [HttpClient] for real HTTP/WebDAV operations (PROPFIND, GET, PUT,
+ * DELETE, MKCOL, MOVE, COPY) with proper authentication headers. Compatible with
  * Nextcloud, ownCloud, and generic WebDAV servers.
  *
- * Uses ktor HttpClient for all HTTP/WebDAV operations (PROPFIND, GET, PUT,
- * DELETE, MKCOL, MOVE, COPY) with proper authentication headers.
+ * ### What works (real HTTP I/O via ktor):
+ * - [connect] -- sends OPTIONS request to verify WebDAV capability
+ * - [disconnect] -- closes HttpClient
+ * - [testConnection] -- verifies server reachability
+ * - [listFiles] -- PROPFIND with Depth:1, parses multistatus XML response
+ * - [downloadFile] -- HTTP GET with progress tracking
+ * - [uploadFile] -- HTTP PUT with progress tracking
+ *   (Note: sends empty body; actual file bytes are not read from disk)
+ * - [copyFile] -- HTTP COPY with Destination header
+ * - [deleteFile] -- HTTP DELETE
+ * - [createFolder] -- HTTP MKCOL
+ * - [renameFile] / [moveFile] -- HTTP MOVE with Destination header
+ * - [getFileInfo] -- PROPFIND with Depth:0
+ * - [exists] -- HTTP HEAD
+ * - [getQuotaInfo] -- PROPFIND for quota-available-bytes / quota-used-bytes
+ * - [searchFiles] -- PROPFIND with Depth:infinity (server support varies)
+ * - Authentication: Basic, Digest (fallback to Basic), OAuth (Bearer token), None
+ * - XML parsing: KMP-compatible string-based parsing (no JVM XML parser)
+ * - Cache and sync status tracking (in-memory maps)
  *
- * Resource Management: This class manages an HttpClient that must be properly closed.
- * Call disconnect() when done using this service, or use it with try-finally blocks.
+ * ### Limitations:
+ * - File upload sends empty body (file bytes not read from local filesystem)
+ * - File download does not write bytes to local filesystem
+ * - Network errors are silently caught in some operations for offline resilience
+ * - [syncAll] returns empty flow (no bulk sync logic)
+ * - [getRecentChanges] returns empty list
+ *
+ * Resource Management: This class manages a lazily-initialized [HttpClient] that
+ * must be properly closed. Call [disconnect] when done, or use try-finally blocks.
  */
 class WebDavService(
     override val config: StorageConfig.WebDavConfig
@@ -197,8 +226,8 @@ class WebDavService(
             val response = httpClient.put(fullUrl) {
                 applyAuth()
                 header("Content-Type", "application/octet-stream")
-                // In a full implementation, file bytes would be read and streamed here
-                // For now, we send an empty PUT to create/update the resource
+                // TODO("Not yet implemented: read file bytes from localPath and stream them")
+                // Currently sends an empty PUT to create/update the resource
                 setBody("")
             }
 
@@ -261,8 +290,7 @@ class WebDavService(
 
             if (response.status.isSuccess()) {
                 val contentLength = response.headers["Content-Length"]?.toLongOrNull() ?: 0L
-                // In a full implementation, response bytes would be streamed to localPath
-                // with progress updates based on bytes received / total size
+                // TODO("Not yet implemented: stream response bytes to localPath with progress")
 
                 emit(operation.copy(
                     status = NetworkOperation.Status.IN_PROGRESS,

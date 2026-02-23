@@ -18,6 +18,9 @@ export const metadata: Metadata = {
     "desktop",
     "offline-first",
   ],
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 const navLinks = [

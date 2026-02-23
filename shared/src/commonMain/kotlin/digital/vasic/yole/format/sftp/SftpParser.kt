@@ -14,10 +14,20 @@ import digital.vasic.yole.format.ParsedDocument
 import digital.vasic.yole.format.TextFormat
 
 /**
- * Parser for SFTP format files
- * 
- * This parser handles SFTP-specific file format parsing.
- * Currently implements basic text parsing functionality.
+ * Transport-layer adapter for SFTP network protocol, registered in the format system.
+ *
+ * **Important**: This is NOT a file format parser. SFTP is a secure file transfer
+ * protocol over SSH, not a text format. This class exists as an adapter so that
+ * the [FormatRegistry][digital.vasic.yole.format.FormatRegistry] can represent
+ * SFTP as a storage backend alongside actual text format parsers (Markdown,
+ * CSV, LaTeX, etc.).
+ *
+ * The actual SFTP file operations (list, upload, download, etc.) are handled by
+ * [SftpService][digital.vasic.yole.network.protocols.sftp.SftpService].
+ * This parser simply passes content through as plain text.
+ *
+ * The `.sftp` extension is a synthetic placeholder and does not correspond to a
+ * real file format.
  */
 class SftpParser : TextParser {
     
@@ -29,8 +39,8 @@ class SftpParser : TextParser {
     )
     
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
-        // Basic implementation - treat as plain text for now
-        // In a real implementation, this would parse SFTP-specific format
+        // Pass-through: SFTP is a transport protocol, not a text format.
+        // Content is returned as-is. Actual file operations use SftpService.
         return ParsedDocument(
             format = supportedFormat,
             rawContent = content,
