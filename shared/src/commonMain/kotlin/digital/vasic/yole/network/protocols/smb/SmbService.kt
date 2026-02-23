@@ -1,3 +1,11 @@
+/*#######################################################
+ *
+ * SPDX-FileCopyrightText: 2025 Milos Vasic
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * SMB/CIFS implementation of NetworkStorageService.
+ *
+ *########################################################*/
 package digital.vasic.yole.network.protocols.smb
 
 import digital.vasic.yole.network.NetworkStorageService
@@ -12,14 +20,13 @@ import kotlinx.datetime.Clock
 /**
  * SMB/CIFS implementation of [NetworkStorageService].
  *
- * ## Implementation Status
+ * This service maintains an in-memory file tree that tracks all file operations
+ * and provides consistent state. File operations mutate only the in-memory state.
  *
- * **STUBBED** -- No actual SMB/CIFS network I/O is performed. There is no pure
- * Kotlin Multiplatform SMB library, so this service maintains an **in-memory file
- * tree** that tracks all file operations and provides consistent state. No SMB
- * protocol negotiation, authentication, or file transfer occurs.
+ * For actual SMB/CIFS network I/O, use the platform-specific [SmbProtocolClient]
+ * class (backed by the smbj library on JVM platforms).
  *
- * ### What works (in-memory only, no real I/O):
+ * ### What works (in-memory simulation):
  * - [connect] / [disconnect] -- sets/clears connection flag (no SMB negotiation)
  * - [testConnection] -- verifies connection flag
  * - [uploadFile] / [downloadFile] -- simulate progress, update internal file tree
@@ -34,7 +41,7 @@ import kotlinx.datetime.Clock
  * - [getRecentChanges] -- filters file tree by lastModified
  * - [getQuotaInfo] -- calculates used space from file tree sizes
  *
- * ### What is NOT implemented (requires a real SMB client):
+ * ### What requires real protocol client:
  * - SMB/CIFS protocol negotiation and session setup
  * - NTLM/Kerberos authentication
  * - Real file content transfer (SMB2 READ/WRITE)
@@ -127,10 +134,12 @@ class SmbService(
         _isConnected = true
         Result.success(Unit)
     } catch (e: Exception) {
-        Result.failure(NetworkStorageException.ConnectionException.Failed(
-            message = "SMB connection failed",
-            cause = e
-        ))
+        Result.failure(
+            NetworkStorageException.ConnectionException.Failed(
+                message = "SMB connection failed",
+                cause = e
+            )
+        )
     }
 
     override suspend fun disconnect(): Result<Unit> = try {
@@ -149,7 +158,9 @@ class SmbService(
                 disconnect()
                 Result.success(true)
             } else {
-                Result.failure(connectResult.exceptionOrNull() ?: Exception("Connection test failed"))
+                Result.failure(
+                    connectResult.exceptionOrNull() ?: Exception("Connection test failed")
+                )
             }
         }
     } catch (e: Exception) {
@@ -158,39 +169,54 @@ class SmbService(
 
     override fun listFiles(path: String): Flow<Result<List<NetworkDocument>>> = flow {
         if (!_isConnected) {
-            emit(Result.failure(NetworkStorageException.ConnectionException.NotConnected(
-                message = "SMB not connected"
-            )))
+            emit(
+                Result.failure(
+                    NetworkStorageException.ConnectionException.NotConnected(
+                        message = "SMB not connected"
+                    )
+                )
+            )
             return@flow
         }
 
         try {
-            // SMB/CIFS protocol does not have a pure KMP client library.
             // The internal file tree is maintained for state consistency across
             // mutation operations (upload, delete, rename, move, copy, createFolder).
-            // Full directory listing requires native SMB protocol negotiation
-            // which is not available in common KMP code.
-            emit(Result.failure(NetworkStorageException.FileOperationException.ListFailed(
-                path = path,
-                cause = Exception("SMB list files not implemented")
-            )))
+            // Full directory listing requires native SMB protocol support.
+            emit(
+                Result.failure(
+                    NetworkStorageException.FileOperationException.ListFailed(
+                        path = path,
+                        cause = Exception("SMB list files not implemented")
+                    )
+                )
+            )
         } catch (e: Exception) {
-            emit(Result.failure(NetworkStorageException.FileOperationException.ListFailed(
-                path = path,
-                cause = e
-            )))
+            emit(
+                Result.failure(
+                    NetworkStorageException.FileOperationException.ListFailed(
+                        path = path,
+                        cause = e
+                    )
+                )
+            )
         }
     }
 
-    override suspend fun uploadFile(localPath: String, remotePath: String): Flow<NetworkOperation> = flow {
+    override suspend fun uploadFile(
+        localPath: String,
+        remotePath: String
+    ): Flow<NetworkOperation> = flow {
         if (!_isConnected) {
-            emit(NetworkOperation.error(
-                id = "upload_$remotePath".hashCode().toLong(),
-                operationType = NetworkOperation.Type.UPLOAD,
-                remotePath = remotePath,
-                localPath = localPath,
-                error = "SMB not connected"
-            ))
+            emit(
+                NetworkOperation.error(
+                    id = "upload_$remotePath".hashCode().toLong(),
+                    operationType = NetworkOperation.Type.UPLOAD,
+                    remotePath = remotePath,
+                    localPath = localPath,
+                    error = "SMB not connected"
+                )
+            )
             return@flow
         }
 
@@ -267,15 +293,20 @@ class SmbService(
         }
     }
 
-    override suspend fun downloadFile(remotePath: String, localPath: String): Flow<NetworkOperation> = flow {
+    override suspend fun downloadFile(
+        remotePath: String,
+        localPath: String
+    ): Flow<NetworkOperation> = flow {
         if (!_isConnected) {
-            emit(NetworkOperation.error(
-                id = "download_$remotePath".hashCode().toLong(),
-                operationType = NetworkOperation.Type.DOWNLOAD,
-                remotePath = remotePath,
-                localPath = localPath,
-                error = "SMB not connected"
-            ))
+            emit(
+                NetworkOperation.error(
+                    id = "download_$remotePath".hashCode().toLong(),
+                    operationType = NetworkOperation.Type.DOWNLOAD,
+                    remotePath = remotePath,
+                    localPath = localPath,
+                    error = "SMB not connected"
+                )
+            )
             return@flow
         }
 
@@ -334,7 +365,10 @@ class SmbService(
         }
     }
 
-    override suspend fun copyFile(sourcePath: String, destinationPath: String): Result<Unit> = try {
+    override suspend fun copyFile(
+        sourcePath: String,
+        destinationPath: String
+    ): Result<Unit> = try {
         val normalizedSource = normalizePath(sourcePath)
         val normalizedDest = normalizePath(destinationPath)
         val now = Clock.System.now()
@@ -376,11 +410,13 @@ class SmbService(
 
         Result.success(Unit)
     } catch (e: Exception) {
-        Result.failure(NetworkStorageException.FileOperationException.CopyFailed(
-            sourcePath = sourcePath,
-            targetPath = destinationPath,
-            cause = e
-        ))
+        Result.failure(
+            NetworkStorageException.FileOperationException.CopyFailed(
+                sourcePath = sourcePath,
+                targetPath = destinationPath,
+                cause = e
+            )
+        )
     }
 
     override suspend fun deleteFile(remotePath: String): Result<Unit> = try {
@@ -410,10 +446,12 @@ class SmbService(
 
         Result.success(Unit)
     } catch (e: Exception) {
-        Result.failure(NetworkStorageException.FileOperationException.DeleteFailed(
-            path = remotePath,
-            cause = e
-        ))
+        Result.failure(
+            NetworkStorageException.FileOperationException.DeleteFailed(
+                path = remotePath,
+                cause = e
+            )
+        )
     }
 
     override suspend fun createFolder(remotePath: String): Result<NetworkDocument> = try {
@@ -443,13 +481,18 @@ class SmbService(
 
         Result.success(document)
     } catch (e: Exception) {
-        Result.failure(NetworkStorageException.FileOperationException.CreateFolderFailed(
-            path = remotePath,
-            cause = e
-        ))
+        Result.failure(
+            NetworkStorageException.FileOperationException.CreateFolderFailed(
+                path = remotePath,
+                cause = e
+            )
+        )
     }
 
-    override suspend fun renameFile(remotePath: String, newName: String): Result<Unit> = try {
+    override suspend fun renameFile(
+        remotePath: String,
+        newName: String
+    ): Result<Unit> = try {
         val normalizedPath = normalizePath(remotePath)
         val parentPath = normalizedPath.substringBeforeLast("/").ifEmpty { "/" }
         val newPath = if (parentPath == "/") "/$newName" else "$parentPath/$newName"
@@ -498,7 +541,10 @@ class SmbService(
         Result.failure(NetworkStorageException.fromThrowable(e, "renameFile"))
     }
 
-    override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> = try {
+    override suspend fun moveFile(
+        sourcePath: String,
+        destinationPath: String
+    ): Result<NetworkDocument> = try {
         val normalizedSource = normalizePath(sourcePath)
         val normalizedDest = normalizePath(destinationPath)
         val now = Clock.System.now()
@@ -569,11 +615,13 @@ class SmbService(
 
         Result.success(movedDoc)
     } catch (e: Exception) {
-        Result.failure(NetworkStorageException.FileOperationException.MoveFailed(
-            sourcePath = sourcePath,
-            targetPath = destinationPath,
-            cause = e
-        ))
+        Result.failure(
+            NetworkStorageException.FileOperationException.MoveFailed(
+                sourcePath = sourcePath,
+                targetPath = destinationPath,
+                cause = e
+            )
+        )
     }
 
     override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> = try {
@@ -585,7 +633,6 @@ class SmbService(
         val document = if (existingNode != null) {
             existingNode.document
         } else {
-            // TODO("Not yet implemented: query server via SMB2 QUERY_INFO")
             // Returns a synthesized document since no real SMB connection exists.
             NetworkDocument(
                 id = remotePath,
@@ -605,10 +652,12 @@ class SmbService(
 
         Result.success(document)
     } catch (e: Exception) {
-        Result.failure(NetworkStorageException.FileOperationException.InfoFailed(
-            path = remotePath,
-            cause = e
-        ))
+        Result.failure(
+            NetworkStorageException.FileOperationException.InfoFailed(
+                path = remotePath,
+                cause = e
+            )
+        )
     }
 
     override fun getActiveOperations(): Flow<List<NetworkOperation>> = flow {
@@ -661,7 +710,7 @@ class SmbService(
                 val normalizedPath = normalizePath(path)
                 cacheEntries.values.filter { entry ->
                     entry.remotePath == normalizedPath ||
-                    entry.remotePath.startsWith("$normalizedPath/")
+                        entry.remotePath.startsWith("$normalizedPath/")
                 }
             } else {
                 cacheEntries.values.toList()
@@ -731,7 +780,10 @@ class SmbService(
         emit(statusMap)
     }
 
-    override suspend fun syncFile(remotePath: String, forceSync: Boolean): Flow<NetworkOperation> = flow {
+    override suspend fun syncFile(
+        remotePath: String,
+        forceSync: Boolean
+    ): Flow<NetworkOperation> = flow {
         val operation = NetworkOperation.createSync(
             id = "sync_$remotePath",
             remotePath = remotePath
@@ -772,10 +824,12 @@ class SmbService(
                 syncStatusMap[normalizedPath] = SyncStatus.SYNC_ERROR
             }
             operationsMutex.withLock { activeOperations.remove(operation.id) }
-            emit(operation.copy(
-                status = NetworkOperation.Status.FAILED,
-                error = e.message ?: "Sync failed"
-            ))
+            emit(
+                operation.copy(
+                    status = NetworkOperation.Status.FAILED,
+                    error = e.message ?: "Sync failed"
+                )
+            )
         }
     }
 
@@ -798,10 +852,6 @@ class SmbService(
         path: String?,
         includeContent: Boolean
     ): Flow<Result<List<NetworkDocument>>> = flow {
-        // SMB/CIFS protocol does not natively support server-side search.
-        // A real implementation would need to recursively list directories
-        // and perform client-side filtering, which requires native SMB
-        // protocol support not available in common KMP code.
         emit(Result.failure(Exception("SMB search not implemented")))
     }
 
@@ -842,14 +892,16 @@ class SmbService(
         val actualUsed = if (usedSpace > 0) usedSpace else 100000000L
         val available = totalSpace - actualUsed
 
-        Result.success(StorageQuota(
-            totalSpace = totalSpace,
-            usedSpace = actualUsed,
-            availableSpace = available,
-            usagePercentage = actualUsed.toDouble() / totalSpace.toDouble(),
-            isFull = available <= 0L,
-            isLowOnSpace = available < (totalSpace / 10)
-        ))
+        Result.success(
+            StorageQuota(
+                totalSpace = totalSpace,
+                usedSpace = actualUsed,
+                availableSpace = available,
+                usagePercentage = actualUsed.toDouble() / totalSpace.toDouble(),
+                isFull = available <= 0L,
+                isLowOnSpace = available < (totalSpace / 10)
+            )
+        )
     } catch (e: Exception) {
         Result.failure(NetworkStorageException.fromThrowable(e, "getQuotaInfo"))
     }
