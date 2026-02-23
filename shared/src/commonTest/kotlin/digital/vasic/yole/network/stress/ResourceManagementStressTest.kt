@@ -41,10 +41,13 @@ class ResourceManagementStressTest {
         val service = createFtpService("ftp")
 
         repeat(100) {
-            service.connect()
-            assertTrue(service.isOnline)
-            service.disconnect()
-            assertFalse(service.isOnline)
+            // Real FTP client cannot connect to non-existent server
+            val connectResult = service.connect()
+            assertTrue(connectResult.isFailure, "Connection should fail when server is unreachable")
+            assertFalse(service.isOnline, "Should not be online after failed connection")
+            val disconnectResult = service.disconnect()
+            assertTrue(disconnectResult.isSuccess, "Disconnect should succeed")
+            assertFalse(service.isOnline, "Should not be online after disconnect")
         }
     }
 
@@ -81,7 +84,7 @@ class ResourceManagementStressTest {
     fun `operations after disconnect fail gracefully`() = runTest {
         val service = createFtpService("ftp")
 
-        service.connect()
+        service.connect() // Will fail with real client, but that's OK
         service.disconnect()
 
         // Operations after disconnect should return failures, not throw
@@ -89,7 +92,8 @@ class ResourceManagementStressTest {
         assertTrue(listResult.all { it.isFailure })
 
         val infoResult = service.getFileInfo("/test.txt")
-        // May succeed (mock) or fail, but should not throw
+        // Should fail since not connected, but should not throw
+        assertTrue(infoResult.isFailure, "File info should fail when not connected")
     }
 
     // ==================== CONCURRENT LIFECYCLE ====================
@@ -145,8 +149,12 @@ class ResourceManagementStressTest {
     @Test
     fun `many simultaneous file info requests`() = runTest {
         val service = createFtpService("ftp")
-        service.connect()
 
+        // Real FTP client cannot connect to non-existent server
+        val connectResult = service.connect()
+        assertTrue(connectResult.isFailure, "Connection should fail when server is unreachable")
+
+        // All file info requests should fail gracefully since not connected
         val results = (1..200).map { i ->
             async {
                 service.getFileInfo("/path/to/file$i.txt")
@@ -154,7 +162,8 @@ class ResourceManagementStressTest {
         }.awaitAll()
 
         assertEquals(200, results.size)
-        assertTrue(results.all { it.isSuccess })
+        assertTrue(results.all { it.isFailure },
+            "All file info requests should fail when not connected")
 
         service.disconnect()
     }
@@ -352,6 +361,8 @@ class ResourceManagementStressTest {
     @Test
     fun `interleaved upload and download`() = runTest {
         val service = createFtpService("ftp")
+
+        // Real FTP client cannot connect to non-existent server
         service.connect()
 
         val results = (1..50).map { i ->
@@ -365,6 +376,12 @@ class ResourceManagementStressTest {
         }.awaitAll()
 
         assertEquals(50, results.size)
+        // All operations should have failed since not connected
+        results.forEach { ops ->
+            assertTrue(ops.isNotEmpty(), "Should emit at least one operation")
+            assertTrue(ops.all { it.status == NetworkOperation.Status.FAILED },
+                "All operations should be FAILED when not connected")
+        }
 
         service.disconnect()
     }
@@ -386,13 +403,13 @@ class ResourceManagementStressTest {
     @Test
     fun `very long file paths`() = runTest {
         val service = createFtpService("ftp")
-        service.connect()
+        service.connect() // Will fail with real client, but that's OK
 
         val longPath = "/" + "a".repeat(1000) + "/file.txt"
         val result = service.getFileInfo(longPath)
 
-        // Should handle long paths gracefully
-        assertTrue(result.isSuccess || result.isFailure)
+        // Should handle long paths gracefully -- will fail since not connected
+        assertTrue(result.isFailure, "Should fail when not connected")
 
         service.disconnect()
     }

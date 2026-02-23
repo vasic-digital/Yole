@@ -249,15 +249,16 @@ class GoogleDriveServiceTest {
     fun testSyncAllWhenNotConnected() = runTest {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val operations = googleDriveService.syncAll(false)
-        
-        // Returns a sync operation
+
+        // syncAll now returns FAILED when not connected
         var operationCount = 0
         operations.collect { operation ->
             operationCount++
             assertEquals(NetworkOperation.Type.SYNC, operation.type)
-            assertEquals(NetworkOperation.Status.COMPLETED, operation.status)
+            assertEquals(NetworkOperation.Status.FAILED, operation.status)
+            assertEquals("Google Drive not connected", operation.error)
         }
-        assertEquals(1, operationCount, "Sync all returns a completed operation")
+        assertEquals(1, operationCount, "Sync all returns a failed operation when not connected")
     }
     
     @Test

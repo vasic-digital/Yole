@@ -165,15 +165,9 @@ class OneDriveServiceTest {
     fun testGetQuotaInfoWhenNotConnected() = runTest {
         oneDriveService = OneDriveService(oneDriveConfig)
         val result = oneDriveService.getQuotaInfo()
-        
-        assertTrue(result.isSuccess, "Get quota info returns mock data")
-        val quota = result.getOrNull()!!
-        assertEquals(5000000000000L, quota.totalSpace) // 5TB
-        assertEquals(1000000000000L, quota.usedSpace) // 1TB used
-        assertEquals(4000000000000L, quota.availableSpace)
-        assertEquals(0.2, quota.usagePercentage)
-        assertFalse(quota.isFull)
-        assertFalse(quota.isLowOnSpace)
+
+        // getQuotaInfo now makes real API calls; fails when not connected
+        assertTrue(result.isFailure, "Get quota info should fail when not connected")
     }
     
     @Test
@@ -277,15 +271,16 @@ class OneDriveServiceTest {
     fun testSyncAllWhenNotConnected() = runTest {
         oneDriveService = OneDriveService(oneDriveConfig)
         val operations = oneDriveService.syncAll(false)
-        
-        // Returns a sync operation
+
+        // syncAll now returns FAILED when not connected
         var operationCount = 0
         operations.collect { operation ->
             operationCount++
             assertEquals(NetworkOperation.Type.SYNC, operation.type)
-            assertEquals(NetworkOperation.Status.COMPLETED, operation.status)
+            assertEquals(NetworkOperation.Status.FAILED, operation.status)
+            assertEquals("OneDrive not connected", operation.error)
         }
-        assertEquals(1, operationCount, "Sync all returns a completed operation")
+        assertEquals(1, operationCount, "Sync all returns a failed operation when not connected")
     }
     
     @Test

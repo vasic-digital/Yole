@@ -71,17 +71,21 @@ class NetworkProtocolStressTest {
             rootPath = "/"
         )
         val service = FtpService(config)
-        service.connect()
 
-        // Rapid file info requests
+        // Real FTP client cannot connect to non-existent server
+        val connectResult = service.connect()
+        assertTrue(connectResult.isFailure, "Connection should fail when server is unreachable")
+
+        // Rapid file info requests -- all should fail gracefully since not connected
         val results = (1..100).map { i ->
             async {
                 service.getFileInfo("/path/to/file$i.txt")
             }
         }.awaitAll()
 
-        // All requests should succeed
-        assertTrue(results.all { it.isSuccess })
+        // All requests should fail gracefully (not connected) without throwing
+        assertTrue(results.all { it.isFailure },
+            "All file info requests should fail when not connected")
         service.disconnect()
     }
 

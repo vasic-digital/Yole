@@ -193,7 +193,8 @@ class GitServiceEnhancedTest {
         assertNotNull(document)
         assertEquals("/dest/file.txt", document.path)
         assertEquals("file.txt", document.name)
-        assertEquals(SyncStatus.SYNCED, document.syncStatus)
+        // When not connected, moveFile tracks locally and returns PENDING_UPLOAD
+        assertEquals(SyncStatus.PENDING_UPLOAD, document.syncStatus)
     }
 
     @Test
@@ -355,8 +356,11 @@ class GitServiceEnhancedTest {
     @Test
     fun `syncAll returns flow`() = runTest {
         val results = service.syncAll(false).toList()
-        // Mock implementation returns empty flow
-        assertTrue(results.isEmpty())
+        // syncAll now returns FAILED operation when not connected
+        assertEquals(1, results.size, "syncAll should return one failed operation when not connected")
+        assertEquals(NetworkOperation.Type.SYNC, results[0].type)
+        assertEquals(NetworkOperation.Status.FAILED, results[0].status)
+        assertEquals("Git not connected", results[0].error)
     }
 
     // ==================== SEARCH TESTS ====================

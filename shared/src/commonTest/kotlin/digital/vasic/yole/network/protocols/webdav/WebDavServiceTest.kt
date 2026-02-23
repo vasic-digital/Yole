@@ -257,13 +257,16 @@ class WebDavServiceTest {
     fun testSyncAllWhenNotConnected() = runTest {
         webDavService = WebDavService(webDavConfig)
         val operations = webDavService.syncAll(false)
-        
-        // Should return empty flow when not connected
+
+        // syncAll now returns FAILED operation when not connected
         var operationCount = 0
         operations.collect { operation ->
             operationCount++
+            assertEquals(NetworkOperation.Type.SYNC, operation.type)
+            assertEquals(NetworkOperation.Status.FAILED, operation.status)
+            assertEquals("WebDAV not connected", operation.error)
         }
-        assertEquals(0, operationCount, "Sync all should return empty when not connected")
+        assertEquals(1, operationCount, "Sync all returns a failed operation when not connected")
     }
     
     @Test

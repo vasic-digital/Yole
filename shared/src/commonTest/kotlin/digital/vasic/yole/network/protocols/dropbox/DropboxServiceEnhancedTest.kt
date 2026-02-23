@@ -176,20 +176,11 @@ class DropboxServiceEnhancedTest {
     @Test
     fun testEnhancedQuotaInfo() = runTest {
         val result = dropboxService.getQuotaInfo()
-        
-        assertTrue(result.isSuccess, "Get quota info should succeed")
-        val quota = result.getOrNull()
-        assertNotNull(quota, "Quota info should be returned")
-        
-        // Check default values
-        assertEquals(2000000000000L, quota.totalSpace) // 2TB
-        assertEquals(500000000000L, quota.usedSpace)   // 500GB
-        assertEquals(1500000000000L, quota.availableSpace) // 1.5TB
-        assertEquals(0.25, quota.usagePercentage)
-        assertFalse(quota.isFull)
-        assertFalse(quota.isLowOnSpace)
-        assertEquals("Dropbox", quota.metadata["provider"])
-        assertEquals("Plus", quota.metadata["plan"])
+
+        // getQuotaInfo now makes real Dropbox API calls; without auth it fails when not connected
+        assertTrue(result.isFailure, "Get quota info should fail when not connected")
+        val exception = result.exceptionOrNull()
+        assertNotNull(exception, "Should have an exception")
     }
     
     @Test
@@ -250,19 +241,22 @@ class DropboxServiceEnhancedTest {
     
     @Test
     fun testEnhancedSyncOperations() = runTest {
-        // Test sync file
+        // Test sync file - syncFile emits COMPLETED even when not connected (offline sync)
         val syncFileOperations = dropboxService.syncFile("/test.md", false)
-        val syncFileOp = syncFileOperations.first()
-        assertEquals(NetworkOperation.Type.SYNC, syncFileOp.type)
-        assertEquals(NetworkOperation.Status.COMPLETED, syncFileOp.status)
-        assertEquals("/test.md", syncFileOp.remotePath)
-        
-        // Test sync all
+        val syncFileOps = mutableListOf<NetworkOperation>()
+        syncFileOperations.collect { syncFileOps.add(it) }
+        assertTrue(syncFileOps.isNotEmpty(), "Should emit sync operations")
+        assertEquals(NetworkOperation.Type.SYNC, syncFileOps.last().type)
+        assertEquals(NetworkOperation.Status.COMPLETED, syncFileOps.last().status)
+        assertEquals("/test.md", syncFileOps.last().remotePath)
+
+        // Test sync all - syncAll now returns FAILED when not connected
         val syncAllOperations = dropboxService.syncAll(false)
         val syncAllOp = syncAllOperations.first()
         assertEquals(NetworkOperation.Type.SYNC, syncAllOp.type)
-        assertEquals(NetworkOperation.Status.COMPLETED, syncAllOp.status)
+        assertEquals(NetworkOperation.Status.FAILED, syncAllOp.status)
         assertEquals("/", syncAllOp.remotePath)
+        assertEquals("Dropbox not connected", syncAllOp.error)
     }
     
     @Test

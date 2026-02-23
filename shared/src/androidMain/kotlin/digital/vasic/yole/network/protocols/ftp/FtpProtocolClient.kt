@@ -13,6 +13,7 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.InputStreamReader
@@ -685,7 +686,7 @@ actual class FtpProtocolClient actual constructor() {
                 val minute = timeParts[1].toIntOrNull() ?: 0
                 // Use a reasonable default year since we don't have one
                 val currentYear = kotlinx.datetime.Clock.System.now()
-                    .let { kotlinx.datetime.TimeZone.UTC.let { tz -> it.toLocalDateTime(tz).year } }
+                    .toLocalDateTime(TimeZone.UTC).year
                 LocalDateTime(currentYear, month, day, hour, minute)
                     .toInstant(TimeZone.UTC)
             } else {

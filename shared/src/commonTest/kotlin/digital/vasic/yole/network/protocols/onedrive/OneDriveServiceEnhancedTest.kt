@@ -257,20 +257,11 @@ class OneDriveServiceEnhancedTest {
     @Test
     fun testEnhancedQuotaInfo() = runTest {
         val result = personalService.getQuotaInfo()
-        
-        assertTrue(result.isSuccess, "Get quota info should succeed")
-        val quota = result.getOrNull()
-        assertNotNull(quota, "Quota info should be returned")
-        
-        // Check default OneDrive values
-        assertEquals(5000000000000L, quota.totalSpace) // 5TB
-        assertEquals(1000000000000L, quota.usedSpace)  // 1TB
-        assertEquals(4000000000000L, quota.availableSpace) // 4TB
-        assertEquals(0.2, quota.usagePercentage)
-        assertFalse(quota.isFull)
-        assertFalse(quota.isLowOnSpace)
-        assertEquals("OneDrive", quota.metadata["provider"])
-        assertEquals("ME", quota.metadata["type"])
+
+        // getQuotaInfo now makes real Microsoft Graph API calls; fails when not connected
+        assertTrue(result.isFailure, "Get quota info should fail when not connected")
+        val exception = result.exceptionOrNull()
+        assertNotNull(exception, "Should have an exception")
     }
     
     @Test
@@ -335,19 +326,22 @@ class OneDriveServiceEnhancedTest {
     
     @Test
     fun testEnhancedSyncOperations() = runTest {
-        // Test sync file
+        // Test sync file - syncFile emits progress and completion even when not connected
         val syncFileOperations = personalService.syncFile("/test.md", false)
-        val syncFileOp = syncFileOperations.first()
-        assertEquals(NetworkOperation.Type.SYNC, syncFileOp.type)
-        assertEquals(NetworkOperation.Status.COMPLETED, syncFileOp.status)
-        assertEquals("/test.md", syncFileOp.remotePath)
-        
-        // Test sync all
+        val syncFileOps = mutableListOf<NetworkOperation>()
+        syncFileOperations.collect { syncFileOps.add(it) }
+        assertTrue(syncFileOps.isNotEmpty(), "Should emit sync operations")
+        assertEquals(NetworkOperation.Type.SYNC, syncFileOps.last().type)
+        assertEquals(NetworkOperation.Status.COMPLETED, syncFileOps.last().status)
+        assertEquals("/test.md", syncFileOps.last().remotePath)
+
+        // Test sync all - syncAll now returns FAILED when not connected
         val syncAllOperations = personalService.syncAll(false)
         val syncAllOp = syncAllOperations.first()
         assertEquals(NetworkOperation.Type.SYNC, syncAllOp.type)
-        assertEquals(NetworkOperation.Status.COMPLETED, syncAllOp.status)
+        assertEquals(NetworkOperation.Status.FAILED, syncAllOp.status)
         assertEquals("/", syncAllOp.remotePath)
+        assertEquals("OneDrive not connected", syncAllOp.error)
     }
     
     @Test
@@ -404,29 +398,18 @@ class OneDriveServiceEnhancedTest {
     
     @Test
     fun testEnhancedDriveTypeSpecificQuota() = runTest {
-        // Test personal drive quota
+        // getQuotaInfo now makes real Microsoft Graph API calls; all fail when not connected
         val personalQuotaResult = personalService.getQuotaInfo()
-        val personalQuota = personalQuotaResult.getOrNull()
-        assertNotNull(personalQuota)
-        assertEquals("ME", personalQuota.metadata["type"])
-        
-        // Test business drive quota
+        assertTrue(personalQuotaResult.isFailure, "Personal quota should fail when not connected")
+
         val businessQuotaResult = businessService.getQuotaInfo()
-        val businessQuota = businessQuotaResult.getOrNull()
-        assertNotNull(businessQuota)
-        assertEquals("BUSINESS", businessQuota.metadata["type"])
-        
-        // Test SharePoint quota
+        assertTrue(businessQuotaResult.isFailure, "Business quota should fail when not connected")
+
         val sharePointQuotaResult = sharePointService.getQuotaInfo()
-        val sharePointQuota = sharePointQuotaResult.getOrNull()
-        assertNotNull(sharePointQuota)
-        assertEquals("SHAREPOINT", sharePointQuota.metadata["type"])
-        
-        // Test group quota
+        assertTrue(sharePointQuotaResult.isFailure, "SharePoint quota should fail when not connected")
+
         val groupQuotaResult = groupService.getQuotaInfo()
-        val groupQuota = groupQuotaResult.getOrNull()
-        assertNotNull(groupQuota)
-        assertEquals("GROUP", groupQuota.metadata["type"])
+        assertTrue(groupQuotaResult.isFailure, "Group quota should fail when not connected")
     }
     
     @Test

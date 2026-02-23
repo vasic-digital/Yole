@@ -1126,7 +1126,7 @@ class GoogleDriveService(
                 // Check if the file is cached and if remote is newer
                 val cachedEntry = cacheMutex.withLock { cacheEntries[doc.path] }
                 val needsSync = forceSync || cachedEntry == null ||
-                        doc.lastModified > cachedEntry.lastModified
+                        (doc.lastModified != null && doc.lastModified > cachedEntry.lastModified)
 
                 if (needsSync && !doc.isFolder) {
                     syncMutex.withLock { syncStatusMap[doc.path] = SyncStatus.SYNCING }
@@ -1142,7 +1142,7 @@ class GoogleDriveService(
                             size = doc.size,
                             createdAt = cacheNow,
                             lastAccessed = cacheNow,
-                            lastModified = doc.lastModified,
+                            lastModified = doc.lastModified ?: cacheNow,
                             priority = 0
                         )
                     }

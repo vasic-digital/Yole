@@ -187,13 +187,10 @@ class DropboxServiceTest {
     // ==================== Quota Tests ====================
 
     @Test
-    fun `getQuotaInfo should succeed`() = runTest {
+    fun `getQuotaInfo should fail when not connected`() = runTest {
         val result = dropboxService.getQuotaInfo()
-        assertTrue(result.isSuccess, "getQuotaInfo should succeed")
-        val quota = result.getOrNull()
-        assertNotNull(quota, "Should return quota info")
-        assertTrue(quota.totalSpace >= 0, "Total space should be non-negative")
-        assertTrue(quota.usedSpace >= 0, "Used space should be non-negative")
+        // getQuotaInfo now makes real API calls; without auth it fails when not connected
+        assertTrue(result.isFailure, "getQuotaInfo should fail when not connected")
     }
 
     // ==================== Operation Management Tests ====================

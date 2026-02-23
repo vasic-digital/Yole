@@ -249,25 +249,25 @@ class GoogleDriveServiceEnhancedTest {
     
     @Test
     fun testEnhancedSyncOperations() = runTest {
-        // Test sync file
+        // Test sync file - syncFile emits progress and completion even when not connected
         val syncFileOperations = googleDriveService.syncFile("/test.md", false)
         val syncFileOps = mutableListOf<NetworkOperation>()
         syncFileOperations.collect { syncFileOps.add(it) }
-        
+
         assertTrue(syncFileOps.isNotEmpty(), "Should emit sync operations")
         assertEquals(NetworkOperation.Type.SYNC, syncFileOps.first().type)
         assertEquals(NetworkOperation.Status.COMPLETED, syncFileOps.last().status)
         assertEquals(1.0, syncFileOps.last().progress)
-        
-        // Test sync all
+
+        // Test sync all - syncAll now returns FAILED when not connected
         val syncAllOperations = googleDriveService.syncAll(false)
         val syncAllOps = mutableListOf<NetworkOperation>()
         syncAllOperations.collect { syncAllOps.add(it) }
 
-        // Should return a completed sync operation
-        assertEquals(1, syncAllOps.size, "Sync all should return one completed operation")
+        assertEquals(1, syncAllOps.size, "Sync all should return one operation when not connected")
         assertEquals(NetworkOperation.Type.SYNC, syncAllOps.first().type)
-        assertEquals(NetworkOperation.Status.COMPLETED, syncAllOps.first().status)
+        assertEquals(NetworkOperation.Status.FAILED, syncAllOps.first().status)
+        assertEquals("Google Drive not connected", syncAllOps.first().error)
     }
     
     @Test
