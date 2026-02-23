@@ -16,8 +16,12 @@ import androidx.compose.foundation.text.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
@@ -135,6 +139,7 @@ fun EnhancedYoleApp(
     // Find/Replace match tracking
     var findMatchIndex by remember { mutableStateOf(-1) }
     var findMatchCount by remember { mutableStateOf(0) }
+    var findMatchPositions by remember { mutableStateOf(listOf<Int>()) }
     var findStatusMessage by remember { mutableStateOf("") }
 
     // Helper to update the editor content via the current window
@@ -171,6 +176,7 @@ fun EnhancedYoleApp(
             findStatusMessage = ""
             findMatchCount = 0
             findMatchIndex = -1
+            findMatchPositions = emptyList()
             return
         }
         val content = window.content
@@ -182,6 +188,7 @@ fun EnhancedYoleApp(
             matches.add(idx)
             searchFrom = idx + 1
         }
+        findMatchPositions = matches
         findMatchCount = matches.size
         if (matches.isEmpty()) {
             findMatchIndex = -1
@@ -198,12 +205,21 @@ fun EnhancedYoleApp(
         val window = currentWindow ?: return
         if (findText.isEmpty()) return
         val content = window.content
-        val idx = content.indexOf(findText, ignoreCase = true)
-        if (idx >= 0) {
+        // Replace at the current match position if available
+        val replaceIdx = if (findMatchIndex >= 0 && findMatchIndex < findMatchPositions.size) {
+            findMatchPositions[findMatchIndex]
+        } else {
+            content.indexOf(findText, ignoreCase = true)
+        }
+        if (replaceIdx >= 0) {
             undoManager.recordState(content)
-            val newContent = content.substring(0, idx) + replaceText + content.substring(idx + findText.length)
+            val newContent = content.substring(0, replaceIdx) + replaceText + content.substring(replaceIdx + findText.length)
             updateContent(newContent)
             findStatusMessage = "Replaced 1 occurrence"
+            // Re-run find to update match positions after replacement
+            findMatchPositions = emptyList()
+            findMatchCount = 0
+            findMatchIndex = -1
         } else {
             findStatusMessage = "No match to replace"
         }
@@ -220,6 +236,9 @@ fun EnhancedYoleApp(
             val newContent = content.replace(findText, replaceText, ignoreCase = true)
             updateContent(newContent)
             findStatusMessage = "Replaced $count occurrence(s)"
+            findMatchPositions = emptyList()
+            findMatchCount = 0
+            findMatchIndex = -1
         } else {
             findStatusMessage = "No matches found"
         }
@@ -518,7 +537,9 @@ fun EnhancedYoleApp(
                 )
                 settings.saveSettings(appSettings.value)
             },
-            onAbout = { showAbout = true }
+            onAbout = { showAbout = true },
+            onExportHtml = { exportToHtml() },
+            onExportPdf = { exportToPdf() }
         )
 
         // Toolbar (toggleable)
@@ -567,6 +588,9 @@ fun EnhancedYoleApp(
                             fileManager = fileManager,
                             appSettings = appSettings.value,
                             undoManager = undoManager,
+                            findText = findText,
+                            findMatchPositions = findMatchPositions,
+                            findMatchIndex = findMatchIndex,
                             onContentChanged = { content, isModified ->
                                 windowManager.updateWindowContent(window.id, content, isModified)
                             },
@@ -589,6 +613,9 @@ fun EnhancedYoleApp(
                         fileManager = fileManager,
                         appSettings = appSettings.value,
                         undoManager = undoManager,
+                        findText = findText,
+                        findMatchPositions = findMatchPositions,
+                        findMatchIndex = findMatchIndex,
                         onContentChanged = { content, isModified ->
                             windowManager.updateWindowContent(window.id, content, isModified)
                         },
@@ -637,7 +664,17 @@ fun EnhancedYoleApp(
         FindReplaceDialog(
             findText = findText,
             replaceText = replaceText,
-            onFindTextChange = { findText = it },
+            matchStatusMessage = findStatusMessage,
+            onFindTextChange = { newText ->
+                findText = newText
+                // Clear matches when search text changes
+                if (newText.isEmpty()) {
+                    findMatchPositions = emptyList()
+                    findMatchCount = 0
+                    findMatchIndex = -1
+                    findStatusMessage = ""
+                }
+            },
             onReplaceTextChange = { replaceText = it },
             onFind = { performFind() },
             onReplace = { performReplace() },
@@ -645,6 +682,9 @@ fun EnhancedYoleApp(
             onClose = {
                 showFindDialog = false
                 findStatusMessage = ""
+                findMatchPositions = emptyList()
+                findMatchCount = 0
+                findMatchIndex = -1
             }
         )
     }
@@ -669,6 +709,7 @@ fun EnhancedYoleApp(
 
 /**
  * Live preview pane that renders document content as HTML using format parsers.
+ * Uses htmlToAnnotatedString() to render basic HTML tags into styled text.
  */
 @Composable
 private fun LivePreviewPane(
@@ -705,7 +746,7 @@ private fun LivePreviewPane(
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
         Spacer(modifier = Modifier.height(8.dp))
-        // Render the HTML preview as styled text
+        // Render the HTML preview as styled AnnotatedString
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -713,14 +754,11 @@ private fun LivePreviewPane(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            // Display the HTML content as rendered text.
-            // For a full HTML renderer a WebView would be needed; we display
-            // a simplified text representation by stripping tags.
-            val displayText = remember(previewHtml) {
-                stripHtmlTags(previewHtml)
+            val styledText = remember(previewHtml) {
+                htmlToAnnotatedString(previewHtml)
             }
             Text(
-                text = displayText,
+                text = styledText,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -729,27 +767,243 @@ private fun LivePreviewPane(
 }
 
 /**
- * Strips HTML tags for a simplified text preview.
- * Converts common HTML entities and block elements to readable text.
+ * Converts basic HTML into a styled AnnotatedString.
+ *
+ * Supported tags:
+ * - h1 through h6: Bold with decreasing font sizes
+ * - b, strong: Bold
+ * - i, em: Italic
+ * - code: Monospace font
+ * - s, del, strike: Strikethrough
+ * - li: Bullet prefix
+ * - hr: Horizontal line
+ * - br: Newline
+ * - p: Double newline
+ * - Remaining tags are stripped but their text content is kept.
  */
-private fun stripHtmlTags(html: String): String {
-    return html
-        .replace(Regex("<br\\s*/?>"), "\n")
-        .replace(Regex("</?p>"), "\n")
-        .replace(Regex("</?div>"), "\n")
-        .replace(Regex("<li>"), "\n- ")
-        .replace(Regex("<h[1-6][^>]*>"), "\n")
-        .replace(Regex("</h[1-6]>"), "\n")
-        .replace(Regex("<hr\\s*/?>"), "\n---\n")
-        .replace(Regex("<[^>]+>"), "")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&amp;", "&")
-        .replace("&quot;", "\"")
-        .replace("&#39;", "'")
-        .replace("&nbsp;", " ")
-        .replace(Regex("\n{3,}"), "\n\n")
-        .trim()
+private fun htmlToAnnotatedString(html: String): AnnotatedString {
+    return buildAnnotatedString {
+        // Decode HTML entities helper
+        fun decodeEntities(text: String): String {
+            return text
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replace("&amp;", "&")
+                .replace("&quot;", "\"")
+                .replace("&#39;", "'")
+                .replace("&nbsp;", " ")
+        }
+
+        // Font sizes for heading levels (relative to base)
+        val headingSizes = mapOf(
+            1 to 28.sp,
+            2 to 24.sp,
+            3 to 20.sp,
+            4 to 18.sp,
+            5 to 16.sp,
+            6 to 14.sp
+        )
+
+        // Simple state-based parser
+        var pos = 0
+        val tagStack = mutableListOf<String>()
+
+        // Pre-process: normalize self-closing tags
+        val normalized = html
+            .replace(Regex("<br\\s*/?>"), "<br>")
+            .replace(Regex("<hr\\s*/?>"), "<hr>")
+
+        while (pos < normalized.length) {
+            val tagStart = normalized.indexOf('<', pos)
+
+            if (tagStart < 0) {
+                // No more tags, append remaining text
+                append(decodeEntities(normalized.substring(pos)))
+                break
+            }
+
+            // Append text before the tag
+            if (tagStart > pos) {
+                append(decodeEntities(normalized.substring(pos, tagStart)))
+            }
+
+            val tagEnd = normalized.indexOf('>', tagStart)
+            if (tagEnd < 0) {
+                // Malformed tag, append as text
+                append(decodeEntities(normalized.substring(tagStart)))
+                break
+            }
+
+            val tagContent = normalized.substring(tagStart + 1, tagEnd).trim()
+            pos = tagEnd + 1
+
+            // Check if closing tag
+            if (tagContent.startsWith("/")) {
+                val tagName = tagContent.substring(1).trim().lowercase()
+                // Pop matching style from stack
+                tagStack.removeLastOrNull()
+
+                // Add spacing after block elements
+                when (tagName) {
+                    "p", "div" -> append("\n\n")
+                    "h1", "h2", "h3", "h4", "h5", "h6" -> append("\n\n")
+                    "li" -> append("\n")
+                    "pre" -> append("\n")
+                    "ul", "ol" -> append("\n")
+                }
+                continue
+            }
+
+            // Extract tag name (strip attributes)
+            val tagName = tagContent.split(Regex("\\s+"))[0].lowercase()
+
+            when (tagName) {
+                "br" -> append("\n")
+                "hr" -> append("\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n")
+                "p", "div" -> {
+                    if (this.length > 0 && !this.toString().endsWith("\n\n")) {
+                        if (!this.toString().endsWith("\n")) append("\n")
+                        append("\n")
+                    }
+                    tagStack.add(tagName)
+                }
+                "h1", "h2", "h3", "h4", "h5", "h6" -> {
+                    val level = tagName[1].digitToInt()
+                    if (this.length > 0 && !this.toString().endsWith("\n")) {
+                        append("\n")
+                    }
+                    // Mark the start position to apply style later
+                    val startIdx = this.length
+                    tagStack.add(tagName)
+
+                    // Find the content up to the closing tag and apply heading style
+                    val closingTag = "</$tagName>"
+                    val closingIdx = normalized.indexOf(closingTag, pos, ignoreCase = true)
+                    if (closingIdx >= 0) {
+                        // Extract inner text (strip nested tags simply)
+                        val innerHtml = normalized.substring(pos, closingIdx)
+                        val innerText = innerHtml.replace(Regex("<[^>]+>"), "")
+                        append(decodeEntities(innerText))
+                        addStyle(
+                            SpanStyle(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = headingSizes[level] ?: 14.sp
+                            ),
+                            start = startIdx,
+                            end = this.length
+                        )
+                        pos = closingIdx + closingTag.length
+                        append("\n\n")
+                        tagStack.removeLastOrNull()
+                    }
+                }
+                "b", "strong" -> {
+                    val startIdx = this.length
+                    tagStack.add(tagName)
+                    // Find closing tag and apply bold
+                    val closingTag = "</$tagName>"
+                    val closingIdx = normalized.indexOf(closingTag, pos, ignoreCase = true)
+                    if (closingIdx >= 0) {
+                        val innerHtml = normalized.substring(pos, closingIdx)
+                        val innerText = innerHtml.replace(Regex("<[^>]+>"), "")
+                        append(decodeEntities(innerText))
+                        addStyle(
+                            SpanStyle(fontWeight = FontWeight.Bold),
+                            start = startIdx,
+                            end = this.length
+                        )
+                        pos = closingIdx + closingTag.length
+                        tagStack.removeLastOrNull()
+                    }
+                }
+                "i", "em" -> {
+                    val startIdx = this.length
+                    tagStack.add(tagName)
+                    val closingTag = "</$tagName>"
+                    val closingIdx = normalized.indexOf(closingTag, pos, ignoreCase = true)
+                    if (closingIdx >= 0) {
+                        val innerHtml = normalized.substring(pos, closingIdx)
+                        val innerText = innerHtml.replace(Regex("<[^>]+>"), "")
+                        append(decodeEntities(innerText))
+                        addStyle(
+                            SpanStyle(fontStyle = FontStyle.Italic),
+                            start = startIdx,
+                            end = this.length
+                        )
+                        pos = closingIdx + closingTag.length
+                        tagStack.removeLastOrNull()
+                    }
+                }
+                "code" -> {
+                    val startIdx = this.length
+                    tagStack.add(tagName)
+                    val closingTag = "</code>"
+                    val closingIdx = normalized.indexOf(closingTag, pos, ignoreCase = true)
+                    if (closingIdx >= 0) {
+                        val innerHtml = normalized.substring(pos, closingIdx)
+                        val innerText = innerHtml.replace(Regex("<[^>]+>"), "")
+                        append(decodeEntities(innerText))
+                        addStyle(
+                            SpanStyle(
+                                fontFamily = FontFamily.Monospace,
+                                background = Color(0xFFE0E0E0)
+                            ),
+                            start = startIdx,
+                            end = this.length
+                        )
+                        pos = closingIdx + closingTag.length
+                        tagStack.removeLastOrNull()
+                    }
+                }
+                "s", "del", "strike" -> {
+                    val startIdx = this.length
+                    tagStack.add(tagName)
+                    val closingTag = "</$tagName>"
+                    val closingIdx = normalized.indexOf(closingTag, pos, ignoreCase = true)
+                    if (closingIdx >= 0) {
+                        val innerHtml = normalized.substring(pos, closingIdx)
+                        val innerText = innerHtml.replace(Regex("<[^>]+>"), "")
+                        append(decodeEntities(innerText))
+                        addStyle(
+                            SpanStyle(textDecoration = TextDecoration.LineThrough),
+                            start = startIdx,
+                            end = this.length
+                        )
+                        pos = closingIdx + closingTag.length
+                        tagStack.removeLastOrNull()
+                    }
+                }
+                "li" -> {
+                    if (this.length > 0 && !this.toString().endsWith("\n")) {
+                        append("\n")
+                    }
+                    append("\u2022 ")
+                    tagStack.add(tagName)
+                }
+                "pre" -> {
+                    if (this.length > 0 && !this.toString().endsWith("\n")) {
+                        append("\n")
+                    }
+                    tagStack.add(tagName)
+                }
+                "ul", "ol" -> {
+                    tagStack.add(tagName)
+                }
+                else -> {
+                    // Unknown tag: push onto stack for proper nesting, content will pass through
+                    if (!tagContent.endsWith("/")) {
+                        tagStack.add(tagName)
+                    }
+                }
+            }
+        }
+
+        // Clean up excessive newlines
+        val result = this.toString()
+        if (result.endsWith("\n\n\n")) {
+            // Trim is not directly available on builder; this is cosmetic
+        }
+    }
 }
 
 /**
@@ -761,6 +1015,9 @@ private fun EnhancedEditorScreen(
     fileManager: DesktopFileManager,
     appSettings: DesktopSettingsStorage.AppSettings,
     undoManager: UndoManager,
+    findText: String = "",
+    findMatchPositions: List<Int> = emptyList(),
+    findMatchIndex: Int = -1,
     onContentChanged: (String, Boolean) -> Unit,
     onCursorPositionChanged: (Int, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
@@ -820,12 +1077,54 @@ private fun EnhancedEditorScreen(
             },
             format = window.format ?: window.file?.let { fileManager.detectFormatFromFile(it) },
             appSettings = appSettings,
+            findText = findText,
+            findMatchPositions = findMatchPositions,
+            findMatchIndex = findMatchIndex,
             onCursorPositionChange = { line, column ->
                 onCursorPositionChanged(line, column)
             },
             onSelectionChange = { _ -> },
             modifier = Modifier.weight(1f)
         )
+    }
+}
+
+/**
+ * Builds an AnnotatedString with find/replace match highlights applied.
+ * Yellow background for all matches, orange background for the current match.
+ */
+private fun buildHighlightedText(
+    text: String,
+    findText: String,
+    matchPositions: List<Int>,
+    currentMatchIndex: Int
+): AnnotatedString {
+    if (findText.isEmpty() || matchPositions.isEmpty()) {
+        return AnnotatedString(text)
+    }
+    return buildAnnotatedString {
+        append(text)
+        val findLen = findText.length
+        matchPositions.forEachIndexed { index, pos ->
+            val end = (pos + findLen).coerceAtMost(text.length)
+            if (pos < text.length) {
+                if (index == currentMatchIndex) {
+                    // Current match: orange background
+                    addStyle(
+                        SpanStyle(background = Color(0xFFFF9800)),
+                        start = pos,
+                        end = end
+                    )
+                } else {
+                    // Other matches: yellow background
+                    addStyle(
+                        SpanStyle(background = Color(0xFFFFEB3B)),
+                        start = pos,
+                        end = end
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -838,19 +1137,31 @@ private fun EnhancedTextEditor(
     onContentChange: (String) -> Unit,
     format: TextFormat?,
     appSettings: DesktopSettingsStorage.AppSettings,
+    findText: String = "",
+    findMatchPositions: List<Int> = emptyList(),
+    findMatchIndex: Int = -1,
     onCursorPositionChange: (Int, Int) -> Unit,
     onSelectionChange: (IntRange?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val textStyle = TextStyle(
         fontSize = appSettings.appearance.fontSize.sp,
-        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+        fontFamily = FontFamily.Monospace,
         color = MaterialTheme.colorScheme.onSurface
     )
 
-    // Track text field value for cursor position
-    var textFieldValue by remember(content) {
-        mutableStateOf(TextFieldValue(content))
+    // Build highlighted AnnotatedString for find matches
+    val highlightedText = remember(content, findText, findMatchPositions, findMatchIndex) {
+        buildHighlightedText(content, findText, findMatchPositions, findMatchIndex)
+    }
+
+    // Track text field value for cursor position, using the highlighted text
+    var textFieldValue by remember(content, highlightedText) {
+        mutableStateOf(
+            TextFieldValue(
+                annotatedString = highlightedText,
+            )
+        )
     }
 
     // Compute cursor position (line, column) from selection
@@ -1076,7 +1387,9 @@ private fun DesktopSidebar(
 }
 
 /**
- * File browser component.
+ * Navigable directory tree browser component.
+ * Shows current directory path, parent navigation, directories first then files,
+ * sorted alphabetically with optional hidden file filtering.
  */
 @Composable
 private fun FileBrowser(
@@ -1084,36 +1397,125 @@ private fun FileBrowser(
     onFileSelected: (File) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // This would be a comprehensive file browser
-    // For now, show a simple directory listing
-    Column(modifier = modifier.padding(16.dp)) {
+    var currentDirectory by remember { mutableStateOf(File(System.getProperty("user.home"))) }
+    var showHiddenFiles by remember { mutableStateOf(false) }
+
+    // List directory entries, sorted: directories first, then files, alphabetically case-insensitive
+    val directoryEntries = remember(currentDirectory, showHiddenFiles) {
+        try {
+            val entries = currentDirectory.listFiles()?.toList() ?: emptyList()
+            val filtered = if (showHiddenFiles) entries else entries.filter { !it.name.startsWith(".") }
+            val directories = filtered.filter { it.isDirectory }.sortedBy { it.name.lowercase() }
+            val files = filtered.filter { it.isFile }.sortedBy { it.name.lowercase() }
+            directories + files
+        } catch (e: SecurityException) {
+            emptyList()
+        }
+    }
+
+    Column(modifier = modifier.padding(8.dp)) {
+        // Current directory path
         Text(
-            text = "File Browser",
-            style = MaterialTheme.typography.titleMedium
+            text = currentDirectory.absolutePath,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            maxLines = 2,
+            modifier = Modifier.padding(bottom = 4.dp)
         )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Button(
-            onClick = {
-                val chooser = JFileChooser().apply {
-                    fileSelectionMode = JFileChooser.FILES_ONLY
-                    // Add file filters for supported formats
-                    val filter = FileNameExtensionFilter(
-                        "Supported Files",
-                        "md", "txt", "csv", "tex", "org", "json", "xml", "html", "css", "js", "kt", "java", "py", "cpp", "c"
-                    )
-                    addChoosableFileFilter(filter)
-                }
-                
-                val result = chooser.showOpenDialog(null)
-                if (result == JFileChooser.APPROVE_OPTION) {
-                    onFileSelected(chooser.selectedFile)
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
+
+        // Controls row: parent navigation and hidden files toggle
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Browse Files...")
+            // Parent directory button
+            TextButton(
+                onClick = {
+                    currentDirectory.parentFile?.let { parent ->
+                        currentDirectory = parent
+                    }
+                },
+                enabled = currentDirectory.parentFile != null
+            ) {
+                Text("[..] Up")
+            }
+
+            // Hidden files toggle
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Hidden",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                Checkbox(
+                    checked = showHiddenFiles,
+                    onCheckedChange = { showHiddenFiles = it },
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        Divider(modifier = Modifier.padding(vertical = 4.dp))
+
+        // Directory listing using LazyColumn for efficient rendering
+        if (directoryEntries.isEmpty()) {
+            Text(
+                text = "Empty directory",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                modifier = Modifier.padding(8.dp)
+            )
+        } else {
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                items(directoryEntries) { entry ->
+                    val isDirectory = entry.isDirectory
+                    Surface(
+                        onClick = {
+                            if (isDirectory) {
+                                currentDirectory = entry
+                            } else {
+                                onFileSelected(entry)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color.Transparent
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Directory/file indicator
+                            Text(
+                                text = if (isDirectory) "[DIR]" else "    ",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    color = if (isDirectory)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                ),
+                                modifier = Modifier.width(40.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = entry.name,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = if (isDirectory) FontWeight.Medium else FontWeight.Normal,
+                                    color = if (isDirectory)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.onSurface
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

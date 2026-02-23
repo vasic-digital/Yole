@@ -50,6 +50,8 @@ fun DesktopMenuBar(
     onZoomOut: () -> Unit,
     onResetZoom: () -> Unit,
     onAbout: () -> Unit,
+    onExportHtml: () -> Unit = {},
+    onExportPdf: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var expandedMenu by remember { mutableStateOf<String?>(null) }
@@ -87,6 +89,9 @@ fun DesktopMenuBar(
                 DesktopMenuSeparator()
             }
             
+            DesktopMenuItem("Export as HTML...", enabled = currentWindow != null, onClick = onExportHtml)
+            DesktopMenuItem("Export as PDF...", enabled = currentWindow != null, onClick = onExportPdf)
+            DesktopMenuSeparator()
             DesktopMenuItem("Close", "Ctrl+W", enabled = currentWindow != null, onClick = onCloseFile)
             DesktopMenuSeparator()
             DesktopMenuItem("Exit", "Alt+F4", onClick = onExit)

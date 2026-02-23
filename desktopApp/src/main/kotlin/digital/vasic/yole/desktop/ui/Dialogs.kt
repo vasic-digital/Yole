@@ -26,11 +26,13 @@ import digital.vasic.yole.format.FormatRegistry
 
 /**
  * Find and Replace dialog.
+ * Displays match status (e.g., "Match 2 of 5") when find is active.
  */
 @Composable
 fun FindReplaceDialog(
     findText: String,
     replaceText: String,
+    matchStatusMessage: String = "",
     onFindTextChange: (String) -> Unit,
     onReplaceTextChange: (String) -> Unit,
     onFind: () -> Unit,
@@ -43,7 +45,7 @@ fun FindReplaceDialog(
         title = "Find and Replace",
         state = rememberDialogState(
             width = 500.dp,
-            height = 300.dp,
+            height = 340.dp,
             position = WindowPosition(Alignment.Center)
         )
     ) {
@@ -59,7 +61,7 @@ fun FindReplaceDialog(
                     text = "Find and Replace",
                     style = MaterialTheme.typography.headlineSmall
                 )
-                
+
                 // Find field
                 OutlinedTextField(
                     value = findText,
@@ -68,7 +70,7 @@ fun FindReplaceDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-                
+
                 // Replace field
                 OutlinedTextField(
                     value = replaceText,
@@ -77,7 +79,19 @@ fun FindReplaceDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-                
+
+                // Match status display
+                if (matchStatusMessage.isNotEmpty()) {
+                    Text(
+                        text = matchStatusMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (matchStatusMessage.startsWith("No"))
+                            MaterialTheme.colorScheme.error
+                        else
+                            MaterialTheme.colorScheme.primary
+                    )
+                }
+
                 // Options
                 Row(
                     verticalAlignment = Alignment.CenterVertically
@@ -87,18 +101,18 @@ fun FindReplaceDialog(
                         onCheckedChange = { /* Toggle case sensitive */ }
                     )
                     Text("Case sensitive")
-                    
+
                     Spacer(modifier = Modifier.width(16.dp))
-                    
+
                     Checkbox(
                         checked = false, // This would come from state
                         onCheckedChange = { /* Toggle whole words */ }
                     )
                     Text("Whole words only")
                 }
-                
+
                 Spacer(modifier = Modifier.weight(1f))
-                
+
                 // Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -108,21 +122,21 @@ fun FindReplaceDialog(
                     TextButton(onClick = onClose) {
                         Text("Close")
                     }
-                    
+
                     Spacer(modifier = Modifier.width(8.dp))
-                    
+
                     Button(onClick = onFind) {
                         Text("Find Next")
                     }
-                    
+
                     Spacer(modifier = Modifier.width(8.dp))
-                    
+
                     Button(onClick = onReplace) {
                         Text("Replace")
                     }
-                    
+
                     Spacer(modifier = Modifier.width(8.dp))
-                    
+
                     Button(onClick = onReplaceAll) {
                         Text("Replace All")
                     }

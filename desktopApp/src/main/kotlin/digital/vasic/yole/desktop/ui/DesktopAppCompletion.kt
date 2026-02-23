@@ -514,6 +514,8 @@ fun CompleteDesktopMenuBar(
     onSaveFile: () -> Unit,
     onSaveAsFile: () -> Unit,
     onPrint: () -> Unit,
+    onExportHtml: () -> Unit = {},
+    onExportPdf: () -> Unit = {},
     onExit: () -> Unit,
     onUndo: () -> Unit,
     onRedo: () -> Unit,
@@ -556,6 +558,9 @@ fun CompleteDesktopMenuBar(
                 DropdownMenuItem(text = { CompletionMenuItemText("Save As...", "Ctrl+Shift+S") }, onClick = { onSaveAsFile(); expandedMenu = null })
                 Divider()
                 DropdownMenuItem(text = { CompletionMenuItemText("Print...", "Ctrl+P") }, onClick = { onPrint(); expandedMenu = null })
+                Divider()
+                DropdownMenuItem(text = { Text("Export as HTML...") }, onClick = { onExportHtml(); expandedMenu = null })
+                DropdownMenuItem(text = { Text("Export as PDF...") }, onClick = { onExportPdf(); expandedMenu = null })
                 Divider()
                 DropdownMenuItem(text = { Text("Exit") }, onClick = { onExit(); expandedMenu = null })
             }
