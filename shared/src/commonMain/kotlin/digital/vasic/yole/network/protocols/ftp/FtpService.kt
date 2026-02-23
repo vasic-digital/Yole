@@ -3,6 +3,7 @@ package digital.vasic.yole.network.protocols.ftp
 import digital.vasic.yole.network.NetworkStorageService
 import digital.vasic.yole.network.StorageQuota
 import digital.vasic.yole.network.common.*
+import digital.vasic.yole.network.platform.PlatformFileIOFactory
 import digital.vasic.yole.network.platform.SecureStorageFactory
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -51,6 +52,9 @@ import digital.vasic.yole.network.protocol.createHttpClient
 class FtpService(
     override val config: StorageConfig.FtpConfig
 ) : NetworkStorageService {
+
+    // Platform file I/O for reading/writing local files
+    private val fileIO by lazy { PlatformFileIOFactory.create() }
 
     // Lazy initialization of HttpClient to avoid resource allocation if never used
     private val httpClient by lazy {
@@ -468,8 +472,7 @@ class FtpService(
             emit(initialOperation)
 
             // Step 1: Determine file size from local file
-            // TODO("Not yet implemented: read actual file size from localPath")
-            val fileSize = 1024L
+            val fileSize = fileIO.fileSize(localPath).let { if (it >= 0) it else 1024L }
 
             // Step 2: Send TYPE I (binary mode) if not already set
             emit(initialOperation.copy(progress = 0.1, totalSize = fileSize))

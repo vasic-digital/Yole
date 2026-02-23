@@ -3,6 +3,7 @@ package digital.vasic.yole.network.protocols.smb
 import digital.vasic.yole.network.NetworkStorageService
 import digital.vasic.yole.network.StorageQuota
 import digital.vasic.yole.network.common.*
+import digital.vasic.yole.network.platform.PlatformFileIOFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
@@ -44,6 +45,9 @@ import kotlinx.datetime.Clock
 class SmbService(
     override val config: StorageConfig.SmbConfig
 ) : NetworkStorageService {
+
+    // Platform file I/O for reading/writing local files
+    private val fileIO by lazy { PlatformFileIOFactory.create() }
 
     private var _isConnected = false
     private var _rootPath = if (config.path.isBlank()) "/" else config.path

@@ -5,6 +5,7 @@ import digital.vasic.yole.network.StorageQuota
 import digital.vasic.yole.network.auth.AuthTokenManager
 import digital.vasic.yole.network.auth.GoogleDriveOAuth2Flow
 import digital.vasic.yole.network.common.*
+import digital.vasic.yole.network.platform.PlatformFileIOFactory
 import digital.vasic.yole.network.protocol.createHttpClient
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -64,6 +65,9 @@ import kotlinx.serialization.json.Json
 class GoogleDriveService(
     override val config: StorageConfig.GoogleDriveConfig
 ) : NetworkStorageService {
+
+    // Platform file I/O for reading/writing local files
+    private val fileIO by lazy { PlatformFileIOFactory.create() }
 
     // Lazy initialization of HttpClient to avoid resource allocation if never used
     private val httpClient by lazy { createHttpClient() }
@@ -391,9 +395,10 @@ class GoogleDriveService(
                 val bytes = downloadResponse.bodyAsBytes()
                 
                 emit(initialOperation.copy(progress = 0.8, bytesTransferred = bytes.size.toLong()))
-                
-                // TODO("Not yet implemented: write downloaded bytes to local filesystem")
-                
+
+                // Write downloaded bytes to local filesystem
+                fileIO.writeFileBytes(localPath, bytes)
+
                 val completedOperation = initialOperation.copy(
                     status = NetworkOperation.Status.COMPLETED,
                     progress = 1.0,
@@ -455,8 +460,8 @@ class GoogleDriveService(
             addActiveOperation(initialOperation)
             emit(initialOperation)
             
-            // TODO("Not yet implemented: read file bytes from localPath")
-            val fileBytes = byteArrayOf() // Placeholder: actual file bytes not read from disk
+            // Read file bytes from local filesystem
+            val fileBytes = fileIO.readFileBytes(localPath).getOrElse { byteArrayOf() }
             val fileName = remotePath.substringAfterLast("/")
             
             emit(initialOperation.copy(progress = 0.3, totalSize = fileBytes.size.toLong()))

@@ -3,6 +3,7 @@ package digital.vasic.yole.network.protocols.git
 import digital.vasic.yole.network.NetworkStorageService
 import digital.vasic.yole.network.StorageQuota
 import digital.vasic.yole.network.common.*
+import digital.vasic.yole.network.platform.PlatformFileIOFactory
 import digital.vasic.yole.network.protocol.createHttpClient
 import io.ktor.client.*
 import io.ktor.client.request.*
@@ -62,6 +63,9 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 class GitService(
     override val config: StorageConfig.GitConfig
 ) : NetworkStorageService {
+
+    // Platform file I/O for reading/writing local files
+    private val fileIO by lazy { PlatformFileIOFactory.create() }
 
     // Lazy initialization of HttpClient to avoid resource allocation if never used
     private val httpClient by lazy {
@@ -365,7 +369,9 @@ class GitService(
 
                     if (response.status.isSuccess()) {
                         val contentLength = response.headers["Content-Length"]?.toLongOrNull() ?: 0L
-                        // TODO("Not yet implemented: write downloaded bytes to localPath")
+                        // Write downloaded bytes to local filesystem
+                        val bytes = response.bodyAsBytes()
+                        fileIO.writeFileBytes(localPath, bytes)
 
                         emit(operation.copy(
                             status = NetworkOperation.Status.IN_PROGRESS,
