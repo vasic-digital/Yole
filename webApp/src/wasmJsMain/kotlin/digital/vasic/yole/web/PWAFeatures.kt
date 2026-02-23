@@ -15,254 +15,218 @@ import kotlinx.coroutines.*
 import org.w3c.dom.*
 import org.w3c.dom.events.Event
 import org.w3c.files.*
-import org.w3c.workers.*
-import kotlin.js.Promise
+import kotlin.js.JsAny
+import kotlin.js.JsBoolean
+import kotlin.js.JsString
+
+// External JS helper functions declared at top level for Wasm compatibility
+// In Kotlin/Wasm, js("...") must be the sole expression in a top-level function body.
+// The function must return JsAny (or subtype). Conversions happen in wrapper functions.
+
+private fun jsNavigatorOnLineRaw(): JsBoolean = js("navigator.onLine")
+private fun jsNavigatorOnLine(): Boolean = jsNavigatorOnLineRaw().toBoolean()
+
+private fun jsHasServiceWorkerRaw(): JsBoolean = js("('serviceWorker' in navigator)")
+private fun jsHasServiceWorker(): Boolean = jsHasServiceWorkerRaw().toBoolean()
+
+private fun jsHasShowOpenFilePickerRaw(): JsBoolean = js("('showOpenFilePicker' in window)")
+private fun jsHasShowOpenFilePicker(): Boolean = jsHasShowOpenFilePickerRaw().toBoolean()
+
+private fun jsIsStandaloneModeRaw(): JsBoolean = js("(window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches || (window.navigator.standalone === true))")
+private fun jsIsStandaloneMode(): Boolean = jsIsStandaloneModeRaw().toBoolean()
+
+private fun jsGetCurrentTimeMsRaw(): kotlin.js.JsNumber = js("Date.now()")
+private fun jsGetCurrentTimeMs(): Double = jsGetCurrentTimeMsRaw().toDouble()
 
 /**
  * Progressive Web App features implementation
  * Service worker, offline support, file system access
+ *
+ * Note: Many advanced PWA features (service workers, File System Access API,
+ * notifications, caching) are not fully available in Kotlin/Wasm due to
+ * limited JS interop. These features are stubbed out with TODO comments
+ * and will be implemented when Wasm JS interop matures.
  */
 object PWAFeatures {
-    
-    private var serviceWorkerRegistration: ServiceWorkerRegistration? = null
+
     private var isOfflineMode = false
     private var fileSystemAccessSupported = false
-    
+
     // Cache names
     private const val CACHE_NAME = "yole-cache-v1"
     private const val API_CACHE_NAME = "yole-api-cache-v1"
-    
+
     /**
      * Initialize all PWA features
      */
     fun initialize() {
-        console.log("Initializing PWA features...")
-        
+        println("Initializing PWA features...")
+
         // Check if service workers are supported
-        if (js("'serviceWorker' in navigator") as Boolean) {
+        if (jsHasServiceWorker()) {
             registerServiceWorker()
         } else {
-            console.warn("Service workers not supported")
+            println("WARN: Service workers not supported")
         }
-        
+
         // Check for File System Access API
-        if (js("'showOpenFilePicker' in window") as Boolean) {
+        if (jsHasShowOpenFilePicker()) {
             fileSystemAccessSupported = true
-            console.log("File System Access API supported")
+            println("File System Access API supported")
         }
-        
+
         // Set up offline detection
         setupOfflineDetection()
-        
+
         // Set up app install prompt
         setupInstallPrompt()
-        
-        console.log("PWA features initialized")
+
+        println("PWA features initialized")
     }
-    
+
     /**
      * Register service worker for offline functionality
      */
     private fun registerServiceWorker() {
-        try {
-            navigator.serviceWorker.register("/service-worker.js").then { registration ->
-                serviceWorkerRegistration = registration
-                console.log("Service worker registered successfully", registration)
-                
-                // Check for updates
-                checkForServiceWorkerUpdates()
-                
-                // Set up message handling
-                setupServiceWorkerMessaging()
-                
-            }.catch { error ->
-                console.error("Service worker registration failed:", error)
-            }
-        } catch (e: dynamic) {
-            console.error("Error registering service worker:", e)
-        }
+        // TODO: Service worker registration requires advanced JS interop
+        // not yet fully supported in Kotlin/Wasm. Will be implemented
+        // when ServiceWorker APIs are available in the Wasm stdlib.
+        println("Service worker registration: stubbed for Wasm compatibility")
     }
-    
+
     /**
      * Check for service worker updates
      */
     private fun checkForServiceWorkerUpdates() {
-        navigator.serviceWorker.ready.then { registration ->
-            registration.update().then {
-                console.log("Service worker update check completed")
-            }.catch { error ->
-                console.error("Service worker update failed:", error)
-            }
-        }
+        // TODO: Requires service worker registration (see registerServiceWorker)
+        println("Service worker update check: stubbed for Wasm compatibility")
     }
-    
+
     /**
      * Set up service worker messaging
      */
     private fun setupServiceWorkerMessaging() {
-        navigator.serviceWorker.addEventListener("message", { event ->
-            val messageEvent = event as MessageEvent
-            handleServiceWorkerMessage(messageEvent.data)
-        })
+        // TODO: Requires service worker registration (see registerServiceWorker)
+        println("Service worker messaging: stubbed for Wasm compatibility")
     }
-    
+
     /**
      * Handle messages from service worker
      */
-    private fun handleServiceWorkerMessage(data: dynamic) {
-        when (data.type as? String) {
-            "offline-ready" -> {
-                console.log("App is ready for offline use")
-                showOfflineReadyNotification()
-            }
-            "update-available" -> {
-                console.log("App update available")
-                showUpdateAvailableNotification()
-            }
-            else -> {
-                console.log("Unknown service worker message:", data)
-            }
-        }
+    private fun handleServiceWorkerMessage(data: String) {
+        println("Service worker message received: $data")
     }
-    
+
     /**
      * Send message to service worker
      */
-    fun sendMessageToServiceWorker(message: dynamic) {
-        if (serviceWorkerRegistration?.active != null) {
-            serviceWorkerRegistration?.active?.postMessage(message)
-        } else {
-            console.warn("No active service worker to send message to")
-        }
+    fun sendMessageToServiceWorker(message: String) {
+        // TODO: Requires service worker registration
+        println("WARN: No active service worker to send message to")
     }
-    
+
     /**
      * Cache a resource for offline use
+     * TODO: Cache API interop not available in Kotlin/Wasm yet
      */
-    suspend fun cacheResource(url: String, response: Response): Boolean {
+    suspend fun cacheResource(url: String): Boolean {
         return try {
-            val cache = window.caches.open(CACHE_NAME).await()
-            cache.put(url, response).await()
-            console.log("Cached resource:", url)
-            true
-        } catch (e: dynamic) {
-            console.error("Failed to cache resource:", e)
+            println("Caching resource: $url (stubbed for Wasm)")
+            // TODO: Implement when Cache API is available in Wasm
+            false
+        } catch (e: Exception) {
+            println("ERROR: Failed to cache resource: ${e.message}")
             false
         }
     }
-    
+
     /**
      * Get cached resource or fetch from network
+     * TODO: Cache API interop not available in Kotlin/Wasm yet
      */
-    suspend fun getCachedOrFetch(url: String): Response? {
+    suspend fun getCachedOrFetch(url: String): String? {
         return try {
-            val cache = window.caches.open(CACHE_NAME).await()
-            
-            // Try cache first
-            val cachedResponse = cache.match(url).await()
-            if (cachedResponse != null) {
-                console.log("Found cached resource:", url)
-                return cachedResponse
-            }
-            
-            // If not in cache, fetch from network
-            if (!isOfflineMode) {
-                val networkResponse = window.fetch(url).await()
-                // Cache for future use
-                cacheResource(url, networkResponse)
-                return networkResponse
-            }
-            
+            println("Getting cached or fetching: $url (stubbed for Wasm)")
+            // TODO: Implement when Cache/Fetch API is available in Wasm
             null
-        } catch (e: dynamic) {
-            console.error("Error getting cached or fetched resource:", e)
+        } catch (e: Exception) {
+            println("ERROR: Error getting cached or fetched resource: ${e.message}")
             null
         }
     }
-    
+
     /**
      * Clear all caches
+     * TODO: Cache API interop not available in Kotlin/Wasm yet
      */
     suspend fun clearCaches(): Boolean {
         return try {
-            window.caches.delete(CACHE_NAME).await()
-            window.caches.delete(API_CACHE_NAME).await()
-            console.log("All caches cleared")
-            true
-        } catch (e: dynamic) {
-            console.error("Failed to clear caches:", e)
+            println("Clearing caches (stubbed for Wasm)")
+            // TODO: Implement when Cache API is available in Wasm
+            false
+        } catch (e: Exception) {
+            println("ERROR: Failed to clear caches: ${e.message}")
             false
         }
     }
-    
+
     /**
      * Set up offline detection
      */
     private fun setupOfflineDetection() {
-        window.addEventListener("online", { event ->
+        window.addEventListener("online", { _: Event ->
             isOfflineMode = false
-            console.log("Back online")
+            println("Back online")
             handleOnlineStatus()
         })
-        
-        window.addEventListener("offline", { event ->
+
+        window.addEventListener("offline", { _: Event ->
             isOfflineMode = true
-            console.log("Gone offline")
+            println("Gone offline")
             handleOfflineStatus()
         })
-        
+
         // Check initial status
-        isOfflineMode = !navigator.onLine
-        console.log("Initial online status:", navigator.onLine)
+        isOfflineMode = !jsNavigatorOnLine()
+        println("Initial online status: ${jsNavigatorOnLine()}")
     }
-    
+
     /**
      * Handle going online
      */
     private fun handleOnlineStatus() {
         // Sync any offline changes
         syncOfflineChanges()
-        
+
         // Show online notification
         showOnlineNotification()
     }
-    
+
     /**
      * Handle going offline
      */
     private fun handleOfflineStatus() {
         // Save current state for offline access
         saveStateForOffline()
-        
+
         // Show offline notification
         showOfflineNotification()
     }
-    
+
     /**
      * Save state for offline access
      */
     private fun saveStateForOffline() {
         try {
-            val state = getCurrentApplicationState()
-            localStorage.setItem("offline_state", JSON.stringify(state))
-            console.log("State saved for offline access")
-        } catch (e: dynamic) {
-            console.error("Failed to save state for offline:", e)
+            val timestamp = jsGetCurrentTimeMs()
+            val stateJson = """{"timestamp":$timestamp,"cacheVersion":"1.0"}"""
+            localStorage.setItem("offline_state", stateJson)
+            println("State saved for offline access")
+        } catch (e: Exception) {
+            println("ERROR: Failed to save state for offline: ${e.message}")
         }
     }
-    
-    /**
-     * Get current application state for offline storage
-     */
-    private fun getCurrentApplicationState(): dynamic {
-        return js("({})").apply {
-            this.timestamp = Date().getTime()
-            this.documents = getOpenDocuments()
-            this.settings = getApplicationSettings()
-            this.cacheVersion = "1.0"
-        }
-    }
-    
+
     /**
      * Sync offline changes when coming back online
      */
@@ -270,227 +234,151 @@ object PWAFeatures {
         try {
             val offlineState = localStorage.getItem("offline_state")
             if (offlineState != null) {
-                val state = JSON.parse(offlineState)
-                console.log("Syncing offline changes", state)
-                
+                println("Syncing offline changes: $offlineState")
+
                 // Process offline changes
-                processOfflineChanges(state)
-                
+                processOfflineChanges(offlineState)
+
                 // Clear offline state after sync
                 localStorage.removeItem("offline_state")
             }
-        } catch (e: dynamic) {
-            console.error("Failed to sync offline changes:", e)
+        } catch (e: Exception) {
+            println("ERROR: Failed to sync offline changes: ${e.message}")
         }
     }
-    
+
     /**
      * Advanced file system access using File System Access API
+     * TODO: File System Access API requires advanced JS interop not yet available in Wasm
      */
     suspend fun openFileWithFileSystemAccess(): FileHandle? {
         if (!fileSystemAccessSupported) {
-            console.warn("File System Access API not supported")
+            println("WARN: File System Access API not supported")
             return null
         }
-        
-        return try {
-            val options = js("({})")
-            options.types = arrayOf(
-                js("({})").apply {
-                    this.description = "Text Files"
-                    this.accept = js("({})")
-                    this.accept["text/*"] = arrayOf(".txt", ".md", ".csv", ".tex", ".org", ".adoc", ".wiki")
-                }
-            )
-            
-            val fileHandle = window.showOpenFilePicker(options).await<dynamic>()
-            if (fileHandle is Array<*> && fileHandle.isNotEmpty()) {
-                val handle = fileHandle[0] as FileSystemFileHandle
-                console.log("File selected:", handle.name)
-                FileSystemFileHandle(handle)
-            } else {
-                null
-            }
-        } catch (e: dynamic) {
-            console.error("Error opening file with File System Access API:", e)
-            null
-        }
+
+        // TODO: Implement when showOpenFilePicker is available in Wasm
+        println("File System Access API: stubbed for Wasm compatibility")
+        return null
     }
-    
+
     /**
      * Save file using File System Access API
+     * TODO: File System Access API requires advanced JS interop not yet available in Wasm
      */
     suspend fun saveFileWithFileSystemAccess(content: String, suggestedName: String): Boolean {
         if (!fileSystemAccessSupported) {
-            console.warn("File System Access API not supported")
+            println("WARN: File System Access API not supported")
             return false
         }
-        
-        return try {
-            val options = js("({})")
-            options.suggestedName = suggestedName
-            options.types = arrayOf(
-                js("({})").apply {
-                    this.description = "Text Files"
-                    this.accept = js("({})")
-                    this.accept["text/plain"] = arrayOf(".txt")
-                }
-            )
-            
-            val fileHandle = window.showSaveFilePicker(options).await<dynamic>()
-            if (fileHandle is FileSystemFileHandle) {
-                // Write content to file
-                val writableStream = fileHandle.createWritable().await<dynamic>()
-                writableStream.write(content).await<dynamic>()
-                writableStream.close().await<dynamic>()
-                
-                console.log("File saved successfully:", fileHandle.name)
-                true
-            } else {
-                false
-            }
-        } catch (e: dynamic) {
-            console.error("Error saving file with File System Access API:", e)
-            false
-        }
+
+        // TODO: Implement when showSaveFilePicker is available in Wasm
+        println("File System Access API save: stubbed for Wasm compatibility")
+        return false
     }
-    
+
     /**
      * Set up app install prompt
      */
     private fun setupInstallPrompt() {
-        var deferredPrompt: dynamic = null
-        
-        window.addEventListener("beforeinstallprompt", { event ->
+        window.addEventListener("beforeinstallprompt", { event: Event ->
             event.preventDefault()
-            deferredPrompt = event
-            console.log("Install prompt deferred")
+            println("Install prompt deferred")
             showInstallButton()
         })
     }
-    
+
     /**
      * Show install button
      */
     private fun showInstallButton() {
         // This would show a UI element to prompt installation
-        console.log("Showing install button")
+        println("Showing install button")
     }
-    
+
     /**
      * Trigger app installation
      */
     suspend fun triggerInstall(): Boolean {
         return try {
-            // Implementation depends on browser support
-            console.log("Triggering app installation")
+            // TODO: Implementation depends on browser support and JS interop
+            println("Triggering app installation (stubbed for Wasm)")
             true
-        } catch (e: dynamic) {
-            console.error("Failed to trigger install:", e)
+        } catch (e: Exception) {
+            println("ERROR: Failed to trigger install: ${e.message}")
             false
         }
     }
-    
+
     /**
      * Background sync for offline support
+     * TODO: Background Sync API not available in Kotlin/Wasm yet
      */
     fun registerBackgroundSync(tag: String = "yole-sync") {
-        if (js("'sync' in registration") as Boolean) {
-            serviceWorkerRegistration?.sync?.register(tag)?.then {
-                console.log("Background sync registered:", tag)
-            }?.catch { error ->
-                console.error("Failed to register background sync:", error)
-            }
-        }
+        println("Background sync registration: stubbed for Wasm (tag=$tag)")
     }
-    
+
     /**
      * Show offline ready notification
      */
     private fun showOfflineReadyNotification() {
-        if (Notification.permission == "granted") {
-            Notification("Yole Offline Ready", js("({})").apply {
-                this.body = "App is ready to work offline"
-                this.icon = "/icon-192.png"
-            })
-        }
+        // TODO: Notification API not available in Kotlin/Wasm yet
+        println("Notification: App is ready for offline use")
     }
-    
+
     /**
      * Show online notification
      */
     private fun showOnlineNotification() {
-        if (Notification.permission == "granted") {
-            Notification("Yole Online", js("({})").apply {
-                this.body = "Back online - syncing changes"
-                this.icon = "/icon-192.png"
-            })
-        }
+        println("Notification: Back online - syncing changes")
     }
-    
+
     /**
      * Show offline notification
      */
     private fun showOfflineNotification() {
-        if (Notification.permission == "granted") {
-            Notification("Yole Offline", js("({})").apply {
-                this.body = "Working offline - changes will sync when online"
-                this.icon = "/icon-192.png"
-            })
-        }
+        println("Notification: Working offline - changes will sync when online")
     }
-    
+
     /**
      * Show update available notification
      */
     private fun showUpdateAvailableNotification() {
-        if (Notification.permission == "granted") {
-            Notification("Yole Update Available", js("({})").apply {
-                this.body = "A new version is available. Refresh to update."
-                this.icon = "/icon-192.png"
-            })
-        }
+        println("Notification: A new version is available. Refresh to update.")
     }
-    
+
     /**
      * Request notification permission
+     * TODO: Notification API not available in Kotlin/Wasm yet
      */
     fun requestNotificationPermission() {
-        if (Notification.permission != "granted") {
-            Notification.requestPermission().then { permission ->
-                console.log("Notification permission:", permission)
-            }
-        }
+        println("Notification permission request: stubbed for Wasm")
     }
-    
+
     /**
      * Check if running in standalone mode (PWA installed)
      */
     fun isStandaloneMode(): Boolean {
-        return window.matchMedia("(display-mode: standalone)").matches ||
-               window.matchMedia("(display-mode: fullscreen)").matches ||
-               (js("window.navigator.standalone") as? Boolean) == true
+        return jsIsStandaloneMode()
     }
-    
+
     /**
      * Get cache statistics
+     * TODO: Cache API not available in Kotlin/Wasm yet
      */
     suspend fun getCacheStats(): CacheStats? {
         return try {
-            val cache = window.caches.open(CACHE_NAME).await()
-            val keys = cache.keys().await()
-            
             CacheStats(
                 cacheName = CACHE_NAME,
-                entryCount = keys.length,
-                timestamp = Date().getTime()
+                entryCount = 0,
+                timestamp = jsGetCurrentTimeMs()
             )
-        } catch (e: dynamic) {
-            console.error("Failed to get cache stats:", e)
+        } catch (e: Exception) {
+            println("ERROR: Failed to get cache stats: ${e.message}")
             null
         }
     }
-    
+
     /**
      * Cache statistics
      */
@@ -502,38 +390,17 @@ object PWAFeatures {
 }
 
 /**
- * Wrapper for File System Access API file handles
+ * Simple file handle wrapper for Wasm compatibility
  */
-class FileSystemFileHandle(private val handle: dynamic) {
-    val name: String get() = handle.name as String
-    
-    suspend fun getFile(): File {
-        return handle.getFile().await()
-    }
-    
-    suspend fun createWritable(): dynamic {
-        return handle.createWritable().await()
-    }
+class FileHandle(val name: String) {
+    // TODO: Implement actual file handle when File System Access API
+    // is available in Kotlin/Wasm
 }
 
 /**
- * Helper functions for DOM manipulation
+ * Helper functions
  */
-private fun getOpenDocuments(): Array<dynamic> {
-    // Implementation would get currently open documents
-    return emptyArray()
-}
-
-private fun getApplicationSettings(): dynamic {
-    // Implementation would get current application settings
-    return js("({})")
-}
-
-private fun processOfflineChanges(state: dynamic) {
+private fun processOfflineChanges(state: String) {
     // Implementation would process offline changes
-    console.log("Processing offline changes:", state)
+    println("Processing offline changes: $state")
 }
-
-// Note: Notification helper functions removed to prevent confusion.
-// Use PWAFeatures.showNotification() methods directly from within the PWAFeatures object.
-// The private notification methods in PWAFeatures handle all notification display.

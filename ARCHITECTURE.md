@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2025 Milos Vasic
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Yole Cross-Platform Architecture
 
 ## Overview
@@ -48,6 +53,76 @@ Yole uses **Kotlin Multiplatform (KMP)** to maximize code sharing across platfor
    │  iOS  │      │   Web   │
    │   UI  │      │   UI    │
    └───────┘      └─────────┘
+```
+
+### System Architecture Diagram
+
+The following diagram shows the complete KMP module structure, with the shared module at the center providing business logic to all platform applications:
+
+```mermaid
+graph TB
+    subgraph platforms["Platform Applications"]
+        androidApp["androidApp<br/>(Compose UI)"]
+        desktopApp["desktopApp<br/>(Compose Desktop)"]
+        iosApp["iosApp<br/>(SwiftUI + KMP)"]
+        webApp["webApp<br/>(Compose for Web / Wasm)"]
+    end
+
+    subgraph shared["shared module (commonMain)"]
+        direction TB
+        subgraph format["format/ — 17 Text Parsers"]
+            FormatRegistry["FormatRegistry"]
+            TextFormat["TextFormat"]
+            TextParser["TextParser / ParserRegistry"]
+            parsers["MarkdownParser, TodoTxtParser,<br/>CsvParser, LatexParser,<br/>OrgModeParser, AsciidocParser,<br/>WikitextParser, RestructuredTextParser,<br/>CreoleParser, TiddlyWikiParser,<br/>TaskpaperParser, TextileParser,<br/>JupyterParser, RMarkdownParser,<br/>KeyValueParser, PlaintextParser,<br/>Binary Detection"]
+        end
+
+        subgraph network["network/ — 8 Protocols"]
+            NetworkStorageService["NetworkStorageService"]
+            protocols["FtpService, SftpService,<br/>WebDavService, SmbService,<br/>GitService, DropboxService,<br/>GoogleDriveService, OneDriveService"]
+            auth["AuthTokenManager<br/>OAuth2Flow"]
+            secureStorage["SecureStorage<br/>(platform expect/actual)"]
+        end
+
+        subgraph model["model/"]
+            Document["Document"]
+        end
+
+        subgraph util["util/"]
+            LazyLoading["LazyLoading"]
+            RateLimiting["RateLimiting"]
+            PlatformSync["PlatformSync"]
+        end
+    end
+
+    subgraph legacy["Legacy Android Modules"]
+        commons["commons/<br/>(GsFileUtils, GsContextUtils)"]
+        core["core/<br/>(TextConverterBase,<br/>SyntaxHighlighterBase)"]
+        app["app/<br/>(Legacy Android App)"]
+    end
+
+    androidApp -->|depends on| shared
+    desktopApp -->|depends on| shared
+    iosApp -.->|depends on<br/>(disabled)| shared
+    webApp -.->|depends on<br/>(stub)| shared
+
+    androidApp -->|legacy| commons
+    androidApp -->|legacy| core
+
+    FormatRegistry --> TextFormat
+    FormatRegistry --> TextParser
+    TextParser --> parsers
+    NetworkStorageService --> protocols
+    protocols --> auth
+    auth --> secureStorage
+
+    style platforms fill:#e1f5fe,stroke:#0288d1
+    style shared fill:#e8f5e9,stroke:#388e3c
+    style format fill:#f1f8e9,stroke:#689f38
+    style network fill:#f1f8e9,stroke:#689f38
+    style model fill:#f1f8e9,stroke:#689f38
+    style util fill:#f1f8e9,stroke:#689f38
+    style legacy fill:#fff3e0,stroke:#f57c00
 ```
 
 ### Shared Module (`shared/`)
@@ -106,6 +181,92 @@ Platform Apps (androidApp, desktopApp, etc.)
     shared (Kotlin Multiplatform)
        ↓
    commons (Android utilities - legacy)
+```
+
+### Network Protocol Architecture
+
+The network storage layer provides a unified interface (`NetworkStorageService`) for accessing 8 different storage protocols, with secure credential management via platform-specific `SecureStorage` and `AuthTokenManager` for OAuth2-based cloud services:
+
+```mermaid
+graph TB
+    subgraph interface["Unified API"]
+        NSS["NetworkStorageService<br/>(interface)"]
+        NSS_ops["connect() / disconnect()<br/>listFiles() / downloadFile() / uploadFile()<br/>deleteFile() / syncAll() / searchFiles()"]
+    end
+
+    subgraph selfHosted["Self-Hosted Protocols"]
+        FTP["FtpService<br/>(FTP)"]
+        SFTP["SftpService<br/>(SFTP)"]
+        WebDAV["WebDavService<br/>(WebDAV)"]
+        SMB["SmbService<br/>(SMB)"]
+        Git["GitService<br/>(Git)"]
+    end
+
+    subgraph cloud["Cloud Storage Protocols (OAuth2)"]
+        Dropbox["DropboxService<br/>(Dropbox API)"]
+        GDrive["GoogleDriveService<br/>(Google Drive API)"]
+        OneDrive["OneDriveService<br/>(OneDrive / MS Graph)"]
+    end
+
+    subgraph auth["Authentication Layer"]
+        ATM["AuthTokenManager<br/>(token storage, refresh,<br/>expiration checking)"]
+        OAuth2["OAuth2Flow<br/>(authorization code flow)"]
+        SS["SecureStorage<br/>(expect/actual interface)"]
+    end
+
+    subgraph platformImpl["Platform SecureStorage Implementations"]
+        androidSS["Android<br/>EncryptedSharedPreferences"]
+        desktopSS["Desktop<br/>OS Keychain / SecretService"]
+        iosSS["iOS<br/>Keychain Services"]
+    end
+
+    subgraph infra["Infrastructure"]
+        HttpClient["HttpClientFactory<br/>(Ktor)"]
+        Config["NetworkStorageConfigService"]
+        DB["NetworkStorageDatabase<br/>(offline cache)"]
+        Models["StorageConfig / NetworkDocument<br/>CacheEntry / SyncStatus"]
+    end
+
+    NSS --> NSS_ops
+    NSS_ops --> FTP
+    NSS_ops --> SFTP
+    NSS_ops --> WebDAV
+    NSS_ops --> SMB
+    NSS_ops --> Git
+    NSS_ops --> Dropbox
+    NSS_ops --> GDrive
+    NSS_ops --> OneDrive
+
+    FTP --> SS
+    SFTP --> SS
+    WebDAV --> SS
+    SMB --> SS
+
+    Dropbox --> ATM
+    GDrive --> ATM
+    OneDrive --> ATM
+    ATM --> OAuth2
+    ATM --> SS
+
+    SS --> androidSS
+    SS --> desktopSS
+    SS --> iosSS
+
+    Dropbox --> HttpClient
+    GDrive --> HttpClient
+    OneDrive --> HttpClient
+    WebDAV --> HttpClient
+
+    NSS_ops --> DB
+    NSS_ops --> Config
+    Config --> Models
+
+    style interface fill:#e8f5e9,stroke:#388e3c
+    style selfHosted fill:#e1f5fe,stroke:#0288d1
+    style cloud fill:#fff3e0,stroke:#f57c00
+    style auth fill:#f3e5f5,stroke:#7b1fa2
+    style platformImpl fill:#fce4ec,stroke:#c62828
+    style infra fill:#f5f5f5,stroke:#616161
 ```
 
 ## Module Structure
@@ -333,6 +494,72 @@ object FormatRegistry {
 3. **Platform Rendering**: Platform-specific converters to HTML/other formats
 4. **Syntax Highlighting**: Platform-specific syntax highlighters
 
+#### Format Parsing Pipeline Diagram
+
+The following diagram traces the complete data flow from raw text input through format detection, parsing, and platform-specific rendering:
+
+```mermaid
+flowchart LR
+    input["Raw Text<br/>+ Filename"]
+
+    subgraph detection["Format Detection"]
+        detectExt["FormatRegistry<br/>.detectByExtension()"]
+        detectContent["FormatRegistry<br/>.detectByContent()"]
+        detectFile["FormatRegistry<br/>.detectByFilename()"]
+    end
+
+    format["TextFormat<br/>(id, name,<br/>extensions,<br/>detectionPatterns)"]
+
+    subgraph parserLookup["Parser Lookup"]
+        ParserRegistry["ParserRegistry<br/>.getParser(format)"]
+        lazyInit["Lazy Instantiation<br/>(factory pattern)"]
+    end
+
+    subgraph parsing["Parsing"]
+        TextParser["TextParser<br/>.parse(content, options)"]
+        ParsedDocument["ParsedDocument<br/>(format, rawContent,<br/>parsedContent,<br/>metadata, errors)"]
+    end
+
+    subgraph htmlGen["HTML Generation (Lazy + Cached)"]
+        toHtml["ParsedDocument<br/>.toHtml(lightMode)"]
+        cacheLight["Cached HTML<br/>(light mode)"]
+        cacheDark["Cached HTML<br/>(dark mode)"]
+    end
+
+    subgraph display["Platform Display"]
+        android["Android<br/>WebView + CSS"]
+        desktop["Desktop<br/>Compose Renderer"]
+        ios["iOS<br/>WKWebView"]
+        web["Web / Wasm<br/>Browser DOM"]
+    end
+
+    input --> detectExt
+    input --> detectContent
+    input --> detectFile
+    detectExt --> format
+    detectContent --> format
+    detectFile --> format
+    format --> ParserRegistry
+    ParserRegistry --> lazyInit
+    lazyInit --> TextParser
+    TextParser --> ParsedDocument
+    ParsedDocument --> toHtml
+    toHtml --> cacheLight
+    toHtml --> cacheDark
+    cacheLight --> android
+    cacheLight --> desktop
+    cacheLight --> ios
+    cacheLight --> web
+    cacheDark --> android
+    cacheDark --> desktop
+
+    style detection fill:#fff9c4,stroke:#f9a825
+    style parserLookup fill:#e1f5fe,stroke:#0288d1
+    style parsing fill:#e8f5e9,stroke:#388e3c
+    style htmlGen fill:#f3e5f5,stroke:#7b1fa2
+    style display fill:#fce4ec,stroke:#c62828
+```
+
 ### Android Pipeline
 
 1. **File Detection**: `TextConverter.isFileOutOfThisFormat()`
@@ -368,6 +595,66 @@ object FormatRegistry {
 - Shared build logic in root `build.gradle.kts`
 - Module-specific dependencies
 - Automated testing pipeline
+
+### CI/CD Pipeline
+
+The project uses GitHub Actions with three workflows: continuous integration (`ci.yml`), security scanning (`security.yml`), and release automation (`release.yml`).
+
+```mermaid
+flowchart LR
+    subgraph triggers["Triggers"]
+        push["Push to master"]
+        pr["Pull Request"]
+        tag["Version Tag (v*)"]
+        schedule["Weekly Schedule<br/>(Sunday 00:00 UTC)"]
+    end
+
+    subgraph ci["ci.yml — Continuous Integration"]
+        direction TB
+        ci_test_shared["Run Shared<br/>Unit Tests<br/>(Android + Desktop)"]
+        ci_build["Build Artifacts<br/>(Debug APK + Desktop JAR)"]
+        ci_lint["Android Lint<br/>(lintFlavorDefaultDebug)"]
+        ci_coverage["Kover Coverage<br/>Report"]
+        ci_codecov["Upload to<br/>Codecov"]
+
+        ci_test_shared --> ci_build
+        ci_build --> ci_lint
+        ci_lint --> ci_coverage
+        ci_coverage --> ci_codecov
+    end
+
+    subgraph security["security.yml — Security Scanning"]
+        direction TB
+        sec_gitleaks["Gitleaks<br/>(Secret Scanning)"]
+        sec_snyk["Snyk<br/>(Vulnerability Scan)"]
+        sec_codeql["CodeQL<br/>(Static Analysis<br/>java-kotlin)"]
+        sec_owasp["OWASP<br/>(Dependency Check)"]
+    end
+
+    subgraph release["release.yml — Release"]
+        direction TB
+        rel_build_apk["Build Release APK"]
+        rel_build_jar["Build Desktop JARs"]
+        rel_collect["Collect Artifacts"]
+        rel_gh_release["Create GitHub Release<br/>(with release notes)"]
+
+        rel_build_apk --> rel_collect
+        rel_build_jar --> rel_collect
+        rel_collect --> rel_gh_release
+    end
+
+    push --> ci
+    pr --> ci
+    push --> security
+    pr --> security
+    schedule --> security
+    tag --> release
+
+    style triggers fill:#fff9c4,stroke:#f9a825
+    style ci fill:#e8f5e9,stroke:#388e3c
+    style security fill:#fce4ec,stroke:#c62828
+    style release fill:#e1f5fe,stroke:#0288d1
+```
 
 ### Platform Dependencies
 - **Android**: AndroidX, Material Design, Kotlin

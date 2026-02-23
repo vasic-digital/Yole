@@ -8,11 +8,12 @@
  *
  *########################################################*/
 
-package digital.vasvasic.yole.web
+package digital.vasic.yole.web
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,15 +23,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import digital.vasic.yole.format.FormatRegistry
-import digital.vasic.yole.format.ParserRegistry
-import digital.vasic.yole.web.PWAFeatures.FileSystemFileHandle
-import kotlinx.browser.document
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
 import kotlinx.coroutines.*
-import org.w3c.files.File
-import org.w3c.files.FileReader
-import kotlin.js.Date
+import kotlinx.datetime.Clock
+
+// Top-level JS helpers for Wasm compatibility.
+// In Kotlin/Wasm, js("...") must be the sole expression in a top-level function body
+// and must return a JsAny subtype. Conversions happen in wrapper functions.
+
+private fun jsNavigatorOnLineRaw(): kotlin.js.JsBoolean = js("navigator.onLine")
+private fun jsNavigatorOnLine(): Boolean = jsNavigatorOnLineRaw().toBoolean()
+
+private fun jsWindowPrintImpl(): kotlin.js.JsAny = js("window.print()")
+private fun jsWindowPrint() { jsWindowPrintImpl() }
 
 /**
  * Enhanced web application with PWA features
@@ -45,12 +51,12 @@ fun EnhancedYoleWebApp() {
     var wordWrap by remember { mutableStateOf(true) }
     var fontSize by remember { mutableStateOf(14) }
     var showLineNumbers by remember { mutableStateOf(true) }
-    
+
     // PWA state
-    var isOffline by remember { mutableStateOf(!window.navigator.onLine) }
+    var isOffline by remember { mutableStateOf(!jsNavigatorOnLine()) }
     var isStandalone by remember { mutableStateOf(PWAFeatures.isStandaloneMode()) }
     var showInstallPrompt by remember { mutableStateOf(false) }
-    
+
     // Advanced features
     var showFindReplace by remember { mutableStateOf(false) }
     var findText by remember { mutableStateOf("") }
@@ -59,29 +65,42 @@ fun EnhancedYoleWebApp() {
     var goToLineNumber by remember { mutableStateOf("") }
     var showExportDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
-    
+
     // Auto-save state
-    var lastSaved by remember { mutableStateOf<Date?>(null) }
+    var lastSavedTimestamp by remember { mutableStateOf<String?>(null) }
     var isDirty by remember { mutableStateOf(false) }
-    
+
     // Load saved settings
     LaunchedEffect(Unit) {
         loadSettings()
-        setupOfflineDetection()
-        checkForInstallPrompt()
+        // Set up offline detection via event listeners
+        window.addEventListener("online", { _: org.w3c.dom.events.Event ->
+            isOffline = false
+            println("Back online")
+        })
+        window.addEventListener("offline", { _: org.w3c.dom.events.Event ->
+            isOffline = true
+            println("Gone offline")
+        })
+        // Check for install prompt
+        if (!PWAFeatures.isStandaloneMode() && localStorage.getItem("install_prompt_shown") != "true") {
+            delay(30000) // 30 seconds
+            showInstallPrompt = true
+            localStorage.setItem("install_prompt_shown", "true")
+        }
     }
-    
+
     // Auto-save functionality
     LaunchedEffect(documentContent) {
         isDirty = true
         delay(2000) // Auto-save after 2 seconds of inactivity
         if (isDirty) {
-            saveToLocalStorage()
-            lastSaved = Date()
+            saveDocumentToLocalStorage(documentContent, currentFormat, documentName)
+            lastSavedTimestamp = Clock.System.now().toString()
             isDirty = false
         }
     }
-    
+
     MaterialTheme(
         colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
     ) {
@@ -101,7 +120,7 @@ fun EnhancedYoleWebApp() {
             showGoToLine = showGoToLine,
             showExportDialog = showExportDialog,
             showSettingsDialog = showSettingsDialog,
-            lastSaved = lastSaved,
+            lastSavedTimestamp = lastSavedTimestamp,
             findText = findText,
             replaceText = replaceText,
             goToLineNumber = goToLineNumber,
@@ -121,19 +140,53 @@ fun EnhancedYoleWebApp() {
             onFindTextChange = { findText = it },
             onReplaceTextChange = { replaceText = it },
             onGoToLineNumberChange = { goToLineNumber = it },
-            onFindNext = { performFindNext() },
-            onReplace = { performReplace() },
-            onReplaceAll = { performReplaceAll() },
-            onGoToLine = { performGoToLine() },
-            onExportPdf = { exportAsPdf() },
-            onExportHtml = { exportAsHtml() },
-            onExportMarkdown = { exportAsMarkdown() },
-            onNewFile = { createNewFile() },
-            onOpenFile = { openFile() },
-            onSaveFile = { saveFile() },
-            onSaveAsFile = { saveAsFile() },
-            onPrint = { printDocument() },
-            onSettingsSave = { saveSettings() }
+            onFindNext = { println("Finding next occurrence of: $findText") },
+            onReplace = { println("Replacing '$findText' with '$replaceText'") },
+            onReplaceAll = { println("Replacing all occurrences of '$findText' with '$replaceText'") },
+            onGoToLine = {
+                val line = goToLineNumber.toIntOrNull()
+                if (line != null && line > 0) {
+                    println("Going to line: $line")
+                }
+            },
+            onExportPdf = { println("Exporting as PDF") },
+            onExportHtml = { println("Exporting as HTML") },
+            onExportMarkdown = { println("Exporting as Markdown") },
+            onNewFile = {
+                documentContent = ""
+                documentName = "untitled.${getDefaultExtensionForFormat(currentFormat)}"
+                isDirty = true
+            },
+            onOpenFile = {
+                CoroutineScope(Dispatchers.Default).launch {
+                    val fileHandle = PWAFeatures.openFileWithFileSystemAccess()
+                    if (fileHandle != null) {
+                        println("File opened: ${fileHandle.name}")
+                        // TODO: Read file content when File System Access API is available in Wasm
+                    }
+                }
+            },
+            onSaveFile = {
+                saveDocumentToLocalStorage(documentContent, currentFormat, documentName)
+                lastSavedTimestamp = Clock.System.now().toString()
+                isDirty = false
+            },
+            onSaveAsFile = {
+                CoroutineScope(Dispatchers.Default).launch {
+                    val success = PWAFeatures.saveFileWithFileSystemAccess(
+                        documentContent,
+                        documentName
+                    )
+                    if (success) {
+                        isDirty = false
+                        lastSavedTimestamp = Clock.System.now().toString()
+                    }
+                }
+            },
+            onPrint = { jsWindowPrint() },
+            onSettingsSave = {
+                saveSettingsToLocalStorage(isDarkTheme, fontSize, wordWrap, showLineNumbers)
+            }
         )
     }
 }
@@ -158,7 +211,7 @@ fun EnhancedWebAppContent(
     showGoToLine: Boolean,
     showExportDialog: Boolean,
     showSettingsDialog: Boolean,
-    lastSaved: Date?,
+    lastSavedTimestamp: String?,
     findText: String,
     replaceText: String,
     goToLineNumber: String,
@@ -196,7 +249,7 @@ fun EnhancedWebAppContent(
         topBar = {
             EnhancedTopAppBar(
                 documentName = documentName,
-                isDirty = lastSaved == null,
+                isDirty = lastSavedTimestamp == null,
                 isOffline = isOffline,
                 isStandalone = isStandalone,
                 onNewFile = onNewFile,
@@ -231,7 +284,7 @@ fun EnhancedWebAppContent(
                     showLineNumbers = showLineNumbers,
                     modifier = Modifier.weight(if (showPreview) 1f else 2f)
                 )
-                
+
                 // Live preview
                 if (showPreview) {
                     EnhancedPreview(
@@ -242,14 +295,14 @@ fun EnhancedWebAppContent(
                     )
                 }
             }
-            
+
             // Status bar
             EnhancedStatusBar(
                 format = currentFormat,
                 wordCount = documentContent.split(Regex("\\s+")).filter { it.isNotEmpty() }.size,
                 characterCount = documentContent.length,
                 lineCount = documentContent.lines().size,
-                lastSaved = lastSaved,
+                lastSavedTimestamp = lastSavedTimestamp,
                 isOffline = isOffline,
                 onFormatChange = onFormatChange,
                 onThemeToggle = onThemeToggle,
@@ -259,19 +312,19 @@ fun EnhancedWebAppContent(
                 onLineNumbersToggle = onLineNumbersToggle
             )
         }
-        
+
         // Dialogs
         if (showInstallPrompt) {
             InstallPromptDialog(
                 onDismiss = onInstallPromptDismiss,
-                onInstall = { 
+                onInstall = {
                     CoroutineScope(Dispatchers.Default).launch {
                         PWAFeatures.triggerInstall()
                     }
                 }
             )
         }
-        
+
         if (showFindReplace) {
             FindReplaceDialog(
                 findText = findText,
@@ -284,7 +337,7 @@ fun EnhancedWebAppContent(
                 onDismiss = onFindReplaceToggle
             )
         }
-        
+
         if (showGoToLine) {
             GoToLineDialog(
                 lineNumber = goToLineNumber,
@@ -293,7 +346,7 @@ fun EnhancedWebAppContent(
                 onDismiss = onGoToLineToggle
             )
         }
-        
+
         if (showExportDialog) {
             ExportDialog(
                 onExportPdf = onExportPdf,
@@ -302,7 +355,7 @@ fun EnhancedWebAppContent(
                 onDismiss = onExportToggle
             )
         }
-        
+
         if (showSettingsDialog) {
             SettingsDialog(
                 isDarkTheme = isDarkTheme,
@@ -323,6 +376,7 @@ fun EnhancedWebAppContent(
 /**
  * Enhanced top app bar with all features
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EnhancedTopAppBar(
     documentName: String,
@@ -364,34 +418,34 @@ fun EnhancedTopAppBar(
             }
         },
         actions = {
-            // File operations
-            IconButton(onClick = onNewFile) {
-                Icon(Icons.Default.NoteAdd, contentDescription = "New File")
+            // File operations - using text buttons since material-icons-extended is not available in Wasm
+            TextButton(onClick = onNewFile) {
+                Text("New")
             }
-            IconButton(onClick = onOpenFile) {
-                Icon(Icons.Default.FolderOpen, contentDescription = "Open File")
+            TextButton(onClick = onOpenFile) {
+                Text("Open")
             }
-            IconButton(onClick = onSaveFile) {
-                Icon(Icons.Default.Save, contentDescription = "Save File")
+            TextButton(onClick = onSaveFile) {
+                Text("Save")
             }
-            
+
             // Edit operations
-            IconButton(onClick = onFindReplace) {
-                Icon(Icons.Default.FindReplace, contentDescription = "Find and Replace")
+            TextButton(onClick = onFindReplace) {
+                Text("Find")
             }
-            IconButton(onClick = onGoToLine) {
-                Icon(Icons.Default.FormatListNumbered, contentDescription = "Go to Line")
+            TextButton(onClick = onGoToLine) {
+                Text("GoTo")
             }
-            
+
             // Export and settings
-            IconButton(onClick = onExport) {
-                Icon(Icons.Default.IosShare, contentDescription = "Export")
+            TextButton(onClick = onExport) {
+                Text("Export")
             }
-            IconButton(onClick = onPrint) {
-                Icon(Icons.Default.Print, contentDescription = "Print")
+            TextButton(onClick = onPrint) {
+                Text("Print")
             }
-            IconButton(onClick = onSettings) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings")
+            TextButton(onClick = onSettings) {
+                Text("Settings")
             }
         }
     )
@@ -413,7 +467,7 @@ fun EnhancedEditor(
 ) {
     val backgroundColor = if (isDarkTheme) Color(0xFF1e1e1e) else Color(0xFFffffff)
     val textColor = if (isDarkTheme) Color(0xFFd4d4d4) else Color(0xFF000000)
-    
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -430,7 +484,7 @@ fun EnhancedEditor(
                     modifier = Modifier.width(48.dp)
                 )
             }
-            
+
             BasicTextField(
                 value = content,
                 onValueChange = onContentChange,
@@ -444,7 +498,7 @@ fun EnhancedEditor(
                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                     lineHeight = (fontSize * 1.5).sp
                 ),
-                decorationBox = { innerTextField ->
+                decorationBox = @Composable { innerTextField ->
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.TopStart
@@ -468,7 +522,7 @@ fun LineNumbers(
 ) {
     val lineNumbers = content.lines().indices.map { it + 1 }
     val textColor = if (isDarkTheme) Color(0xFF858585) else Color(0xFF666666)
-    
+
     Column(
         modifier = modifier
             .fillMaxHeight()
@@ -498,7 +552,7 @@ fun EnhancedPreview(
     modifier: Modifier = Modifier
 ) {
     val backgroundColor = if (isDarkTheme) Color(0xFF252525) else Color(0xFFfafafa)
-    
+
     Surface(
         modifier = modifier.fillMaxSize(),
         color = backgroundColor
@@ -511,24 +565,76 @@ fun EnhancedPreview(
         ) {
             when (format) {
                 "markdown" -> MarkdownPreview(content, format)
-                "todotxt" -> TodoTxtPreview(content, format)
-                "csv" -> CsvPreview(content, format)
-                else -> PlainTextPreview(content)
+                "todotxt" -> TodoTxtPreviewEnhanced(content)
+                "csv" -> CsvPreviewEnhanced(content)
+                else -> PlainTextPreviewEnhanced(content)
             }
         }
     }
 }
 
 /**
+ * Todo.txt preview component
+ */
+@Composable
+private fun TodoTxtPreviewEnhanced(content: String) {
+    content.lines().forEach { line ->
+        if (line.isNotBlank()) {
+            val isDone = line.trimStart().startsWith("x ")
+            Text(
+                text = line,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = if (isDone) Color.Gray else Color.Unspecified,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                ),
+                modifier = Modifier.padding(vertical = 2.dp)
+            )
+        }
+    }
+}
+
+/**
+ * CSV preview component
+ */
+@Composable
+private fun CsvPreviewEnhanced(content: String) {
+    content.lines().forEach { line ->
+        if (line.isNotBlank()) {
+            Text(
+                text = line,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                ),
+                modifier = Modifier.padding(vertical = 2.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Plain text preview component
+ */
+@Composable
+private fun PlainTextPreviewEnhanced(content: String) {
+    Text(
+        text = content,
+        style = MaterialTheme.typography.bodyMedium.copy(
+            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+        )
+    )
+}
+
+/**
  * Enhanced status bar
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EnhancedStatusBar(
     format: String,
     wordCount: Int,
     characterCount: Int,
     lineCount: Int,
-    lastSaved: Date?,
+    lastSavedTimestamp: String?,
     isOffline: Boolean,
     onFormatChange: (String) -> Unit,
     onThemeToggle: () -> Unit,
@@ -555,11 +661,11 @@ fun EnhancedStatusBar(
                 Text("$wordCount words", style = MaterialTheme.typography.labelMedium)
                 Text("$characterCount characters", style = MaterialTheme.typography.labelMedium)
                 Text("$lineCount lines", style = MaterialTheme.typography.labelMedium)
-                lastSaved?.let {
-                    Text("Saved: ${it.toLocaleString()}", style = MaterialTheme.typography.labelMedium)
+                lastSavedTimestamp?.let { ts ->
+                    Text("Saved: $ts", style = MaterialTheme.typography.labelMedium)
                 }
             }
-            
+
             // Right side - controls
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -574,46 +680,45 @@ fun EnhancedStatusBar(
                         value = format,
                         onValueChange = {},
                         readOnly = true,
-                        modifier = Modifier.menuAnchor().width(120.dp),
+                        modifier = @Suppress("DEPRECATION") Modifier.menuAnchor().width(120.dp),
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         colors = ExposedDropdownMenuDefaults.textFieldColors()
                     )
-                    
+
                     ExposedDropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
-                        FormatRegistry.getAllFormats().forEach { format ->
+                        FormatRegistry.formats.forEach { textFormat ->
                             DropdownMenuItem(
-                                text = { Text(format.name) },
+                                text = { Text(textFormat.name) },
                                 onClick = {
-                                    onFormatChange(format.id)
+                                    onFormatChange(textFormat.id)
                                     expanded = false
                                 }
                             )
                         }
                     }
                 }
-                
-                // Control buttons
-                IconButton(onClick = onThemeToggle) {
-                    Icon(
-                        if (isOffline) Icons.Default.WifiOff else Icons.Default.Wifi,
-                        contentDescription = if (isOffline) "Offline" else "Online",
-                        tint = if (isOffline) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+
+                // Control buttons - using text instead of Icons
+                TextButton(onClick = onThemeToggle) {
+                    Text(
+                        if (isOffline) "Offline" else "Online",
+                        color = if (isOffline) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                     )
                 }
-                
-                IconButton(onClick = onPreviewToggle) {
-                    Icon(Icons.Default.Preview, contentDescription = "Toggle Preview")
+
+                TextButton(onClick = onPreviewToggle) {
+                    Text("Preview")
                 }
-                
-                IconButton(onClick = onWordWrapToggle) {
-                    Icon(Icons.Default.WrapText, contentDescription = "Toggle Word Wrap")
+
+                TextButton(onClick = onWordWrapToggle) {
+                    Text("Wrap")
                 }
-                
-                IconButton(onClick = onLineNumbersToggle) {
-                    Icon(Icons.Default.FormatListNumbered, contentDescription = "Toggle Line Numbers")
+
+                TextButton(onClick = onLineNumbersToggle) {
+                    Text("Lines")
                 }
             }
         }
@@ -816,16 +921,16 @@ fun SettingsDialog(
                 ) {
                     Text("Font Size", modifier = Modifier.weight(1f))
                     Row {
-                        IconButton(onClick = { onFontSizeChange(fontSize - 2) }) {
-                            Icon(Icons.Default.Remove, contentDescription = "Decrease")
+                        TextButton(onClick = { onFontSizeChange(fontSize - 2) }) {
+                            Text("-")
                         }
                         Text(
                             text = "${fontSize}px",
                             modifier = Modifier.alignByBaseline(),
                             style = MaterialTheme.typography.bodyLarge
                         )
-                        IconButton(onClick = { onFontSizeChange(fontSize + 2) }) {
-                            Icon(Icons.Default.Add, contentDescription = "Increase")
+                        TextButton(onClick = { onFontSizeChange(fontSize + 2) }) {
+                            Text("+")
                         }
                     }
                 }
@@ -851,136 +956,31 @@ private fun loadSettings() {
     val settings = localStorage.getItem("yole_web_settings")
     if (settings != null) {
         try {
-            val parsed = JSON.parse(settings)
-            // Apply settings
-        } catch (e: dynamic) {
-            console.error("Failed to load settings:", e)
+            // Simple key-value parsing without JSON.parse (not available in Wasm)
+            println("Settings loaded: $settings")
+        } catch (e: Exception) {
+            println("ERROR: Failed to load settings: ${e.message}")
         }
     }
 }
 
-private fun saveSettings() {
-    val settings = js("({})")
-    settings.theme = if (isDarkTheme) "dark" else "light"
-    settings.fontSize = fontSize
-    settings.wordWrap = wordWrap
-    settings.showLineNumbers = showLineNumbers
-    localStorage.setItem("yole_web_settings", JSON.stringify(settings))
+private fun saveSettingsToLocalStorage(isDarkTheme: Boolean, fontSize: Int, wordWrap: Boolean, showLineNumbers: Boolean) {
+    val theme = if (isDarkTheme) "dark" else "light"
+    val settingsJson = """{"theme":"$theme","fontSize":$fontSize,"wordWrap":$wordWrap,"showLineNumbers":$showLineNumbers}"""
+    localStorage.setItem("yole_web_settings", settingsJson)
 }
 
-private fun saveToLocalStorage() {
-    val state = js("({})")
-    state.content = documentContent
-    state.format = currentFormat
-    state.name = documentName
-    state.timestamp = Date().getTime()
-    localStorage.setItem("yole_web_state", JSON.stringify(state))
+private fun saveDocumentToLocalStorage(content: String, format: String, name: String) {
+    val timestamp = Clock.System.now().toEpochMilliseconds()
+    // Store document state as simple string values to avoid JSON interop issues
+    localStorage.setItem("yole_web_state_content", content)
+    localStorage.setItem("yole_web_state_format", format)
+    localStorage.setItem("yole_web_state_name", name)
+    localStorage.setItem("yole_web_state_timestamp", timestamp.toString())
 }
 
-private fun setupOfflineDetection() {
-    window.addEventListener("online", { 
-        isOffline = false
-        console.log("Back online")
-    })
-    window.addEventListener("offline", { 
-        isOffline = true
-        console.log("Gone offline")
-    })
-}
-
-private fun checkForInstallPrompt() {
-    // Check if we should show install prompt
-    if (!PWAFeatures.isStandaloneMode() && localStorage.getItem("install_prompt_shown") != "true") {
-        // Show install prompt after some time
-        kotlinx.coroutines.delay(30000) // 30 seconds
-        showInstallPrompt = true
-        localStorage.setItem("install_prompt_shown", "true")
-    }
-}
-
-private fun createNewFile() {
-    documentContent = ""
-    documentName = "untitled.${getDefaultExtension()}"
-    isDirty = true
-}
-
-private fun openFile() {
-    CoroutineScope(Dispatchers.Default).launch {
-        val fileHandle = PWAFeatures.openFileWithFileSystemAccess()
-        fileHandle?.let { handle ->
-            val file = handle.getFile()
-            val content = file.text().await()
-            documentContent = content
-            documentName = file.name
-            currentFormat = detectFormatFromFilename(file.name)
-            isDirty = false
-        }
-    }
-}
-
-private fun saveFile() {
-    saveToLocalStorage()
-    lastSaved = Date()
-    isDirty = false
-}
-
-private fun saveAsFile() {
-    CoroutineScope(Dispatchers.Default).launch {
-        val success = PWAFeatures.saveFileWithFileSystemAccess(
-            documentContent,
-            documentName
-        )
-        if (success) {
-            isDirty = false
-            lastSaved = Date()
-        }
-    }
-}
-
-private fun printDocument() {
-    window.print()
-}
-
-private fun performFindNext() {
-    // Implementation for find next
-    console.log("Finding next occurrence of: $findText")
-}
-
-private fun performReplace() {
-    // Implementation for replace
-    console.log("Replacing '$findText' with '$replaceText'")
-}
-
-private fun performReplaceAll() {
-    // Implementation for replace all
-    console.log("Replacing all occurrences of '$findText' with '$replaceText'")
-}
-
-private fun performGoToLine() {
-    val lineNumber = goToLineNumber.toIntOrNull()
-    if (lineNumber != null && lineNumber > 0) {
-        // Implementation for go to line
-        console.log("Going to line: $lineNumber")
-    }
-}
-
-private fun exportAsPdf() {
-    // Implementation for PDF export
-    console.log("Exporting as PDF")
-}
-
-private fun exportAsHtml() {
-    // Implementation for HTML export
-    console.log("Exporting as HTML")
-}
-
-private fun exportAsMarkdown() {
-    // Implementation for Markdown export
-    console.log("Exporting as Markdown")
-}
-
-private fun getDefaultExtension(): String {
-    return when (currentFormat) {
+private fun getDefaultExtensionForFormat(formatId: String): String {
+    return when (formatId) {
         "markdown" -> "md"
         "todotxt" -> "txt"
         "csv" -> "csv"
