@@ -3,6 +3,7 @@ package digital.vasic.yole.network.protocols.sftp
 import digital.vasic.yole.network.NetworkStorageService
 import digital.vasic.yole.network.StorageQuota
 import digital.vasic.yole.network.common.*
+import digital.vasic.yole.network.platform.PlatformFileIOFactory
 import digital.vasic.yole.network.platform.SecureStorageFactory
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -57,6 +58,9 @@ import digital.vasic.yole.network.protocol.createHttpClient
 class SftpService(
     override val config: StorageConfig.SftpConfig
 ) : NetworkStorageService {
+
+    // Platform file I/O for reading/writing local files
+    private val fileIO by lazy { PlatformFileIOFactory.create() }
 
     // Lazy initialization of HttpClient to avoid resource allocation if never used
     private val httpClient by lazy {
@@ -537,7 +541,7 @@ class SftpService(
             emit(initialOperation)
 
             // Step 1: Read local file and prepare for transfer
-            val fileSize = 5242880L // 5MB - would come from actual file in real implementation
+            val fileSize = fileIO.fileSize(localPath).let { if (it >= 0) it else 5242880L }
 
             emit(initialOperation.copy(progress = 0.1, totalSize = fileSize))
 

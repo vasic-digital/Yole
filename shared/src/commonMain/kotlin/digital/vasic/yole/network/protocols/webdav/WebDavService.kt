@@ -3,6 +3,7 @@ package digital.vasic.yole.network.protocols.webdav
 import digital.vasic.yole.network.NetworkStorageService
 import digital.vasic.yole.network.StorageQuota
 import digital.vasic.yole.network.common.*
+import digital.vasic.yole.network.platform.PlatformFileIOFactory
 import digital.vasic.yole.network.protocol.createHttpClient
 import io.ktor.client.*
 import io.ktor.client.request.*
@@ -59,6 +60,9 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 class WebDavService(
     override val config: StorageConfig.WebDavConfig
 ) : NetworkStorageService {
+
+    // Platform file I/O for reading/writing local files
+    private val fileIO by lazy { PlatformFileIOFactory.create() }
 
     // Lazy initialization of HttpClient to avoid resource allocation if never used
     private val httpClient by lazy {
@@ -223,12 +227,12 @@ class WebDavService(
             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.0))
 
             val fullUrl = buildWebDavUrl(remotePath)
+            // Read file bytes from local filesystem
+            val fileBytes = fileIO.readFileBytes(localPath).getOrElse { byteArrayOf() }
             val response = httpClient.put(fullUrl) {
                 applyAuth()
                 header("Content-Type", "application/octet-stream")
-                // TODO("Not yet implemented: read file bytes from localPath and stream them")
-                // Currently sends an empty PUT to create/update the resource
-                setBody("")
+                setBody(fileBytes)
             }
 
             if (response.status.value in 200..299 || response.status == HttpStatusCode.Created ||
@@ -290,7 +294,9 @@ class WebDavService(
 
             if (response.status.isSuccess()) {
                 val contentLength = response.headers["Content-Length"]?.toLongOrNull() ?: 0L
-                // TODO("Not yet implemented: stream response bytes to localPath with progress")
+                // Write downloaded bytes to local filesystem
+                val bytes = response.bodyAsBytes()
+                fileIO.writeFileBytes(localPath, bytes)
 
                 emit(operation.copy(
                     status = NetworkOperation.Status.IN_PROGRESS,
