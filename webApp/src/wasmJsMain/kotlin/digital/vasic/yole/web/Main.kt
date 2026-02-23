@@ -20,7 +20,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -268,8 +272,7 @@ fun FormatList(
  * Get current date in YYYY-MM-DD format
  */
 fun getCurrentDate(): String {
-    // Simple date format for WASM compatibility
-    return "2025-12-11" // Static date for now to avoid WASM issues
+    return Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
 }
 
 /**
@@ -552,38 +555,199 @@ fun MarkdownPreview(content: String, formatId: String) {
 }
 
 /**
- * HTML content renderer using browser DOM
+ * Represents a parsed HTML block for rendering.
+ */
+private data class HtmlBlock(
+    val tag: String, // "h1"-"h6", "p", "li", "pre", "code", "hr", "blockquote", "text"
+    val content: String
+)
+
+/**
+ * Parse HTML string into a list of renderable blocks.
+ * Splits on block-level tags and extracts tag type and text content.
+ */
+private fun parseHtmlBlocks(html: String): List<HtmlBlock> {
+    val blocks = mutableListOf<HtmlBlock>()
+    // Match block-level elements: h1-h6, p, li, pre, code, hr, blockquote, div, ul, ol
+    val blockPattern = Regex(
+        """<(h[1-6]|p|li|pre|code|hr|blockquote|div|ul|ol)(?:\s[^>]*)?>(.+?)</\1>|<(hr)\s*/?>""",
+        setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE)
+    )
+
+    var lastEnd = 0
+    for (match in blockPattern.findAll(html)) {
+        // Add any text between blocks
+        val betweenText = html.substring(lastEnd, match.range.first)
+            .replace(Regex("<[^>]*>"), "").trim()
+        if (betweenText.isNotEmpty()) {
+            blocks.add(HtmlBlock("text", betweenText))
+        }
+
+        val tag = (match.groupValues[1].ifEmpty { match.groupValues[3] }).lowercase()
+        val content = match.groupValues[2]
+            .replace(Regex("<[^>]*>"), "") // Strip inline tags
+            .trim()
+
+        if (tag == "hr") {
+            blocks.add(HtmlBlock("hr", ""))
+        } else if (tag == "ul" || tag == "ol" || tag == "div") {
+            // For container tags, just add the text content
+            if (content.isNotEmpty()) {
+                blocks.add(HtmlBlock("text", content))
+            }
+        } else if (content.isNotEmpty()) {
+            blocks.add(HtmlBlock(tag, content))
+        }
+
+        lastEnd = match.range.last + 1
+    }
+
+    // Add any trailing text
+    val trailing = html.substring(lastEnd)
+        .replace(Regex("<[^>]*>"), "").trim()
+    if (trailing.isNotEmpty()) {
+        blocks.add(HtmlBlock("text", trailing))
+    }
+
+    // If no blocks were parsed, treat the whole thing as stripped text
+    if (blocks.isEmpty()) {
+        val stripped = html.replace(Regex("<[^>]*>"), "").trim()
+        if (stripped.isNotEmpty()) {
+            stripped.lines().filter { it.isNotBlank() }.forEach { line ->
+                blocks.add(HtmlBlock("text", line.trim()))
+            }
+        }
+    }
+
+    return blocks
+}
+
+/**
+ * HTML content renderer using block-based parsing.
+ * Parses HTML into blocks and renders each as an appropriate Compose element.
  */
 @Composable
 fun HtmlContent(html: String) {
-    // For WASM, we need to use a different approach since we can't directly render HTML
-    // Let's create a simple HTML renderer that handles basic tags
+    val blocks = remember(html) { parseHtmlBlocks(html) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        // Basic HTML parsing and rendering
-        val lines = html.replace(Regex("<[^>]*>"), "").lines()
-
-        lines.forEach { line ->
-            if (line.isNotBlank()) {
-                Text(
-                    text = line,
-                    style = MaterialTheme.typography.bodyLarge,
-                    lineHeight = 24.sp,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-        }
-
-        if (lines.isEmpty()) {
+        if (blocks.isEmpty()) {
             Text(
                 "No content to preview",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
+        } else {
+            blocks.forEach { block ->
+                when (block.tag) {
+                    "h1" -> Text(
+                        text = block.content,
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 28.sp
+                        ),
+                        modifier = Modifier.padding(bottom = 12.dp, top = 8.dp)
+                    )
+                    "h2" -> Text(
+                        text = block.content,
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 24.sp
+                        ),
+                        modifier = Modifier.padding(bottom = 10.dp, top = 8.dp)
+                    )
+                    "h3" -> Text(
+                        text = block.content,
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        ),
+                        modifier = Modifier.padding(bottom = 8.dp, top = 6.dp)
+                    )
+                    "h4" -> Text(
+                        text = block.content,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        ),
+                        modifier = Modifier.padding(bottom = 6.dp, top = 4.dp)
+                    )
+                    "h5" -> Text(
+                        text = block.content,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp
+                        ),
+                        modifier = Modifier.padding(bottom = 6.dp, top = 4.dp)
+                    )
+                    "h6" -> Text(
+                        text = block.content,
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        ),
+                        modifier = Modifier.padding(bottom = 6.dp, top = 4.dp)
+                    )
+                    "p", "text" -> Text(
+                        text = block.content,
+                        style = MaterialTheme.typography.bodyLarge,
+                        lineHeight = 24.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    "li" -> Text(
+                        text = "\u2022 ${block.content}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        lineHeight = 24.sp,
+                        modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
+                    )
+                    "code", "pre" -> {
+                        val codeBackgroundColor = MaterialTheme.colorScheme.surfaceVariant
+                        Text(
+                            text = block.content,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontFamily = FontFamily.Monospace
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(codeBackgroundColor, shape = MaterialTheme.shapes.small)
+                                .padding(12.dp)
+                                .padding(bottom = 8.dp)
+                        )
+                    }
+                    "hr" -> {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            thickness = 1.dp,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                    "blockquote" -> {
+                        val borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                        Text(
+                            text = block.content,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontStyle = FontStyle.Italic
+                            ),
+                            lineHeight = 24.sp,
+                            modifier = Modifier
+                                .padding(start = 16.dp, bottom = 8.dp)
+                                .drawBehind {
+                                    drawLine(
+                                        color = borderColor,
+                                        start = Offset(-8.dp.toPx(), 0f),
+                                        end = Offset(-8.dp.toPx(), size.height),
+                                        strokeWidth = 3.dp.toPx()
+                                    )
+                                }
+                        )
+                    }
+                }
+            }
         }
     }
 }
