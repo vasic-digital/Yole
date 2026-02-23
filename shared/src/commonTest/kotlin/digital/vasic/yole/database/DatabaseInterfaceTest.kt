@@ -9,6 +9,7 @@
 
 package digital.vasic.yole.database
 
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import digital.vasic.yole.network.common.*
 import digital.vasic.yole.network.database.NetworkStorageDatabase
@@ -17,7 +18,6 @@ import digital.vasic.yole.network.common.NetworkOperation.Status
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.*
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.hours
 
 /**
@@ -90,7 +90,7 @@ class DatabaseInterfaceTest {
         val storage = NetworkStorage.mock()
         database.insertStorage(storage).getOrThrow()
         
-        val document = NetworkDocument.mock()
+        val document = NetworkDocument.mock(storageId = storage.id)
         
         // Insert document
         val insertResult = database.insertDocument(document)
@@ -309,7 +309,7 @@ class DatabaseInterfaceTest {
     fun testClearAll() = runTest {
         // Insert some test data
         val storage = NetworkStorage.mock()
-        val document = NetworkDocument.mock()
+        val document = NetworkDocument.mock(storageId = storage.id)
         val cacheEntry = CacheEntry.create(
             remoteDocumentId = document.id,
             localPath = "/cache/test.txt",
@@ -370,14 +370,12 @@ class DatabaseInterfaceTest {
         database.insertDocument(document1).getOrThrow()
         database.insertDocument(document2).getOrThrow()
         
-        // Observe documents by storage
-        val observedDocuments = database.observeDocumentsByStorage(storage.id)
+        // Observe documents by storage - use first() to get the first emission
+        val observedDocuments = database.observeDocumentsByStorage(storage.id).first()
         
-        // Collect the flow and verify
-        observedDocuments.collect { documents ->
-            assertEquals(2, documents.size)
-            assertTrue(documents.any { it.id == document1.id })
-            assertTrue(documents.any { it.id == document2.id })
-        }
+        // Verify the documents
+        assertEquals(2, observedDocuments.size)
+        assertTrue(observedDocuments.any { it.id == document1.id })
+        assertTrue(observedDocuments.any { it.id == document2.id })
     }
 }

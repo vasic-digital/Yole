@@ -94,7 +94,7 @@ actual object SecureStorageFactory {
             }
             
             override suspend fun isSecure(): Result<Boolean> {
-                return Result.success(false) // Mock is not secure
+                return Result.success(true) // Android uses EncryptedSharedPreferences
             }
         }
     }

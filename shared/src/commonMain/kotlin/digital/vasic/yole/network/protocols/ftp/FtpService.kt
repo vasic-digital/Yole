@@ -103,12 +103,6 @@ class FtpService(
     
     private suspend fun testFtpConnection(): Result<Unit> {
         return try {
-            // Simulate FTP connection test
-            // In a real implementation, this would establish an FTP connection
-            // and authenticate with the server
-            
-            delay(100) // Simulate network delay
-            
             // Check if server is reachable (simplified)
             if (config.host.isBlank()) {
                 return Result.failure(Exception("FTP host cannot be blank"))
@@ -136,58 +130,51 @@ class FtpService(
             return@flow
         }
         
-        try {
-            val fullPath = normalizePath(path)
-            
-            // Simulate FTP LIST command
-            // In a real implementation, this would send LIST command to FTP server
-            delay(200) // Simulate network delay
-            
-            // Mock FTP directory listing
-            val mockFiles = listOf(
-                NetworkDocument(
-                    id = "file1.txt",
-                    name = "file1.txt",
-                    path = "$fullPath/file1.txt",
-                    isFolder = false,
-                    size = 1024L,
-                    lastModified = Clock.System.now(),
-                    syncStatus = SyncStatus.SYNCED,
-                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
-                    storageId = "ftp"
-                ),
-                NetworkDocument(
-                    id = "file2.md",
-                    name = "file2.md",
-                    path = "$fullPath/file2.md",
-                    isFolder = false,
-                    size = 2048L,
-                    lastModified = Clock.System.now(),
-                    syncStatus = SyncStatus.SYNCED,
-                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
-                    storageId = "ftp"
-                ),
-                NetworkDocument(
-                    id = "folder1",
-                    name = "folder1",
-                    path = "$fullPath/folder1",
-                    isFolder = true,
-                    size = 0L,
-                    lastModified = Clock.System.now(),
-                    syncStatus = SyncStatus.SYNCED,
-                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
-                    storageId = "ftp"
-                )
+        val fullPath = normalizePath(path)
+        
+        // Mock FTP directory listing
+        val mockFiles = listOf(
+            NetworkDocument(
+                id = "file1.txt",
+                name = "file1.txt",
+                path = "$fullPath/file1.txt",
+                isFolder = false,
+                size = 1024L,
+                lastModified = Clock.System.now(),
+                syncStatus = SyncStatus.SYNCED,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
+                storageId = "ftp"
+            ),
+            NetworkDocument(
+                id = "file2.md",
+                name = "file2.md",
+                path = "$fullPath/file2.md",
+                isFolder = false,
+                size = 2048L,
+                lastModified = Clock.System.now(),
+                syncStatus = SyncStatus.SYNCED,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
+                storageId = "ftp"
+            ),
+            NetworkDocument(
+                id = "folder1",
+                name = "folder1",
+                path = "$fullPath/folder1",
+                isFolder = true,
+                size = 0L,
+                lastModified = Clock.System.now(),
+                syncStatus = SyncStatus.SYNCED,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
+                storageId = "ftp"
             )
-            
-            emit(Result.success(mockFiles))
-            
-        } catch (e: Exception) {
-            emit(Result.failure(NetworkStorageException.FileOperationException.ListFailed(
-                path = path,
-                cause = e
-            )))
-        }
+        )
+        
+        emit(Result.success(mockFiles))
+    }.catch { e ->
+        emit(Result.failure(NetworkStorageException.FileOperationException.ListFailed(
+            path = path,
+            cause = e
+        )))
     }
     
     override suspend fun downloadFile(
@@ -467,10 +454,12 @@ class FtpService(
             val newName = destinationPath.substringAfterLast("/")
             renameFile(sourcePath, newName).getOrThrow()
             
+            val fullPath = normalizePath(destinationPath)
+            
             Result.success(NetworkDocument(
-                id = destinationPath,
+                id = fullPath,
                 name = newName,
-                path = destinationPath,
+                path = fullPath,
                 isFolder = false,
                 size = 0L,
                 lastModified = Clock.System.now(),
@@ -647,9 +636,12 @@ class FtpService(
     }
     
     override fun getParentPath(remotePath: String): String? {
-        val normalized = normalizePath(remotePath)
+        if (remotePath.isBlank()) return null
+        if (remotePath == "/") return null
+        
+        val normalized = remotePath.removeSuffix("/")
         val parent = normalized.substringBeforeLast("/", "")
-        return if (parent.isEmpty() && normalized != "/") "/" else if (parent.isEmpty()) null else parent
+        return if (parent.isEmpty()) "/" else parent
     }
     
     override fun validatePath(remotePath: String): Result<Unit> {

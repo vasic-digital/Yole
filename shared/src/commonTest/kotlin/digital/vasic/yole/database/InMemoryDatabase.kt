@@ -11,6 +11,7 @@ package digital.vasic.yole.database
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import digital.vasic.yole.network.common.*
 import digital.vasic.yole.network.database.NetworkStorageDatabase
@@ -27,6 +28,12 @@ class InMemoryDatabase : NetworkStorageDatabase {
     private val cacheEntryMap = mutableMapOf<String, CacheEntry>()
     private val operationMap = mutableMapOf<Long, NetworkOperation>()
     private val syncStatusMap = mutableMapOf<String, SyncStatus>()
+    
+    private val documentsFlow = MutableStateFlow<List<NetworkDocument>>(emptyList())
+    
+    private fun updateDocumentsFlow() {
+        documentsFlow.value = documentMap.values.toList()
+    }
     
     override suspend fun initialize(): Result<Unit> {
         return Result.success(Unit)
@@ -67,11 +74,13 @@ class InMemoryDatabase : NetworkStorageDatabase {
     
     override suspend fun insertDocument(document: NetworkDocument): Result<Unit> {
         documentMap[document.id] = document
+        updateDocumentsFlow()
         return Result.success(Unit)
     }
     
     override suspend fun updateDocument(document: NetworkDocument): Result<Unit> {
         documentMap[document.id] = document
+        updateDocumentsFlow()
         return Result.success(Unit)
     }
     
@@ -89,11 +98,12 @@ class InMemoryDatabase : NetworkStorageDatabase {
     
     override suspend fun deleteDocument(id: String): Result<Unit> {
         documentMap.remove(id)
+        updateDocumentsFlow()
         return Result.success(Unit)
     }
     
     override fun observeDocumentsByStorage(storageId: String): Flow<List<NetworkDocument>> {
-        return MutableStateFlow(documentMap.values.toList()).map { documents ->
+        return documentsFlow.map { documents ->
             documents.filter { it.storageId == storageId }
         }
     }
@@ -201,6 +211,7 @@ class InMemoryDatabase : NetworkStorageDatabase {
         cacheEntryMap.clear()
         operationMap.clear()
         syncStatusMap.clear()
+        updateDocumentsFlow()
         return Result.success(Unit)
     }
     

@@ -139,12 +139,6 @@ class SftpService(
                 return authValidation
             }
             
-            // Simulate SFTP connection test
-            // In a real implementation, this would establish an SFTP connection
-            // using SSH protocol with proper authentication
-            
-            delay(150) // Simulate network delay and key exchange
-            
             // Check if server is reachable and configuration is valid
             if (config.host.isBlank()) {
                 return Result.failure(Exception("SFTP host cannot be blank"))
@@ -160,9 +154,6 @@ class SftpService(
                     Exception("Strict host key checking enabled but no known_hosts file provided")
                 )
             }
-            
-            // Simulate successful SSH handshake and SFTP subsystem initialization
-            delay(200)
             
             Result.success(Unit)
         } catch (e: Exception) {
@@ -181,69 +172,62 @@ class SftpService(
             return@flow
         }
         
-        try {
-            val fullPath = normalizePath(path)
-            
-            // Simulate SFTP LS command
-            // In a real implementation, this would send SSH_FXP_OPENDIR and SSH_FXP_READDIR commands
-            delay(200) // Simulate network delay and secure channel operation
-            
-            // Mock SFTP directory listing with enhanced metadata
-            val mockFiles = listOf(
-                NetworkDocument(
-                    id = "document.pdf",
-                    name = "document.pdf",
-                    path = "$fullPath/document.pdf",
-                    isFolder = false,
-                    size = 5242880L, // 5MB
-                    lastModified = Clock.System.now().minus(24.days),
-                    syncStatus = SyncStatus.SYNCED,
-                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.EXECUTE),
-                    storageId = "sftp"
-                ),
-                NetworkDocument(
-                    id = "README.md",
-                    name = "README.md",
-                    path = "$fullPath/README.md",
-                    isFolder = false,
-                    size = 4096L,
-                    lastModified = Clock.System.now().minus(2.hours),
-                    syncStatus = SyncStatus.SYNCED,
-                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
-                    storageId = "sftp"
-                ),
-                NetworkDocument(
-                    id = "project_folder",
-                    name = "project_folder",
-                    path = "$fullPath/project_folder",
-                    isFolder = true,
-                    size = 0L,
-                    lastModified = Clock.System.now().minus(12.hours),
-                    syncStatus = SyncStatus.SYNCED,
-                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.EXECUTE),
-                    storageId = "sftp"
-                ),
-                NetworkDocument(
-                    id = "config.json",
-                    name = "config.json",
-                    path = "$fullPath/config.json",
-                    isFolder = false,
-                    size = 8192L,
-                    lastModified = Clock.System.now().minus(30.minutes),
-                    syncStatus = SyncStatus.SYNCED,
-                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
-                    storageId = "sftp"
-                )
+        val fullPath = normalizePath(path)
+        
+        // Mock SFTP directory listing with enhanced metadata
+        val mockFiles = listOf(
+            NetworkDocument(
+                id = "document.pdf",
+                name = "document.pdf",
+                path = "$fullPath/document.pdf",
+                isFolder = false,
+                size = 5242880L, // 5MB
+                lastModified = Clock.System.now().minus(24.days),
+                syncStatus = SyncStatus.SYNCED,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.EXECUTE),
+                storageId = "sftp"
+            ),
+            NetworkDocument(
+                id = "README.md",
+                name = "README.md",
+                path = "$fullPath/README.md",
+                isFolder = false,
+                size = 4096L,
+                lastModified = Clock.System.now().minus(2.hours),
+                syncStatus = SyncStatus.SYNCED,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
+                storageId = "sftp"
+            ),
+            NetworkDocument(
+                id = "project_folder",
+                name = "project_folder",
+                path = "$fullPath/project_folder",
+                isFolder = true,
+                size = 0L,
+                lastModified = Clock.System.now().minus(12.hours),
+                syncStatus = SyncStatus.SYNCED,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.EXECUTE),
+                storageId = "sftp"
+            ),
+            NetworkDocument(
+                id = "config.json",
+                name = "config.json",
+                path = "$fullPath/config.json",
+                isFolder = false,
+                size = 8192L,
+                lastModified = Clock.System.now().minus(30.minutes),
+                syncStatus = SyncStatus.SYNCED,
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE),
+                storageId = "sftp"
             )
-            
-            emit(Result.success(mockFiles))
-            
-        } catch (e: Exception) {
-            emit(Result.failure(NetworkStorageException.FileOperationException.ListFailed(
-                path = path,
-                cause = e
-            )))
-        }
+        )
+        
+        emit(Result.success(mockFiles))
+    }.catch { e ->
+        emit(Result.failure(NetworkStorageException.FileOperationException.ListFailed(
+            path = path,
+            cause = e
+        )))
     }
     
     override suspend fun downloadFile(
@@ -559,10 +543,12 @@ class SftpService(
             val newName = destinationPath.substringAfterLast("/")
             renameFile(sourcePath, newName).getOrThrow()
             
+            val fullPath = normalizePath(destinationPath)
+            
             Result.success(NetworkDocument(
-                id = destinationPath,
+                id = fullPath,
                 name = newName,
-                path = destinationPath,
+                path = fullPath,
                 isFolder = false,
                 size = 0L,
                 lastModified = Clock.System.now(),
@@ -611,11 +597,6 @@ class SftpService(
         
         val fullPath = normalizePath(remotePath)
         
-        // Simulate SFTP SSH_FXP_STAT command
-        // In a real implementation, this would send SSH_FXP_STAT command to SFTP server
-        // and parse the SSH_FXP_ATTRS response
-        delay(80) // Simulate secure operation
-        
         // Mock file attributes (would come from SSH_FXP_ATTRS)
         val isDirectory = fullPath.endsWith("/") // Simplified check
         val fileSize = if (isDirectory) 0L else 8192L
@@ -630,7 +611,7 @@ class SftpService(
                 storageId = "sftp",
                 lastModified = lastModified,
                 syncStatus = SyncStatus.SYNCED,
-                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, if (isDirectory) DocumentPermission.EXECUTE else DocumentPermission.DELETE)
+                permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.EXECUTE, DocumentPermission.DELETE)
             ))
         } catch (e: Exception) {
             Result.failure(NetworkStorageException.FileOperationException.InfoFailed(
@@ -761,9 +742,12 @@ class SftpService(
     }
     
     override fun getParentPath(remotePath: String): String? {
-        val normalized = normalizePath(remotePath)
+        if (remotePath.isBlank()) return null
+        if (remotePath == "/") return null
+        
+        val normalized = remotePath.removeSuffix("/")
         val parent = normalized.substringBeforeLast("/", "")
-        return if (parent.isEmpty() && normalized != "/") "/" else if (parent.isEmpty()) null else parent
+        return if (parent.isEmpty()) "/" else parent
     }
     
     override fun validatePath(remotePath: String): Result<Unit> {

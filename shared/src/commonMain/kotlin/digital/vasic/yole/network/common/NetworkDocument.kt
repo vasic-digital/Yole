@@ -243,7 +243,7 @@ data class NetworkDocument(
             storageId: String = "test-storage"
         ): NetworkDocument {
             return NetworkDocument(
-                id = "mock-${kotlinx.datetime.Clock.System.now().epochSeconds}",
+                id = "mock-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}-${(0..9999).random()}",
                 name = name,
                 path = path,
                 isFolder = isFolder,
