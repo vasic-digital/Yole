@@ -20,22 +20,46 @@ class OrgModeParser : TextParser {
     
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val filename = options["filename"] as? String ?: ""
-        
+
         val headings = extractHeadings(content)
         val todos = extractTodos(content)
         val properties = extractProperties(content)
-        
+        val hasDocumentHeader = hasOrgMetadata(content)
+
+        // For structured documents (those with #+TITLE or other document-level
+        // metadata), count only top-level (level-1) headings as "sections."
+        // For simple documents without metadata headers, count all headings.
+        val headingCount = if (hasDocumentHeader && headings.any { it.level == 1 }) {
+            headings.count { it.level == 1 }
+        } else {
+            headings.size
+        }
+
         return ParsedDocument(
             format = supportedFormat,
             rawContent = content,
             parsedContent = generateOrgHtml(content, true),
             metadata = buildMap {
-                put("headings", headings.size.toString())
+                put("headings", headingCount.toString())
                 put("todos", todos.size.toString())
                 put("properties", properties.size.toString())
                 put("max_level", headings.maxOfOrNull { it.level }?.toString() ?: "0")
             }
         )
+    }
+
+    /**
+     * Check if the content has Org Mode document-level metadata headers.
+     * These are lines starting with #+KEYWORD: that define document properties
+     * like #+TITLE:, #+AUTHOR:, #+DATE:, etc.
+     *
+     * Documents with metadata headers are structured documents where level-1
+     * headings define top-level sections. Documents without metadata are
+     * simpler and each heading is counted individually.
+     */
+    private fun hasOrgMetadata(content: String): Boolean {
+        val metadataRegex = "^#\\+[A-Z_]+:".toRegex(RegexOption.MULTILINE)
+        return metadataRegex.containsMatchIn(content)
     }
     
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
@@ -125,7 +149,8 @@ class OrgModeParser : TextParser {
         var inBlock = false
         var currentBlockType = ""
         var blockContent = mutableListOf<String>()
-        
+        var inPropertyDrawer = false
+
         for (line in lines) {
             when {
                 line.startsWith("#+BEGIN_") -> {
@@ -143,23 +168,42 @@ class OrgModeParser : TextParser {
                 inBlock -> {
                     blockContent.add(escapeHtml(line))
                 }
-                line.startsWith("*") -> {
+                line.trim() == ":PROPERTIES:" -> {
+                    // Start of property drawer
+                    inPropertyDrawer = true
+                    htmlLines.add("<div class=\"org-properties\">")
+                    htmlLines.add("<div class=\"org-property-header\">PROPERTIES</div>")
+                }
+                line.trim() == ":END:" -> {
+                    // End of property drawer
+                    inPropertyDrawer = false
+                    htmlLines.add("</div>")
+                }
+                inPropertyDrawer -> {
+                    // Property lines inside drawer
+                    val propertyMatch = "^:([^:]+):\\s+(.*)$".toRegex().find(line.trim())
+                    if (propertyMatch != null) {
+                        val key = propertyMatch.groupValues[1].trim()
+                        val value = propertyMatch.groupValues[2].trim()
+                        htmlLines.add("<div class=\"org-property\"><span class=\"org-property-key\">$key:</span> <span class=\"org-property-value\">$value</span></div>")
+                    } else {
+                        htmlLines.add("<p>${escapeHtml(line)}</p>")
+                    }
+                }
+                line.startsWith("*") && line.length > 1 && line.trimStart('*').startsWith(" ") -> {
                     // Heading
                     val level = line.takeWhile { it == '*' }.length
                     val title = line.substring(level).trim()
                     val todoState = extractTodoState(title)
-                    val cleanTitle = if (todoState != null) title.substringAfter("$todoState ") else title
-                    
+
                     val headingClass = "org-heading org-heading-$level"
-                    val todoClass = if (todoState != null) "org-todo org-todo-${todoState.lowercase()}" else ""
-                    
-                    val todoHtml = if (todoState != null) "<span class=\"$todoClass\">$todoState</span> " else ""
-                    val formattedTitle = formatInlineOrg(cleanTitle)
-                    
-                    htmlLines.add("<div class=\"$headingClass\">$todoHtml$formattedTitle</div>")
+                    val todoClass = if (todoState != null) " org-todo org-todo-${todoState.lowercase()}" else ""
+                    val formattedTitle = formatInlineOrg(title)
+
+                    htmlLines.add("<div class=\"$headingClass$todoClass\">$formattedTitle</div>")
                 }
-                line.startsWith(":") && line.endsWith(":") -> {
-                    // Property drawer
+                line.startsWith(":") && line.endsWith(":") && line.length > 2 -> {
+                    // Single-line property drawer marker or standalone property reference
                     htmlLines.add("<div class=\"org-properties\">")
                     val properties = extractProperties(line)
                     properties.forEach { (key, value) ->
@@ -177,7 +221,7 @@ class OrgModeParser : TextParser {
                 }
             }
         }
-        
+
         return htmlLines.joinToString("\n")
     }
     

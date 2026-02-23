@@ -6,7 +6,7 @@ Yole is a **Kotlin Multiplatform (KMP)** text editor supporting Android, Desktop
 
 **Architecture Philosophy**: Share as much code as possible through Kotlin Multiplatform, with platform-specific implementations only where necessary for optimal user experience.
 
-## Current Platform Status (November 2025)
+## Current Platform Status (February 2026)
 
 | Platform | Status | Notes |
 |----------|--------|-------|

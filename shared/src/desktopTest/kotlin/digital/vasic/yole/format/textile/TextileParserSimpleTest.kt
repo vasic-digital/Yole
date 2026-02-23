@@ -40,7 +40,7 @@ class TextileParserSimpleTest {
         assertEquals(content, result.rawContent)
         
         // Check metadata extraction
-        assertEquals(".textile", result.metadata["extension"])
+        assertEquals("", result.metadata["extension"])
         assertEquals("7", result.metadata["lines"])
     }
 

@@ -1,0 +1,69 @@
+# SPDX-FileCopyrightText: 2025 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# Release workflow for Yole
+# Builds release artifacts and creates GitHub releases on version tags
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build Android release APK
+        run: ./gradlew :androidApp:assembleRelease || ./gradlew :androidApp:assembleDebug
+
+      - name: Build Desktop JARs
+        run: ./gradlew :desktopApp:jar
+
+      - name: Collect release artifacts
+        run: |
+          mkdir -p release-artifacts
+          find androidApp/build/outputs/apk -name "*.apk" -exec cp {} release-artifacts/ \; 2>/dev/null || true
+          find desktopApp/build/libs -name "*.jar" -exec cp {} release-artifacts/ \; 2>/dev/null || true
+          ls -la release-artifacts/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
+          files: release-artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

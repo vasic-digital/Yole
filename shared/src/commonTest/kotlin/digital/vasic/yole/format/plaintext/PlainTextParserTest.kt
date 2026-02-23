@@ -12,6 +12,7 @@ import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.TextFormat
 import digital.vasic.yole.format.ParsedDocument
+import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -513,9 +514,9 @@ class PlainTextParserTest {
             }
         }.trimEnd()
 
-        val startTime = System.currentTimeMillis()
+        val startTime = Clock.System.now().toEpochMilliseconds()
         val result = parser.parse(largeContent)
-        val endTime = System.currentTimeMillis()
+        val endTime = Clock.System.now().toEpochMilliseconds()
         
         assertNotNull(result)
         assertEquals(TextFormat.ID_PLAINTEXT, result.format.id)
@@ -537,9 +538,9 @@ class PlainTextParserTest {
 
         val document = parser.parse(largeContent)
         
-        val startTime = System.currentTimeMillis()
+        val startTime = Clock.System.now().toEpochMilliseconds()
         val html = parser.toHtml(document, lightMode = true)
-        val endTime = System.currentTimeMillis()
+        val endTime = Clock.System.now().toEpochMilliseconds()
         
         assertNotNull(html)
         assertTrue(html.isNotEmpty())
@@ -561,10 +562,10 @@ class PlainTextParserTest {
             }
         }.trimEnd()
 
-        val startTime = System.currentTimeMillis()
+        val startTime = Clock.System.now().toEpochMilliseconds()
         val result = parser.parse(longContent)
         val html = parser.toHtml(result, lightMode = true)
-        val endTime = System.currentTimeMillis()
+        val endTime = Clock.System.now().toEpochMilliseconds()
         
         assertNotNull(result)
         assertNotNull(html)

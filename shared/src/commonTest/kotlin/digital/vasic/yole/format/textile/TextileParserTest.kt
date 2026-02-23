@@ -11,6 +11,7 @@ package digital.vasic.yole.format.textile
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.TextFormat
+import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -777,9 +778,9 @@ class TextileParserTest {
             }
         }
 
-        val startTime = System.currentTimeMillis()
+        val startTime = Clock.System.now().toEpochMilliseconds()
         val result = parser.parse(largeContent)
-        val endTime = System.currentTimeMillis()
+        val endTime = Clock.System.now().toEpochMilliseconds()
         
         assertNotNull(result)
         assertEquals(TextFormat.ID_TEXTILE, result.format.id)
@@ -817,9 +818,9 @@ class TextileParserTest {
 
         val document = parser.parse(largeContent)
         
-        val startTime = System.currentTimeMillis()
+        val startTime = Clock.System.now().toEpochMilliseconds()
         val html = parser.toHtml(document, lightMode = true)
-        val endTime = System.currentTimeMillis()
+        val endTime = Clock.System.now().toEpochMilliseconds()
         
         assertNotNull(html)
         assertTrue(html.isNotEmpty())

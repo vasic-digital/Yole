@@ -5,52 +5,74 @@
  *
  * Rate Limiting Utilities
  * Semaphore-based rate limiting for network operations
+ * Kotlin Multiplatform compatible (no JVM-only imports)
  *
  *########################################################*/
 package digital.vasic.yole.util
 
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import java.util.concurrent.Semaphore
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.sync.Semaphore as KSemaphore
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.Clock
 
 /**
- * Rate Limiter using Semaphore
- * Limits concurrent operations to prevent overwhelming resources
+ * Rate Limiter using Kotlin Coroutines Semaphore.
+ *
+ * Limits concurrent operations to prevent overwhelming resources.
+ * Uses [kotlinx.coroutines.sync.Semaphore] for multiplatform compatibility
+ * (works on JVM, iOS, Wasm, and all Kotlin targets).
  *
  * @param maxConcurrent Maximum number of concurrent operations
+ *
+ * @example
+ * ```kotlin
+ * val limiter = RateLimiter(maxConcurrent = 3)
+ * val result = limiter.execute { fetchData() }
+ * ```
  */
 class RateLimiter(
     private val maxConcurrent: Int = 5
 ) {
-    private val semaphore = Semaphore(maxConcurrent)
-    private val activeCount = AtomicInteger(0)
-    private val queueLength = AtomicInteger(0)
-    
+    private val semaphore = KSemaphore(maxConcurrent)
+    private val mutex = Mutex()
+    private var _activeCount: Int = 0
+    private var _queueLength: Int = 0
+
     /**
-     * Execute operation with rate limiting
+     * Execute operation with rate limiting.
+     *
+     * Suspends until a permit is available, then executes the operation.
+     * The permit is released when the operation completes (success or failure).
+     *
+     * @param operation The suspend function to execute
+     * @return The result of the operation
      */
     suspend fun <T> execute(operation: suspend () -> T): T {
-        queueLength.incrementAndGet()
-        
+        mutex.withLock { _queueLength++ }
+
         semaphore.acquire()
-        activeCount.incrementAndGet()
-        
+        mutex.withLock {
+            _activeCount++
+        }
+
         return try {
-            withContext(Dispatchers.IO) {
-                operation()
-            }
+            operation()
         } finally {
-            activeCount.decrementAndGet()
+            mutex.withLock {
+                _activeCount--
+                _queueLength--
+            }
             semaphore.release()
-            queueLength.decrementAndGet()
         }
     }
-    
+
     /**
-     * Execute operation with timeout
+     * Execute operation with timeout.
+     *
+     * @param timeout Timeout in milliseconds
+     * @param operation The suspend function to execute
+     * @return The result, or null if timed out
      */
     suspend fun <T> executeWithTimeout(
         timeout: Long,
@@ -58,108 +80,128 @@ class RateLimiter(
     ): T? = withTimeoutOrNull(timeout) {
         execute(operation)
     }
-    
+
     /**
-     * Get number of active operations
+     * Get number of active operations.
      */
-    fun getActiveCount(): Int = activeCount.get()
-    
+    suspend fun getActiveCount(): Int = mutex.withLock { _activeCount }
+
     /**
-     * Get queue length
+     * Get queue length.
      */
-    fun getQueueLength(): Int = queueLength.get()
-    
+    suspend fun getQueueLength(): Int = mutex.withLock { _queueLength }
+
     /**
-     * Check if at capacity
+     * Check if at capacity.
      */
-    fun isAtCapacity(): Boolean = activeCount.get() >= maxConcurrent
+    suspend fun isAtCapacity(): Boolean = mutex.withLock { _activeCount >= maxConcurrent }
 }
 
 /**
- * Token Bucket Rate Limiter
- * Allows burst traffic while maintaining average rate
+ * Token Bucket Rate Limiter.
+ *
+ * Allows burst traffic while maintaining average rate. Uses Kotlin Multiplatform
+ * compatible time source ([kotlinx.datetime.Clock]) and [Mutex] for thread safety.
  *
  * @param capacity Maximum tokens in bucket
  * @param refillRate Tokens per second
+ *
+ * @example
+ * ```kotlin
+ * val bucket = TokenBucket(capacity = 10, refillRate = 5.0)
+ * if (bucket.tryAcquire()) { /* proceed */ }
+ * // or suspending:
+ * bucket.acquire() // waits until token available
+ * ```
  */
 class TokenBucket(
     private val capacity: Int = 10,
     private val refillRate: Double = 5.0
 ) {
-    private val tokens = AtomicInteger(capacity)
-    private val lastRefill = AtomicLong(System.currentTimeMillis())
-    private val lock = java.util.concurrent.locks.ReentrantLock()
-    
+    private val mutex = Mutex()
+    private var tokens: Int = capacity
+    private var lastRefillMs: Long = Clock.System.now().toEpochMilliseconds()
+
     /**
-     * Try to acquire a token
+     * Try to acquire a token (non-suspending, mutex-protected).
+     *
+     * @return true if a token was acquired, false if bucket is empty
      */
-    fun tryAcquire(): Boolean {
-        refill()
-        
-        while (true) {
-            val current = tokens.get()
-            if (current <= 0) return false
-            
-            if (tokens.compareAndSet(current, current - 1)) {
-                return true
-            }
+    suspend fun tryAcquire(): Boolean {
+        mutex.withLock {
+            refillLocked()
+            if (tokens <= 0) return false
+            tokens--
+            return true
         }
     }
-    
+
     /**
-     * Acquire token or wait
+     * Acquire token, suspending until one becomes available.
      */
     suspend fun acquire() {
         while (!tryAcquire()) {
             delay(50)
         }
     }
-    
+
     /**
-     * Refill tokens based on time elapsed
+     * Refill tokens based on time elapsed. Must be called under mutex lock.
      */
-    private fun refill() {
-        val now = System.currentTimeMillis()
-        val elapsed = now - lastRefill.get()
-        
-        if (elapsed > 100) {
-            lock.lock()
-            try {
-                val tokensToAdd = (elapsed * refillRate / 1000).toInt()
-                val newTokens = minOf(capacity, tokens.get() + tokensToAdd)
-                tokens.set(newTokens)
-                lastRefill.set(now)
-            } finally {
-                lock.unlock()
+    private fun refillLocked() {
+        val now = Clock.System.now().toEpochMilliseconds()
+        val elapsed = now - lastRefillMs
+
+        if (elapsed > 0) {
+            val tokensToAdd = (elapsed * refillRate / 1000).toInt()
+            if (tokensToAdd > 0) {
+                tokens = minOf(capacity, tokens + tokensToAdd)
+                lastRefillMs = now
             }
         }
     }
-    
+
     /**
-     * Get available tokens
+     * Get available tokens.
      */
-    fun getAvailableTokens(): Int {
-        refill()
-        return tokens.get()
+    suspend fun getAvailableTokens(): Int {
+        mutex.withLock {
+            refillLocked()
+            return tokens
+        }
     }
 }
 
 /**
- * Adaptive Rate Limiter
- * Adjusts rate based on success/failure
+ * Adaptive Rate Limiter.
+ *
+ * Adjusts rate based on success/failure feedback. After sustained success,
+ * the concurrency limit increases. After repeated failures, it decreases.
+ *
+ * @param initialRate Initial maximum concurrent operations
+ * @param minRate Minimum concurrent operations (floor)
+ * @param maxRate Maximum concurrent operations (ceiling)
+ *
+ * @example
+ * ```kotlin
+ * val limiter = AdaptiveRateLimiter(initialRate = 5)
+ * val result = limiter.execute { callApi() }
+ * println(limiter.getCurrentRate()) // may have adjusted
+ * ```
  */
 class AdaptiveRateLimiter(
     initialRate: Int = 5,
     private val minRate: Int = 1,
     private val maxRate: Int = 20
 ) {
-    private val currentRate = AtomicInteger(initialRate)
+    private val mutex = Mutex()
+    private var currentRate: Int = initialRate
     private val baseLimiter = RateLimiter(initialRate)
-    private val successCount = AtomicInteger(0)
-    private val failureCount = AtomicInteger(0)
-    
+    private var successCount: Int = 0
+    private var failureCount: Int = 0
+
     /**
-     * Execute with adaptive rate limiting
+     * Execute with adaptive rate limiting.
      */
     suspend fun <T> execute(operation: suspend () -> T): T {
         return baseLimiter.execute {
@@ -173,81 +215,90 @@ class AdaptiveRateLimiter(
             }
         }
     }
-    
-    /**
-     * Handle successful operation
-     */
-    private fun onSuccess() {
-        successCount.incrementAndGet()
-        
-        if (successCount.get() > 10) {
-            adjustRate(1)
-            successCount.set(0)
+
+    private suspend fun onSuccess() {
+        mutex.withLock {
+            successCount++
+            if (successCount > 10) {
+                adjustRateLocked(1)
+                successCount = 0
+            }
         }
     }
-    
-    /**
-     * Handle failed operation
-     */
-    private fun onFailure() {
-        failureCount.incrementAndGet()
-        
-        if (failureCount.get() >= 3) {
-            adjustRate(-1)
-            failureCount.set(0)
+
+    private suspend fun onFailure() {
+        mutex.withLock {
+            failureCount++
+            if (failureCount >= 3) {
+                adjustRateLocked(-1)
+                failureCount = 0
+            }
         }
     }
-    
-    /**
-     * Adjust rate up or down
-     */
-    private fun adjustRate(delta: Int) {
-        val newRate = (currentRate.get() + delta).coerceIn(minRate, maxRate)
-        currentRate.set(newRate)
+
+    private fun adjustRateLocked(delta: Int) {
+        currentRate = (currentRate + delta).coerceIn(minRate, maxRate)
     }
-    
+
     /**
-     * Get current rate
+     * Get current rate.
      */
-    fun getCurrentRate(): Int = currentRate.get()
+    suspend fun getCurrentRate(): Int = mutex.withLock { currentRate }
 }
 
 /**
- * Operation Throttler
- * Groups similar operations to prevent flooding
+ * Operation Throttler.
+ *
+ * Groups similar operations by ID and prevents flooding within a time window.
+ * Thread-safe via [Mutex] for multiplatform compatibility.
+ *
+ * @param windowMs Time window in milliseconds
+ * @param maxOperations Maximum operations per window
+ *
+ * @example
+ * ```kotlin
+ * val throttler = OperationThrottler(windowMs = 1000, maxOperations = 10)
+ * if (throttler.tryThrottle("api-call")) { /* proceed */ } else { /* throttled */ }
+ * ```
  */
 class OperationThrottler(
     private val windowMs: Long = 1000,
     private val maxOperations: Int = 10
 ) {
-    private val operations = ConcurrentHashMap<String, Long>()
-    private val counts = ConcurrentHashMap<String, AtomicInteger>()
-    
+    private val mutex = Mutex()
+    private val operations = mutableMapOf<String, Long>()
+    private val counts = mutableMapOf<String, Int>()
+
     /**
-     * Try to throttle operation
+     * Try to throttle operation. Returns true if operation is allowed, false if throttled.
      */
-    fun tryThrottle(operationId: String): Boolean {
-        val now = System.currentTimeMillis()
-        val lastOp = operations.getOrPut(operationId) { now }
-        
-        if (now - lastOp < windowMs) {
-            val count = counts.getOrPut(operationId) { AtomicInteger(0) }
-            if (count.incrementAndGet() > maxOperations) {
-                return false
+    suspend fun tryThrottle(operationId: String): Boolean {
+        val now = Clock.System.now().toEpochMilliseconds()
+        mutex.withLock {
+            val lastOp = operations.getOrPut(operationId) { now }
+
+            if (now - lastOp < windowMs) {
+                val count = counts.getOrPut(operationId) { 0 }
+                if (count + 1 > maxOperations) {
+                    return false
+                }
+                counts[operationId] = count + 1
+            } else {
+                operations[operationId] = now
+                counts[operationId] = 1
             }
-        } else {
-            operations[operationId] = now
-            counts[operationId]?.set(1)
+
+            return true
         }
-        
-        return true
     }
-    
+
     /**
-     * Clear throttling state
+     * Clear throttling state for an operation.
      */
-    fun clear(operationId: String) {
-        operations.remove(operationId)
-        counts.remove(operationId)
+    suspend fun clear(operationId: String) {
+        mutex.withLock {
+            operations.remove(operationId)
+            counts.remove(operationId)
+        }
     }
 }

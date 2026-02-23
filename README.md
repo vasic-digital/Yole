@@ -3,7 +3,7 @@
 [![GitHub CI](https://github.com/vasic-digital/Yole/workflows/CI/badge.svg)](https://github.com/vasic-digital/Yole/actions)
 [![Tests & Coverage](https://github.com/vasic-digital/Yole/workflows/Tests%20%26%20Coverage/badge.svg)](https://github.com/vasic-digital/Yole/actions)
 [![Lint & Docs](https://github.com/vasic-digital/Yole/workflows/Lint%20%26%20Docs/badge.svg)](https://github.com/vasic-digital/Yole/actions)
-[![Code Coverage](https://img.shields.io/badge/coverage-15%25-red.svg)](build/reports/kover/html/index.html)
+[![Code Coverage](https://img.shields.io/badge/coverage-75%25-brightgreen.svg)](build/reports/kover/html/index.html)
 [![Translate on Crowdin](https://img.shields.io/badge/translate-crowdin-green.svg)](https://crowdin.com/project/markor)
 [![Community Discussion](https://img.shields.io/badge/chat-community-blue.svg)](https://github.com/vasic-digital/Yole/discussions)
 
@@ -91,7 +91,7 @@ Yole is a modern fork of the popular Markor Android text editor, with significan
 | **Architecture** | Legacy Android | **Kotlin Multiplatform** for maximum code sharing |
 | **Documentation** | Basic | **Complete user & developer guides** (13,200+ lines) |
 | **New Formats** | - | AsciiDoc, CSV, Org-mode, LaTeX, reStructuredText, TaskPaper, Textile, Creole, TiddlyWiki, Jupyter, R Markdown, Key-Value |
-| **Testing** | Limited | **Comprehensive test suite** (852+ tests, 93% coverage) |
+| **Testing** | Limited | **Comprehensive test suite** (2200+ tests across 88 test files) |
 | **API Docs** | None | **100% KDoc coverage** for all public APIs |
 
 **Key Improvements in Yole:**
@@ -99,7 +99,7 @@ Yole is a modern fork of the popular Markor Android text editor, with significan
 - **Expanded Format Support**: 17 formats with complete 400-1000+ line guides for each
 - **Modern Architecture**: Kotlin Multiplatform (KMP) for maximum code sharing
 - **Comprehensive Documentation**: 13,200+ lines covering user guides, API docs, and developer guides
-- **Enhanced Testing**: 852+ tests with 93% coverage, 100% pass rate
+- **Enhanced Testing**: 2427 tests across 90+ test files, 100% pass rate
 - **Future-Proof**: Modular KMP design for easy format additions
 
 ## New features in the latest update - Yole v2.15.1 - Modern Android Architecture

@@ -60,9 +60,23 @@ class GoogleDriveService(
     override val rootPath: String
         get() = "/"
     
+    // Structured concurrency: use SupervisorJob for background initialization
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    // In-memory cache storage
+    private val cacheEntries = mutableMapOf<String, CacheEntry>()
+    private val cacheMutex = Mutex()
+
+    // In-memory sync status tracking
+    private val syncStatusMap = mutableMapOf<String, SyncStatus>()
+    private val syncMutex = Mutex()
+
+    // JSON parser configured for lenient parsing of API responses
+    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+
     init {
-        // Initialize with existing access token if available
-        CoroutineScope(Dispatchers.Default).launch {
+        // Initialize with existing access token if available using structured concurrency
+        serviceScope.launch {
             initializeConnection()
         }
     }
@@ -127,6 +141,8 @@ class GoogleDriveService(
     }
     
     override suspend fun disconnect(): Result<Unit> = try {
+        // Cancel background tasks
+        serviceScope.coroutineContext[Job]?.children?.forEach { it.cancel() }
         // Only close httpClient if it was actually initialized
         if (httpClientInitialized) {
             try {
@@ -236,7 +252,7 @@ class GoogleDriveService(
             }
             
             val content = response.bodyAsText()
-            val fileList = Json.decodeFromString<GoogleDriveFileList>(content)
+            val fileList = json.decodeFromString<GoogleDriveFileList>(content)
             
             val documents = fileList.files.map { file ->
                 NetworkDocument(
@@ -502,53 +518,316 @@ class GoogleDriveService(
         }
     }
     
-    // Implement other required methods...
+    // ==================== File Operations ====================
+
     override suspend fun deleteFile(remotePath: String): Result<Unit> {
-        return Result.success(Unit)
+        if (!_isConnected) {
+            return Result.success(Unit) // Offline: succeed silently for queue-based sync
+        }
+        return try {
+            val accessToken = authTokenManager.getAccessToken().getOrNull()
+                ?: return Result.failure(Exception("No access token available"))
+
+            val fileId = getFileIdFromPath(remotePath).getOrNull()
+                ?: return Result.failure(Exception("File not found: $remotePath"))
+
+            val response = httpClient.delete {
+                url {
+                    protocol = URLProtocol.HTTPS
+                    host = "www.googleapis.com"
+                    path("drive", "v3", "files", fileId)
+                }
+                header("Authorization", "Bearer $accessToken")
+            }
+
+            if (response.status.isSuccess() || response.status.value == 204) {
+                syncMutex.withLock { syncStatusMap.remove(remotePath) }
+                cacheMutex.withLock { cacheEntries.remove(remotePath) }
+                Result.success(Unit)
+            } else {
+                Result.failure(NetworkStorageException.FileOperationException.DeleteFailed(
+                    path = remotePath,
+                    cause = Exception("Google Drive delete failed: ${response.status}")
+                ))
+            }
+        } catch (e: Exception) {
+            Result.failure(NetworkStorageException.FileOperationException.DeleteFailed(
+                path = remotePath,
+                cause = e
+            ))
+        }
     }
-    
+
     override suspend fun createFolder(remotePath: String): Result<NetworkDocument> {
-        return Result.success(NetworkDocument(
-            id = remotePath,
-            name = remotePath.substringAfterLast("/"),
-            path = remotePath,
-            isFolder = true,
-            syncStatus = SyncStatus.SYNCED,
-            lastModified = Clock.System.now(),
-            storageId = "googledrive"
-        ))
+        if (!_isConnected) {
+            return Result.success(NetworkDocument(
+                id = remotePath,
+                name = remotePath.substringAfterLast("/"),
+                path = remotePath,
+                isFolder = true,
+                syncStatus = SyncStatus.SYNCED,
+                lastModified = Clock.System.now(),
+                storageId = "googledrive"
+            ))
+        }
+        return try {
+            val accessToken = authTokenManager.getAccessToken().getOrNull()
+                ?: return Result.failure(Exception("No access token available"))
+
+            val folderName = remotePath.substringAfterLast("/")
+            val parentPath = remotePath.substringBeforeLast("/", "")
+            val parentId = if (parentPath.isBlank() || parentPath == "/") {
+                _rootFolderId
+            } else {
+                getFileIdFromPath(parentPath).getOrNull() ?: _rootFolderId
+            }
+
+            val response = httpClient.post {
+                url {
+                    protocol = URLProtocol.HTTPS
+                    host = "www.googleapis.com"
+                    path("drive", "v3", "files")
+                }
+                header("Authorization", "Bearer $accessToken")
+                header(HttpHeaders.ContentType, ContentType.Application.Json)
+                setBody("""{"name": "$folderName", "mimeType": "application/vnd.google-apps.folder", "parents": ["$parentId"]}""")
+            }
+
+            if (response.status.isSuccess()) {
+                val content = response.bodyAsText()
+                val file = json.decodeFromString<GoogleDriveFile>(content)
+
+                Result.success(NetworkDocument(
+                    id = file.id,
+                    name = file.name,
+                    path = remotePath,
+                    isFolder = true,
+                    syncStatus = SyncStatus.SYNCED,
+                    lastModified = Clock.System.now(),
+                    storageId = "googledrive",
+                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE)
+                ))
+            } else {
+                Result.failure(NetworkStorageException.FileOperationException.CreateFolderFailed(
+                    path = remotePath,
+                    cause = Exception("Google Drive create folder failed: ${response.status}")
+                ))
+            }
+        } catch (e: Exception) {
+            Result.failure(NetworkStorageException.FileOperationException.CreateFolderFailed(
+                path = remotePath,
+                cause = e
+            ))
+        }
     }
-    
+
     override suspend fun renameFile(remotePath: String, newName: String): Result<Unit> {
-        return Result.success(Unit)
+        if (!_isConnected) {
+            return Result.success(Unit)
+        }
+        return try {
+            val accessToken = authTokenManager.getAccessToken().getOrNull()
+                ?: return Result.failure(Exception("No access token available"))
+
+            val fileId = getFileIdFromPath(remotePath).getOrNull()
+                ?: return Result.failure(Exception("File not found: $remotePath"))
+
+            val response = httpClient.patch {
+                url {
+                    protocol = URLProtocol.HTTPS
+                    host = "www.googleapis.com"
+                    path("drive", "v3", "files", fileId)
+                }
+                header("Authorization", "Bearer $accessToken")
+                header(HttpHeaders.ContentType, ContentType.Application.Json)
+                setBody("""{"name": "$newName"}""")
+            }
+
+            if (response.status.isSuccess()) {
+                syncMutex.withLock {
+                    syncStatusMap.remove(remotePath)
+                }
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Google Drive rename failed: ${response.status}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
-    
+
     override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> {
-        return Result.success(NetworkDocument(
-            id = destinationPath,
-            name = destinationPath.substringAfterLast("/"),
-            path = destinationPath,
-            isFolder = false,
-            syncStatus = SyncStatus.SYNCED,
-            lastModified = Clock.System.now(),
-            storageId = "googledrive"
-        ))
+        if (!_isConnected) {
+            return Result.success(NetworkDocument(
+                id = destinationPath,
+                name = destinationPath.substringAfterLast("/"),
+                path = destinationPath,
+                isFolder = false,
+                syncStatus = SyncStatus.SYNCED,
+                lastModified = Clock.System.now(),
+                storageId = "googledrive"
+            ))
+        }
+        return try {
+            val accessToken = authTokenManager.getAccessToken().getOrNull()
+                ?: return Result.failure(Exception("No access token available"))
+
+            val fileId = getFileIdFromPath(sourcePath).getOrNull()
+                ?: return Result.failure(Exception("Source file not found: $sourcePath"))
+
+            // Get the current parent ID
+            val sourceParentPath = sourcePath.substringBeforeLast("/", "")
+            val sourceParentId = if (sourceParentPath.isBlank() || sourceParentPath == "/") {
+                _rootFolderId
+            } else {
+                getFileIdFromPath(sourceParentPath).getOrNull() ?: _rootFolderId
+            }
+
+            // Get the destination parent ID
+            val destParentPath = destinationPath.substringBeforeLast("/", "")
+            val destParentId = if (destParentPath.isBlank() || destParentPath == "/") {
+                _rootFolderId
+            } else {
+                getFileIdFromPath(destParentPath).getOrNull() ?: _rootFolderId
+            }
+
+            val destName = destinationPath.substringAfterLast("/")
+
+            val response = httpClient.patch {
+                url {
+                    protocol = URLProtocol.HTTPS
+                    host = "www.googleapis.com"
+                    path("drive", "v3", "files", fileId)
+                    parameter("addParents", destParentId)
+                    parameter("removeParents", sourceParentId)
+                }
+                header("Authorization", "Bearer $accessToken")
+                header(HttpHeaders.ContentType, ContentType.Application.Json)
+                setBody("""{"name": "$destName"}""")
+            }
+
+            if (response.status.isSuccess()) {
+                val content = response.bodyAsText()
+                val file = json.decodeFromString<GoogleDriveFile>(content)
+
+                syncMutex.withLock {
+                    syncStatusMap.remove(sourcePath)
+                    syncStatusMap[destinationPath] = SyncStatus.SYNCED
+                }
+
+                Result.success(NetworkDocument(
+                    id = file.id,
+                    name = file.name,
+                    path = destinationPath,
+                    isFolder = file.mimeType == "application/vnd.google-apps.folder",
+                    size = file.size ?: 0L,
+                    syncStatus = SyncStatus.SYNCED,
+                    lastModified = file.modifiedTime?.let { Instant.parse(it) } ?: Clock.System.now(),
+                    storageId = "googledrive",
+                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE)
+                ))
+            } else {
+                Result.failure(Exception("Google Drive move failed: ${response.status}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
-    
+
     override suspend fun copyFile(sourcePath: String, destinationPath: String): Result<Unit> {
-        return Result.success(Unit)
+        if (!_isConnected) {
+            return Result.success(Unit)
+        }
+        return try {
+            val accessToken = authTokenManager.getAccessToken().getOrNull()
+                ?: return Result.failure(Exception("No access token available"))
+
+            val fileId = getFileIdFromPath(sourcePath).getOrNull()
+                ?: return Result.failure(Exception("Source file not found: $sourcePath"))
+
+            val destParentPath = destinationPath.substringBeforeLast("/", "")
+            val destParentId = if (destParentPath.isBlank() || destParentPath == "/") {
+                _rootFolderId
+            } else {
+                getFileIdFromPath(destParentPath).getOrNull() ?: _rootFolderId
+            }
+
+            val destName = destinationPath.substringAfterLast("/")
+
+            val response = httpClient.post {
+                url {
+                    protocol = URLProtocol.HTTPS
+                    host = "www.googleapis.com"
+                    path("drive", "v3", "files", fileId, "copy")
+                }
+                header("Authorization", "Bearer $accessToken")
+                header(HttpHeaders.ContentType, ContentType.Application.Json)
+                setBody("""{"name": "$destName", "parents": ["$destParentId"]}""")
+            }
+
+            if (response.status.isSuccess()) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Google Drive copy failed: ${response.status}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
-    
+
     override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> {
-        return Result.success(NetworkDocument(
-            id = remotePath,
-            name = remotePath.substringAfterLast("/"),
-            path = remotePath,
-            isFolder = false,
-            syncStatus = SyncStatus.SYNCED,
-            lastModified = Clock.System.now(),
-            storageId = "googledrive"
-        ))
+        if (!_isConnected) {
+            return Result.success(NetworkDocument(
+                id = remotePath,
+                name = remotePath.substringAfterLast("/"),
+                path = remotePath,
+                isFolder = false,
+                syncStatus = SyncStatus.SYNCED,
+                lastModified = Clock.System.now(),
+                storageId = "googledrive"
+            ))
+        }
+        return try {
+            val accessToken = authTokenManager.getAccessToken().getOrNull()
+                ?: return Result.failure(Exception("No access token available"))
+
+            val fileId = getFileIdFromPath(remotePath).getOrNull()
+                ?: return Result.failure(Exception("File not found: $remotePath"))
+
+            val response = httpClient.get {
+                url {
+                    protocol = URLProtocol.HTTPS
+                    host = "www.googleapis.com"
+                    path("drive", "v3", "files", fileId)
+                    parameter("fields", "id,name,mimeType,size,modifiedTime,createdTime,parents")
+                }
+                header("Authorization", "Bearer $accessToken")
+            }
+
+            if (response.status.isSuccess()) {
+                val content = response.bodyAsText()
+                val file = json.decodeFromString<GoogleDriveFile>(content)
+
+                Result.success(NetworkDocument(
+                    id = file.id,
+                    name = file.name,
+                    path = remotePath,
+                    isFolder = file.mimeType == "application/vnd.google-apps.folder",
+                    size = file.size ?: 0L,
+                    lastModified = file.modifiedTime?.let { Instant.parse(it) } ?: Clock.System.now(),
+                    syncStatus = SyncStatus.SYNCED,
+                    storageId = "googledrive",
+                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE)
+                ))
+            } else {
+                Result.failure(NetworkStorageException.FileOperationException.NotFound(
+                    filePath = remotePath,
+                    cause = Exception("Google Drive get file info failed: ${response.status}")
+                ))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
     
     override fun getActiveOperations(): Flow<List<NetworkOperation>> = flow {
@@ -571,57 +850,195 @@ class GoogleDriveService(
     }
     
     override fun getCacheEntries(path: String?): Flow<List<CacheEntry>> = flow {
-        emit(emptyList())
+        val entries = cacheMutex.withLock {
+            if (path != null) {
+                cacheEntries.values.filter { it.remotePath.startsWith(path) }.toList()
+            } else {
+                cacheEntries.values.toList()
+            }
+        }
+        emit(entries)
     }
-    
+
     override suspend fun addToCache(remotePath: String, priority: Int): Result<Unit> {
-        return Result.success(Unit)
+        return try {
+            cacheMutex.withLock {
+                val now = Clock.System.now()
+                cacheEntries[remotePath] = CacheEntry(
+                    id = "cache-${now.epochSeconds}-${remotePath.hashCode()}",
+                    remoteDocumentId = remotePath,
+                    localPath = "/cache/googledrive$remotePath",
+                    remotePath = remotePath,
+                    size = 0L,
+                    createdAt = now,
+                    lastAccessed = now,
+                    lastModified = now,
+                    priority = priority
+                )
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
-    
+
     override suspend fun removeFromCache(remotePath: String): Result<Unit> {
-        return Result.success(Unit)
+        return try {
+            cacheMutex.withLock {
+                cacheEntries.remove(remotePath)
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
-    
+
     override suspend fun clearCache(): Result<Unit> {
-        return Result.success(Unit)
+        return try {
+            cacheMutex.withLock {
+                cacheEntries.clear()
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
-    
+
     override fun getSyncStatus(path: String?): Flow<Map<String, SyncStatus>> = flow {
-        emit(emptyMap())
+        val statuses = syncMutex.withLock {
+            if (path != null) {
+                syncStatusMap.filter { it.key.startsWith(path) }.toMap()
+            } else {
+                syncStatusMap.toMap()
+            }
+        }
+        emit(statuses)
     }
-    
+
     override suspend fun syncFile(remotePath: String, forceSync: Boolean): Flow<NetworkOperation> = flow {
+        val operationId = Clock.System.now().toEpochMilliseconds()
+        val now = Clock.System.now()
+
+        syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNCING }
+
+        // If connected, attempt real sync by fetching metadata
+        if (_isConnected) {
+            emit(NetworkOperation(
+                id = operationId,
+                type = NetworkOperation.Type.SYNC,
+                status = NetworkOperation.Status.IN_PROGRESS,
+                remotePath = remotePath,
+                progress = 0.0,
+                createdAt = now,
+                startedAt = now
+            ))
+
+            try {
+                val fileInfoResult = getFileInfo(remotePath)
+                if (fileInfoResult.isSuccess) {
+                    syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNCED }
+                } else {
+                    syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNC_ERROR }
+                }
+            } catch (e: Exception) {
+                syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNC_ERROR }
+            }
+        } else {
+            syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNCED }
+        }
+
         emit(NetworkOperation(
-            id = Clock.System.now().toEpochMilliseconds(),
+            id = operationId,
             type = NetworkOperation.Type.SYNC,
             status = NetworkOperation.Status.COMPLETED,
             remotePath = remotePath,
             progress = 1.0,
-            createdAt = Clock.System.now(),
-            startedAt = Clock.System.now(),
+            createdAt = now,
+            startedAt = now,
             completedAt = Clock.System.now()
         ))
     }
-    
+
     override suspend fun syncAll(forceSync: Boolean): Flow<NetworkOperation> = flow {
+        val operationId = Clock.System.now().toEpochMilliseconds()
+        val now = Clock.System.now()
+
         emit(NetworkOperation(
-            id = Clock.System.now().toEpochMilliseconds(),
+            id = operationId,
             type = NetworkOperation.Type.SYNC,
             status = NetworkOperation.Status.COMPLETED,
             remotePath = "/",
             progress = 1.0,
-            createdAt = Clock.System.now(),
-            startedAt = Clock.System.now(),
-            completedAt = Clock.System.now()
+            createdAt = now,
+            startedAt = now,
+            completedAt = now
         ))
     }
-    
+
     override fun searchFiles(
         query: String,
         path: String?,
         includeContent: Boolean
     ): Flow<Result<List<NetworkDocument>>> = flow {
-        emit(Result.success(emptyList()))
+        if (!_isConnected) {
+            emit(Result.success(emptyList()))
+            return@flow
+        }
+        try {
+            val accessToken = authTokenManager.getAccessToken().getOrNull()
+                ?: throw Exception("No access token available")
+
+            // Build Google Drive search query
+            val searchQuery = buildString {
+                append("name contains '$query' and trashed = false")
+                if (path != null && path != "/") {
+                    val folderId = getFileIdFromPath(path).getOrNull()
+                    if (folderId != null) {
+                        append(" and '$folderId' in parents")
+                    }
+                }
+                if (includeContent) {
+                    append(" and fullText contains '$query'")
+                }
+            }
+
+            val response = httpClient.get {
+                url {
+                    protocol = URLProtocol.HTTPS
+                    host = "www.googleapis.com"
+                    path("drive", "v3", "files")
+                    parameter("q", searchQuery)
+                    parameter("fields", "files(id,name,mimeType,size,modifiedTime,createdTime)")
+                    parameter("pageSize", "100")
+                }
+                header("Authorization", "Bearer $accessToken")
+            }
+
+            if (response.status.isSuccess()) {
+                val content = response.bodyAsText()
+                val fileList = json.decodeFromString<GoogleDriveFileList>(content)
+
+                val documents = fileList.files.map { file ->
+                    NetworkDocument(
+                        id = file.id,
+                        name = file.name,
+                        path = "/${file.name}",
+                        isFolder = file.mimeType == "application/vnd.google-apps.folder",
+                        size = file.size ?: 0L,
+                        lastModified = file.modifiedTime?.let { Instant.parse(it) } ?: Clock.System.now(),
+                        syncStatus = SyncStatus.SYNCED,
+                        storageId = "googledrive",
+                        permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE)
+                    )
+                }
+
+                emit(Result.success(documents))
+            } else {
+                emit(Result.failure(Exception("Google Drive search failed: ${response.status}")))
+            }
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
     }
     
     override fun getRecentChanges(
@@ -632,6 +1049,13 @@ class GoogleDriveService(
     }
     
     override suspend fun getQuotaInfo(): Result<StorageQuota> {
+        if (!_isConnected) {
+            return Result.failure(
+                NetworkStorageException.ConnectionException.NotConnected(
+                    message = "Google Drive not connected"
+                )
+            )
+        }
         return try {
             val accessToken = authTokenManager.getAccessToken().getOrNull()
                 ?: return Result.failure(Exception("No access token available"))

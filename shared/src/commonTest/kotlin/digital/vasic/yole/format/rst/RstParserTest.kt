@@ -14,6 +14,7 @@ import digital.vasic.yole.format.TextFormat
 import digital.vasic.yole.format.restructuredtext.RestructuredTextParser
 import digital.vasic.yole.format.restructuredtext.RstSection
 import digital.vasic.yole.format.restructuredtext.RstDirective
+import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -417,9 +418,9 @@ class RstParserTest {
             }
         }
 
-        val startTime = System.currentTimeMillis()
+        val startTime = Clock.System.now().toEpochMilliseconds()
         val result = parser.parse(largeContent)
-        val endTime = System.currentTimeMillis()
+        val endTime = Clock.System.now().toEpochMilliseconds()
         
         assertNotNull(result)
         assertEquals(TextFormat.ID_RESTRUCTUREDTEXT, result.format.id)
@@ -456,9 +457,9 @@ class RstParserTest {
 
         val document = parser.parse(largeContent)
         
-        val startTime = System.currentTimeMillis()
+        val startTime = Clock.System.now().toEpochMilliseconds()
         val html = parser.toHtml(document, lightMode = true)
-        val endTime = System.currentTimeMillis()
+        val endTime = Clock.System.now().toEpochMilliseconds()
         
         assertNotNull(html)
         assertTrue(html.isNotEmpty())
@@ -466,5 +467,100 @@ class RstParserTest {
         // Performance assertion - should convert in reasonable time (less than 500ms)
         val conversionTime = endTime - startTime
         assertTrue(conversionTime < 500, "HTML conversion should complete within 500ms, took: \${conversionTime}ms")
+    }
+
+    // ==================== canParse Tests ====================
+
+    @Test
+    fun `canParse should return true for reStructuredText format`() {
+        val format = FormatRegistry.formats.first { it.id == TextFormat.ID_RESTRUCTUREDTEXT }
+        assertTrue(parser.canParse(format))
+    }
+
+    @Test
+    fun `canParse should return false for non-reStructuredText format`() {
+        val markdownFormat = FormatRegistry.formats.first { it.id == TextFormat.ID_MARKDOWN }
+        assertFalse(parser.canParse(markdownFormat))
+    }
+
+    // ==================== HTML Escaping Tests ====================
+
+    @Test
+    fun `should escape HTML special characters in paragraphs`() {
+        val content = "This has <html> tags & \"quotes\" and 'apostrophes'."
+
+        val document = parser.parse(content)
+        val html = parser.toHtml(document, lightMode = true)
+
+        assertNotNull(html)
+        assertTrue(html.contains("&lt;html&gt;"), "Angle brackets should be escaped")
+        assertTrue(html.contains("&amp;"), "Ampersand should be escaped")
+        assertTrue(html.contains("&quot;quotes&quot;"), "Double quotes should be escaped")
+        assertTrue(html.contains("&#39;apostrophes&#39;"), "Single quotes should be escaped")
+    }
+
+    @Test
+    fun `should escape HTML special characters in section titles`() {
+        val content = "Title with <b>bold</b> & more\n=============================="
+
+        val document = parser.parse(content)
+        val html = parser.toHtml(document, lightMode = true)
+
+        assertNotNull(html)
+        assertTrue(html.contains("&lt;b&gt;bold&lt;/b&gt;"), "HTML tags in titles should be escaped")
+        assertTrue(html.contains("&amp;"), "Ampersand in titles should be escaped")
+    }
+
+    // ==================== Directive Content in HTML Tests ====================
+
+    @Test
+    fun `should render directive content body in HTML`() {
+        val content = ".. code:: python\n   def hello():\n       print(\"Hello\")\n\nEnd."
+
+        val document = parser.parse(content)
+        val html = parser.toHtml(document, lightMode = true)
+
+        assertNotNull(html)
+        assertTrue(html.contains("<div class=\"rst-directive-content\">"), "Directive content div should be present")
+        assertTrue(html.contains("def hello():"), "Directive body content should appear in HTML")
+    }
+
+    // ==================== Empty Line to BR Conversion Tests ====================
+
+    @Test
+    fun `should convert empty lines to br tags in HTML`() {
+        val content = "First paragraph.\n\nSecond paragraph."
+
+        val document = parser.parse(content)
+        val html = parser.toHtml(document, lightMode = true)
+
+        assertNotNull(html)
+        assertTrue(html.contains("<br>"), "Empty lines should produce br tags")
+        assertTrue(html.contains("<p>First paragraph.</p>"))
+        assertTrue(html.contains("<p>Second paragraph.</p>"))
+    }
+
+    // ==================== Unclosed Directive at End of Document ====================
+
+    @Test
+    fun `should handle directive at end of document without trailing content`() {
+        val content = ".. note:: Final note\n   This is the note body\n   with multiple lines"
+
+        val document = parser.parse(content)
+        val html = parser.toHtml(document, lightMode = true)
+
+        assertNotNull(html)
+        assertTrue(html.contains("<div class=\"rst-directive\">"), "Directive div should be opened")
+        assertTrue(html.contains("<div class=\"rst-directive-content\">"), "Directive content should be closed")
+        assertTrue(html.contains("</div>"), "Divs should be properly closed")
+        assertTrue(html.contains("This is the note body"), "Body content should be present")
+    }
+
+    // ==================== supportedFormat Property Test ====================
+
+    @Test
+    fun `supportedFormat should be reStructuredText`() {
+        assertEquals(TextFormat.ID_RESTRUCTUREDTEXT, parser.supportedFormat.id)
+        assertEquals("reStructuredText", parser.supportedFormat.name)
     }
 }

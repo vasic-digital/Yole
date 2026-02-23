@@ -22,6 +22,10 @@ plugins {
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.dokka) apply false
     alias(libs.plugins.kover) apply false
+
+    // Security and code quality plugins
+    id("org.owasp.dependencycheck") version "11.1.1"
+    id("io.gitlab.arturbosch.detekt") version "1.23.7"
 }
 
 // Build configuration
@@ -154,6 +158,20 @@ ext {
     set("getBuildDate", ::getBuildDate)
     set("getGitHash", ::getGitHash)
     set("getGitLastCommitMessage", ::getGitLastCommitMessage)
+}
+
+// OWASP Dependency Check configuration
+dependencyCheck {
+    failBuildOnCVSS = 9.0f  // Only fail on critical
+    formats = listOf("HTML", "XML")
+    outputDirectory = "$buildDir/reports/dependency-check"
+}
+
+// Detekt configuration
+detekt {
+    config.setFrom(files("$rootDir/detekt.yml"))
+    buildUponDefaultConfig = true
+    allRules = false
 }
 
 // Configure Dokka for API documentation

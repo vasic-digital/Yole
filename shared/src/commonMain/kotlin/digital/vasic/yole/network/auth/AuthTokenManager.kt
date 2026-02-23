@@ -46,7 +46,7 @@ class AuthTokenManager(
     }
 
     private suspend fun getAccessTokenInternal(storage: SecureStorage): Result<String?> {
-        return storage.retrieveToken(serviceName)
+        return storage.retrieveToken("${serviceName}_access")
     }
 
     private suspend fun getRefreshTokenInternal(storage: SecureStorage): Result<String?> {
@@ -179,7 +179,7 @@ class AuthTokenManager(
         return mutex.withLock {
             try {
                 val storage = getSecureStorage()
-                storage.deleteToken(serviceName)
+                storage.deleteToken("${serviceName}_access")
                 storage.deleteToken("${serviceName}_refresh")
                 storage.delete("${serviceName}_expires")
                 Result.success(Unit)

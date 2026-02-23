@@ -21,7 +21,9 @@ class WikitextParser : TextParser {
 
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val filename = options["filename"] as? String ?: ""
-        val extension = getExtension(filename)
+        val extension = getExtension(filename).ifEmpty {
+            supportedFormat.extensions.firstOrNull() ?: ""
+        }
 
         // Remove Zim header if present
         val contentWithoutHeader = removeZimHeader(content)
@@ -69,15 +71,22 @@ class WikitextParser : TextParser {
         var inUnorderedList = false
         var inOrderedList = false
         var inCheckList = false
+        var inTable = false
 
         for ((index, line) in lines.withIndex()) {
+            val trimmedLine = line.trim()
+
             // Handle code blocks
-            if (line.trim() == "'''") {
+            if (trimmedLine == "'''") {
                 if (inCodeBlock) {
-                    html.append("</pre>")
+                    html.append("</code></pre>")
                     inCodeBlock = false
                 } else {
-                    html.append("<pre>")
+                    // Close any open lists before code block
+                    if (inCheckList) { html.append("</ul>"); inCheckList = false }
+                    if (inUnorderedList) { html.append("</ul>"); inUnorderedList = false }
+                    if (inOrderedList) { html.append("</ol>"); inOrderedList = false }
+                    html.append("<pre><code>")
                     inCodeBlock = true
                 }
                 continue
@@ -89,11 +98,73 @@ class WikitextParser : TextParser {
                 continue
             }
 
+            // Handle table start
+            if (trimmedLine.startsWith("{|")) {
+                // Close any open lists before table
+                if (inCheckList) { html.append("</ul>"); inCheckList = false }
+                if (inUnorderedList) { html.append("</ul>"); inUnorderedList = false }
+                if (inOrderedList) { html.append("</ol>"); inOrderedList = false }
+                // Extract table attributes
+                val attrs = trimmedLine.substring(2).trim()
+                if (attrs.isNotEmpty()) {
+                    html.append("<table $attrs>")
+                } else {
+                    html.append("<table>")
+                }
+                inTable = true
+                continue
+            }
+
+            // Handle table end
+            if (trimmedLine == "|}" && inTable) {
+                html.append("</table>")
+                inTable = false
+                continue
+            }
+
+            // Handle table rows and cells
+            if (inTable) {
+                when {
+                    trimmedLine.startsWith("|+") -> {
+                        // Table caption
+                        val caption = trimmedLine.substring(2).trim()
+                        html.append("<caption>${convertInlineMarkup(caption)}</caption>")
+                    }
+                    trimmedLine.startsWith("!") -> {
+                        // Header cell
+                        val headerContent = trimmedLine.substring(1).trim()
+                        // Handle attribute|content syntax
+                        val parts = headerContent.split("|")
+                        if (parts.size > 1 && parts[0].contains("=")) {
+                            html.append("<th ${parts[0].trim()}>${convertInlineMarkup(parts.drop(1).joinToString("|").trim())}</th>")
+                        } else {
+                            html.append("<th>${convertInlineMarkup(headerContent)}</th>")
+                        }
+                    }
+                    trimmedLine == "|-" -> {
+                        // Row separator
+                        html.append("<tr>")
+                    }
+                    trimmedLine.startsWith("|") -> {
+                        // Data cell
+                        val cellContent = trimmedLine.substring(1).trim()
+                        // Handle attribute|content syntax
+                        val parts = cellContent.split("|")
+                        if (parts.size > 1 && parts[0].contains("=")) {
+                            html.append("<td ${parts[0].trim()}>${convertInlineMarkup(parts.drop(1).joinToString("|").trim())}</td>")
+                        } else {
+                            html.append("<td>${convertInlineMarkup(cellContent)}</td>")
+                        }
+                    }
+                }
+                continue
+            }
+
             // Detect line types
-            val isUnorderedList = line.trimStart().startsWith("* ")
-            val isOrderedList = Regex("^\\s*[0-9a-zA-Z]\\. ").matches(line)
-            val isCheckList = Regex("^\\s*\\[[ x*><]\\] ").matches(line)
-            val isEmpty = line.trim().isEmpty()
+            val isUnorderedList = trimmedLine.startsWith("* ")
+            val isOrderedList = Regex("^\\s*[0-9a-zA-Z]\\. ").containsMatchIn(line)
+            val isCheckList = Regex("^\\s*\\[[ x*><]\\] ").containsMatchIn(line)
+            val isEmpty = trimmedLine.isEmpty()
 
             // Handle checklist
             if (isCheckList) {
@@ -139,6 +210,7 @@ class WikitextParser : TextParser {
         if (inCheckList) html.append("</ul>")
         if (inUnorderedList) html.append("</ul>")
         if (inOrderedList) html.append("</ol>")
+        if (inTable) html.append("</table>")
 
         html.append("</div>")
         return html.toString()
@@ -150,10 +222,11 @@ class WikitextParser : TextParser {
     private fun convertLine(line: String): String {
         var result = line
 
-        // Headings: == Heading == (more = means smaller heading)
-        val headingMatch = Regex("^(={2,6})\\s+(.+?)\\s+\\1$").find(result)
+        // Headings: = Heading = (number of = signs determines heading level)
+        // = h1, == h2, === h3, ==== h4, ===== h5, ====== h6
+        val headingMatch = Regex("^(={1,6})\\s+(.+?)\\s+\\1$").find(result)
         if (headingMatch != null) {
-            val level = 7 - headingMatch.groupValues[1].length
+            val level = headingMatch.groupValues[1].length
             val text = headingMatch.groupValues[2]
             return "<h$level>${convertInlineMarkup(text)}</h$level>"
         }
@@ -196,6 +269,14 @@ class WikitextParser : TextParser {
     }
 
     /**
+     * Check if a string looks like a file reference (has a file extension)
+     */
+    private fun isFileReference(text: String): Boolean {
+        val name = text.split("|").first().trim()
+        return name.contains(".") && Regex("""\.\w{1,5}$""").containsMatchIn(name)
+    }
+
+    /**
      * Convert inline WikiText markup to HTML
      */
     private fun convertInlineMarkup(text: String): String {
@@ -207,16 +288,42 @@ class WikitextParser : TextParser {
             "##CODE_START##$code##CODE_END##"
         }
 
-        // Process links and images BEFORE escaping
+        // Process links BEFORE escaping
+        // Handle [[File:...]] and [[Media:...]] as images
+        // Protect slashes in URLs from being interpreted as italic markers
+        result = result.replace(Regex("""\[\[(?:File|Media):([^|\]]+)(?:\|([^\]]+))?\]\]""")) { match ->
+            val src = match.groupValues[1].trim().replace("//", "##DSLASH##")
+            val alt = match.groupValues[2].ifEmpty { match.groupValues[1].trim() }
+                .replace("//", "##DSLASH##")
+            "##IMG_START##$src##IMG_ALT##$alt##IMG_END##"
+        }
+
+        // Handle regular links [[target]] or [[target|description]]
+        // Protect slashes in URLs from being interpreted as italic markers
         result = result.replace(Regex("""\[\[([^|\]]+)(?:\|([^\]]+))?\]\]""")) { match ->
-            val link = match.groupValues[1]
-            val description = match.groupValues[2].ifEmpty { link }
+            val link = match.groupValues[1].replace("//", "##DSLASH##")
+            val description = match.groupValues[2].ifEmpty { match.groupValues[1] }
+                .replace("//", "##DSLASH##")
             "##LINK_START##$link##LINK_SEP##$description##LINK_END##"
         }
 
+        // Process images {{file.ext}} or {{file.ext|alt text}}
+        // and templates {{TemplateName}} or {{TemplateName|param=value}}
+        // Protect slashes in URLs from being interpreted as italic markers
         result = result.replace(Regex("""\{\{([^}]+)\}\}""")) { match ->
-            val img = match.groupValues[1]
-            "##IMG_START##$img##IMG_END##"
+            val content = match.groupValues[1]
+            if (isFileReference(content)) {
+                // Image reference
+                val parts = content.split("|", limit = 2)
+                val src = parts[0].trim().replace("//", "##DSLASH##")
+                val alt = if (parts.size > 1) parts[1].trim() else parts[0].trim()
+                "##IMG_START##$src##IMG_ALT##${alt.replace("//", "##DSLASH##")}##IMG_END##"
+            } else {
+                // Template - render as template placeholder
+                val parts = content.split("|", limit = 2)
+                val name = parts[0].trim().replace("//", "##DSLASH##")
+                "##TPL_START##$name##TPL_END##"
+            }
         }
 
         // Now escape HTML in the remaining text
@@ -243,14 +350,24 @@ class WikitextParser : TextParser {
         // Restore inline code
         result = result.replace(Regex("""##CODE_START##(.+?)##CODE_END##""")) { "<code>${it.groupValues[1]}</code>" }
 
-        // Restore links
+        // Restore links (unescape protected slashes)
         result = result.replace(Regex("""##LINK_START##(.+?)##LINK_SEP##(.+?)##LINK_END##""")) { match ->
-            "<a href='${match.groupValues[1]}'>${match.groupValues[2]}</a>"
+            val href = match.groupValues[1].replace("##DSLASH##", "//")
+            val text = match.groupValues[2].replace("##DSLASH##", "//")
+            "<a href='$href'>$text</a>"
         }
 
-        // Restore images
-        result = result.replace(Regex("""##IMG_START##(.+?)##IMG_END##""")) { match ->
-            "<img src='${match.groupValues[1]}' alt='${match.groupValues[1]}'/>"
+        // Restore images (unescape protected slashes)
+        result = result.replace(Regex("""##IMG_START##(.+?)##IMG_ALT##(.+?)##IMG_END##""")) { match ->
+            val src = match.groupValues[1].replace("##DSLASH##", "//")
+            val alt = match.groupValues[2].replace("##DSLASH##", "//")
+            "<img src='$src' alt='$alt'/>"
+        }
+
+        // Restore templates (unescape protected slashes)
+        result = result.replace(Regex("""##TPL_START##(.+?)##TPL_END##""")) { match ->
+            val name = match.groupValues[1].replace("##DSLASH##", "//")
+            "<span class='template'>$name</span>"
         }
 
         return result
@@ -274,7 +391,7 @@ class WikitextParser : TextParser {
         val lines = content.lines()
         lines.forEachIndexed { index, line ->
             // Check for malformed headings (unbalanced = signs)
-            val headingMatch = Regex("^(={2,6})\\s+(.+?)\\s+(={2,6})$").find(line)
+            val headingMatch = Regex("^(={1,6})\\s+(.+?)\\s+(={1,6})$").find(line)
             if (headingMatch != null) {
                 val leftEquals = headingMatch.groupValues[1].length
                 val rightEquals = headingMatch.groupValues[3].length

@@ -38,6 +38,15 @@ object FormatRegistry {
      * plain text since plain text would match almost any content.
      */
     val formats: List<TextFormat> = listOf(
+        // Data science formats (before Markdown since R Markdown is more specific)
+        TextFormat(
+            id = ID_RMARKDOWN,
+            name = "R Markdown",
+            defaultExtension = ".rmd",
+            extensions = listOf(".rmd", ".rmarkdown"),
+            detectionPatterns = listOf("```\\{r")
+        ),
+
         // Core formats
         TextFormat(
             id = ID_MARKDOWN,
@@ -151,19 +160,44 @@ object FormatRegistry {
             extensions = listOf(".ipynb"),
             detectionPatterns = listOf("\"nbformat\":", "\"cell_type\":")
         ),
-        TextFormat(
-            id = ID_RMARKDOWN,
-            name = "R Markdown",
-            defaultExtension = ".rmd",
-            extensions = listOf(".rmd", ".rmarkdown"),
-            detectionPatterns = listOf("```\\{r", "^---$")
-        ),
 
         // Binary format
         TextFormat(
             id = ID_BINARY,
             name = "Binary",
             defaultExtension = ".bin",
+            extensions = emptyList()
+        ),
+
+        // Network storage formats
+        TextFormat(
+            id = ID_DROPBOX,
+            name = "Dropbox",
+            defaultExtension = "",
+            extensions = emptyList()
+        ),
+        TextFormat(
+            id = ID_FTP,
+            name = "FTP",
+            defaultExtension = "",
+            extensions = emptyList()
+        ),
+        TextFormat(
+            id = ID_GOOGLEDRIVE,
+            name = "Google Drive",
+            defaultExtension = "",
+            extensions = emptyList()
+        ),
+        TextFormat(
+            id = ID_ONEDRIVE,
+            name = "OneDrive",
+            defaultExtension = "",
+            extensions = emptyList()
+        ),
+        TextFormat(
+            id = ID_SFTP,
+            name = "SFTP",
+            defaultExtension = "",
             extensions = emptyList()
         )
     )

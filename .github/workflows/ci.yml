@@ -1,0 +1,111 @@
+# SPDX-FileCopyrightText: 2025 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# Core CI workflow for Yole - Kotlin Multiplatform text editor
+# Runs unit tests, builds, lint, and coverage on every push/PR to master
+
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Run shared module unit tests (Android)
+        run: ./gradlew :shared:testDebugUnitTest
+
+      - name: Run shared module desktop tests
+        run: ./gradlew :shared:desktopTest
+
+      - name: Build Android debug APK
+        run: ./gradlew :androidApp:assembleDebug
+
+      - name: Build Desktop JAR
+        run: ./gradlew :desktopApp:jar
+
+      - name: Run Android lint
+        run: ./gradlew lintFlavorDefaultDebug
+
+      - name: Generate Kover coverage report
+        run: ./gradlew koverXmlReport
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: shared/build/reports/kover/report.xml,build/reports/kover/report.xml
+          flags: shared,combined
+          fail_ci_if_error: false
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            shared/build/reports/tests/
+            shared/build/test-results/
+            androidApp/build/reports/
+          retention-days: 14
+
+      - name: Upload lint results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-results
+          path: |
+            androidApp/build/reports/lint-results-*.html
+            androidApp/build/reports/lint-results-*.xml
+          retention-days: 14
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            shared/build/reports/kover/
+            build/reports/kover/
+          retention-days: 14

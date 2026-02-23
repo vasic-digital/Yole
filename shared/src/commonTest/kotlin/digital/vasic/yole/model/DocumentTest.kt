@@ -8,6 +8,7 @@
  *########################################################*/
 package digital.vasic.yole.model
 
+import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -228,7 +229,7 @@ class DocumentTest {
         assertTrue(time1 > 1577836800000L) // 2020-01-01 00:00:00 UTC
 
         // Time should be close to current time (within 1 second)
-        val currentTime = System.currentTimeMillis()
+        val currentTime = Clock.System.now().toEpochMilliseconds()
         assertTrue(time1 <= currentTime + 1000)
         assertTrue(time1 >= currentTime - 1000)
     }

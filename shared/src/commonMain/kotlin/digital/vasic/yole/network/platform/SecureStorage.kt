@@ -61,10 +61,11 @@ interface SecureStorage {
      * @return Result indicating success or failure
      */
     suspend fun storeCredentials(service: String, username: String, password: String): Result<Unit> {
-        val credentialData = "$username:$password"
+        // Use length-prefixed format to correctly handle colons in username/password
+        val credentialData = "${username.length}:$username$password"
         return store("${service}_credentials", credentialData)
     }
-    
+
     /**
      * Retrieve stored credentials.
      * @param service The service name
@@ -73,9 +74,16 @@ interface SecureStorage {
     suspend fun retrieveCredentials(service: String): Result<Pair<String, String>?> {
         return retrieve("${service}_credentials").map { credentialData ->
             credentialData?.let {
-                val parts = it.split(":", limit = 2)
-                if (parts.size == 2) {
-                    Pair(parts[0], parts[1])
+                val colonIndex = it.indexOf(':')
+                if (colonIndex >= 0) {
+                    try {
+                        val usernameLength = it.substring(0, colonIndex).toInt()
+                        val username = it.substring(colonIndex + 1, colonIndex + 1 + usernameLength)
+                        val password = it.substring(colonIndex + 1 + usernameLength)
+                        Pair(username, password)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } else {
                     null
                 }

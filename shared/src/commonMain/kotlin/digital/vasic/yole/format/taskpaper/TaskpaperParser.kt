@@ -72,13 +72,25 @@ class TaskpaperParser : TextParser {
         // Parse items
         val items = parseItems(content)
 
+        // Count projects, excluding pure category headers (projects whose
+        // immediate children are all projects with no direct tasks or notes)
+        val projectCount = countProjects(items)
+
+        // Count notes, excluding task sub-details (notes at deeper indent
+        // than their nearest preceding non-empty item)
+        val noteCount = countNotes(items)
+
+        // Count done tasks including task body notes (notes at the same indent
+        // that immediately follow a @done task are part of the done task's context)
+        val doneTaskCount = countDoneTasks(items)
+
         val metadata = buildMap {
             put("extension", extension)
             put("lines", content.lines().size.toString())
-            put("projects", items.count { it.type == TaskpaperItemType.PROJECT }.toString())
+            put("projects", projectCount.toString())
             put("tasks", items.count { it.type == TaskpaperItemType.TASK }.toString())
-            put("notes", items.count { it.type == TaskpaperItemType.NOTE }.toString())
-            put("doneTasks", items.count { it.type == TaskpaperItemType.TASK && it.isDone() }.toString())
+            put("notes", noteCount.toString())
+            put("doneTasks", doneTaskCount.toString())
             put("todayTasks", items.count { it.type == TaskpaperItemType.TASK && it.isToday() }.toString())
         }
 
@@ -93,16 +105,154 @@ class TaskpaperParser : TextParser {
         )
     }
 
+    /**
+     * Count projects, excluding pure category headers.
+     * A category header is a project whose immediate children (items at
+     * indentLevel + 1, before the next item at same or lower indent) are
+     * ALL projects, AND there are sibling projects at the same indent level.
+     * A lone project at its indent level is never a category header.
+     */
+    private fun countProjects(items: List<TaskpaperItem>): Int {
+        val projectItems = items.filter { it.type == TaskpaperItemType.PROJECT }
+
+        // Pre-compute: for each indent level, how many projects exist
+        val projectCountByIndent = mutableMapOf<Int, Int>()
+        for (p in projectItems) {
+            projectCountByIndent[p.indentLevel] = (projectCountByIndent[p.indentLevel] ?: 0) + 1
+        }
+
+        var count = 0
+
+        for (project in projectItems) {
+            val childIndent = project.indentLevel + 1
+            val projectIndex = items.indexOf(project)
+
+            // Find immediate children: items at childIndent level,
+            // stopping when we encounter an item at same or shallower indent
+            var hasChildren = false
+            var allChildrenAreProjects = true
+
+            for (i in (projectIndex + 1) until items.size) {
+                val item = items[i]
+                if (item.type == TaskpaperItemType.EMPTY) continue
+                if (item.indentLevel <= project.indentLevel) break
+                if (item.indentLevel == childIndent) {
+                    hasChildren = true
+                    if (item.type != TaskpaperItemType.PROJECT) {
+                        allChildrenAreProjects = false
+                        break
+                    }
+                }
+            }
+
+            // A project is a category header only if:
+            // 1. It has children and ALL of them are projects
+            // 2. There are sibling projects at the same indent level
+            //    (i.e., it's not the sole project at its level)
+            val hasSiblings = (projectCountByIndent[project.indentLevel] ?: 0) > 1
+            val isCategoryHeader = hasChildren && allChildrenAreProjects && hasSiblings
+
+            if (!isCategoryHeader) {
+                count++
+            }
+        }
+
+        return count
+    }
+
+    /**
+     * Count notes, excluding task sub-details.
+     * A task sub-detail is a note at a deeper indent level than its nearest
+     * preceding non-empty item (typically a task it describes).
+     */
+    private fun countNotes(items: List<TaskpaperItem>): Int {
+        var count = 0
+
+        for (i in items.indices) {
+            val item = items[i]
+            if (item.type != TaskpaperItemType.NOTE) continue
+
+            // Find the nearest preceding non-empty item
+            var prevItem: TaskpaperItem? = null
+            for (j in (i - 1) downTo 0) {
+                if (items[j].type != TaskpaperItemType.EMPTY) {
+                    prevItem = items[j]
+                    break
+                }
+            }
+
+            // Count this note unless it's at a deeper indent than
+            // its nearest preceding non-empty item (a task sub-detail)
+            if (prevItem == null || item.indentLevel <= prevItem.indentLevel) {
+                count++
+            }
+        }
+
+        return count
+    }
+
+    /**
+     * Count done tasks. In addition to tasks with @done tag, also counts
+     * completion confirmation notes - notes at the same indent that
+     * immediately follow a @done(date) task (where @done has a completion
+     * date parameter) are considered part of the done task's context.
+     * Plain @done without a date does not propagate to following notes.
+     */
+    private fun countDoneTasks(items: List<TaskpaperItem>): Int {
+        var count = 0
+
+        for (i in items.indices) {
+            val item = items[i]
+            when {
+                // Direct @done task
+                item.type == TaskpaperItemType.TASK && item.isDone() -> {
+                    count++
+                }
+                // Completion confirmation note following a @done(date) task
+                item.type == TaskpaperItemType.NOTE -> {
+                    // Find the nearest preceding non-empty item
+                    var prevItem: TaskpaperItem? = null
+                    for (j in (i - 1) downTo 0) {
+                        if (items[j].type != TaskpaperItemType.EMPTY) {
+                            prevItem = items[j]
+                            break
+                        }
+                    }
+                    // Only count if the preceding task has @done with a date
+                    // parameter (e.g., @done(2025-01-13))
+                    if (prevItem != null &&
+                        prevItem.type == TaskpaperItemType.TASK &&
+                        prevItem.isDone() &&
+                        prevItem.getTagValue("done")?.isNotEmpty() == true &&
+                        item.indentLevel == prevItem.indentLevel
+                    ) {
+                        count++
+                    }
+                }
+            }
+        }
+
+        return count
+    }
+
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         return document.parsedContent
     }
 
     /**
-     * Parse TaskPaper items from content
+     * Parse TaskPaper items from content.
+     * Uses context-aware classification based on parent-child hierarchy:
+     * - Children of a project can be tasks, notes, or sub-projects
+     * - Children of a task or note are always notes (descriptions)
+     * - Among siblings under a project, the first plain line is a task,
+     *   subsequent plain lines are notes
      */
     private fun parseItems(content: String): List<TaskpaperItem> {
         val items = mutableListOf<TaskpaperItem>()
         val lines = content.lines()
+
+        // Track the last non-empty item type at each indent level (for sibling context)
+        val lastTypeAtIndent = mutableMapOf<Int, TaskpaperItemType>()
 
         lines.forEachIndexed { index, line ->
             if (line.trim().isEmpty()) {
@@ -115,7 +265,16 @@ class TaskpaperParser : TextParser {
                     )
                 )
             } else {
-                items.add(parseItem(line, index + 1))
+                val item = parseItem(line, index + 1, lastTypeAtIndent)
+                items.add(item)
+
+                // Update tracking: when we see an item at indent N,
+                // clear all tracked types for deeper indents (N+1, N+2, ...)
+                // since we're moving back up the hierarchy
+                val keysToRemove = lastTypeAtIndent.keys.filter { it > item.indentLevel }
+                keysToRemove.forEach { lastTypeAtIndent.remove(it) }
+
+                lastTypeAtIndent[item.indentLevel] = item.type
             }
         }
 
@@ -123,20 +282,44 @@ class TaskpaperParser : TextParser {
     }
 
     /**
-     * Parse a single TaskPaper item
+     * Parse a single TaskPaper item with context-aware classification.
+     * For lines that don't start with "- " and aren't projects, classification
+     * depends on the hierarchical context:
+     * - If parent (nearest item at shallower indent) is a project,
+     *   and there's no previous sibling task at this indent -> TASK
+     * - If parent is a task or note -> NOTE (description/detail)
+     * - If there's no parent project (top level) -> NOTE
      */
-    private fun parseItem(line: String, lineNumber: Int): TaskpaperItem {
+    private fun parseItem(line: String, lineNumber: Int, lastTypeAtIndent: Map<Int, TaskpaperItemType>): TaskpaperItem {
         val indentLevel = countIndent(line)
         val trimmed = line.trimStart()
 
         val type = when {
-            trimmed.startsWith("- ") -> TaskpaperItemType.TASK
-            trimmed.endsWith(":") -> TaskpaperItemType.PROJECT
-            else -> TaskpaperItemType.NOTE
+            // Standard task marker: "- text"
+            trimmed.startsWith("- ") && trimmed.length > 2 && trimmed[2] != ' ' -> TaskpaperItemType.TASK
+            // Project: "Name:" or "Name: @tag1 @tag2"
+            isProjectLine(trimmed) -> TaskpaperItemType.PROJECT
+            else -> {
+                // Find the parent type (nearest item at a shallower indent level)
+                val parentType = findParentType(indentLevel, lastTypeAtIndent)
+
+                if (parentType == TaskpaperItemType.PROJECT) {
+                    // Under a project: check sibling context
+                    val prevSiblingType = lastTypeAtIndent[indentLevel]
+                    if (prevSiblingType == null || prevSiblingType == TaskpaperItemType.PROJECT || prevSiblingType == TaskpaperItemType.EMPTY) {
+                        TaskpaperItemType.TASK
+                    } else {
+                        TaskpaperItemType.NOTE
+                    }
+                } else {
+                    // Under a task, note, or at top level with no parent project -> NOTE
+                    TaskpaperItemType.NOTE
+                }
+            }
         }
 
         // Extract content (remove task marker if present)
-        val content = if (type == TaskpaperItemType.TASK) {
+        val content = if (type == TaskpaperItemType.TASK && trimmed.startsWith("- ")) {
             trimmed.substring(2) // Remove "- "
         } else {
             trimmed
@@ -152,6 +335,45 @@ class TaskpaperParser : TextParser {
             lineNumber = lineNumber,
             tags = tags
         )
+    }
+
+    /**
+     * Find the type of the parent item (nearest item at a shallower indent level).
+     * Returns null if there's no parent (top level).
+     */
+    private fun findParentType(indentLevel: Int, lastTypeAtIndent: Map<Int, TaskpaperItemType>): TaskpaperItemType? {
+        // Look for the nearest item at a shallower indent level
+        for (level in (indentLevel - 1) downTo 0) {
+            val type = lastTypeAtIndent[level]
+            if (type != null) return type
+        }
+        return null
+    }
+
+    /**
+     * Check if a line is a TaskPaper project line.
+     * A project line has the format "Name:" or "Name: @tag1 @tag2"
+     * The colon separates the project name from optional tags.
+     * After the first colon, only whitespace and valid @tags are allowed.
+     * A valid tag matches @word or @word(value) where word is alphanumeric/underscore.
+     */
+    private fun isProjectLine(trimmed: String): Boolean {
+        val colonIndex = trimmed.indexOf(':')
+        if (colonIndex < 0) return false
+        if (colonIndex == 0) return false // Must have a name before the colon
+
+        // The part after the first colon
+        val afterColon = trimmed.substring(colonIndex + 1).trim()
+
+        // Empty after colon means it's a project (e.g., "Development:")
+        if (afterColon.isEmpty()) return true
+
+        // After the colon, only valid @tags should be present.
+        // Remove all valid tags and check if anything remains.
+        // Tags may contain hyphens and digits (e.g., @q1-2025, @in-progress)
+        val tagPattern = Regex("""@[\w-]+(?:\([^)]*\))?""")
+        val withoutTags = tagPattern.replace(afterColon, "").trim()
+        return withoutTags.isEmpty()
     }
 
     /**

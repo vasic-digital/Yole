@@ -9,7 +9,8 @@
 package digital.vasic.yole.network.platform
 
 import kotlinx.coroutines.test.runTest
-import org.junit.Test
+import kotlinx.datetime.Clock
+import kotlin.test.Test
 
 import kotlin.test.*
 
@@ -97,7 +98,7 @@ class SecureStorageFactoryIntegrationTest {
                 val storage = result.getOrNull()!!
                 
                 // Each instance should be functional
-                val testKey = "multi_instance_test_${System.currentTimeMillis()}"
+                val testKey = "multi_instance_test_${Clock.System.now().toEpochMilliseconds()}"
                 val testValue = "multi_instance_value"
                 
                 storage.store(testKey, testValue)
@@ -184,9 +185,10 @@ class SecureStorageFactoryIntegrationTest {
     fun `should maintain API consistency across platforms`() = runTest {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
-        
+
         val storage = result.getOrNull()!!
-        
+        storage.clear()
+
         // Test that all interface methods are available and functional
         val testData = mapOf(
             "basic" to "basic_value",
@@ -375,23 +377,23 @@ class SecureStorageFactoryIntegrationTest {
         
         // Test performance with multiple operations
         val operations = 50
-        val startTime = System.currentTimeMillis()
+        val startTime = Clock.System.now().toEpochMilliseconds()
         
         // Store multiple items
         (1..operations).forEach { index ->
             storage.store("perf_key_$index", "perf_value_$index")
         }
         
-        val storeTime = System.currentTimeMillis() - startTime
+        val storeTime = Clock.System.now().toEpochMilliseconds() - startTime
         
         // Retrieve multiple items
-        val retrieveStart = System.currentTimeMillis()
+        val retrieveStart = Clock.System.now().toEpochMilliseconds()
         (1..operations).forEach { index ->
             val retrieved = storage.retrieve("perf_key_$index").getOrNull()
             assertEquals("perf_value_$index", retrieved, "Performance test should preserve data")
         }
         
-        val retrieveTime = System.currentTimeMillis() - retrieveStart
+        val retrieveTime = Clock.System.now().toEpochMilliseconds() - retrieveStart
         
         // Performance assertions (generous to account for platform differences)
         assertTrue(storeTime < 10000, "Should store 50 items in less than 10 seconds")

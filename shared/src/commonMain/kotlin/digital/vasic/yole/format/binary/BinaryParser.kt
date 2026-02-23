@@ -24,6 +24,8 @@ class BinaryParser : TextParser {
         val fileSize = options["fileSize"] as? Long ?: 0L
         val mimeType = options["mimeType"] as? String ?: detectMimeType(filename)
         
+        val extension = filename.substringAfterLast('.', "").lowercase()
+
         return ParsedDocument(
             format = supportedFormat,
             rawContent = content,
@@ -35,7 +37,7 @@ class BinaryParser : TextParser {
                 put("file_size_bytes", fileSize.toString())
                 put("is_binary", "true")
                 put("file_type", getFileType(mimeType))
-                put("extension", filename.substringAfterLast('.', "").lowercase())
+                put("extension", extension)
             }
         )
     }

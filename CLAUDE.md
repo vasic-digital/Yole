@@ -38,95 +38,173 @@ Any fix applied must be:
 
 ## Project Overview
 
-**Yole** is a cross-platform text editor supporting 17+ text formats (Markdown, todo.txt, CSV, LaTeX, Org Mode, etc.) built with Kotlin Multiplatform (KMP). The app is offline-first with optional cloud storage integration.
+**Yole** is a cross-platform text editor supporting 17 text formats plus cloud/network storage protocols, built with Kotlin Multiplatform (KMP). The app is offline-first with optional cloud storage integration.
 
 **Package namespace:** `digital.vasic.yole.*` (legacy: `net.gsantner.opoc.*`)
+
+| Platform | Status |
+|----------|--------|
+| Android | Production |
+| Desktop (Windows/macOS/Linux) | Beta |
+| iOS | In development |
+| Web (Wasm PWA) | In development |
 
 ## Build Commands
 
 ```bash
-# Android (production)
-./gradlew :androidApp:assembleDebug        # or: make build
+# Android
+./gradlew :androidApp:assembleDebug
 
-# Desktop (beta)
-./gradlew :desktopApp:run                  # or: make desktop
+# Desktop
+./gradlew :desktopApp:run
 
 # Web (Wasm)
-./gradlew :webApp:wasmJsBrowserRun         # or: make web
+./gradlew :webApp:wasmJsBrowserRun
 
-# iOS
-# Open iosApp/iosApp.xcodeproj in Xcode
+# iOS — open iosApp/iosApp.xcodeproj in Xcode
 
-# Testing
-./gradlew test                             # All tests
-./gradlew test --tests "digital.vasic.yole.format.todotxt.TodoTxtQuerySyntaxTests.ParseQuery"  # Single test
-./gradlew test koverHtmlReport             # Tests with coverage
+# All tests
+./gradlew test
 
-# Other
-./gradlew lintFlavorDefaultDebug           # Lint
-./gradlew :shared:dokkaHtml                # API docs
-./gradlew clean                            # Clean
-make all install run                       # Build, install, run on Android device
+# Single test class
+./gradlew test --tests "digital.vasic.yole.format.todotxt.TodoTxtQuerySyntaxTests"
+
+# Single test method
+./gradlew test --tests "digital.vasic.yole.format.todotxt.TodoTxtQuerySyntaxTests.ParseQuery"
+
+# Tests with coverage report
+./gradlew test koverHtmlReport
+
+# Lint (Android)
+./gradlew lintFlavorDefaultDebug
+
+# API docs
+./gradlew :shared:dokkaHtml
+
+# Makefile (legacy Android-oriented, requires ANDROID_SDK_ROOT)
+make all install run
 ```
 
 ## Architecture
 
-This is a **Kotlin Multiplatform (KMP)** project. All shared business logic lives in the `shared` module.
+### Module Structure
+
+All shared business logic lives in the `shared` module. Platform app modules (`androidApp/`, `desktopApp/`, `iosApp/`, `webApp/`) are thin wrappers that depend on `shared`.
+
+Legacy Android-only modules (`commons/`, `core/`) are minimal and being phased out.
+
+### Shared Module Source Sets
 
 ```
-shared/src/commonMain/kotlin/digital/vasic/yole/
-├── format/                    # Format system (17 text formats + cloud storage protocols)
-│   ├── FormatRegistry.kt      # Central format registry
-│   ├── TextFormat.kt          # Format metadata
-│   ├── TextParser.kt          # Parser interface
-│   ├── markdown/              # Markdown, todotxt, csv, latex, orgmode, etc.
-│   ├── dropbox/               # Cloud: Dropbox, Google Drive, OneDrive
-│   └── ftp/                   # Network: FTP, SFTP, WebDAV
-└── model/                     # Document model
+shared/src/
+├── commonMain/          # All shared code (the primary codebase)
+├── commonTest/          # All shared tests
+├── commonBenchmark/     # Benchmarks
+├── androidMain/         # Android-specific expect/actual
+├── androidTest/
+├── desktopMain/         # Desktop (JVM) expect/actual
+├── desktopTest/
+├── desktopBenchmark/
+├── iosMain/             # iOS expect/actual
+├── iosTest/
+├── wasmJsMain/          # Web/Wasm expect/actual
+└── wasmJsTest/
 ```
 
-**Platform apps** (`androidApp/`, `desktopApp/`, `iosApp/`, `webApp/`) depend on `shared` for business logic.
+### Package Layout (`shared/src/commonMain/kotlin/digital/vasic/yole/`)
 
-**Legacy modules** (`app/`, `core/`, `commons/`) are Android-specific and being phased out:
-- `commons/` - Android utilities (`GsFileUtils`, `GsContextUtils`)
-- `core/` - Third-party encryption code (`JavaPasswordbasedCryption.java`)
+```
+format/                  # Format system — the core of the app
+├── FormatRegistry.kt    # Central registry: all formats with detection priority
+├── TextFormat.kt        # Format metadata (id, name, extensions, detectionPatterns)
+├── TextParser.kt        # ParsedDocument class with lazy HTML caching
+├── ParserInitializer.kt # Format initialization
+├── StyleSheets.kt       # CSS generation for HTML rendering
+├── markdown/            # 17 text format parsers (one dir each)
+├── todotxt/
+├── csv/ latex/ orgmode/ plaintext/ wikitext/ asciidoc/
+├── restructuredtext/ rmarkdown/ taskpaper/ textile/
+├── creole/ tiddlywiki/ jupyter/ keyvalue/ binary/
+├── dropbox/             # Cloud storage protocols
+├── googledrive/
+├── onedrive/
+├── ftp/                 # Network protocols
+└── sftp/
+model/                   # Document model (Document.kt)
+network/                 # Network storage system
+├── NetworkStorageService.kt
+├── auth/                # Authentication
+├── common/              # Shared network utilities
+├── config/              # Network configuration
+├── database/            # Metadata storage
+├── platform/            # Platform-specific networking
+├── protocol/            # Protocol abstractions
+└── protocols/           # Protocol implementations
+ui/                      # Shared UI (Compose Multiplatform)
+├── Theme.kt
+├── Accessibility.kt
+└── Animations.kt
+util/                    # Utilities
+├── LazyLoading.kt
+└── RateLimiting.kt
+```
 
 ### Text Parsing Pipeline
 
-1. **Detection** → `TextFormat.detectFormat(content, extension)`
-2. **Parsing** → `TextParser.parse(content)`
-3. **Rendering** → Platform-specific HTML converters
-4. **Highlighting** → Platform-specific syntax highlighters
+1. **Detection** — `FormatRegistry.detectByExtension()` or `detectByContent()` using regex patterns defined in each `TextFormat`
+2. **Parsing** — Format-specific parser produces a `ParsedDocument` (raw content + parsed content + metadata + errors)
+3. **HTML generation** — `ParsedDocument.toHtml()` with lazy caching (first call generates, subsequent calls return cached)
+4. **Styling** — `StyleSheets.kt` generates CSS for light/dark themes
 
-## Platform Status
+Format IDs are string constants on `TextFormat.Companion` (e.g., `TextFormat.ID_MARKDOWN`, `TextFormat.ID_TODOTXT`).
 
-| Platform | Status | Notes |
-|----------|--------|-------|
-| Android | ✅ Production | Fully functional |
-| Desktop | ⚠️ Beta | ~30% complete |
-| iOS | 🚧 Development | Targets enabled in `shared/build.gradle.kts` |
-| Web | 🚧 Stub | Build config only, no source |
+### Test Organization
+
+Tests live in `shared/src/commonTest/kotlin/digital/vasic/yole/format/`:
+
+```
+├── [format]/            # Per-format test directories (mirrors source)
+├── integration/         # Cross-format integration tests
+├── stress/              # Performance and stress tests
+├── supremacy/           # Edge case and boundary tests
+└── FormatRegistryStressTest.kt
+```
+
+~2200+ tests across ~88 test files in commonTest.
 
 ## Adding New Formats
 
-1. Create parser in `shared/src/commonMain/kotlin/digital/vasic/yole/format/[name]/`
-2. Implement `TextParser` interface
-3. Register in `FormatRegistry.kt`
-4. Add tests in `shared/src/commonTest/kotlin/`
-5. Add platform-specific code in `androidMain/`, `desktopMain/`, etc. if needed
+1. Create parser directory in `shared/src/commonMain/kotlin/digital/vasic/yole/format/[name]/`
+2. Implement parser that produces `ParsedDocument`
+3. Add `TextFormat` entry to `FormatRegistry.formats` list (order matters — more specific formats before general ones)
+4. Add format ID constant to `TextFormat.Companion`
+5. Add tests in `shared/src/commonTest/kotlin/digital/vasic/yole/format/[name]/`
+6. Add platform-specific code in `androidMain/`, `desktopMain/`, etc. if needed
 
 ## Code Conventions
 
-- **Kotlin** primary, Java for legacy
+- **Kotlin** primary, Java only for legacy code
 - **Test classes** end with `Tests` or `Test`
 - **File headers**: SPDX license header (Apache-2.0, CC0-1.0, or Unlicense)
 - **Build variants**: `flavorDefault` for dev, `flavorAtest` for testing
 - All tests must pass before merging
 
+## Key Dependencies
+
+- Kotlin 2.0.20, Compose Multiplatform 1.7.3
+- Flexmark 0.64.8 (Markdown parsing, with 16+ extensions)
+- Ktor Client 3.0.2 (networking)
+- Kotlinx: Coroutines 1.9.0, Serialization 1.7.3, DateTime 0.6.1
+- Okio 3.9.1 (file system)
+- Testing: Kotest 5.9.1, MockK 1.13.13, AssertJ 3.26.3
+- Coverage: Kover 0.8.3
+- Version catalog: `gradle/libs.versions.toml`
+
 ## Key Files
 
-- `shared/build.gradle.kts` - KMP configuration with platform targets
-- `settings.gradle.kts` - Module includes
-- `gradle/libs.versions.toml` - Dependency versions
-- `Makefile` - Build automation
-- `run_all_tests.sh` - Comprehensive test runner
+- `shared/build.gradle.kts` — KMP configuration with all platform targets
+- `settings.gradle.kts` — Module includes (shared, androidApp, desktopApp, webApp, iosApp, commons, core)
+- `gradle/libs.versions.toml` — Centralized dependency versions
+- `Makefile` — Legacy Android build automation (requires `ANDROID_SDK_ROOT`)
+- `docker/scripts/test-all.sh` — Comprehensive multi-platform test runner
+- `docker/scripts/build.sh` — Container build script

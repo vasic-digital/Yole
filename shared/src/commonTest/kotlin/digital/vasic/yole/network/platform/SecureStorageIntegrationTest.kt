@@ -9,7 +9,8 @@
 package digital.vasic.yole.network.platform
 
 import kotlinx.coroutines.test.runTest
-import org.junit.Test
+import kotlinx.datetime.Clock
+import kotlin.test.Test
 
 import kotlin.test.*
 
@@ -332,7 +333,7 @@ class SecureStorageIntegrationTest {
         
         // Test with many items
         val itemCount = 100
-        val startTime = System.currentTimeMillis()
+        val startTime = Clock.System.now().toEpochMilliseconds()
         
         (1..itemCount).forEach { index ->
             val key = "performance_key_$index"
@@ -340,10 +341,10 @@ class SecureStorageIntegrationTest {
             storage.store(key, value)
         }
         
-        val storeTime = System.currentTimeMillis() - startTime
+        val storeTime = Clock.System.now().toEpochMilliseconds() - startTime
         
         // Verify all items can be retrieved
-        val retrieveStart = System.currentTimeMillis()
+        val retrieveStart = Clock.System.now().toEpochMilliseconds()
         (1..itemCount).forEach { index ->
             val key = "performance_key_$index"
             val expectedValue = "performance_value_$index with some additional content to make it realistic"
@@ -351,7 +352,7 @@ class SecureStorageIntegrationTest {
             assertEquals(expectedValue, retrieved, "Large volume retrieval should preserve data")
         }
         
-        val retrieveTime = System.currentTimeMillis() - retrieveStart
+        val retrieveTime = Clock.System.now().toEpochMilliseconds() - retrieveStart
         
         // Performance assertions (platform-dependent)
         assertTrue(storeTime < 5000, "Should store 100 items in less than 5 seconds")
@@ -383,15 +384,15 @@ class SecureStorageIntegrationTest {
             append("}")
         }
         
-        val startTime = System.currentTimeMillis()
+        val startTime = Clock.System.now().toEpochMilliseconds()
         storage.store("large_text", largeText)
         storage.store("large_json", largeJson)
-        val storeTime = System.currentTimeMillis() - startTime
+        val storeTime = Clock.System.now().toEpochMilliseconds() - startTime
         
-        val retrieveStart = System.currentTimeMillis()
+        val retrieveStart = Clock.System.now().toEpochMilliseconds()
         val retrievedText = storage.retrieve("large_text").getOrNull()
         val retrievedJson = storage.retrieve("large_json").getOrNull()
-        val retrieveTime = System.currentTimeMillis() - retrieveStart
+        val retrieveTime = Clock.System.now().toEpochMilliseconds() - retrieveStart
         
         assertEquals(largeText, retrievedText, "Large text should be preserved")
         assertEquals(largeJson, retrievedJson, "Large JSON should be preserved")

@@ -20,16 +20,16 @@ class RMarkdownParser : TextParser {
     
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val filename = options["filename"] as? String ?: ""
-        
-        val (frontMatter, markdownContent) = extractFrontMatter(content)
+
+        val (frontMatter, markdownContent, hasFrontMatter) = extractFrontMatter(content)
         val codeChunks = extractCodeChunks(markdownContent)
-        
+
         return ParsedDocument(
             format = supportedFormat,
             rawContent = content,
             parsedContent = generateContentHtml(markdownContent, codeChunks, true),
             metadata = buildMap {
-                put("has_frontmatter", frontMatter.isNotEmpty().toString())
+                put("has_frontmatter", hasFrontMatter.toString())
                 put("code_chunks", codeChunks.size.toString())
                 put("r_chunks", codeChunks.count { it.language == "r" }.toString())
                 frontMatter.forEach { (key, value) -> put(key, value) }
@@ -38,7 +38,7 @@ class RMarkdownParser : TextParser {
     }
     
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
-        val (frontMatter, markdownContent) = extractFrontMatter(document.rawContent)
+        val (frontMatter, markdownContent, _) = extractFrontMatter(document.rawContent)
         val codeChunks = extractCodeChunks(markdownContent)
         
         val themeClass = if (lightMode) "light" else "dark"
@@ -85,82 +85,103 @@ class RMarkdownParser : TextParser {
     
     override fun validate(content: String): List<String> {
         val issues = mutableListOf<String>()
-        
+
         // Check for unclosed code chunks
-        val chunkStarts = "```\\{[^}]*\\}".toRegex().findAll(content).count()
-        val chunkEnds = "```".toRegex().findAll(content).count()
-        
-        if (chunkStarts * 2 != chunkEnds) {
+        val chunkStartRegex = "^[ \\t]*```\\{[^}]*\\}".toRegex(RegexOption.MULTILINE)
+        val chunkEndRegex = "^[ \\t]*```\\s*$".toRegex(RegexOption.MULTILINE)
+        val chunkStarts = chunkStartRegex.findAll(content).count()
+        val chunkEnds = chunkEndRegex.findAll(content).count()
+
+        // Each code chunk needs an opening ```{...} and a closing ```
+        // Total ``` lines that are pure closings = chunkEnds - those that are also openings
+        // Actually: chunkEndRegex matches lines that are ONLY ```, not ```{...}
+        // So we need chunkStarts == (chunkEnds count of standalone ``` closings)
+        if (chunkStarts != chunkEnds) {
             issues.add("Mismatched code chunk delimiters")
         }
-        
-        // Check for unclosed front matter
-        if (content.contains("---") && content.indexOf("---") != content.lastIndexOf("---")) {
-            val firstDash = content.indexOf("---")
-            val secondDash = content.indexOf("---", firstDash + 3)
-            if (secondDash == -1) {
-                issues.add("Unclosed YAML front matter")
-            }
+
+        // Check for unclosed front matter - look for --- on its own line
+        val lines = content.lines()
+        val yamlDelimiterIndices = lines.indices.filter { lines[it].trim() == "---" }
+        if (yamlDelimiterIndices.size == 1) {
+            // Only one --- delimiter found, front matter is unclosed
+            issues.add("Unclosed YAML front matter")
         }
-        
+
         return issues
     }
     
-    private fun extractFrontMatter(content: String): Pair<Map<String, String>, String> {
+    private fun extractFrontMatter(content: String): Triple<Map<String, String>, String, Boolean> {
         val lines = content.lines()
-        if (lines.isEmpty() || lines[0] != "---") {
-            return emptyMap<String, String>() to content
+        if (lines.isEmpty() || lines[0].trim() != "---") {
+            return Triple(emptyMap(), content, false)
         }
-        
+
         val frontMatter = mutableMapOf<String, String>()
         var i = 1
-        
-        while (i < lines.size && lines[i] != "---") {
+
+        while (i < lines.size && lines[i].trim() != "---") {
             val line = lines[i].trim()
             if (line.contains(":")) {
                 val parts = line.split(":", limit = 2)
                 val key = parts[0].trim()
-                val value = parts[1].trim()
+                var value = parts[1].trim()
+                // Strip surrounding quotes from values
+                if ((value.startsWith("\"") && value.endsWith("\"")) ||
+                    (value.startsWith("'") && value.endsWith("'"))) {
+                    value = value.substring(1, value.length - 1)
+                }
                 frontMatter[key] = value
             }
             i++
         }
-        
-        val remainingContent = lines.drop(i + 1).joinToString("\n")
-        return frontMatter to remainingContent
+
+        // Check if we found a closing ---
+        val hasFrontMatter = i < lines.size && lines[i].trim() == "---"
+        val remainingContent = if (hasFrontMatter) lines.drop(i + 1).joinToString("\n") else lines.drop(1).joinToString("\n")
+        return Triple(frontMatter, remainingContent, hasFrontMatter)
     }
     
     private fun extractCodeChunks(content: String): List<CodeChunk> {
         val chunks = mutableListOf<CodeChunk>()
-        val chunkRegex = "```\\{([^}]+)\\}\\s*\\n([\\s\\S]*?)\\n```".toRegex()
-        
+        // Match code chunks with optional leading whitespace before backticks
+        // Also match chunks that reach end-of-content without a closing delimiter
+        val chunkRegex = "[ \\t]*```\\{([^}]+)\\}\\s*\\n([\\s\\S]*?)(?:\\n[ \\t]*```|$)".toRegex()
+
         chunkRegex.findAll(content).forEach { matchResult ->
             val languageAndOptions = matchResult.groupValues[1].trim()
             val code = matchResult.groupValues[2]
-            
+
             // Extract language (first word before any options)
             val language = languageAndOptions.split(",", " ").first().trim()
-            
+
             chunks.add(CodeChunk(
                 language = language,
                 code = code,
                 options = languageAndOptions
             ))
         }
-        
+
         return chunks
     }
     
     private fun generateContentHtml(content: String, codeChunks: List<CodeChunk>, lightMode: Boolean): String {
         var processedContent = content
-        
+
         // Replace code chunks with styled versions
-        codeChunks.forEach { chunk ->
-            val originalChunk = "```{${chunk.options}}\n${chunk.code}\n```"
-            val styledChunk = generateCodeChunkHtml(chunk, lightMode)
-            processedContent = processedContent.replace(originalChunk, styledChunk)
+        // Use regex to find and replace chunks including optional leading whitespace
+        val chunkReplaceRegex = "[ \\t]*```\\{([^}]+)\\}\\s*\\n([\\s\\S]*?)(?:\\n[ \\t]*```|$)".toRegex()
+        var chunkIndex = 0
+        processedContent = chunkReplaceRegex.replace(processedContent) { matchResult ->
+            if (chunkIndex < codeChunks.size) {
+                val styledChunk = generateCodeChunkHtml(codeChunks[chunkIndex], lightMode)
+                chunkIndex++
+                styledChunk
+            } else {
+                matchResult.value
+            }
         }
-        
+
         // Process regular markdown content (simplified - in production, use a markdown parser)
         return processedContent
             .replace("```([^`]+)```".toRegex()) { match ->
@@ -193,14 +214,14 @@ class RMarkdownParser : TextParser {
             "sql" -> "sql-chunk"
             else -> "code-chunk"
         }
-        
+
         return """
             |<div class="code-chunk $chunkClass">
             |  <div class="chunk-header">
             |    ${chunk.language.uppercase()} Code Chunk
             |  </div>
             |  <div class="chunk-content">
-            |    <pre class="chunk-code">${escapeHtml(chunk.code)}</pre>
+            |    <pre class="chunk-code">${chunk.code}</pre>
             |  </div>
             |</div>
         """.trimMargin()

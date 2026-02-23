@@ -1,0 +1,34 @@
+build:
+  maxIssues: 0
+  excludeCorrectable: false
+
+complexity:
+  LongMethod:
+    threshold: 60
+  LongParameterList:
+    functionThreshold: 6
+    constructorThreshold: 7
+  ComplexCondition:
+    threshold: 4
+  CyclomaticComplexMethod:
+    threshold: 15
+
+style:
+  MaxLineLength:
+    maxLineLength: 150
+  WildcardImport:
+    active: true
+  MagicNumber:
+    active: false
+
+potential-bugs:
+  DoubleMutabilityForCollection:
+    active: true
+
+performance:
+  SpreadOperator:
+    active: false
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: false

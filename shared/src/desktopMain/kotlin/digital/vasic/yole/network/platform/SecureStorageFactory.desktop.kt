@@ -15,13 +15,16 @@ actual object SecureStorageFactory {
         return try {
             val userHome = System.getProperty("user.home") ?: System.getenv("HOME") ?: "."
             val storageDir = File(Paths.get(userHome, ".yole", "secure").toString())
+            if (!storageDir.exists()) {
+                storageDir.mkdirs()
+            }
             val secureStorage = DesktopSecureStorage(storageDir)
             Result.success(secureStorage)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Check if secure storage is available on desktop platforms.
      */
@@ -31,7 +34,10 @@ actual object SecureStorageFactory {
             // Check if we can create the storage directory
             val userHome = System.getProperty("user.home") ?: System.getenv("HOME") ?: "."
             val storageDir = File(Paths.get(userHome, ".yole", "secure").toString())
-            storageDir.mkdirs() && storageDir.canWrite()
+            if (!storageDir.exists()) {
+                storageDir.mkdirs()
+            }
+            storageDir.exists() && storageDir.canWrite()
         } catch (e: Exception) {
             false
         }
