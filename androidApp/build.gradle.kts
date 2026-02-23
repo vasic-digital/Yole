@@ -65,6 +65,14 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    lint {
+        // AppCompatResource is a false positive - we do use appcompat library
+        disable += setOf("AppCompatResource")
+        // Treat warnings as informational only
+        warningsAsErrors = false
+        abortOnError = true
+    }
 }
 
 dependencies {

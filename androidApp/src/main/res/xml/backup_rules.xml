@@ -4,11 +4,12 @@
     <include domain="external" path="Documents/" />
     <include domain="external" path="backups/" />
     <include domain="external" path="exported_pdfs/" />
-    <include domain="sharedpref" path="yole_settings.xml" />
+    <include domain="sharedpref" path="." />
+    <include domain="database" path="." />
+    <include domain="file" path="." />
     
     <!-- Exclude cache and temporary files -->
-    <exclude domain="external" path="Android/data/digital.vasic.yole.android/cache/" />
-    <exclude domain="cache" path="." />
+    <exclude domain="file" path="cache/" />
     <exclude domain="database" path="webview.db" />
     <exclude domain="database" path="webviewCache.db" />
 </full-backup-content>
