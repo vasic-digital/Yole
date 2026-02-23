@@ -47,6 +47,10 @@ gson = "2.11.0"
 # Ktor (for potential network operations)
 ktor = "3.0.2"
 
+# Protocol Libraries
+sshj = "0.38.0"
+smbj = "0.13.0"
+
 # Testing
 junit = "4.13.2"
 junit5 = "5.11.3"
@@ -149,6 +153,10 @@ ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 ktor-client-js = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
+
+# Protocol Libraries
+sshj = { module = "com.hierynomus:sshj", version.ref = "sshj" }
+smbj = { module = "com.hierynomus:smbj", version.ref = "smbj" }
 
 # UI Libraries (Android)
 gene-rate = { module = "com.github.Pixplicity:gene-rate", version.ref = "gene-rate" }

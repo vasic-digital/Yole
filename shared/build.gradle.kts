@@ -126,6 +126,8 @@ kotlin {
                 implementation(libs.ktor.client.okhttp)
                 // CIO is JVM-only, so we use OkHttp for Android
                 implementation("io.ktor:ktor-client-cio:3.0.2")
+                implementation(libs.sshj)   // SFTP via SSH
+                implementation(libs.smbj)   // SMB/CIFS
             }
         }
 
@@ -145,6 +147,8 @@ kotlin {
                 implementation(libs.ktor.client.okhttp)
                 // CIO is JVM-only, so we use OkHttp for Desktop
                 implementation("io.ktor:ktor-client-cio:3.0.2")
+                implementation(libs.sshj)   // SFTP via SSH
+                implementation(libs.smbj)   // SMB/CIFS
             }
         }
 
