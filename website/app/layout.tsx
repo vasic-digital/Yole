@@ -120,7 +120,7 @@ export default function RootLayout({
               </div>
             </div>
             <div className="mt-8 pt-8 border-t border-[var(--color-border)] text-center text-sm text-[var(--color-text-secondary)]">
-              <p>Copyright 2025 Milos Vasic. Licensed under Apache-2.0.</p>
+              <p>Copyright 2025–2026 Milos Vasic. Licensed under Apache-2.0.</p>
             </div>
           </div>
         </footer>

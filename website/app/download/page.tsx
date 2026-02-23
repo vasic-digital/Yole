@@ -8,9 +8,9 @@ const downloads = [
     description: "Full-featured editor available on Google Play and F-Droid. Supports all 17+ text formats with Material Design UI.",
     requirements: "Android 7.0 (API 24) or later",
     links: [
-      { label: "Google Play", href: "#", note: "Recommended" },
-      { label: "F-Droid", href: "#", note: "Open source builds" },
-      { label: "APK Download", href: "#", note: "Direct install" },
+      { label: "Google Play", href: "#", note: "Coming soon", comingSoon: true },
+      { label: "F-Droid", href: "#", note: "Coming soon", comingSoon: true },
+      { label: "APK Download", href: "https://github.com/user/Yole/releases/latest", note: "Direct install", comingSoon: false },
     ],
   },
   {
@@ -19,10 +19,10 @@ const downloads = [
     description: "Cross-platform desktop editor for Windows, macOS, and Linux. Built with Compose for Desktop (JVM).",
     requirements: "Java 11+ runtime, Windows 10 / macOS 12 / Linux with X11 or Wayland",
     links: [
-      { label: "Windows (.msi)", href: "#", note: "" },
-      { label: "macOS (.dmg)", href: "#", note: "" },
-      { label: "Linux (.deb)", href: "#", note: "" },
-      { label: "JAR (Universal)", href: "#", note: "Requires Java 11+" },
+      { label: "Windows (.msi)", href: "https://github.com/user/Yole/releases/latest", note: "", comingSoon: false },
+      { label: "macOS (.dmg)", href: "https://github.com/user/Yole/releases/latest", note: "", comingSoon: false },
+      { label: "Linux (.deb)", href: "https://github.com/user/Yole/releases/latest", note: "", comingSoon: false },
+      { label: "JAR (Universal)", href: "https://github.com/user/Yole/releases/latest", note: "Requires Java 11+", comingSoon: false },
     ],
   },
   {
@@ -31,7 +31,8 @@ const downloads = [
     description: "Native iOS editor built with Compose Multiplatform for iPhone and iPad. Currently in development.",
     requirements: "iOS 16 or later",
     links: [
-      { label: "TestFlight", href: "#", note: "Coming soon" },
+      { label: "App Store", href: "#", note: "Coming soon", comingSoon: true },
+      { label: "TestFlight", href: "#", note: "Coming soon", comingSoon: true },
     ],
   },
   {
@@ -40,7 +41,7 @@ const downloads = [
     description: "Browser-based editor powered by Kotlin/Wasm. Works offline as a Progressive Web App.",
     requirements: "Modern browser with WebAssembly support (Chrome 119+, Firefox 120+, Safari 17.4+)",
     links: [
-      { label: "Launch Web App", href: "#", note: "Coming soon" },
+      { label: "Launch Web App", href: "#", note: "Coming soon", comingSoon: true },
     ],
   },
 ];
@@ -80,16 +81,28 @@ export default function DownloadPage() {
             </p>
             <div className="flex flex-wrap gap-3">
               {dl.links.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  className={dl.status === "production" ? "btn-primary" : "btn-secondary"}
-                >
-                  {link.label}
-                  {link.note && (
-                    <span className="ml-2 text-xs opacity-75">({link.note})</span>
-                  )}
-                </a>
+                link.comingSoon ? (
+                  <span
+                    key={link.label}
+                    className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500 cursor-not-allowed select-none border border-gray-200 dark:border-gray-700"
+                  >
+                    {link.label}
+                    <span className="ml-2 text-xs opacity-75">(Coming soon)</span>
+                  </span>
+                ) : (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={dl.status === "production" ? "btn-primary" : "btn-secondary"}
+                  >
+                    {link.label}
+                    {link.note && (
+                      <span className="ml-2 text-xs opacity-75">({link.note})</span>
+                    )}
+                  </a>
+                )
               ))}
             </div>
           </section>
