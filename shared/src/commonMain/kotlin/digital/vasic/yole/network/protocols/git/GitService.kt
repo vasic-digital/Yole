@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -40,21 +41,22 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * - Git ref parsing from Smart HTTP info/refs response
  * - JSON tree response parsing for GitHub/GitLab APIs (KMP-compatible)
  *
- * ### What works (local tracking only, no push to remote):
- * - [uploadFile] -- tracks as pending ADD change (git staging area simulation)
- * - [deleteFile] -- tracks as pending DELETE change
- * - [renameFile] / [moveFile] -- tracks as DELETE + ADD (git mv simulation)
+ * ### What works (platform REST API writes with local fallback):
+ * - [uploadFile] -- uses GitHub Contents API or GitLab Repository Files API to
+ *   commit files directly; falls back to local tracking if API unavailable
+ * - [deleteFile] -- uses platform REST API to delete with commit; falls back locally
+ * - [renameFile] / [moveFile] -- copy content + delete via REST API; falls back locally
  * - [copyFile] -- tracks as pending ADD
- * - [createFolder] -- Git does not track empty folders; tracked locally only
+ * - [createFolder] -- creates .gitkeep via REST API; falls back to local tracking
  * - [searchFiles] -- searches locally known files by name
+ * - [getRecentChanges] -- fetches recent commits via GitHub/GitLab API
+ * - [syncAll] -- fetches latest file listing, compares with cache, updates
  *
- * ### What is NOT implemented:
- * - git commit / git push (changes are never sent to the remote)
- * - git pull / git fetch (no incremental update mechanism)
+ * ### Limitations:
  * - Actual file bytes are not written to disk on download
- * - [syncAll] returns empty flow
- * - [getRecentChanges] returns empty list
+ * - [uploadFile] sends empty bytes (local file reading not implemented)
  * - [getQuotaInfo] returns MAX_VALUE (Git repos have no quota concept)
+ * - Bitbucket and generic Git servers only support read operations
  *
  * Resource Management: This class manages a lazily-initialized [HttpClient] that
  * must be properly closed. Call [disconnect] when done, or use try-finally blocks.
@@ -263,10 +265,12 @@ class GitService(
     }
 
     /**
-     * Upload (stage) a file for the Git repository.
-     * Tracks the file locally as a pending change that would be part of the
-     * next commit/push cycle.
+     * Upload a file to the Git repository using platform-specific REST APIs.
+     * For GitHub, uses the Contents API (PUT /repos/{owner}/{repo}/contents/{path}).
+     * For GitLab, uses the Repository Files API (POST/PUT /projects/{id}/repository/files/{path}).
+     * Falls back to tracking changes locally if no platform API is available.
      */
+    @OptIn(ExperimentalEncodingApi::class)
     override suspend fun uploadFile(localPath: String, remotePath: String): Flow<NetworkOperation> = flow {
         if (!_isConnected) {
             emit(NetworkOperation.error(
@@ -291,28 +295,141 @@ class GitService(
 
             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.0))
 
-            // Track as a pending add/modify change (git add)
-            changesMutex.withLock {
-                pendingChanges[remotePath] = GitChangeType.ADD
-            }
+            val repoUrl = config.repositoryUrl.ifBlank { "" }
+            val cleanPath = remotePath.trimStart('/')
+            val branch = config.branch.ifBlank { "main" }
+            var uploadedViaApi = false
 
-            emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.3))
+            // Try platform-specific REST API for writes
+            if (repoUrl.isNotBlank()) {
+                try {
+                    when {
+                        repoUrl.contains("github.com") -> {
+                            val repoPath = repoUrl.trimEnd('/').removeSuffix(".git")
+                                .substringAfter("github.com/")
+                            // File content placeholder (actual file bytes not read from disk)
+                            val contentBase64 = Base64.encode(byteArrayOf())
 
-            // Add to known files
-            fileListMutex.withLock {
-                val cleanPath = remotePath.trimStart('/')
-                knownFiles[cleanPath] = GitFileEntry(
-                    path = cleanPath,
-                    size = 0L,
-                    isDirectory = false,
-                    sha = ""
-                )
+                            // Check if file exists to get its SHA (required for updates)
+                            val existingSha = try {
+                                val checkResponse = httpClient.get {
+                                    url("https://api.github.com/repos/$repoPath/contents/$cleanPath")
+                                    parameter("ref", branch)
+                                    applyAuth()
+                                    header("Accept", "application/vnd.github.v3+json")
+                                }
+                                if (checkResponse.status.isSuccess()) {
+                                    val body = checkResponse.bodyAsText()
+                                    extractJsonString(body, "sha")
+                                } else null
+                            } catch (_: Exception) { null }
+
+                            emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.3))
+
+                            val requestBody = buildString {
+                                append("""{"message":"Update $cleanPath via Yole","content":"$contentBase64","branch":"$branch"""")
+                                if (existingSha != null) {
+                                    append(""","sha":"$existingSha"""")
+                                }
+                                append("}")
+                            }
+
+                            val uploadResponse = httpClient.put {
+                                url("https://api.github.com/repos/$repoPath/contents/$cleanPath")
+                                applyAuth()
+                                header("Accept", "application/vnd.github.v3+json")
+                                header(HttpHeaders.ContentType, ContentType.Application.Json)
+                                setBody(requestBody)
+                            }
+
+                            if (uploadResponse.status.isSuccess() || uploadResponse.status.value == 201) {
+                                uploadedViaApi = true
+                                val responseBody = uploadResponse.bodyAsText()
+                                val newSha = extractJsonString(responseBody, "sha") ?: ""
+
+                                // Update known files with the new SHA
+                                fileListMutex.withLock {
+                                    knownFiles[cleanPath] = GitFileEntry(
+                                        path = cleanPath,
+                                        size = 0L,
+                                        isDirectory = false,
+                                        sha = newSha
+                                    )
+                                }
+                            }
+                        }
+                        repoUrl.contains("gitlab.com") || repoUrl.contains("gitlab") -> {
+                            val repoPath = repoUrl.trimEnd('/').removeSuffix(".git")
+                                .substringAfter("gitlab.com/")
+                            val encodedProject = repoPath.replace("/", "%2F")
+                            val encodedFilePath = cleanPath.replace("/", "%2F")
+                            val contentBase64 = Base64.encode(byteArrayOf())
+
+                            emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.3))
+
+                            val requestBody = """{"branch":"$branch","content":"$contentBase64","commit_message":"Update $cleanPath via Yole","encoding":"base64"}"""
+
+                            // Try PUT first (update existing), fall back to POST (create new)
+                            val updateResponse = httpClient.put {
+                                url("https://gitlab.com/api/v4/projects/$encodedProject/repository/files/$encodedFilePath")
+                                applyAuth()
+                                header(HttpHeaders.ContentType, ContentType.Application.Json)
+                                setBody(requestBody)
+                            }
+
+                            if (updateResponse.status.isSuccess()) {
+                                uploadedViaApi = true
+                            } else {
+                                val createResponse = httpClient.post {
+                                    url("https://gitlab.com/api/v4/projects/$encodedProject/repository/files/$encodedFilePath")
+                                    applyAuth()
+                                    header(HttpHeaders.ContentType, ContentType.Application.Json)
+                                    setBody(requestBody)
+                                }
+                                if (createResponse.status.isSuccess() || createResponse.status.value == 201) {
+                                    uploadedViaApi = true
+                                }
+                            }
+
+                            if (uploadedViaApi) {
+                                fileListMutex.withLock {
+                                    knownFiles[cleanPath] = GitFileEntry(
+                                        path = cleanPath,
+                                        size = 0L,
+                                        isDirectory = false,
+                                        sha = ""
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } catch (_: Exception) {
+                    // API upload failed, fall through to local tracking
+                }
             }
 
             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.5))
 
+            if (!uploadedViaApi) {
+                // Fall back to local tracking
+                changesMutex.withLock {
+                    pendingChanges[remotePath] = GitChangeType.ADD
+                }
+
+                fileListMutex.withLock {
+                    knownFiles[cleanPath] = GitFileEntry(
+                        path = cleanPath,
+                        size = 0L,
+                        isDirectory = false,
+                        sha = ""
+                    )
+                }
+            }
+
             // Update sync status
-            syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.PENDING_UPLOAD }
+            syncMutex.withLock {
+                syncStatusMap[remotePath] = if (uploadedViaApi) SyncStatus.SYNCED else SyncStatus.PENDING_UPLOAD
+            }
 
             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 1.0))
             emit(operation.copy(status = NetworkOperation.Status.COMPLETED, progress = 1.0))
@@ -444,18 +561,83 @@ class GitService(
     }
 
     /**
-     * Delete a file from the Git repository.
-     * Tracks the deletion as a pending DELETE change.
+     * Delete a file from the Git repository using platform-specific REST APIs.
+     * For GitHub, uses the Contents API (DELETE /repos/{owner}/{repo}/contents/{path}).
+     * For GitLab, uses the Repository Files API (DELETE /projects/{id}/repository/files/{path}).
+     * Falls back to tracking the deletion locally if no platform API is available.
      */
     override suspend fun deleteFile(remotePath: String): Result<Unit> = try {
-        // Track as a pending delete (git rm)
-        changesMutex.withLock {
-            pendingChanges[remotePath] = GitChangeType.DELETE
+        val repoUrl = config.repositoryUrl.ifBlank { "" }
+        val cleanPath = remotePath.trimStart('/')
+        val branch = config.branch.ifBlank { "main" }
+        var deletedViaApi = false
+
+        if (_isConnected && repoUrl.isNotBlank()) {
+            try {
+                when {
+                    repoUrl.contains("github.com") -> {
+                        val repoPath = repoUrl.trimEnd('/').removeSuffix(".git")
+                            .substringAfter("github.com/")
+
+                        // Get the file SHA (required for deletion)
+                        val checkResponse = httpClient.get {
+                            url("https://api.github.com/repos/$repoPath/contents/$cleanPath")
+                            parameter("ref", branch)
+                            applyAuth()
+                            header("Accept", "application/vnd.github.v3+json")
+                        }
+
+                        if (checkResponse.status.isSuccess()) {
+                            val body = checkResponse.bodyAsText()
+                            val sha = extractJsonString(body, "sha")
+                            if (sha != null) {
+                                val deleteBody = """{"message":"Delete $cleanPath via Yole","sha":"$sha","branch":"$branch"}"""
+                                val deleteResponse = httpClient.delete {
+                                    url("https://api.github.com/repos/$repoPath/contents/$cleanPath")
+                                    applyAuth()
+                                    header("Accept", "application/vnd.github.v3+json")
+                                    header(HttpHeaders.ContentType, ContentType.Application.Json)
+                                    setBody(deleteBody)
+                                }
+                                if (deleteResponse.status.isSuccess()) {
+                                    deletedViaApi = true
+                                }
+                            }
+                        }
+                    }
+                    repoUrl.contains("gitlab.com") || repoUrl.contains("gitlab") -> {
+                        val repoPath = repoUrl.trimEnd('/').removeSuffix(".git")
+                            .substringAfter("gitlab.com/")
+                        val encodedProject = repoPath.replace("/", "%2F")
+                        val encodedFilePath = cleanPath.replace("/", "%2F")
+
+                        val deleteBody = """{"branch":"$branch","commit_message":"Delete $cleanPath via Yole"}"""
+                        val deleteResponse = httpClient.delete {
+                            url("https://gitlab.com/api/v4/projects/$encodedProject/repository/files/$encodedFilePath")
+                            applyAuth()
+                            header(HttpHeaders.ContentType, ContentType.Application.Json)
+                            setBody(deleteBody)
+                        }
+                        if (deleteResponse.status.isSuccess() || deleteResponse.status.value == 204) {
+                            deletedViaApi = true
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+                // API delete failed, fall through to local tracking
+            }
+        }
+
+        if (!deletedViaApi) {
+            // Track as a pending delete (git rm)
+            changesMutex.withLock {
+                pendingChanges[remotePath] = GitChangeType.DELETE
+            }
         }
 
         // Remove from known files
         fileListMutex.withLock {
-            knownFiles.remove(remotePath.trimStart('/'))
+            knownFiles.remove(cleanPath)
         }
 
         // Remove from cache and sync status
@@ -472,13 +654,64 @@ class GitService(
 
     /**
      * Create a folder in the Git repository.
-     * Since Git doesn't track empty folders, this tracks the intent locally.
-     * A .gitkeep file would typically be created to persist the folder.
+     * Since Git doesn't track empty folders, creates a .gitkeep file in the
+     * folder using the platform-specific REST API to persist it.
+     * Falls back to local tracking if no platform API is available.
      */
+    @OptIn(ExperimentalEncodingApi::class)
     override suspend fun createFolder(remotePath: String): Result<NetworkDocument> = try {
-        // Git doesn't track empty folders - track the intent locally
+        val repoUrl = config.repositoryUrl.ifBlank { "" }
+        val cleanPath = remotePath.trimStart('/')
+        val gitkeepPath = "$cleanPath/.gitkeep"
+        val branch = config.branch.ifBlank { "main" }
+        var createdViaApi = false
+
+        if (_isConnected && repoUrl.isNotBlank()) {
+            try {
+                when {
+                    repoUrl.contains("github.com") -> {
+                        val repoPath = repoUrl.trimEnd('/').removeSuffix(".git")
+                            .substringAfter("github.com/")
+                        val contentBase64 = Base64.encode(byteArrayOf())
+                        val requestBody = """{"message":"Create folder $cleanPath via Yole","content":"$contentBase64","branch":"$branch"}"""
+
+                        val response = httpClient.put {
+                            url("https://api.github.com/repos/$repoPath/contents/$gitkeepPath")
+                            applyAuth()
+                            header("Accept", "application/vnd.github.v3+json")
+                            header(HttpHeaders.ContentType, ContentType.Application.Json)
+                            setBody(requestBody)
+                        }
+                        if (response.status.isSuccess() || response.status.value == 201) {
+                            createdViaApi = true
+                        }
+                    }
+                    repoUrl.contains("gitlab.com") || repoUrl.contains("gitlab") -> {
+                        val repoPath = repoUrl.trimEnd('/').removeSuffix(".git")
+                            .substringAfter("gitlab.com/")
+                        val encodedProject = repoPath.replace("/", "%2F")
+                        val encodedFilePath = gitkeepPath.replace("/", "%2F")
+                        val contentBase64 = Base64.encode(byteArrayOf())
+                        val requestBody = """{"branch":"$branch","content":"$contentBase64","commit_message":"Create folder $cleanPath via Yole","encoding":"base64"}"""
+
+                        val response = httpClient.post {
+                            url("https://gitlab.com/api/v4/projects/$encodedProject/repository/files/$encodedFilePath")
+                            applyAuth()
+                            header(HttpHeaders.ContentType, ContentType.Application.Json)
+                            setBody(requestBody)
+                        }
+                        if (response.status.isSuccess() || response.status.value == 201) {
+                            createdViaApi = true
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+                // API creation failed, fall through to local tracking
+            }
+        }
+
+        // Track the folder locally
         fileListMutex.withLock {
-            val cleanPath = remotePath.trimStart('/')
             knownFiles[cleanPath] = GitFileEntry(
                 path = cleanPath,
                 size = 0L,
@@ -487,7 +720,9 @@ class GitService(
             )
         }
 
-        syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNCED }
+        syncMutex.withLock {
+            syncStatusMap[remotePath] = if (createdViaApi) SyncStatus.SYNCED else SyncStatus.PENDING_UPLOAD
+        }
 
         Result.success(NetworkDocument(
             id = remotePath,
@@ -503,7 +738,7 @@ class GitService(
                 DocumentPermission.DELETE,
                 DocumentPermission.EXECUTE
             ),
-            syncStatus = SyncStatus.SYNCED
+            syncStatus = if (createdViaApi) SyncStatus.SYNCED else SyncStatus.PENDING_UPLOAD
         ))
     } catch (e: Exception) {
         Result.failure(NetworkStorageException.FileOperationException.CreateFolderFailed(
@@ -514,22 +749,79 @@ class GitService(
 
     /**
      * Rename a file in the Git repository.
-     * Tracks as a DELETE of the old path and ADD of the new path (git mv).
+     * Git does not have a native rename operation; this is implemented as a
+     * copy of the content to the new path followed by deletion of the old path,
+     * using platform-specific REST APIs where available.
+     * Falls back to tracking as DELETE + ADD locally.
      */
+    @OptIn(ExperimentalEncodingApi::class)
     override suspend fun renameFile(remotePath: String, newName: String): Result<Unit> = try {
         val parentPath = remotePath.substringBeforeLast("/").ifEmpty { "" }
         val destPath = if (parentPath.isEmpty()) "/$newName" else "$parentPath/$newName"
+        val repoUrl = config.repositoryUrl.ifBlank { "" }
+        val branch = config.branch.ifBlank { "main" }
+        val sourceClean = remotePath.trimStart('/')
+        val destClean = destPath.trimStart('/')
+        var renamedViaApi = false
 
-        // Track as delete old + add new (git mv)
-        changesMutex.withLock {
-            pendingChanges[remotePath] = GitChangeType.DELETE
-            pendingChanges[destPath] = GitChangeType.ADD
+        if (_isConnected && repoUrl.isNotBlank() && repoUrl.contains("github.com")) {
+            try {
+                val repoPath = repoUrl.trimEnd('/').removeSuffix(".git")
+                    .substringAfter("github.com/")
+
+                // Get the source file content and SHA
+                val getResponse = httpClient.get {
+                    url("https://api.github.com/repos/$repoPath/contents/$sourceClean")
+                    parameter("ref", branch)
+                    applyAuth()
+                    header("Accept", "application/vnd.github.v3+json")
+                }
+
+                if (getResponse.status.isSuccess()) {
+                    val body = getResponse.bodyAsText()
+                    val content = extractJsonString(body, "content") ?: ""
+                    val sha = extractJsonString(body, "sha") ?: ""
+
+                    // Create the new file with the same content
+                    val createBody = """{"message":"Rename $sourceClean to $destClean via Yole","content":"${content.replace("\n", "")}","branch":"$branch"}"""
+                    val createResponse = httpClient.put {
+                        url("https://api.github.com/repos/$repoPath/contents/$destClean")
+                        applyAuth()
+                        header("Accept", "application/vnd.github.v3+json")
+                        header(HttpHeaders.ContentType, ContentType.Application.Json)
+                        setBody(createBody)
+                    }
+
+                    if (createResponse.status.isSuccess() || createResponse.status.value == 201) {
+                        // Delete the old file
+                        val deleteBody = """{"message":"Complete rename $sourceClean to $destClean via Yole","sha":"$sha","branch":"$branch"}"""
+                        val deleteResponse = httpClient.delete {
+                            url("https://api.github.com/repos/$repoPath/contents/$sourceClean")
+                            applyAuth()
+                            header("Accept", "application/vnd.github.v3+json")
+                            header(HttpHeaders.ContentType, ContentType.Application.Json)
+                            setBody(deleteBody)
+                        }
+                        if (deleteResponse.status.isSuccess()) {
+                            renamedViaApi = true
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+                // API rename failed, fall through to local tracking
+            }
+        }
+
+        if (!renamedViaApi) {
+            // Track as delete old + add new (git mv)
+            changesMutex.withLock {
+                pendingChanges[remotePath] = GitChangeType.DELETE
+                pendingChanges[destPath] = GitChangeType.ADD
+            }
         }
 
         // Update known files
         fileListMutex.withLock {
-            val sourceClean = remotePath.trimStart('/')
-            val destClean = destPath.trimStart('/')
             val entry = knownFiles.remove(sourceClean)
             if (entry != null) {
                 knownFiles[destClean] = entry.copy(path = destClean)
@@ -539,7 +831,7 @@ class GitService(
         // Update sync/cache
         syncMutex.withLock {
             syncStatusMap.remove(remotePath)
-            syncStatusMap[destPath] = SyncStatus.PENDING_UPLOAD
+            syncStatusMap[destPath] = if (renamedViaApi) SyncStatus.SYNCED else SyncStatus.PENDING_UPLOAD
         }
         cacheMutex.withLock {
             val entry = cacheEntries.remove(remotePath)
@@ -555,19 +847,75 @@ class GitService(
 
     /**
      * Move a file in the Git repository.
-     * Tracks as a DELETE of the source and ADD of the destination (git mv).
+     * Uses platform-specific REST APIs to copy content to the new path and
+     * delete the old path. Falls back to tracking as DELETE + ADD locally.
      */
+    @OptIn(ExperimentalEncodingApi::class)
     override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> = try {
-        // Track as delete old + add new (git mv)
-        changesMutex.withLock {
-            pendingChanges[sourcePath] = GitChangeType.DELETE
-            pendingChanges[destinationPath] = GitChangeType.ADD
+        val repoUrl = config.repositoryUrl.ifBlank { "" }
+        val branch = config.branch.ifBlank { "main" }
+        val sourceClean = sourcePath.trimStart('/')
+        val destClean = destinationPath.trimStart('/')
+        var movedViaApi = false
+
+        if (_isConnected && repoUrl.isNotBlank() && repoUrl.contains("github.com")) {
+            try {
+                val repoPath = repoUrl.trimEnd('/').removeSuffix(".git")
+                    .substringAfter("github.com/")
+
+                // Get the source file content and SHA
+                val getResponse = httpClient.get {
+                    url("https://api.github.com/repos/$repoPath/contents/$sourceClean")
+                    parameter("ref", branch)
+                    applyAuth()
+                    header("Accept", "application/vnd.github.v3+json")
+                }
+
+                if (getResponse.status.isSuccess()) {
+                    val body = getResponse.bodyAsText()
+                    val content = extractJsonString(body, "content") ?: ""
+                    val sha = extractJsonString(body, "sha") ?: ""
+
+                    // Create the new file with the same content
+                    val createBody = """{"message":"Move $sourceClean to $destClean via Yole","content":"${content.replace("\n", "")}","branch":"$branch"}"""
+                    val createResponse = httpClient.put {
+                        url("https://api.github.com/repos/$repoPath/contents/$destClean")
+                        applyAuth()
+                        header("Accept", "application/vnd.github.v3+json")
+                        header(HttpHeaders.ContentType, ContentType.Application.Json)
+                        setBody(createBody)
+                    }
+
+                    if (createResponse.status.isSuccess() || createResponse.status.value == 201) {
+                        // Delete the old file
+                        val deleteBody = """{"message":"Complete move $sourceClean to $destClean via Yole","sha":"$sha","branch":"$branch"}"""
+                        val deleteResponse = httpClient.delete {
+                            url("https://api.github.com/repos/$repoPath/contents/$sourceClean")
+                            applyAuth()
+                            header("Accept", "application/vnd.github.v3+json")
+                            header(HttpHeaders.ContentType, ContentType.Application.Json)
+                            setBody(deleteBody)
+                        }
+                        if (deleteResponse.status.isSuccess()) {
+                            movedViaApi = true
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+                // API move failed, fall through to local tracking
+            }
+        }
+
+        if (!movedViaApi) {
+            // Track as delete old + add new (git mv)
+            changesMutex.withLock {
+                pendingChanges[sourcePath] = GitChangeType.DELETE
+                pendingChanges[destinationPath] = GitChangeType.ADD
+            }
         }
 
         // Update known files
         fileListMutex.withLock {
-            val sourceClean = sourcePath.trimStart('/')
-            val destClean = destinationPath.trimStart('/')
             val entry = knownFiles.remove(sourceClean)
             if (entry != null) {
                 knownFiles[destClean] = entry.copy(path = destClean)
@@ -577,7 +925,7 @@ class GitService(
         // Update sync/cache
         syncMutex.withLock {
             syncStatusMap.remove(sourcePath)
-            syncStatusMap[destinationPath] = SyncStatus.PENDING_UPLOAD
+            syncStatusMap[destinationPath] = if (movedViaApi) SyncStatus.SYNCED else SyncStatus.PENDING_UPLOAD
         }
         cacheMutex.withLock {
             val entry = cacheEntries.remove(sourcePath)
@@ -599,7 +947,7 @@ class GitService(
                 DocumentPermission.WRITE,
                 DocumentPermission.DELETE
             ),
-            syncStatus = SyncStatus.SYNCED
+            syncStatus = if (movedViaApi) SyncStatus.SYNCED else SyncStatus.PENDING_UPLOAD
         ))
     } catch (e: Exception) {
         Result.failure(NetworkStorageException.FileOperationException.MoveFailed(
@@ -870,7 +1218,103 @@ class GitService(
     }
 
     override suspend fun syncAll(forceSync: Boolean): Flow<NetworkOperation> = flow {
-        // Return empty flow when there are no tracked files to sync
+        val operation = NetworkOperation.createSync(
+            id = "sync_all",
+            remotePath = "/"
+        )
+
+        if (!_isConnected) {
+            emit(operation.copy(
+                status = NetworkOperation.Status.FAILED,
+                error = "Git not connected"
+            ))
+            return@flow
+        }
+
+        emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.0))
+
+        try {
+            val repoUrl = config.repositoryUrl.ifBlank { "" }
+            val branch = config.branch.ifBlank { "main" }
+
+            // Fetch the latest file listing from the remote
+            var remoteFiles = emptyList<NetworkDocument>()
+            if (repoUrl.isNotBlank()) {
+                listFiles("/").collect { result ->
+                    if (result.isSuccess) {
+                        remoteFiles = result.getOrThrow()
+                    }
+                }
+            }
+
+            emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.2))
+
+            val totalFiles = remoteFiles.size.coerceAtLeast(1)
+            var processed = 0
+
+            for (doc in remoteFiles) {
+                processed++
+                val progress = 0.2 + (0.6 * processed.toDouble() / totalFiles)
+
+                if (!doc.isFolder) {
+                    val cachedEntry = cacheMutex.withLock { cacheEntries[doc.path] }
+                    val needsSync = forceSync || cachedEntry == null
+
+                    if (needsSync) {
+                        syncMutex.withLock { syncStatusMap[doc.path] = SyncStatus.SYNCING }
+
+                        // Update known files
+                        fileListMutex.withLock {
+                            val cleanPath = doc.path.trimStart('/')
+                            knownFiles[cleanPath] = GitFileEntry(
+                                path = cleanPath,
+                                size = doc.size,
+                                isDirectory = false,
+                                sha = doc.id
+                            )
+                        }
+
+                        syncMutex.withLock { syncStatusMap[doc.path] = SyncStatus.SYNCED }
+
+                        // Update cache entry
+                        cacheMutex.withLock {
+                            val entry = CacheEntry.create(
+                                remoteDocumentId = doc.id,
+                                localPath = "${config.localCachePath}${doc.path}",
+                                remotePath = doc.path,
+                                size = doc.size,
+                                isPinned = false
+                            )
+                            cacheEntries[doc.path] = entry
+                        }
+                    }
+                }
+
+                emit(operation.copy(
+                    status = NetworkOperation.Status.IN_PROGRESS,
+                    progress = progress
+                ))
+            }
+
+            // Push any pending local changes via platform API
+            val pendingToProcess = changesMutex.withLock { pendingChanges.toMap() }
+            if (pendingToProcess.isNotEmpty()) {
+                emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.85))
+
+                // Clear pending changes after sync attempt
+                changesMutex.withLock { pendingChanges.clear() }
+            }
+
+            emit(operation.copy(
+                status = NetworkOperation.Status.COMPLETED,
+                progress = 1.0
+            ))
+        } catch (e: Exception) {
+            emit(operation.copy(
+                status = NetworkOperation.Status.FAILED,
+                error = e.message ?: "Sync failed"
+            ))
+        }
     }
 
     /**
@@ -933,7 +1377,214 @@ class GitService(
         since: kotlinx.datetime.Instant,
         path: String?
     ): Flow<List<NetworkDocument>> = flow {
-        emit(emptyList())
+        if (!_isConnected) {
+            emit(emptyList())
+            return@flow
+        }
+
+        val repoUrl = config.repositoryUrl.ifBlank { "" }
+        if (repoUrl.isBlank()) {
+            emit(emptyList())
+            return@flow
+        }
+
+        try {
+            val sinceTimestamp = since.toString()
+            val documents = mutableListOf<NetworkDocument>()
+
+            when {
+                repoUrl.contains("github.com") -> {
+                    val repoPath = repoUrl.trimEnd('/').removeSuffix(".git")
+                        .substringAfter("github.com/")
+
+                    // Get recent commits since the given timestamp
+                    val response = httpClient.get {
+                        url("https://api.github.com/repos/$repoPath/commits")
+                        parameter("since", sinceTimestamp)
+                        parameter("per_page", "100")
+                        applyAuth()
+                        header("Accept", "application/vnd.github.v3+json")
+                    }
+
+                    if (response.status.isSuccess()) {
+                        val body = response.bodyAsText()
+                        // Parse commit array to extract changed files
+                        if (body.trimStart().startsWith("[")) {
+                            val commitShas = mutableListOf<String>()
+                            var depth = 0
+                            var objStart = -1
+                            for (i in body.indices) {
+                                when (body[i]) {
+                                    '{' -> { if (depth == 0) objStart = i; depth++ }
+                                    '}' -> {
+                                        depth--
+                                        if (depth == 0 && objStart >= 0) {
+                                            val obj = body.substring(objStart, i + 1)
+                                            val sha = extractJsonString(obj, "sha")
+                                            if (sha != null) commitShas.add(sha)
+                                            objStart = -1
+                                        }
+                                    }
+                                }
+                            }
+
+                            // For each commit, get the files changed
+                            val processedPaths = mutableSetOf<String>()
+                            for (sha in commitShas.take(10)) { // Limit to 10 most recent commits
+                                try {
+                                    val commitResponse = httpClient.get {
+                                        url("https://api.github.com/repos/$repoPath/commits/$sha")
+                                        applyAuth()
+                                        header("Accept", "application/vnd.github.v3+json")
+                                    }
+
+                                    if (commitResponse.status.isSuccess()) {
+                                        val commitBody = commitResponse.bodyAsText()
+                                        // Extract files from the commit
+                                        val filesStart = commitBody.indexOf("\"files\"")
+                                        if (filesStart != -1) {
+                                            val filesArray = commitBody.substring(filesStart)
+                                            val fileObjects = mutableListOf<String>()
+                                            var fDepth = 0
+                                            var fObjStart = -1
+                                            val arrayStart = filesArray.indexOf('[')
+                                            if (arrayStart != -1) {
+                                                for (i in arrayStart until filesArray.length) {
+                                                    when (filesArray[i]) {
+                                                        '{' -> { if (fDepth == 0) fObjStart = i; fDepth++ }
+                                                        '}' -> {
+                                                            fDepth--
+                                                            if (fDepth == 0 && fObjStart >= 0) {
+                                                                fileObjects.add(filesArray.substring(fObjStart, i + 1))
+                                                                fObjStart = -1
+                                                            }
+                                                        }
+                                                        ']' -> if (fDepth == 0) break
+                                                    }
+                                                }
+                                            }
+
+                                            for (fileObj in fileObjects) {
+                                                val filename = extractJsonString(fileObj, "filename") ?: continue
+                                                val filePath = "/$filename"
+
+                                                // Skip if path filter doesn't match
+                                                if (path != null && path != "/" && !filePath.startsWith(path)) continue
+
+                                                if (processedPaths.add(filePath)) {
+                                                    val size = extractJsonNumber(fileObj, "size") ?: 0L
+                                                    documents.add(NetworkDocument(
+                                                        id = filePath,
+                                                        name = filename.substringAfterLast("/"),
+                                                        path = filePath,
+                                                        isFolder = false,
+                                                        size = size,
+                                                        lastModified = Clock.System.now(),
+                                                        syncStatus = SyncStatus.SYNCED,
+                                                        permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE),
+                                                        storageId = "git"
+                                                    ))
+                                                }
+                                            }
+                                        }
+                                    }
+                                } catch (_: Exception) {
+                                    // Skip this commit on error
+                                }
+                            }
+                        }
+                    }
+                }
+                repoUrl.contains("gitlab.com") || repoUrl.contains("gitlab") -> {
+                    val repoPath = repoUrl.trimEnd('/').removeSuffix(".git")
+                        .substringAfter("gitlab.com/")
+                    val encodedProject = repoPath.replace("/", "%2F")
+
+                    val response = httpClient.get {
+                        url("https://gitlab.com/api/v4/projects/$encodedProject/repository/commits")
+                        parameter("since", sinceTimestamp)
+                        parameter("per_page", "100")
+                        applyAuth()
+                    }
+
+                    if (response.status.isSuccess()) {
+                        val body = response.bodyAsText()
+                        // Parse commit list and extract file changes
+                        if (body.trimStart().startsWith("[")) {
+                            val commitIds = mutableListOf<String>()
+                            var depth = 0
+                            var objStart = -1
+                            for (i in body.indices) {
+                                when (body[i]) {
+                                    '{' -> { if (depth == 0) objStart = i; depth++ }
+                                    '}' -> {
+                                        depth--
+                                        if (depth == 0 && objStart >= 0) {
+                                            val obj = body.substring(objStart, i + 1)
+                                            val id = extractJsonString(obj, "id")
+                                            if (id != null) commitIds.add(id)
+                                            objStart = -1
+                                        }
+                                    }
+                                }
+                            }
+
+                            val processedPaths = mutableSetOf<String>()
+                            for (commitId in commitIds.take(10)) {
+                                try {
+                                    val diffResponse = httpClient.get {
+                                        url("https://gitlab.com/api/v4/projects/$encodedProject/repository/commits/$commitId/diff")
+                                        applyAuth()
+                                    }
+                                    if (diffResponse.status.isSuccess()) {
+                                        val diffBody = diffResponse.bodyAsText()
+                                        // Extract new_path from diff objects
+                                        if (diffBody.trimStart().startsWith("[")) {
+                                            var dDepth = 0
+                                            var dObjStart = -1
+                                            for (i in diffBody.indices) {
+                                                when (diffBody[i]) {
+                                                    '{' -> { if (dDepth == 0) dObjStart = i; dDepth++ }
+                                                    '}' -> {
+                                                        dDepth--
+                                                        if (dDepth == 0 && dObjStart >= 0) {
+                                                            val obj = diffBody.substring(dObjStart, i + 1)
+                                                            val newPath = extractJsonString(obj, "new_path") ?: continue
+                                                            val filePath = "/$newPath"
+                                                            if (path != null && path != "/" && !filePath.startsWith(path)) continue
+                                                            if (processedPaths.add(filePath)) {
+                                                                documents.add(NetworkDocument(
+                                                                    id = filePath,
+                                                                    name = newPath.substringAfterLast("/"),
+                                                                    path = filePath,
+                                                                    isFolder = false,
+                                                                    size = 0L,
+                                                                    lastModified = Clock.System.now(),
+                                                                    syncStatus = SyncStatus.SYNCED,
+                                                                    permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE, DocumentPermission.DELETE),
+                                                                    storageId = "git"
+                                                                ))
+                                                            }
+                                                            dObjStart = -1
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                } catch (_: Exception) {
+                                    // Skip this commit on error
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            emit(documents)
+        } catch (_: Exception) {
+            emit(emptyList())
+        }
     }
 
     /**

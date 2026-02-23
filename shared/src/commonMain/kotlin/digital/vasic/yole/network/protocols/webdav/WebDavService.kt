@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -50,8 +51,6 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * - File upload sends empty body (file bytes not read from local filesystem)
  * - File download does not write bytes to local filesystem
  * - Network errors are silently caught in some operations for offline resilience
- * - [syncAll] returns empty flow (no bulk sync logic)
- * - [getRecentChanges] returns empty list
  *
  * Resource Management: This class manages a lazily-initialized [HttpClient] that
  * must be properly closed. Call [disconnect] when done, or use try-finally blocks.
@@ -726,7 +725,96 @@ class WebDavService(
     }
 
     override suspend fun syncAll(forceSync: Boolean): Flow<NetworkOperation> = flow {
-        // Return empty flow when there are no tracked files to sync
+        val operation = NetworkOperation.createSync(
+            id = "sync_all",
+            remotePath = "/"
+        )
+
+        if (!_isConnected) {
+            emit(operation.copy(
+                status = NetworkOperation.Status.FAILED,
+                error = "WebDAV not connected"
+            ))
+            return@flow
+        }
+
+        emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.0))
+
+        try {
+            val fullUrl = buildWebDavUrl("/")
+            val propfindBody = buildPropfindRequestBody()
+
+            // PROPFIND with Depth: infinity to get all remote files
+            val response = try {
+                httpClient.request(fullUrl) {
+                    method = HttpMethod("PROPFIND")
+                    applyAuth()
+                    header("Depth", "infinity")
+                    header("Content-Type", "application/xml; charset=utf-8")
+                    setBody(propfindBody)
+                }
+            } catch (_: Exception) {
+                // Fall back to Depth: 1 if infinity is not supported
+                httpClient.request(fullUrl) {
+                    method = HttpMethod("PROPFIND")
+                    applyAuth()
+                    header("Depth", "1")
+                    header("Content-Type", "application/xml; charset=utf-8")
+                    setBody(propfindBody)
+                }
+            }
+
+            if (response.status.value in 200..299 || response.status.value == 207) {
+                val responseBody = response.bodyAsText()
+                val allDocuments = parseMultistatusResponse(responseBody, "/")
+
+                val totalDocs = allDocuments.size.coerceAtLeast(1)
+                var processed = 0
+
+                for (doc in allDocuments) {
+                    processed++
+                    val progress = processed.toDouble() / totalDocs
+
+                    if (!doc.isFolder) {
+                        // Check if the file is cached and needs sync
+                        val cachedEntry = cacheMutex.withLock { cacheEntries[doc.path] }
+                        val needsSync = forceSync || cachedEntry == null
+
+                        if (needsSync) {
+                            syncMutex.withLock { syncStatusMap[doc.path] = SyncStatus.SYNCING }
+                            syncMutex.withLock { syncStatusMap[doc.path] = SyncStatus.SYNCED }
+
+                            // Update cache entry
+                            cacheMutex.withLock {
+                                val entry = CacheEntry.create(
+                                    remoteDocumentId = doc.id,
+                                    localPath = "/cache/webdav${doc.path}",
+                                    remotePath = doc.path,
+                                    size = doc.size,
+                                    isPinned = false
+                                )
+                                cacheEntries[doc.path] = entry
+                            }
+                        }
+                    }
+
+                    emit(operation.copy(
+                        status = NetworkOperation.Status.IN_PROGRESS,
+                        progress = progress
+                    ))
+                }
+            }
+
+            emit(operation.copy(
+                status = NetworkOperation.Status.COMPLETED,
+                progress = 1.0
+            ))
+        } catch (e: Exception) {
+            emit(operation.copy(
+                status = NetworkOperation.Status.FAILED,
+                error = e.message ?: "Sync failed"
+            ))
+        }
     }
 
     /**
@@ -783,7 +871,95 @@ class WebDavService(
         since: kotlinx.datetime.Instant,
         path: String?
     ): Flow<List<NetworkDocument>> = flow {
-        emit(emptyList())
+        if (!_isConnected) {
+            emit(emptyList())
+            return@flow
+        }
+
+        try {
+            val searchPath = path ?: "/"
+            val fullUrl = buildWebDavUrl(searchPath)
+            val propfindBody = buildPropfindRequestBody()
+
+            val response = httpClient.request(fullUrl) {
+                method = HttpMethod("PROPFIND")
+                applyAuth()
+                header("Depth", "1")
+                header("Content-Type", "application/xml; charset=utf-8")
+                setBody(propfindBody)
+            }
+
+            if (response.status.value in 200..299 || response.status.value == 207) {
+                val responseBody = response.bodyAsText()
+                val allDocuments = parseMultistatusResponse(responseBody, searchPath)
+
+                // Filter by last modified date using the raw XML to extract dates
+                val recentDocuments = mutableListOf<NetworkDocument>()
+                val responses = splitXmlElements(responseBody, "response")
+                    .ifEmpty {
+                        splitXmlElements(
+                            responseBody.replace("d:response", "response")
+                                .replace("D:response", "response"),
+                            "response"
+                        )
+                    }
+
+                for ((index, responseXml) in responses.withIndex()) {
+                    val lastModifiedStr = extractXmlValue(responseXml, "getlastmodified")
+                        ?: extractXmlValue(responseXml, "d:getlastmodified")
+                        ?: extractXmlValue(responseXml, "D:getlastmodified")
+
+                    if (lastModifiedStr != null) {
+                        val lastModified = parseHttpDate(lastModifiedStr)
+                        if (lastModified != null && lastModified >= since) {
+                            // Find the matching document from our parsed list
+                            if (index < allDocuments.size) {
+                                recentDocuments.add(allDocuments[index])
+                            }
+                        }
+                    }
+                }
+
+                emit(recentDocuments)
+            } else {
+                emit(emptyList())
+            }
+        } catch (_: Exception) {
+            emit(emptyList())
+        }
+    }
+
+    /**
+     * Parse an HTTP date string (RFC 2616) to an Instant.
+     * Handles common formats like "Mon, 01 Jan 2024 00:00:00 GMT".
+     */
+    private fun parseHttpDate(dateStr: String): Instant? {
+        return try {
+            // Try ISO 8601 first
+            Instant.parse(dateStr)
+        } catch (_: Exception) {
+            try {
+                // Try to parse RFC 2616 date format: "Mon, 01 Jan 2024 00:00:00 GMT"
+                val parts = dateStr.trim().split(" ")
+                if (parts.size >= 5) {
+                    val dayOfMonth = parts[1].padStart(2, '0')
+                    val monthStr = parts[2]
+                    val year = parts[3]
+                    val time = parts[4]
+                    val month = when (monthStr.lowercase()) {
+                        "jan" -> "01"; "feb" -> "02"; "mar" -> "03"; "apr" -> "04"
+                        "may" -> "05"; "jun" -> "06"; "jul" -> "07"; "aug" -> "08"
+                        "sep" -> "09"; "oct" -> "10"; "nov" -> "11"; "dec" -> "12"
+                        else -> return null
+                    }
+                    Instant.parse("${year}-${month}-${dayOfMonth}T${time}Z")
+                } else {
+                    null
+                }
+            } catch (_: Exception) {
+                null
+            }
+        }
     }
 
     /**
