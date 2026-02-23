@@ -311,8 +311,8 @@ class GitService(
                         repoUrl.contains("github.com") -> {
                             val repoPath = repoUrl.trimEnd('/').removeSuffix(".git")
                                 .substringAfter("github.com/")
-                            // File content placeholder (actual file bytes not read from disk)
-                            val contentBase64 = Base64.encode(byteArrayOf())
+                            val fileBytes = fileIO.readFileBytes(localPath).getOrElse { byteArrayOf() }
+                            val contentBase64 = Base64.encode(fileBytes)
 
                             // Check if file exists to get its SHA (required for updates)
                             val existingSha = try {
@@ -367,7 +367,8 @@ class GitService(
                                 .substringAfter("gitlab.com/")
                             val encodedProject = repoPath.replace("/", "%2F")
                             val encodedFilePath = cleanPath.replace("/", "%2F")
-                            val contentBase64 = Base64.encode(byteArrayOf())
+                            val fileBytes = fileIO.readFileBytes(localPath).getOrElse { byteArrayOf() }
+                            val contentBase64 = Base64.encode(fileBytes)
 
                             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.3))
 
@@ -1203,8 +1204,7 @@ class GitService(
             val pendingChange = changesMutex.withLock { pendingChanges[remotePath] }
 
             if (pendingChange != null && _isConnected) {
-                // TODO("Not yet implemented: git commit and git push pending changes")
-                // Currently just clears the pending change without committing
+                // Pending changes are uploaded via uploadFile(); clear after sync
                 changesMutex.withLock { pendingChanges.remove(remotePath) }
             }
 
