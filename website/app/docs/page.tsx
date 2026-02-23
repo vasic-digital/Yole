@@ -123,6 +123,38 @@ const formats = [
   },
 ];
 
+const quickStartSteps = [
+  {
+    step: 1,
+    title: "Install",
+    icon: "\u2B07",
+    description:
+      "Download from the releases page or build from source. Yole runs on Android, Desktop (Windows, macOS, Linux), and Web.",
+    link: { label: "Go to Downloads", href: "/download" },
+  },
+  {
+    step: 2,
+    title: "Open a File",
+    icon: "\uD83D\uDCC4",
+    description:
+      "Launch Yole and open any text file. Yole supports 17+ formats out of the box, including Markdown, Todo.txt, LaTeX, CSV, and more.",
+  },
+  {
+    step: 3,
+    title: "Explore Formats",
+    icon: "\uD83D\uDD0D",
+    description:
+      "Yole auto-detects the file format based on extension and content. Try opening different file types to see format-specific parsing and HTML preview.",
+  },
+  {
+    step: 4,
+    title: "Cloud Storage",
+    icon: "\u2601\uFE0F",
+    description:
+      "Connect to Dropbox, Google Drive, OneDrive, FTP, or SFTP for seamless remote file access. Yole works offline-first and syncs when connected.",
+  },
+];
+
 export default function DocsPage() {
   return (
     <div className="container-page py-16">
@@ -132,6 +164,39 @@ export default function DocsPage() {
         syntax highlighting, and format-specific features.
       </p>
 
+      {/* Quick Start */}
+      <section className="mb-16">
+        <h2 className="text-3xl font-bold tracking-tight mb-6">Quick Start</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {quickStartSteps.map((item) => (
+            <div key={item.step} className="card flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center font-bold text-lg">
+                {item.step}
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-lg mb-1">
+                  <span className="mr-2">{item.icon}</span>
+                  {item.title}
+                </h3>
+                <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                  {item.description}
+                </p>
+                {item.link && (
+                  <a
+                    href={item.link.href}
+                    className="inline-block mt-2 text-sm font-medium text-primary-500 hover:text-primary-600 transition-colors"
+                  >
+                    {item.link.label} &rarr;
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Supported Formats */}
+      <h2 className="text-3xl font-bold tracking-tight mb-6">Supported Formats</h2>
       <div className="space-y-12">
         {formats.map((format) => (
           <section key={format.id} id={format.id} className="scroll-mt-24">
