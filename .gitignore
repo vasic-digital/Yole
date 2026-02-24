@@ -120,7 +120,7 @@ app/flavor*
 # Git worktrees
 .worktrees/
 
-# Challenges
-challenges/reports/
-challenges/screenshots/
+# Challenges runner output
+reports/
+screenshots/
 
