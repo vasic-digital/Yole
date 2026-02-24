@@ -86,6 +86,13 @@ android {
         warningsAsErrors = false
         abortOnError = true
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
+        }
+    }
 }
 
 dependencies {
@@ -128,4 +135,10 @@ dependencies {
     androidTestImplementation(libs.androidx.test.compose.ui)
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test)
+
+    // Robolectric for JVM-based Android UI testing
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.junit)
+    testImplementation(libs.androidx.test.espresso.core)
+    testImplementation(libs.androidx.test.compose.ui)
 }

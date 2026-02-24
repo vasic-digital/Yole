@@ -59,6 +59,7 @@ assertj = "3.26.3"
 mockk = "1.13.13"
 turbine = "1.2.0"
 kover = "0.8.3"
+robolectric = "4.14.1"
 
 # UI Libraries (Android)
 gene-rate = "1.1.8"
@@ -176,6 +177,7 @@ assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockk" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
 # AndroidX Testing
 androidx-test-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-junit" }
