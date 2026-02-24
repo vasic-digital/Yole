@@ -49,6 +49,24 @@ Any fix applied must be:
 | iOS | In development |
 | Web (Wasm PWA) | In development |
 
+## Git Submodules
+
+| Submodule | Purpose | URL |
+|-----------|---------|-----|
+| `Challenges/` | Go-based testing framework with cross-platform challenges | `git@github.com:vasic-digital/Challenges.git` |
+| `Containers/` | Go-based container orchestration (dependency of Challenges) | `git@github.com:vasic-digital/Containers.git` |
+
+```bash
+# Initialize submodules after clone
+git submodule update --init --recursive
+
+# Build and test Challenges
+cd Challenges && go build ./... && go vet ./... && go test ./... -race -count=1
+
+# Build and test Containers
+cd Containers && go build ./... && go vet ./... && go test ./... -race -count=1
+```
+
 ## Build Commands
 
 ```bash
@@ -206,5 +224,8 @@ Tests live in `shared/src/commonTest/kotlin/digital/vasic/yole/format/`:
 - `settings.gradle.kts` — Module includes (shared, androidApp, desktopApp, webApp, iosApp, commons, core)
 - `gradle/libs.versions.toml` — Centralized dependency versions
 - `Makefile` — Legacy Android build automation (requires `ANDROID_SDK_ROOT`)
+- `docker-compose.yml` — Podman/Docker container build environment
 - `docker/scripts/test-all.sh` — Comprehensive multi-platform test runner
 - `docker/scripts/build.sh` — Container build script
+- `Challenges/` — Go testing framework submodule (cross-platform challenges)
+- `Containers/` — Go container orchestration submodule (Challenges dependency)
