@@ -4,18 +4,24 @@ version: '3.8'
 services:
   # Build container using pre-built Android SDK image
   build:
-    image: cirrusci/android-sdk:latest
+    image: docker.io/thyrlian/android-sdk:latest
     container_name: yole-build
     privileged: true
     volumes:
       - .:/workspace
       - ./releases:/workspace/releases
+      - ${HOME}/.gradle:/root/.gradle
+      - ${HOME}/.m2:/root/.m2
+      - ${HOME}/Android/Sdk:/opt/android-sdk
+    environment:
+      - ANDROID_HOME=/opt/android-sdk
+      - ANDROID_SDK_ROOT=/opt/android-sdk
     working_dir: /workspace
     command: sleep infinity
 
   # Alternative using thyrlian/android-sdk
   build-alt:
-    image: thyrlian/android-sdk:latest
+    image: docker.io/thyrlian/android-sdk:latest
     container_name: yole-build-alt
     privileged: true
     volumes:
@@ -26,7 +32,7 @@ services:
 
   # SonarQube Community Edition for code quality analysis
   sonarqube:
-    image: sonarqube:community
+    image: docker.io/library/sonarqube:community
     container_name: yole-sonarqube
     ports:
       - "9000:9000"

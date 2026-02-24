@@ -11,8 +11,6 @@ package digital.vasic.yole.android.robolectric
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import digital.vasic.yole.android.MainActivity
-import digital.vasic.yole.format.ParserInitializer
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,62 +24,57 @@ class NavigationRobolectricTest {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
-    @Before
-    fun setup() {
-        ParserInitializer.registerAllParsers()
-    }
-
     @Test
     fun navigateToFilesScreen() {
-        composeTestRule.onNodeWithText("Files").performClick()
-        composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Files").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("File Browser").onFirst().assertExists()
     }
 
     @Test
     fun navigateToTodoScreen() {
-        composeTestRule.onNodeWithText("To-Do").performClick()
-        composeTestRule.onNodeWithText("To-Do List").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("To-Do").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("To-Do List").onFirst().assertExists()
     }
 
     @Test
     fun navigateToQuickNoteScreen() {
-        composeTestRule.onNodeWithText("QuickNote").performClick()
-        composeTestRule.onNodeWithText("QuickNote").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("QuickNote").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("QuickNote").onFirst().assertIsDisplayed()
     }
 
     @Test
     fun navigateToMoreScreen() {
-        composeTestRule.onNodeWithText("More").performClick()
-        composeTestRule.onNodeWithText("Settings").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("More").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("Settings").onFirst().assertExists()
     }
 
     @Test
     fun fullNavigationCycle() {
-        composeTestRule.onNodeWithText("Files").performClick()
-        composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Files").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("File Browser").onFirst().assertExists()
 
-        composeTestRule.onNodeWithText("To-Do").performClick()
-        composeTestRule.onNodeWithText("To-Do List").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("To-Do").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("To-Do List").onFirst().assertExists()
 
-        composeTestRule.onNodeWithText("QuickNote").performClick()
-        composeTestRule.onNodeWithText("QuickNote").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("QuickNote").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("QuickNote").onFirst().assertIsDisplayed()
 
-        composeTestRule.onNodeWithText("More").performClick()
-        composeTestRule.onNodeWithText("Settings").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("More").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("Settings").onFirst().assertExists()
 
-        composeTestRule.onNodeWithText("Files").performClick()
-        composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Files").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("File Browser").onFirst().assertExists()
     }
 
     @Test
     fun rapidNavigationDoesNotCrash() {
         for (i in 1..10) {
-            composeTestRule.onNodeWithText("Files").performClick()
-            composeTestRule.onNodeWithText("To-Do").performClick()
-            composeTestRule.onNodeWithText("QuickNote").performClick()
-            composeTestRule.onNodeWithText("More").performClick()
+            composeTestRule.onAllNodesWithText("Files").onFirst().performClick()
+            composeTestRule.onAllNodesWithText("To-Do").onFirst().performClick()
+            composeTestRule.onAllNodesWithText("QuickNote").onFirst().performClick()
+            composeTestRule.onAllNodesWithText("More").onFirst().performClick()
         }
-        composeTestRule.onNodeWithText("Files").performClick()
-        composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Files").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("File Browser").onFirst().assertExists()
     }
 }

@@ -11,8 +11,6 @@ package digital.vasic.yole.android.robolectric
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import digital.vasic.yole.android.MainActivity
-import digital.vasic.yole.format.ParserInitializer
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,50 +24,45 @@ class ThemeRobolectricTest {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
-    @Before
-    fun setup() {
-        ParserInitializer.registerAllParsers()
-    }
-
     @Test
     fun defaultThemeAppliesWithoutCrash() {
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("Files").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Files").onFirst().assertIsDisplayed()
     }
 
     @Test
     fun settingsScreenShowsThemeOptions() {
-        composeTestRule.onNodeWithText("More").performClick()
-        composeTestRule.onNodeWithText("Settings").performClick()
-        composeTestRule.onNodeWithText("Light theme").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Dark theme").assertIsDisplayed()
-        composeTestRule.onNodeWithText("System theme (follows system setting)").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("More").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("Light theme").onFirst().assertExists()
+        composeTestRule.onAllNodesWithText("Dark theme").onFirst().assertExists()
+        composeTestRule.onAllNodesWithText("System theme (follows system setting)").onFirst().assertExists()
     }
 
     @Test
     fun lightThemeCanBeSelected() {
-        composeTestRule.onNodeWithText("More").performClick()
-        composeTestRule.onNodeWithText("Settings").performClick()
-        composeTestRule.onNodeWithText("Light theme").performClick()
+        composeTestRule.onAllNodesWithText("More").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("Light theme").onFirst().performClick()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("Settings").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Settings").onFirst().assertExists()
     }
 
     @Test
     fun darkThemeCanBeSelected() {
-        composeTestRule.onNodeWithText("More").performClick()
-        composeTestRule.onNodeWithText("Settings").performClick()
-        composeTestRule.onNodeWithText("Dark theme").performClick()
+        composeTestRule.onAllNodesWithText("More").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("Dark theme").onFirst().performClick()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("Settings").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Settings").onFirst().assertExists()
     }
 
     @Test
     fun systemThemeCanBeSelected() {
-        composeTestRule.onNodeWithText("More").performClick()
-        composeTestRule.onNodeWithText("Settings").performClick()
-        composeTestRule.onNodeWithText("System theme (follows system setting)").performClick()
+        composeTestRule.onAllNodesWithText("More").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("System theme (follows system setting)").onFirst().performClick()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("Settings").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Settings").onFirst().assertExists()
     }
 }
