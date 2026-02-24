@@ -1,0 +1,18 @@
+#+TITLE: Sample Org Mode Document
+#+AUTHOR: Yole Challenges
+
+* Introduction
+
+This is a test file for the Yole Challenges framework.
+
+* Tasks
+
+** TODO Write more tests
+** DONE Create sample files
+   CLOSED: [2025-01-01]
+
+* Notes
+
+- Org mode supports outlines
+- Tasks with TODO/DONE states
+- Tables and links
