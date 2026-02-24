@@ -82,7 +82,7 @@ class LatexParser : TextParser {
                     inMathMode = false
                 }
                 if (environmentStack.isNotEmpty() && environmentStack.last() == endEnv) {
-                    environmentStack.removeLast()
+                    environmentStack.removeAt(environmentStack.lastIndex)
                 } else if (environmentStack.isNotEmpty()) {
                     errors.add("Line $lineNumber: Mismatched environment end: $endEnv (expected: ${environmentStack.last()})")
                 }
