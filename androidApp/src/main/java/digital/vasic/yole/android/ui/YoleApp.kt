@@ -80,7 +80,7 @@ class YoleSettings(context: android.content.Context) : GsSharedPreferencesProper
     fun getDynamicColorsEnabled(): Boolean = getBool("dynamic_colors_enabled", true)
     fun setDynamicColorsEnabled(enabled: Boolean) = setBool("dynamic_colors_enabled", enabled)
 
-    fun getCustomSeedColor(): String? = getString("custom_seed_color", "")
+    fun getCustomSeedColor(): String? = getString("custom_seed_color", "").takeIf { it.isNotEmpty() }
     fun setCustomSeedColor(colorHex: String?) = setString("custom_seed_color", colorHex ?: "")
 
     // Accessibility settings
@@ -243,10 +243,17 @@ fun MainScreen() {
 
     // Initialize parsers with lazy loading for faster startup
     LaunchedEffect(Unit) {
-        digital.vasic.yole.format.ParserInitializer.registerAllParsersLazy()
-        // Cleanup old PDFs and backups periodically
-        PdfExportUtil.cleanupOldPdfs(context)
-        BackupRestoreUtil.cleanupOldBackups(context)
+        try {
+            digital.vasic.yole.format.ParserInitializer.registerAllParsersLazy()
+        } catch (e: Exception) {
+            android.util.Log.e("YoleApp", "Failed to initialize parsers", e)
+        }
+        try {
+            PdfExportUtil.cleanupOldPdfs(context)
+            BackupRestoreUtil.cleanupOldBackups(context)
+        } catch (e: Exception) {
+            android.util.Log.e("YoleApp", "Failed to cleanup old files", e)
+        }
     }
 
     // Keyboard shortcuts

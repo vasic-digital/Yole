@@ -214,7 +214,13 @@ fun YoleAndroidThemeWithSettings(
 
     val dynamicColor = settings.getDynamicColorsEnabled()
     val seedColorHex = settings.getCustomSeedColor()
-    val seedColor = seedColorHex?.let { Color(android.graphics.Color.parseColor(it)) }
+    val seedColor = seedColorHex?.takeIf { it.isNotEmpty() }?.let {
+        try {
+            Color(android.graphics.Color.parseColor(it))
+        } catch (e: IllegalArgumentException) {
+            null
+        }
+    }
 
     YoleAndroidTheme(
         themeMode = themeMode,
