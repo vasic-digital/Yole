@@ -1,7 +1,0 @@
-Name,Format,Extension,Category
-Markdown,CommonMark,md,markup
-Plain Text,UTF-8,txt,plain
-CSV,RFC 4180,csv,tabular
-LaTeX,TeX,tex,typesetting
-Org Mode,Emacs,org,outline
-AsciiDoc,AsciiDoc,adoc,markup
