@@ -16,6 +16,11 @@ import (
 	"digital.vasic.challenges/pkg/registry"
 	"digital.vasic.challenges/pkg/report"
 	"digital.vasic.challenges/pkg/runner"
+
+	androidch "digital.vasic.yole/challenges/android"
+	"digital.vasic.yole/challenges/desktop"
+	"digital.vasic.yole/challenges/infra"
+	"digital.vasic.yole/challenges/web"
 )
 
 func main() {
@@ -137,17 +142,60 @@ func findProjectRoot() string {
 	return parent
 }
 
-// Placeholder registration functions — implemented in task 9
 func registerInfraChallenges(
-	_ *registry.DefaultRegistry, _ string, _ bool,
+	reg *registry.DefaultRegistry,
+	projectRoot string, useDocker bool,
 ) {
+	_ = reg.Register(
+		infra.NewGradleBuildChallenge(projectRoot, useDocker),
+	)
+	_ = reg.Register(
+		infra.NewGradleTestsChallenge(projectRoot, useDocker),
+	)
+	_ = reg.Register(
+		infra.NewLintChallenge(projectRoot, useDocker),
+	)
 }
 
 func registerAndroidChallenges(
-	_ *registry.DefaultRegistry, _ string, _ bool,
+	reg *registry.DefaultRegistry,
+	projectRoot string, useDocker bool,
 ) {
+	_ = reg.Register(
+		androidch.NewRobolectricLaunchChallenge(
+			projectRoot, useDocker,
+		),
+	)
+	_ = reg.Register(
+		androidch.NewRobolectricFlowsChallenge(
+			projectRoot, useDocker,
+		),
+	)
+	_ = reg.Register(
+		androidch.NewUIAutomatorLaunchChallenge(
+			projectRoot, useDocker,
+		),
+	)
 }
 
-func registerDesktopChallenges(_ *registry.DefaultRegistry, _ string) {}
+func registerDesktopChallenges(
+	reg *registry.DefaultRegistry, projectRoot string,
+) {
+	_ = reg.Register(
+		desktop.NewDesktopLaunchChallenge(projectRoot),
+	)
+	_ = reg.Register(
+		desktop.NewDesktopUserFlowsChallenge(projectRoot),
+	)
+}
 
-func registerWebChallenges(_ *registry.DefaultRegistry, _ string) {}
+func registerWebChallenges(
+	reg *registry.DefaultRegistry, projectRoot string,
+) {
+	_ = reg.Register(
+		web.NewWebLaunchChallenge(projectRoot),
+	)
+	_ = reg.Register(
+		web.NewWebUserFlowsChallenge(projectRoot),
+	)
+}
