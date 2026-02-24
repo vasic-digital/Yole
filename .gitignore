@@ -6,6 +6,7 @@ tmp/
 *.bak
 *.log
 releases/
+docker/keys/
 
 ################
 ### Intellij ###
