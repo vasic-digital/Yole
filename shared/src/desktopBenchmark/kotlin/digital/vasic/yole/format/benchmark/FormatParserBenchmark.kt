@@ -79,11 +79,11 @@ class FormatParserBenchmark {
             - Item 2
             - Item 3
             
-            \`\`\`kotlin
+            ${'`'}${'`'}${'`'}kotlin
             fun main() {
                 println("Hello World")
             }
-            \`\`\`
+            ${'`'}${'`'}${'`'}
             
             [Link](https://example.com)
             
@@ -128,11 +128,11 @@ class FormatParserBenchmark {
                 appendLine("- List item 2 for section $i")
                 appendLine("- List item 3 for section $i")
                 appendLine()
-                appendLine("\`\`\`python")
+                appendLine("${'`'}${'`'}${'`'}python")
                 appendLine("def function_$i():")
                 appendLine("    print(f'Hello from function $i')")
                 appendLine("    return $i * 2")
-                appendLine("\`\`\`")
+                appendLine("${'`'}${'`'}${'`'}")
                 appendLine()
                 appendLine("> Blockquote for section $i")
                 appendLine("> With multiple lines")
@@ -199,14 +199,14 @@ class FormatParserBenchmark {
                     appendLine()
                     appendLine("### Code Block")
                     appendLine()
-                    appendLine("\`\`\`kotlin")
+                    appendLine("${'`'}${'`'}${'`'}kotlin")
                     appendLine("class Example_$i$j {")
                     appendLine("    fun method${i}_${j}() {")
                     appendLine("        println(\"Method $i.$j called\")")
                     appendLine("        return $i + $j")
                     appendLine("    }")
                     appendLine("}")
-                    appendLine("\`\`\`")
+                    appendLine("${'`'}${'`'}${'`'}")
                     appendLine()
                     appendLine("### Links and References")
                     appendLine()
@@ -260,19 +260,19 @@ class FormatParserBenchmark {
         largePlaintext = buildString {
             repeat(100) { i ->
                 appendLine("Section $i:")
-                appendLine("=" * 50)
+                appendLine("=".repeat(50))
                 appendLine()
                 appendLine("This is section $i of a large plain text document.")
                 appendLine("It contains various text patterns and content that needs to be processed.")
                 appendLine("The plaintext parser should handle this efficiently without any issues.")
                 appendLine()
                 appendLine("Subsection $i.1:")
-                appendLine("-" * 30)
+                appendLine("-".repeat(30))
                 appendLine("Detailed information about subsection $i.1 goes here.")
                 appendLine("This content is designed to test the parser's performance.")
                 appendLine()
                 appendLine("Subsection $i.2:")
-                appendLine("-" * 30)
+                appendLine("-".repeat(30))
                 appendLine("More detailed information about subsection $i.2.")
                 appendLine("Including various text patterns and formatting.")
                 appendLine()
@@ -330,7 +330,7 @@ class FormatParserBenchmark {
     @Benchmark
     fun benchmarkTodoTxtToString(blackhole: Blackhole) {
         val document = todoTxtParser.parse(mediumTodoTxt)
-        val todoTxt = todoTxtParser.toTodoTxt(document)
+        val todoTxt = todoTxtParser.toHtml(document)
         blackhole.consume(todoTxt)
     }
 
