@@ -174,6 +174,10 @@ detekt {
     allRules = false
 }
 
+// Note: Detekt tasks for KMP projects require running detekt CLI directly
+// or configuring detekt in the shared module's build.gradle.kts.
+// See: detekt.yml for rule configuration.
+
 // Configure Dokka for API documentation
 // Note: Dokka plugin must be applied to modules to generate documentation
 // Run: ./gradlew dokkaHtml (for single module) or ./gradlew :shared:dokkaHtml
