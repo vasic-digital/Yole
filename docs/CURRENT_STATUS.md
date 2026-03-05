@@ -1,14 +1,15 @@
 # Current Status - Comprehensive Completion Sprint
 
 **Last Updated**: March 5, 2026
-**Current Phase**: P0 Critical Safety Fixes - IN PROGRESS
+**Current Phase**: P2 Test Coverage Expansion - IN PROGRESS
 **Overall Project Progress**: Comprehensive 13-phase completion plan active
+**Total Tests**: 2,579+ (desktop test suite, all passing)
 
 ---
 
 ## March 5, 2026 - Comprehensive Completion Sprint
 
-### P0: Critical Safety Fixes (IN PROGRESS)
+### P0: Critical Safety Fixes - COMPLETE ✅
 
 **Concurrency fixes applied to ALL 8 network services:**
 - DropboxService, GoogleDriveService, OneDriveService, GitService
@@ -16,17 +17,44 @@
 - Added `stateMutex = Mutex()` to protect `_isConnected` writes
 - Fixed `serviceScope.cancel()` + recreate pattern in Dropbox/GoogleDrive/OneDrive
 - Fixed `httpClient` lifecycle management
+- Commit: `f3c57548`
 
-**New files created:**
-- `RateLimitedStorageService.kt` - Semaphore-based concurrency limiting decorator
-- `RateLimitedStorageServiceTest.kt` - Tests for rate-limited decorator
-- `ConcurrencyStressTest.kt` - Stress tests for concurrent connect/disconnect
-- iOS `SecureStorageFactory.ios.kt` - Keychain-backed secure storage
-- iOS `HttpClientFactory.ios.kt` - Darwin engine HTTP client
-- iOS `TodoTxtParser.ios.kt` - Date formatting for iOS
+### P1: Security Scanning - PARTIAL
 
-**Documentation updated:**
-- `CONCURRENCY_SAFETY.md` - Added all 8 services to Mutex pattern listing
+- Detekt plugin applied but KMP doesn't auto-generate scan tasks
+- OWASP Dependency Check plugin applied
+- SonarQube container running but not yet configured for analysis
+
+### P2: Test Coverage Expansion - IN PROGRESS
+
+**182 new tests added across 12 new test files:**
+
+| Test File | Tests | Covers |
+|-----------|-------|--------|
+| RateLimitingTest.kt | 18 | RateLimiter, TokenBucket, AdaptiveRateLimiter, OperationThrottler |
+| LazyLoadingTest.kt | 10 | LazyStringLoader, FlowLazyLoader |
+| StyleSheetsTest.kt | 8 | StyleSheets light/dark themes for all formats |
+| NetworkStorageExceptionTest.kt | 6 | Exception hierarchy and factory methods |
+| TextFormatTest.kt | 7 | TextFormat data class and ID constants |
+| TextParserTest.kt | 22 | ParsedDocument, ParserRegistry, ParseOptions, escapeHtml |
+| CacheEntryTest.kt | 21 | CacheEntry computed properties and mutation methods |
+| NetworkStorageTest.kt | 17 | NetworkStorage space calcs and file support |
+| StorageModelsTest.kt | 8 | StorageInfo, QuotaInfo, FileInfo |
+| NetworkProtocolStatusTest.kt | 11 | Protocol registry and tier queries |
+| StorageConfigTest.kt | 23 | All 8 storage config types and related enums |
+| DocumentSyncStatusTest.kt | 31 | Sync status tracking and state transitions |
+
+**Other fixes:**
+- Fixed benchmark compilation (FormatParserBenchmark.kt - Kotlin syntax)
+- Fixed 2 pre-existing test failures (container environment)
+- Commit: `b2e9f1dd`, `1ee134e4`, `f88929b8`, `ca9df9c2`
+
+### P3-P12: Remaining Phases
+
+- iOS platform expect/actuals created (SecureStorage, HttpClient, TodoTxtParser)
+- Web/Wasm, Desktop platform completion pending
+- Challenges framework (47 Yole-specific challenges) pending
+- Documentation, website, video courses pending
 
 ### Master Plan
 See `docs/plans/2026-03-05-comprehensive-completion-plan.md` for full 13-phase plan (P0-P12).
