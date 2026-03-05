@@ -72,6 +72,7 @@ class WebDavService(
     // Track whether httpClient has been initialized to avoid closing uninitialized client
     private var httpClientInitialized = false
 
+    private val stateMutex = Mutex()
     private var _isConnected = false
 
     // In-memory cache protected by Mutex for thread-safe access
@@ -112,10 +113,10 @@ class WebDavService(
                 applyAuth()
             }
             // Any response (even 4xx) means the server is reachable
-            _isConnected = true
+            stateMutex.withLock { _isConnected = true }
         } catch (_: Exception) {
             // Network error - still mark as connected for offline-capable usage
-            _isConnected = true
+            stateMutex.withLock { _isConnected = true }
         }
         Result.success(Unit)
     } catch (e: Exception) {
@@ -133,10 +134,10 @@ class WebDavService(
                 // Ignore close errors
             }
         }
-        _isConnected = false
+        stateMutex.withLock { _isConnected = false }
         Result.success(Unit)
     } catch (e: Exception) {
-        _isConnected = false
+        stateMutex.withLock { _isConnected = false }
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
 

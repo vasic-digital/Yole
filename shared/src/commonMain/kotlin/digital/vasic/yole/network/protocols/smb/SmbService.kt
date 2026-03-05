@@ -56,6 +56,7 @@ class SmbService(
     // Platform file I/O for reading/writing local files
     private val fileIO by lazy { PlatformFileIOFactory.create() }
 
+    private val stateMutex = Mutex()
     private var _isConnected = false
     private var _rootPath = if (config.path.isBlank()) "/" else config.path
 
@@ -135,7 +136,7 @@ class SmbService(
     }
 
     override suspend fun connect(): Result<Unit> = try {
-        _isConnected = true
+        stateMutex.withLock { _isConnected = true }
         Result.success(Unit)
     } catch (e: Exception) {
         Result.failure(
@@ -147,7 +148,7 @@ class SmbService(
     }
 
     override suspend fun disconnect(): Result<Unit> = try {
-        _isConnected = false
+        stateMutex.withLock { _isConnected = false }
         Result.success(Unit)
     } catch (e: Exception) {
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))

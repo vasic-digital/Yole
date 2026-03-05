@@ -54,6 +54,7 @@ class FtpService(
     private val ftpClient = FtpProtocolClient()
 
     private var _isConnected = false
+    private val stateMutex = Mutex()
     private var _rootPath = config.rootPath.ifBlank { "/" }
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()
     private val operationsMutex = Mutex()
@@ -152,7 +153,7 @@ class FtpService(
                 ))
             }
 
-            _isConnected = true
+            stateMutex.withLock { _isConnected = true }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(NetworkStorageException.ConnectionException.Failed(
@@ -168,7 +169,7 @@ class FtpService(
     override suspend fun disconnect(): Result<Unit> {
         return try {
             ftpClient.disconnect()
-            _isConnected = false
+            stateMutex.withLock { _isConnected = false }
             // Clear active operations on disconnect
             operationsMutex.withLock {
                 activeOperations.clear()
@@ -179,7 +180,7 @@ class FtpService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
-            _isConnected = false // Ensure we mark as disconnected even on error
+            stateMutex.withLock { _isConnected = false } // Ensure we mark as disconnected even on error
             Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
         }
     }

@@ -1,6 +1,6 @@
 # Concurrency Safety Architecture
 
-*Last updated: 2026-02-23*
+*Last updated: 2026-03-05*
 
 ## 1. Overview
 
@@ -44,6 +44,14 @@ suspend fun updateState(value: Int) {
 - `shared/src/commonMain/kotlin/digital/vasic/yole/util/RateLimiting.kt` - All rate limiters
 - `shared/src/commonMain/kotlin/digital/vasic/yole/util/LazyLoading.kt` - Lazy document loaders
 - `shared/src/commonMain/kotlin/digital/vasic/yole/network/config/NetworkStorageConfigService.kt` - Network configuration
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/dropbox/DropboxService.kt` - stateMutex for `_isConnected`
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/googledrive/GoogleDriveService.kt` - stateMutex for `_isConnected`
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/onedrive/OneDriveService.kt` - stateMutex for `_isConnected`
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/git/GitService.kt` - stateMutex for `_isConnected`
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/webdav/WebDavService.kt` - stateMutex for `_isConnected`
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/smb/SmbService.kt` - stateMutex for `_isConnected`
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/ftp/FtpService.kt` - stateMutex for `_isConnected`
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/sftp/SftpService.kt` - stateMutex for `_isConnected`
 
 ---
 
@@ -64,7 +72,9 @@ suspend fun executeWithLimit(operation: suspend () -> T): T {
 }
 ```
 
-**Used in**: `RateLimiter` class for concurrent operation limiting
+**Used in**:
+- `RateLimiter` class for concurrent operation limiting
+- `RateLimitedStorageService` decorator — wraps any `NetworkStorageService` to limit concurrent network operations (default: 4 concurrent)
 
 **Guarantees**: At most `maxConcurrent` coroutines active simultaneously
 
@@ -89,7 +99,7 @@ fun toHtml(lightMode: Boolean = true): String {
 
 **Files using this pattern**:
 - `shared/src/commonMain/kotlin/digital/vasic/yole/format/TextParser.kt` - ParsedDocument HTML caches
-- Network services (DropboxService, FtpService) - Connection state flags
+- Network services - HTML caches (note: `_isConnected` is now protected by `stateMutex.withLock` in all 8 services)
 
 **Safety Guarantee**:
 - First write is atomic

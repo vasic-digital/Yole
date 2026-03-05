@@ -202,10 +202,16 @@ class DesktopSecureStorageTest : SecureStorageTest() {
         if (storageDir.setReadOnly()) {
             try {
                 val result = desktopSecureStorage.store("test_key", "test_value")
-                
-                // Should fail when directory is read-only
-                assertTrue(result.isFailure, "Store should fail in read-only directory")
-                assertNotNull(result.exceptionOrNull(), "Should provide error details")
+
+                // Root user can write to read-only directories, so skip assertion
+                // when running as root (e.g., in Docker containers)
+                val isRoot = System.getProperty("user.name") == "root"
+                if (!isRoot) {
+                    // Should fail when directory is read-only
+                    assertTrue(result.isFailure, "Store should fail in read-only directory")
+                    assertNotNull(result.exceptionOrNull(), "Should provide error details")
+                }
+                // When running as root, the operation may succeed - that's expected
             } finally {
                 // Restore write permissions for cleanup
                 storageDir.setWritable(true)

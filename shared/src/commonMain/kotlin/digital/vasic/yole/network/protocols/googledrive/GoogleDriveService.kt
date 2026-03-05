@@ -83,6 +83,7 @@ class GoogleDriveService(
         )
     }
 
+    private val stateMutex = Mutex()
     private var _isConnected = false
     private var _rootFolderId = config.rootFolderId ?: "root"
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()
@@ -100,7 +101,7 @@ class GoogleDriveService(
         get() = "/"
     
     // Structured concurrency: use SupervisorJob for background initialization
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     // In-memory cache storage
     private val cacheEntries = mutableMapOf<String, CacheEntry>()
@@ -125,7 +126,7 @@ class GoogleDriveService(
         if (hasValidToken) {
             // Test connection with existing token
             val testResult = testConnectionInternal()
-            _isConnected = testResult.getOrNull() ?: false
+            stateMutex.withLock { _isConnected = testResult.getOrNull() ?: false }
         }
     }
     
@@ -158,7 +159,7 @@ class GoogleDriveService(
             // Test connection by getting about info
             val aboutInfoResult = getAboutInfo()
             if (aboutInfoResult.isSuccess) {
-                _isConnected = true
+                stateMutex.withLock { _isConnected = true }
                 Result.success(Unit)
             } else {
                 // Try to refresh token if connection failed
@@ -180,20 +181,21 @@ class GoogleDriveService(
     }
     
     override suspend fun disconnect(): Result<Unit> = try {
-        // Cancel background tasks
-        serviceScope.coroutineContext[Job]?.children?.forEach { it.cancel() }
+        // Cancel background tasks and recreate scope for potential reconnection
+        serviceScope.cancel()
+        serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         // Only close httpClient if it was actually initialized
         if (httpClientInitialized) {
             try {
                 httpClient.close()
-            } catch (closeException: Exception) {
-                // Log but don't fail disconnect for close errors
+            } catch (_: Exception) {
+                // Client may not have been initialized or already closed
             }
         }
-        _isConnected = false
+        stateMutex.withLock { _isConnected = false }
         Result.success(Unit)
     } catch (e: Exception) {
-        _isConnected = false // Ensure we mark as disconnected even on error
+        stateMutex.withLock { _isConnected = false } // Ensure we mark as disconnected even on error
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
 
@@ -240,7 +242,7 @@ class GoogleDriveService(
                     refreshToken = tokens.refresh_token,
                     expiresIn = tokens.expires_in
                 )
-                _isConnected = true
+                stateMutex.withLock { _isConnected = true }
                 Result.success(Unit)
             } else {
                 Result.failure(tokenResponse.exceptionOrNull() ?: Exception("Token refresh failed"))

@@ -86,6 +86,7 @@ class DropboxService(
 
     private var _isConnected = false
     private var _rootPath = if (config.rootPath.isBlank()) "" else config.rootPath
+    private val stateMutex = Mutex()
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()
     private val operationsMutex = Mutex()
 
@@ -101,7 +102,7 @@ class DropboxService(
         get() = "/"
     
     // Structured concurrency: use SupervisorJob for background initialization
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     // In-memory cache storage
     private val cacheEntries = mutableMapOf<String, CacheEntry>()
@@ -126,7 +127,7 @@ class DropboxService(
         if (hasValidToken) {
             // Test connection with existing token
             val testResult = testConnectionInternal()
-            _isConnected = testResult.getOrNull() ?: false
+            stateMutex.withLock { _isConnected = testResult.getOrNull() ?: false }
         }
     }
     
@@ -161,7 +162,7 @@ class DropboxService(
             // Test connection by getting account info
             val accountInfoResult = getAccountInfo()
             if (accountInfoResult.isSuccess) {
-                _isConnected = true
+                stateMutex.withLock { _isConnected = true }
                 Result.success(Unit)
             } else {
                 // Try to refresh token if connection failed
@@ -184,8 +185,9 @@ class DropboxService(
     
     override suspend fun disconnect(): Result<Unit> {
         return try {
-            // Cancel background tasks
-            serviceScope.coroutineContext[Job]?.children?.forEach { it.cancel() }
+            // Cancel background tasks and recreate scope for potential reconnection
+            serviceScope.cancel()
+            serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
             // Only close httpClient if it was actually initialized
             if (httpClientInitialized) {
                 try {
@@ -194,10 +196,10 @@ class DropboxService(
                     // Log but don't fail disconnect for close errors
                 }
             }
-            _isConnected = false
+            stateMutex.withLock { _isConnected = false }
             Result.success(Unit)
         } catch (e: Exception) {
-            _isConnected = false // Ensure we mark as disconnected even on error
+            stateMutex.withLock { _isConnected = false } // Ensure we mark as disconnected even on error
             Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
         }
     }
@@ -244,7 +246,7 @@ class DropboxService(
                     refreshToken = tokens.refresh_token,
                     expiresIn = tokens.expires_in
                 )
-                _isConnected = true
+                stateMutex.withLock { _isConnected = true }
                 Result.success(Unit)
             } else {
                 Result.failure(tokenResponse.exceptionOrNull() ?: Exception("Token refresh failed"))

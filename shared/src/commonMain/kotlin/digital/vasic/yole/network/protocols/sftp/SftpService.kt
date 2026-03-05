@@ -53,6 +53,7 @@ class SftpService(
 ) : NetworkStorageService {
 
     private var _isConnected = false
+    private val stateMutex = Mutex()
     private var _rootPath = config.rootPath.ifBlank { "/" }
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()
     private val operationsMutex = Mutex()
@@ -113,7 +114,7 @@ class SftpService(
             // Test SFTP connection (SSH handshake, key exchange, authentication)
             val connectionTest = testSftpConnection()
             if (connectionTest.isSuccess) {
-                _isConnected = true
+                stateMutex.withLock { _isConnected = true }
                 // Initialize the virtual file system with default directory listing
                 initializeVirtualFileSystem()
                 Result.success(Unit)
@@ -162,14 +163,14 @@ class SftpService(
     }
 
     override suspend fun disconnect(): Result<Unit> = try {
-        _isConnected = false
+        stateMutex.withLock { _isConnected = false }
         // Clear active operations on disconnect
         operationsMutex.withLock {
             activeOperations.clear()
         }
         Result.success(Unit)
     } catch (e: Exception) {
-        _isConnected = false // Ensure we mark as disconnected even on error
+        stateMutex.withLock { _isConnected = false } // Ensure we mark as disconnected even on error
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
 

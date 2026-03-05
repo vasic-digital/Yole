@@ -78,6 +78,7 @@ class GitService(
     // Track whether httpClient has been initialized to avoid closing uninitialized client
     private var httpClientInitialized = false
 
+    private val stateMutex = Mutex()
     private var _isConnected = false
 
     // In-memory cache protected by Mutex for thread-safe access
@@ -130,7 +131,7 @@ class GitService(
                 applyAuth()
             }
             // Any response means we could reach the server
-            _isConnected = true
+            stateMutex.withLock { _isConnected = true }
 
             // If we got a successful response, try to parse the refs
             if (response.status.isSuccess()) {
@@ -139,7 +140,7 @@ class GitService(
             }
         } catch (_: Exception) {
             // Network error - in test environments, simulate success for validation
-            _isConnected = true
+            stateMutex.withLock { _isConnected = true }
         }
 
         Result.success(Unit)
@@ -159,10 +160,10 @@ class GitService(
                 // Log but don't fail disconnect for close errors
             }
         }
-        _isConnected = false
+        stateMutex.withLock { _isConnected = false }
         Result.success(Unit)
     } catch (e: Exception) {
-        _isConnected = false // Ensure we mark as disconnected even on error
+        stateMutex.withLock { _isConnected = false } // Ensure we mark as disconnected even on error
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
 
