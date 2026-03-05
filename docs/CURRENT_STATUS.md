@@ -1,15 +1,47 @@
 # Current Status - Comprehensive Completion Sprint
 
-**Last Updated**: March 5, 2026
+**Last Updated**: March 6, 2026
 **Current Phase**: P2 Test Coverage Expansion - IN PROGRESS
 **Overall Project Progress**: Comprehensive 13-phase completion plan active
-**Total Tests**: 2,579+ (desktop test suite, all passing)
+**Total Tests**: 2,742+ (desktop test suite, all passing)
+**Line Coverage**: 62.6% (up from 51.4% on March 5)
+
+---
+
+## March 6, 2026 - Coverage Expansion & Security Scanning
+
+### Progress This Session
+
+**112 new tests added across 3 test files (new/expanded):**
+
+| Test File | Tests | Covers |
+|-----------|-------|--------|
+| DocumentPermissionTest.kt (NEW) | 22 | All 16 permissions, classifications, display names, descriptions, companion utilities, ADMIN bypass |
+| StorageQuotaTest.kt (NEW) | 16 | StorageQuota creation, formatted display (B/KB/MB/GB), usage percentage, expiration, metadata, equality, copy |
+| NetworkStorageExceptionTest.kt (EXPANDED) | 75 (was 6) | ALL sealed class exception types, toUserMessage(), isRetryable(), isPermanentFailure(), getSuggestedAction(), fromThrowable() factory |
+
+**Security scanning (P1):**
+- Detekt CLI 1.23.7 run successfully against full source tree
+- Only WildcardImport style findings — no bugs, security issues, or code smells
+- SonarQube/OWASP dependency check not yet configured
+
+**Coverage improvements (Kover HTML report):**
+
+| Package | Before | After | Change |
+|---------|--------|-------|--------|
+| network.auth | 66.9% | 96.2% | +29.3% |
+| model | 26.7% | 36.7% | +10.0% |
+| network.common | ~50% | 60.4% | +10% |
+| network | ~60% | 71.6% | +11% |
+| **Overall line** | **51.4%** | **62.6%** | **+11.2%** |
+
+**Commit:** `61a9bba2` (unpushed)
 
 ---
 
 ## March 5, 2026 - Comprehensive Completion Sprint
 
-### P0: Critical Safety Fixes - COMPLETE ✅
+### P0: Critical Safety Fixes - COMPLETE
 
 **Concurrency fixes applied to ALL 8 network services:**
 - DropboxService, GoogleDriveService, OneDriveService, GitService
@@ -21,13 +53,13 @@
 
 ### P1: Security Scanning - PARTIAL
 
-- Detekt plugin applied but KMP doesn't auto-generate scan tasks
+- Detekt CLI run (only WildcardImport findings)
 - OWASP Dependency Check plugin applied
-- SonarQube container running but not yet configured for analysis
+- SonarQube container not yet configured
 
 ### P2: Test Coverage Expansion - IN PROGRESS
 
-**182 new tests added across 12 new test files:**
+**182 new tests added across 12 new test files (March 5):**
 
 | Test File | Tests | Covers |
 |-----------|-------|--------|
