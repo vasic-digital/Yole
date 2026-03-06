@@ -243,7 +243,16 @@ fun FormatList(
         "LaTeX" to ".tex",
         "Org Mode" to ".org",
         "AsciiDoc" to ".adoc",
-        "WikiText" to ".wiki"
+        "WikiText" to ".wiki",
+        "reStructuredText" to ".rst",
+        "RMarkdown" to ".rmd",
+        "TaskPaper" to ".taskpaper",
+        "Textile" to ".textile",
+        "Creole" to ".creole",
+        "TiddlyWiki" to ".tid",
+        "Jupyter" to ".ipynb",
+        "Key-Value" to ".properties",
+        "Binary" to ".bin"
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -320,33 +329,39 @@ fun downloadFile(content: String, filename: String) {
  */
 fun triggerFileInput(onFileLoaded: (String, String) -> Unit) {
     try {
-        // Create a simple file input element
         val fileInput = document.createElement("input") as HTMLInputElement
         fileInput.type = "file"
         fileInput.style.display = "none"
-        fileInput.accept = ".txt,.md,.csv,.tex,.org,.adoc,.wiki,.json,.xml,.yaml,.yml,.html"
-        
-        // Add to document and trigger click
+        fileInput.accept = ".txt,.md,.csv,.tex,.org,.adoc,.wiki,.json,.xml,.yaml,.yml,.html,.rst,.rmd,.taskpaper,.textile,.creole,.tid,.ipynb,.ini,.properties,.vcf,.ics,.toml"
+
+        fileInput.addEventListener("change", { _ ->
+            val files = fileInput.files
+            if (files != null && files.length > 0) {
+                val file = files.item(0)!!
+                val filename = file.name
+                val reader = FileReader()
+                reader.onload = { _ ->
+                    val content = reader.result?.toString() ?: ""
+                    onFileLoaded(content, filename)
+                    document.body?.removeChild(fileInput)
+                }
+                reader.onerror = { _ ->
+                    println("Error reading file: $filename")
+                    onFileLoaded("", filename)
+                    document.body?.removeChild(fileInput)
+                }
+                reader.readAsText(file)
+            } else {
+                document.body?.removeChild(fileInput)
+            }
+        })
+
         document.body?.appendChild(fileInput)
         fileInput.click()
-        
-        // For WASM, we'll use a simpler approach - just log for now
-        println("File input triggered. File loading functionality requires browser APIs.")
-        println("In a real browser environment, this would open a file dialog.")
-        
-        document.body?.removeChild(fileInput)
-        
-        // For now, provide a sample file content for testing
-        val sampleContent = "# Sample Loaded File\n\nThis is sample content that would be loaded from a file."
-        val sampleFilename = "sample.md"
-        onFileLoaded(sampleContent, sampleFilename)
-        
     } catch (e: Exception) {
         println("Error in file input handling: ${e.message}")
-        // Provide fallback content
         val fallbackContent = "# Fallback Content\n\nFile loading is not available in this environment."
-        val fallbackFilename = "fallback.md"
-        onFileLoaded(fallbackContent, fallbackFilename)
+        onFileLoaded(fallbackContent, "fallback.md")
     }
 }
 
@@ -511,6 +526,202 @@ fun createNewDocument(formatId: String, onDocumentCreated: (String, String) -> U
             John Doe,john.doe@company.com,555-0101,Engineering
             Jane Smith,jane.smith@company.com,555-0102,Marketing
             Bob Johnson,bob.johnson@company.com,555-0103,Sales
+        """.trimIndent()
+
+        "restructuredtext" -> """
+            New reStructuredText Document
+            =============================
+
+            Introduction
+            ------------
+
+            This is a new reStructuredText document.
+
+            Features
+            --------
+
+            - **Bold text**
+            - *Italic text*
+            - ``Inline code``
+
+            .. code-block:: kotlin
+
+               fun hello() {
+                   println("Hello, World!")
+               }
+        """.trimIndent()
+
+        "rmarkdown" -> """
+            ---
+            title: "New R Markdown Document"
+            author: "Your Name"
+            date: "${getCurrentDate()}"
+            output: html_document
+            ---
+
+            ## Introduction
+
+            This is a new R Markdown document.
+
+            ```{r setup, include=FALSE}
+            knitr::opts_chunk${'$'}set(echo = TRUE)
+            ```
+
+            ## Analysis
+
+            ```{r}
+            summary(cars)
+            ```
+
+            ## Plot
+
+            ```{r pressure, echo=FALSE}
+            plot(pressure)
+            ```
+        """.trimIndent()
+
+        "taskpaper" -> """
+            Inbox:
+            	- New task @today
+            	- Review project requirements @priority(high)
+            	- Write documentation @due(${getCurrentDate()})
+
+            Work:
+            	- Complete feature implementation @priority(medium)
+            	- Code review @context(office)
+            	- Update tests @done
+        """.trimIndent()
+
+        "textile" -> """
+            h1. New Textile Document
+
+            h2. Introduction
+
+            This is a new Textile document.
+
+            h2. Formatting
+
+            *Bold text* and _italic text_ and @inline code@.
+
+            h2. Lists
+
+            * Unordered item
+            * Another item
+
+            # Ordered item
+            # Another item
+        """.trimIndent()
+
+        "creole" -> """
+            = New Creole Document
+
+            == Introduction
+
+            This is a new Creole document.
+
+            == Formatting
+
+            **Bold text** and //italic text//.
+
+            == Lists
+
+            * Unordered item
+            * Another item
+
+            # Ordered item
+            # Another item
+
+            == Links
+
+            [[https://example.com|Example Link]]
+        """.trimIndent()
+
+        "tiddlywiki" -> """
+            ! New TiddlyWiki Document
+
+            !! Introduction
+
+            This is a new TiddlyWiki tiddler.
+
+            !! Formatting
+
+            ''Bold text'' and //italic text// and `code`.
+
+            !! Lists
+
+            * Unordered item
+            * Another item
+
+            # Ordered item
+            # Another item
+        """.trimIndent()
+
+        "jupyter" -> """
+            {
+              "nbformat": 4,
+              "nbformat_minor": 5,
+              "metadata": {
+                "kernelspec": {
+                  "display_name": "Python 3",
+                  "language": "python",
+                  "name": "python3"
+                }
+              },
+              "cells": [
+                {
+                  "cell_type": "markdown",
+                  "metadata": {},
+                  "source": ["# New Jupyter Notebook\n", "\n", "Start writing your notebook here."]
+                },
+                {
+                  "cell_type": "code",
+                  "metadata": {},
+                  "source": ["print('Hello, World!')"],
+                  "outputs": [],
+                  "execution_count": null
+                }
+              ]
+            }
+        """.trimIndent()
+
+        "keyvalue" -> """
+            # Application Configuration
+            app.name=Yole
+            app.version=1.0.0
+            app.debug=false
+
+            # Database Settings
+            db.host=localhost
+            db.port=5432
+            db.name=yole_db
+
+            # Feature Flags
+            feature.dark_mode=true
+            feature.sync=true
+        """.trimIndent()
+
+        "wikitext" -> """
+            = New WikiText Document =
+
+            == Introduction ==
+
+            This is a new WikiText document.
+
+            == Formatting ==
+
+            '''Bold text''' and ''italic text''.
+
+            == Lists ==
+
+            * Unordered item
+            * Another item
+
+            # Ordered item
+            # Another item
+
+            == Links ==
+
+            [[https://example.com|Example Link]]
         """.trimIndent()
 
         else -> """
@@ -768,6 +979,14 @@ fun detectFormatFromFilename(filename: String): String {
         "org" -> "orgmode"
         "adoc", "asciidoc" -> "asciidoc"
         "wiki" -> "wikitext"
+        "rst" -> "restructuredtext"
+        "rmd" -> "rmarkdown"
+        "taskpaper" -> "taskpaper"
+        "textile" -> "textile"
+        "creole" -> "creole"
+        "tid" -> "tiddlywiki"
+        "ipynb" -> "jupyter"
+        "ini", "properties", "vcf", "ics", "toml" -> "keyvalue"
         "json" -> "json"
         "xml" -> "xml"
         "yaml", "yml" -> "yaml"
