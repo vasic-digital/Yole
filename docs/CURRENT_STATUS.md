@@ -1,18 +1,61 @@
 # Current Status - Comprehensive Completion Sprint
 
 **Last Updated**: March 6, 2026
-**Current Phase**: P2 Test Coverage Expansion - IN PROGRESS
+**Current Phase**: P2 Test Coverage Expansion - NEAR COMPLETE
 **Overall Project Progress**: Comprehensive 13-phase completion plan active
-**Total Tests**: 2,742+ (desktop test suite, all passing)
-**Line Coverage**: 62.6% (up from 51.4% on March 5)
+**Total Tests**: 3,032 (2,967 common + 65 desktop, all passing)
+**Line Coverage**: 53.8% | Class Coverage: 62.6% | Method Coverage: 67.4%
 
 ---
 
-## March 6, 2026 - Coverage Expansion & Security Scanning
+## March 6, 2026 - Coverage Expansion Sprint (Session 3)
 
-### Progress This Session
+### New Tests Added (Session 3): 144 tests across 3 files
 
-**112 new tests added across 3 test files (new/expanded):**
+| Test File | Tests | Covers |
+|-----------|-------|--------|
+| FormatRegistryEdgeCaseTest.kt (NEW) | 62 | getById/getByExtension/getFormatsByExtension edge cases, detectByContent for all format types (RMarkdown, LaTeX, OrgMode, WikiText, TiddlyWiki, Jupyter, CSV, KeyValue), maxLines limits, format structure validation, detection priority ordering, format constants |
+| ParsedDocumentEdgeCaseTest.kt (NEW) | 43 | ParsedDocument equality/hashCode/toString edge cases, copy semantics, HTML cache behavior, large metadata/errors, Unicode content, escapeHtml edge cases, ParseOptions overwrite/immutability, ParserRegistry duplicate registration |
+| StyleSheetsContentTest.kt (NEW) | 39 | CSS content validation for all 6 styled formats, headings/code/table/link/blockquote CSS classes, light/dark mode differences, admonitions, math/environment elements, style tag structure |
+
+**Coverage after Session 3 (Kover HTML):**
+
+| Package | Coverage |
+|---------|----------|
+| format (top-level) | **100%** |
+| model | **100%** |
+| network.config | **100%** |
+| network.platform | **100%** |
+| network.protocol | **100%** |
+| util | **92.3%** |
+| network.common | **89.5%** |
+| network.auth | **87.5%** |
+| network.protocols.git | 81.2% |
+| ui | 56.2% |
+| network.protocols (varies) | 36-52% |
+
+**Commits:** `6ccb5a7e` (pushed to origin)
+
+---
+
+## March 6, 2026 - Coverage Expansion Sprint (Session 2)
+
+### New Tests Added (Session 2): 146 tests across 4 files
+
+| Test File | Tests | Covers |
+|-----------|-------|--------|
+| DocumentFormatTest.kt (NEW) | 38 | All 18 FORMAT_* constants, delegation to TextFormat, format detection by extension, getTextFormat(), detectFormatByContent, Document creation/defaults/equality/hashCode/copy |
+| NetworkStorageEdgeCaseTest.kt (NEW) | 48 | NetworkStorage null/zero space, isFull/isLowOnSpace boundaries, supportsFile, CacheEntry compression/eviction/expiry/access, NetworkOperation pause/duration/progress/canRetry |
+| DocumentSyncStatusEdgeCaseTest.kt (NEW) | 42 | DocumentSyncStatus computed properties, mutation methods, factory methods, conflict handling, NetworkDocument mock/isTextFile/isImageFile/isPreviewable |
+| StorageTypeInfoTest.kt (NEW) | 18 | StorageFeature enum, getSupportedStorageTypes, individual type verification, equality/copy |
+
+**Commits:** `c43cf24f` (pushed to origin)
+
+---
+
+## March 6, 2026 - Coverage Expansion & Security Scanning (Session 1)
+
+### New Tests Added (Session 1): 112 tests across 3 files
 
 | Test File | Tests | Covers |
 |-----------|-------|--------|
@@ -25,17 +68,7 @@
 - Only WildcardImport style findings — no bugs, security issues, or code smells
 - SonarQube/OWASP dependency check not yet configured
 
-**Coverage improvements (Kover HTML report):**
-
-| Package | Before | After | Change |
-|---------|--------|-------|--------|
-| network.auth | 66.9% | 96.2% | +29.3% |
-| model | 26.7% | 36.7% | +10.0% |
-| network.common | ~50% | 60.4% | +10% |
-| network | ~60% | 71.6% | +11% |
-| **Overall line** | **51.4%** | **62.6%** | **+11.2%** |
-
-**Commit:** `61a9bba2` (unpushed)
+**Commits:** `61a9bba2` (pushed to origin)
 
 ---
 
