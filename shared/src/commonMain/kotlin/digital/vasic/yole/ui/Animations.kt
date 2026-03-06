@@ -178,57 +178,6 @@ fun Modifier.hoverElevation(
 }
 
 /**
- * Shake animation for error feedback
- */
-fun Modifier.shake(
-    enabled: Boolean = false
-): Modifier = composed {
-    val shakeOffset by animateFloatAsState(
-        targetValue = if (enabled) 0f else 1f,
-        animationSpec = keyframes {
-            durationMillis = AnimationTiming.MODERATE
-            0f at 0
-            -10f at 100
-            10f at 200
-            -10f at 300
-            10f at 400
-            0f at 500
-        },
-        label = "Shake"
-    )
-
-    this.graphicsLayer {
-        translationX = if (enabled) shakeOffset else 0f
-    }
-}
-
-/**
- * Pulse animation for highlighting
- */
-fun Modifier.pulse(
-    enabled: Boolean = true,
-    scale: Float = 1.1f
-): Modifier = composed {
-    if (!enabled) return@composed this
-
-    val infiniteTransition = rememberInfiniteTransition(label = "Pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = scale,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = AnimationTiming.MODERATE,
-                easing = AnimationEasing.Standard
-            ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "PulseScale"
-    )
-
-    this.scale(pulseScale)
-}
-
-/**
  * Screen transition specs
  */
 object ScreenTransitions {
@@ -469,25 +418,6 @@ object ListAnimations {
 }
 
 /**
- * Composable for animated visibility with custom transitions
- */
-@Composable
-fun AnimatedVisibilityWithTransition(
-    visible: Boolean,
-    enter: EnterTransition = ScreenTransitions.fade(),
-    exit: ExitTransition = fadeOut(),
-    content: @Composable () -> Unit
-) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = enter,
-        exit = exit
-    ) {
-        content()
-    }
-}
-
-/**
  * Composable wrapper for loading states with fade transition
  */
 @Composable
@@ -525,40 +455,3 @@ fun LoadingStateWrapper(
     }
 }
 
-/**
- * Animated counter for numeric values
- */
-@Composable
-fun rememberAnimatedCounter(
-    targetValue: Int,
-    durationMillis: Int = AnimationTiming.MODERATE
-): Int {
-    val animatedValue by animateIntAsState(
-        targetValue = targetValue,
-        animationSpec = tween(
-            durationMillis = durationMillis,
-            easing = AnimationEasing.Emphasized
-        ),
-        label = "Counter"
-    )
-    return animatedValue
-}
-
-/**
- * Animated progress for progress bars
- */
-@Composable
-fun rememberAnimatedProgress(
-    targetProgress: Float,
-    durationMillis: Int = AnimationTiming.MODERATE
-): Float {
-    val animatedProgress by animateFloatAsState(
-        targetValue = targetProgress.coerceIn(0f, 1f),
-        animationSpec = tween(
-            durationMillis = durationMillis,
-            easing = AnimationEasing.Emphasized
-        ),
-        label = "Progress"
-    )
-    return animatedProgress
-}

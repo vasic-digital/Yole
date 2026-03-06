@@ -42,16 +42,7 @@ open class LazyDocumentLoader<T>(
     /**
      * Initialize with total content size.
      */
-    suspend fun initialize(totalSize: Int) {
-        mutex.withLock {
-            totalChunks = (totalSize + chunkSize - 1) / chunkSize
-        }
-    }
-
-    /**
-     * Non-suspending initialize for use in init blocks.
-     */
-    fun initializeSync(totalSize: Int) {
+    fun initialize(totalSize: Int) {
         totalChunks = (totalSize + chunkSize - 1) / chunkSize
     }
 
@@ -152,7 +143,7 @@ class LazyStringLoader(
 ) : LazyDocumentLoader<String>(chunkSize) {
 
     init {
-        initializeSync(content.lines().size)
+        initialize(content.lines().size)
     }
 
     override suspend fun loadChunk(index: Int): String? {
@@ -221,17 +212,6 @@ class FlowLazyLoader<T>(
             current.addAll(items)
             _content.value = current
             loadedChunks++
-        }
-    }
-
-    /**
-     * Load chunk asynchronously.
-     */
-    fun loadChunkAsync(loader: suspend (Int) -> List<T>) {
-        scope.launch {
-            val chunkIndex = mutex.withLock { loadedChunks }
-            val chunk = loader(chunkIndex)
-            loadMore(chunk)
         }
     }
 
