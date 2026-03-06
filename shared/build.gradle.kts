@@ -320,6 +320,7 @@ kover {
             excludes {
                 // Exclude benchmark code from coverage
                 packages("digital.vasic.yole.benchmark")
+                packages("digital.vasic.yole.format.benchmark")
 
                 // Exclude generated code
                 annotatedBy("*Generated*")
