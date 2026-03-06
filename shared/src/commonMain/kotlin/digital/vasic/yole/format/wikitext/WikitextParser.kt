@@ -19,6 +19,7 @@ class WikitextParser : TextParser {
     override val supportedFormat: TextFormat
         get() = FormatRegistry.getById(TextFormat.ID_WIKITEXT) ?: FormatRegistry.formats.last()
 
+    /** Parses WikiText [content] into a [ParsedDocument], stripping Zim headers and converting markup to HTML. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val filename = options["filename"] as? String ?: ""
         val extension = getExtension(filename).ifEmpty {
@@ -45,6 +46,7 @@ class WikitextParser : TextParser {
         )
     }
 
+    /** Returns the pre-generated HTML from [document]'s parsed content. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         return document.parsedContent
     }
@@ -385,6 +387,7 @@ class WikitextParser : TextParser {
         }
     }
 
+    /** Validates WikiText [content] for unbalanced headings, unclosed brackets, and unclosed braces. */
     override fun validate(content: String): List<String> {
         val errors = mutableListOf<String>()
 

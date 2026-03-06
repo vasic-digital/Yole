@@ -147,6 +147,7 @@ class TodoTxtParser : TextParser {
     override val supportedFormat: TextFormat
         get() = FormatRegistry.getById(TextFormat.ID_TODOTXT) ?: FormatRegistry.formats.last()
 
+    /** Parses Todo.txt [content] into a [ParsedDocument] with task counts and HTML rendering. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val tasks = parseAllTasks(content)
         val metadata = buildMap {
@@ -167,6 +168,7 @@ class TodoTxtParser : TextParser {
         )
     }
 
+    /** Returns the pre-generated HTML from [document]'s parsed content. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         return document.parsedContent
     }

@@ -44,6 +44,7 @@ class MarkdownParser : TextParser {
     override val supportedFormat: TextFormat
         get() = FormatRegistry.getById(TextFormat.ID_MARKDOWN) ?: FormatRegistry.formats.last()
 
+    /** Parses Markdown [content] into a [ParsedDocument] with HTML conversion and metadata. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val filename = options["filename"] as? String ?: ""
         val extension = getExtension(filename)
@@ -64,6 +65,7 @@ class MarkdownParser : TextParser {
         )
     }
 
+    /** Returns the pre-generated HTML from [document]'s parsed content. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         return document.parsedContent
     }
@@ -537,6 +539,7 @@ class MarkdownParser : TextParser {
         }
     }
 
+    /** Validates Markdown [content] for unclosed brackets and parentheses, returning a list of error messages. */
     override fun validate(content: String): List<String> {
         val errors = mutableListOf<String>()
 

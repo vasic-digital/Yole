@@ -19,6 +19,7 @@ class CreoleParser : TextParser {
     override val supportedFormat: TextFormat
         get() = FormatRegistry.getById(TextFormat.ID_CREOLE) ?: FormatRegistry.formats.last()
 
+    /** Parses Creole 1.0 [content] into a [ParsedDocument] with HTML conversion and line count metadata. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val filename = options["filename"] as? String ?: ""
         val extension = getExtension(filename)
@@ -39,6 +40,7 @@ class CreoleParser : TextParser {
         )
     }
 
+    /** Returns the pre-generated HTML from [document]'s parsed content. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         return document.parsedContent
     }
@@ -334,6 +336,7 @@ class CreoleParser : TextParser {
         }
     }
 
+    /** Validates Creole [content] for malformed tables, unclosed brackets, and mismatched code blocks. */
     override fun validate(content: String): List<String> {
         val errors = mutableListOf<String>()
 

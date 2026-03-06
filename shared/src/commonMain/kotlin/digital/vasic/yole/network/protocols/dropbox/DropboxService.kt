@@ -131,6 +131,7 @@ class DropboxService(
         }
     }
     
+    /** Return metadata describing this Dropbox storage connection. */
     override suspend fun getStorageInfo(): NetworkStorage {
         return NetworkStorage(
             id = "dropbox_${config.name}",
@@ -144,6 +145,7 @@ class DropboxService(
         )
     }
     
+    /** Authenticate with Dropbox using OAuth2 tokens and verify the account. */
     override suspend fun connect(): Result<Unit> {
         return try {
             // Check if we have valid tokens
@@ -183,6 +185,7 @@ class DropboxService(
         Result.success(false)
     }
     
+    /** Disconnect from Dropbox by cancelling background tasks and closing the HTTP client. */
     override suspend fun disconnect(): Result<Unit> {
         return try {
             // Cancel background tasks and recreate scope for potential reconnection
@@ -204,6 +207,7 @@ class DropboxService(
         }
     }
     
+    /** Test the Dropbox connection by verifying account info retrieval. */
     override suspend fun testConnection(): Result<Boolean> {
         return testConnectionInternal()
     }
@@ -256,6 +260,7 @@ class DropboxService(
         }
     }
     
+    /** List files and folders at the given Dropbox [path] using the list_folder API. */
     override fun listFiles(path: String): Flow<Result<List<NetworkDocument>>> = flow {
         if (!_isConnected) {
             emit(Result.failure(NetworkStorageException.ConnectionException.NotConnected(
@@ -341,6 +346,7 @@ class DropboxService(
         }
     }
     
+    /** Download a file from Dropbox at [remotePath] to the local [localPath] with progress tracking. */
     override suspend fun downloadFile(
         remotePath: String,
         localPath: String
@@ -434,6 +440,7 @@ class DropboxService(
         }
     }
     
+    /** Upload a local file from [localPath] to Dropbox at [remotePath] with progress tracking. */
     override suspend fun uploadFile(
         localPath: String,
         remotePath: String
@@ -551,6 +558,7 @@ class DropboxService(
     
     // ==================== File Operations ====================
 
+    /** Delete a file or folder at [remotePath] on Dropbox using the delete_v2 API. */
     override suspend fun deleteFile(remotePath: String): Result<Unit> {
         if (!_isConnected) {
             return Result.success(Unit) // Offline: succeed silently for queue-based sync
@@ -589,6 +597,7 @@ class DropboxService(
         }
     }
 
+    /** Create a new folder at [remotePath] on Dropbox using the create_folder_v2 API. */
     override suspend fun createFolder(remotePath: String): Result<NetworkDocument> {
         if (!_isConnected) {
             return Result.success(NetworkDocument(
@@ -649,6 +658,7 @@ class DropboxService(
         }
     }
 
+    /** Rename a file or folder at [remotePath] to [newName] on Dropbox using the move_v2 API. */
     override suspend fun renameFile(remotePath: String, newName: String): Result<Unit> {
         if (!_isConnected) {
             return Result.success(Unit)
@@ -685,6 +695,7 @@ class DropboxService(
         }
     }
 
+    /** Move a file or folder from [sourcePath] to [destinationPath] on Dropbox using the move_v2 API. */
     override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> {
         if (!_isConnected) {
             return Result.success(NetworkDocument(
@@ -746,6 +757,7 @@ class DropboxService(
         }
     }
 
+    /** Copy a file or folder from [sourcePath] to [destinationPath] on Dropbox using the copy_v2 API. */
     override suspend fun copyFile(sourcePath: String, destinationPath: String): Result<Unit> {
         if (!_isConnected) {
             return Result.success(Unit)
@@ -777,6 +789,7 @@ class DropboxService(
         }
     }
 
+    /** Retrieve file metadata for [remotePath] from the Dropbox get_metadata API. */
     override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> {
         if (!_isConnected) {
             return Result.success(NetworkDocument(
@@ -1105,6 +1118,7 @@ class DropboxService(
         }
     }
 
+    /** Search for files matching [query] on Dropbox using the search_v2 API. */
     override fun searchFiles(
         query: String,
         path: String?,
@@ -1182,6 +1196,7 @@ class DropboxService(
         }
     }
     
+    /** Retrieve files changed [since] the given instant on Dropbox using list_folder/continue. */
     override fun getRecentChanges(
         since: kotlinx.datetime.Instant,
         path: String?
@@ -1267,6 +1282,7 @@ class DropboxService(
         }
     }
 
+    /** Retrieve Dropbox storage quota information using the get_space_usage API. */
     override suspend fun getQuotaInfo(): Result<StorageQuota> {
         if (!_isConnected) {
             return Result.failure(

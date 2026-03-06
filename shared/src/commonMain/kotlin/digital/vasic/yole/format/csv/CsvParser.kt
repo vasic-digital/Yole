@@ -143,6 +143,7 @@ class CsvParser : TextParser {
     override val supportedFormat: TextFormat
         get() = FormatRegistry.getById(TextFormat.ID_CSV) ?: FormatRegistry.formats.last()
 
+    /** Parses CSV [content] into a [ParsedDocument] with auto-detected delimiters and HTML table output. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         // Infer configuration from first non-empty line
         val firstLine = content.lines().firstOrNull { it.isNotBlank() } ?: ""
@@ -169,6 +170,7 @@ class CsvParser : TextParser {
         )
     }
 
+    /** Returns the pre-generated HTML table from [document]'s parsed content. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         return document.parsedContent
     }

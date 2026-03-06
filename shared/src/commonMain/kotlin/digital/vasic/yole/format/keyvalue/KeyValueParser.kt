@@ -46,6 +46,7 @@ class KeyValueParser : TextParser {
     override val supportedFormat: TextFormat
         get() = FormatRegistry.getById(TextFormat.ID_KEYVALUE) ?: FormatRegistry.formats.last()
 
+    /** Parse key-value [content] into a [ParsedDocument] with type detection, entry count, and HTML rendering. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val filename = options["filename"] as? String ?: ""
         val extension = getExtension(filename)
@@ -75,6 +76,7 @@ class KeyValueParser : TextParser {
         )
     }
 
+    /** Return the pre-rendered HTML from the parsed [document]; [lightMode] is unused as styling is inline. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         return document.parsedContent
     }
@@ -266,6 +268,7 @@ class KeyValueParser : TextParser {
         }
     }
 
+    /** Validate key-value [content] and return errors for lines missing a recognized separator. */
     override fun validate(content: String): List<String> {
         val errors = mutableListOf<String>()
 

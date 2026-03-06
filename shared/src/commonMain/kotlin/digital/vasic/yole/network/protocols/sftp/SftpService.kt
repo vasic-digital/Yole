@@ -90,6 +90,7 @@ class SftpService(
         }
     }
 
+    /** Returns metadata about this SFTP storage, including connection state and capabilities. */
     override suspend fun getStorageInfo(): NetworkStorage {
         return NetworkStorage(
             id = "sftp_${config.name}",
@@ -103,6 +104,7 @@ class SftpService(
         )
     }
 
+    /** Establishes an SFTP connection by validating authentication and performing an SSH handshake. */
     override suspend fun connect(): Result<Unit> {
         return try {
             // Validate authentication configuration before attempting connection
@@ -162,6 +164,7 @@ class SftpService(
         }
     }
 
+    /** Disconnects from the SFTP server and clears all active operations. */
     override suspend fun disconnect(): Result<Unit> = try {
         stateMutex.withLock { _isConnected = false }
         // Clear active operations on disconnect
@@ -174,6 +177,7 @@ class SftpService(
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
 
+    /** Tests the SFTP connection by validating host, port, and authentication credentials. */
     override suspend fun testConnection(): Result<Boolean> {
         return testSftpConnection().map { true }
     }
@@ -1026,12 +1030,14 @@ class SftpService(
         }
     }
 
+    /** Returns a flow emitting the list of currently active SFTP transfer operations. */
     override fun getActiveOperations(): Flow<List<NetworkOperation>> = flow {
         operationsMutex.withLock {
             emit(activeOperations.values.toList())
         }
     }
 
+    /** Cancels and removes the active operation identified by [operationId]. */
     override suspend fun cancelOperation(operationId: Long): Result<Unit> {
         operationsMutex.withLock {
             activeOperations.remove(operationId)
@@ -1039,6 +1045,7 @@ class SftpService(
         return Result.success(Unit)
     }
 
+    /** Pauses the active operation identified by [operationId]. */
     override suspend fun pauseOperation(operationId: Long): Result<Unit> {
         operationsMutex.withLock {
             activeOperations[operationId]?.let { operation ->
@@ -1050,6 +1057,7 @@ class SftpService(
         return Result.success(Unit)
     }
 
+    /** Resumes the paused operation identified by [operationId]. */
     override suspend fun resumeOperation(operationId: Long): Result<Unit> {
         operationsMutex.withLock {
             activeOperations[operationId]?.let { operation ->
@@ -1077,6 +1085,7 @@ class SftpService(
         emit(entries)
     }
 
+    /** Adds the file at [remotePath] to the local cache with the given [priority]. */
     override suspend fun addToCache(remotePath: String, priority: Int): Result<Unit> {
         return try {
             val fullPath = normalizePath(remotePath)
@@ -1098,6 +1107,7 @@ class SftpService(
         }
     }
 
+    /** Removes the cached entry for [remotePath] from the local cache. */
     override suspend fun removeFromCache(remotePath: String): Result<Unit> {
         return try {
             val fullPath = normalizePath(remotePath)
@@ -1110,6 +1120,7 @@ class SftpService(
         }
     }
 
+    /** Clears all entries from the local cache. */
     override suspend fun clearCache(): Result<Unit> {
         return try {
             cacheMutex.withLock {
@@ -1121,6 +1132,7 @@ class SftpService(
         }
     }
 
+    /** Returns a flow of sync statuses, optionally filtered by [path] prefix. */
     override fun getSyncStatus(path: String?): Flow<Map<String, SyncStatus>> = flow {
         val statuses = syncMutex.withLock {
             if (path != null) {
@@ -1227,6 +1239,7 @@ class SftpService(
         emit(changes)
     }
 
+    /** Returns storage quota info; always returns zeroed values since SFTP has no native quota support. */
     override suspend fun getQuotaInfo(): Result<StorageQuota> {
         // SFTP doesn't provide quota information directly.
         // Some servers support the "statvfs@openssh.com" extension.
@@ -1247,10 +1260,12 @@ class SftpService(
         )
     }
 
+    /** Checks whether a file or directory exists at [remotePath] via SSH_FXP_STAT. */
     override suspend fun exists(remotePath: String): Result<Boolean> {
         return getFileInfo(remotePath).map { true }.recover { false }
     }
 
+    /** Returns the parent directory of [remotePath], or null if it is the root. */
     override fun getParentPath(remotePath: String): String? {
         if (remotePath.isBlank()) return null
         if (remotePath == "/") return null
@@ -1260,6 +1275,7 @@ class SftpService(
         return if (parent.isEmpty()) "/" else parent
     }
 
+    /** Validates that [remotePath] is a non-blank path suitable for SFTP operations. */
     override fun validatePath(remotePath: String): Result<Unit> {
         return if (remotePath.isBlank()) {
             Result.failure(Exception("Path cannot be blank"))

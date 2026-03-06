@@ -93,6 +93,7 @@ class WebDavService(
     override val rootPath: String
         get() = "/"
 
+    /** Returns a [NetworkStorage] descriptor for this WebDAV connection. */
     override suspend fun getStorageInfo(): NetworkStorage {
         return NetworkStorage(
             id = "webdav_${config.name}",
@@ -104,6 +105,7 @@ class WebDavService(
         )
     }
 
+    /** Connects to the WebDAV server by sending an OPTIONS request to verify capability. */
     override suspend fun connect(): Result<Unit> = try {
         // Attempt an OPTIONS request to verify WebDAV capability
         try {
@@ -126,6 +128,7 @@ class WebDavService(
         ))
     }
 
+    /** Disconnects by closing the underlying [HttpClient] if it was initialized. */
     override suspend fun disconnect(): Result<Unit> = try {
         if (httpClientInitialized) {
             try {
@@ -141,6 +144,7 @@ class WebDavService(
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
 
+    /** Tests server reachability by performing a connect/disconnect cycle if not already connected. */
     override suspend fun testConnection(): Result<Boolean> = try {
         if (_isConnected) {
             Result.success(true)
@@ -605,11 +609,13 @@ class WebDavService(
         Result.failure(NetworkStorageException.fromThrowable(e, "exists"))
     }
 
+    /** Returns a flow emitting the current list of in-progress network operations. */
     override fun getActiveOperations(): Flow<List<NetworkOperation>> = flow {
         val ops = operationsMutex.withLock { activeOperations.values.toList() }
         emit(ops)
     }
 
+    /** Cancels the active operation identified by [operationId]. */
     override suspend fun cancelOperation(operationId: Long): Result<Unit> = try {
         operationsMutex.withLock {
             activeOperations[operationId]?.let { op ->
@@ -621,6 +627,7 @@ class WebDavService(
         Result.failure(NetworkStorageException.fromThrowable(e, "cancelOperation"))
     }
 
+    /** Pauses the active operation identified by [operationId]. */
     override suspend fun pauseOperation(operationId: Long): Result<Unit> = try {
         operationsMutex.withLock {
             activeOperations[operationId]?.let { op ->
@@ -632,6 +639,7 @@ class WebDavService(
         Result.failure(NetworkStorageException.fromThrowable(e, "pauseOperation"))
     }
 
+    /** Resumes the paused operation identified by [operationId]. */
     override suspend fun resumeOperation(operationId: Long): Result<Unit> = try {
         operationsMutex.withLock {
             activeOperations[operationId]?.let { op ->
@@ -643,6 +651,7 @@ class WebDavService(
         Result.failure(NetworkStorageException.fromThrowable(e, "resumeOperation"))
     }
 
+    /** Returns a flow of cached entries, optionally filtered by [path] prefix. */
     override fun getCacheEntries(path: String?): Flow<List<CacheEntry>> = flow {
         val entries = cacheMutex.withLock {
             if (path != null) {
@@ -654,6 +663,7 @@ class WebDavService(
         emit(entries)
     }
 
+    /** Adds the file at [remotePath] to the in-memory cache with the given [priority]. */
     override suspend fun addToCache(remotePath: String, priority: Int): Result<Unit> = try {
         cacheMutex.withLock {
             val entry = CacheEntry.create(
@@ -670,6 +680,7 @@ class WebDavService(
         Result.failure(NetworkStorageException.fromThrowable(e, "addToCache"))
     }
 
+    /** Removes the cache entry for [remotePath] from the in-memory cache. */
     override suspend fun removeFromCache(remotePath: String): Result<Unit> = try {
         cacheMutex.withLock { cacheEntries.remove(remotePath) }
         Result.success(Unit)
@@ -677,6 +688,7 @@ class WebDavService(
         Result.failure(NetworkStorageException.fromThrowable(e, "removeFromCache"))
     }
 
+    /** Clears all entries from the in-memory cache. */
     override suspend fun clearCache(): Result<Unit> = try {
         cacheMutex.withLock { cacheEntries.clear() }
         Result.success(Unit)
@@ -684,6 +696,7 @@ class WebDavService(
         Result.failure(NetworkStorageException.fromThrowable(e, "clearCache"))
     }
 
+    /** Returns a flow of sync statuses, optionally filtered by [path] prefix. */
     override fun getSyncStatus(path: String?): Flow<Map<String, SyncStatus>> = flow {
         val status = syncMutex.withLock {
             if (path != null) {
@@ -695,6 +708,7 @@ class WebDavService(
         emit(status)
     }
 
+    /** Synchronizes a single file at [remotePath], optionally forcing re-sync with [forceSync]. */
     override suspend fun syncFile(remotePath: String, forceSync: Boolean): Flow<NetworkOperation> = flow {
         val operation = NetworkOperation.createSync(
             id = "sync_$remotePath",
@@ -731,6 +745,7 @@ class WebDavService(
         }
     }
 
+    /** Synchronizes all remote files via recursive PROPFIND, optionally forcing re-sync with [forceSync]. */
     override suspend fun syncAll(forceSync: Boolean): Flow<NetworkOperation> = flow {
         val operation = NetworkOperation.createSync(
             id = "sync_all",
@@ -874,6 +889,7 @@ class WebDavService(
         }
     }
 
+    /** Returns documents modified [since] the given instant, optionally scoped to [path]. */
     override fun getRecentChanges(
         since: kotlinx.datetime.Instant,
         path: String?
@@ -1018,12 +1034,14 @@ class WebDavService(
         Result.failure(NetworkStorageException.fromThrowable(e, "getQuotaInfo"))
     } }
 
+    /** Returns the parent directory of [remotePath], or null if it is the root. */
     override fun getParentPath(remotePath: String): String? {
         if (remotePath == "/" || remotePath.isBlank()) return null
         val parent = remotePath.substringBeforeLast("/")
         return if (parent.isEmpty()) "/" else parent
     }
 
+    /** Validates that [remotePath] is non-blank; returns failure otherwise. */
     override fun validatePath(remotePath: String): Result<Unit> = try {
         if (remotePath.isBlank()) {
             Result.failure(Exception("Path cannot be blank"))

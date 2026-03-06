@@ -131,6 +131,7 @@ class OneDriveService(
         }
     }
     
+    /** Returns metadata about this OneDrive storage instance, including its connection status. */
     override suspend fun getStorageInfo(): NetworkStorage {
         return NetworkStorage(
             id = "onedrive_${config.name}",
@@ -144,6 +145,7 @@ class OneDriveService(
         )
     }
     
+    /** Authenticates and connects to OneDrive, refreshing the OAuth2 token if needed. */
     override suspend fun connect(): Result<Unit> {
         return try {
             // Check if we have valid tokens
@@ -183,6 +185,7 @@ class OneDriveService(
         Result.success(false)
     }
     
+    /** Disconnects from OneDrive, cancelling background tasks and closing the HTTP client. */
     override suspend fun disconnect(): Result<Unit> = try {
         // Cancel background tasks and recreate scope for potential reconnection
         serviceScope.cancel()
@@ -202,6 +205,7 @@ class OneDriveService(
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
 
+    /** Tests the OneDrive connection by attempting to retrieve drive info. */
     override suspend fun testConnection(): Result<Boolean> {
         return testConnectionInternal()
     }
@@ -264,6 +268,7 @@ class OneDriveService(
         }
     }
     
+    /** Lists files and folders in the OneDrive directory at [path] via the Graph API. */
     override fun listFiles(path: String): Flow<Result<List<NetworkDocument>>> = flow {
         if (!_isConnected) {
             emit(Result.failure(NetworkStorageException.ConnectionException.NotConnected(
@@ -388,6 +393,7 @@ class OneDriveService(
         }
     }
     
+    /** Downloads a file from [remotePath] on OneDrive to [localPath] on the local filesystem. */
     override suspend fun downloadFile(
         remotePath: String,
         localPath: String
@@ -504,6 +510,7 @@ class OneDriveService(
         }
     }
     
+    /** Uploads a file from [localPath] on the local filesystem to [remotePath] on OneDrive. */
     override suspend fun uploadFile(
         localPath: String,
         remotePath: String
@@ -653,6 +660,7 @@ class OneDriveService(
 
     // ==================== File Operations ====================
 
+    /** Deletes the item at [remotePath] from OneDrive and removes it from cache and sync tracking. */
     override suspend fun deleteFile(remotePath: String): Result<Unit> {
         if (!_isConnected) {
             return Result.success(Unit) // Offline: succeed silently for queue-based sync
@@ -696,6 +704,7 @@ class OneDriveService(
         }
     }
 
+    /** Creates a new folder at [remotePath] on OneDrive via the Graph API. */
     override suspend fun createFolder(remotePath: String): Result<NetworkDocument> {
         if (!_isConnected) {
             return Result.success(NetworkDocument(
@@ -765,6 +774,7 @@ class OneDriveService(
         }
     }
 
+    /** Renames the item at [remotePath] to [newName] using a PATCH request to the Graph API. */
     override suspend fun renameFile(remotePath: String, newName: String): Result<Unit> {
         if (!_isConnected) {
             return Result.success(Unit)
@@ -805,6 +815,7 @@ class OneDriveService(
         }
     }
 
+    /** Moves an item from [sourcePath] to [destinationPath] on OneDrive by updating its parent reference. */
     override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> {
         if (!_isConnected) {
             return Result.success(NetworkDocument(
@@ -876,6 +887,7 @@ class OneDriveService(
         }
     }
 
+    /** Copies an item from [sourcePath] to [destinationPath] on OneDrive (asynchronous, returns 202 Accepted). */
     override suspend fun copyFile(sourcePath: String, destinationPath: String): Result<Unit> {
         if (!_isConnected) {
             return Result.success(Unit)
@@ -922,6 +934,7 @@ class OneDriveService(
         }
     }
 
+    /** Retrieves metadata for the item at [remotePath] from the Graph API. */
     override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> {
         if (!_isConnected) {
             return Result.success(NetworkDocument(
@@ -982,6 +995,7 @@ class OneDriveService(
         }
     }
     
+    /** Returns a snapshot of all currently active (in-progress) network operations. */
     override fun getActiveOperations(): Flow<List<NetworkOperation>> = flow {
         val operations = operationsMutex.withLock {
             activeOperations.values.toList()
@@ -989,6 +1003,7 @@ class OneDriveService(
         emit(operations)
     }
     
+    /** Cancels the active operation identified by [operationId] and removes it from tracking. */
     override suspend fun cancelOperation(operationId: Long): Result<Unit> {
         return try {
             activeJobsMutex.withLock {
@@ -1003,6 +1018,7 @@ class OneDriveService(
         }
     }
 
+    /** Pauses the active operation identified by [operationId] by setting its pause flag. */
     override suspend fun pauseOperation(operationId: Long): Result<Unit> {
         return try {
             pauseFlags[operationId]?.value = true
@@ -1017,6 +1033,7 @@ class OneDriveService(
         }
     }
 
+    /** Resumes the paused operation identified by [operationId] by clearing its pause flag. */
     override suspend fun resumeOperation(operationId: Long): Result<Unit> {
         return try {
             pauseFlags[operationId]?.value = false
@@ -1031,6 +1048,7 @@ class OneDriveService(
         }
     }
     
+    /** Returns cached entries, optionally filtered to those under [path]. */
     override fun getCacheEntries(path: String?): Flow<List<CacheEntry>> = flow {
         val entries = cacheMutex.withLock {
             if (path != null) {
@@ -1042,6 +1060,7 @@ class OneDriveService(
         emit(entries)
     }
 
+    /** Adds the item at [remotePath] to the in-memory cache with the given [priority]. */
     override suspend fun addToCache(remotePath: String, priority: Int): Result<Unit> {
         return try {
             cacheMutex.withLock {
@@ -1064,6 +1083,7 @@ class OneDriveService(
         }
     }
 
+    /** Removes the cached entry for [remotePath] from the in-memory cache. */
     override suspend fun removeFromCache(remotePath: String): Result<Unit> {
         return try {
             cacheMutex.withLock {
@@ -1075,6 +1095,7 @@ class OneDriveService(
         }
     }
 
+    /** Clears all entries from the in-memory cache. */
     override suspend fun clearCache(): Result<Unit> {
         return try {
             cacheMutex.withLock {
@@ -1086,6 +1107,7 @@ class OneDriveService(
         }
     }
 
+    /** Returns sync status entries, optionally filtered to those under [path]. */
     override fun getSyncStatus(path: String?): Flow<Map<String, SyncStatus>> = flow {
         val statuses = syncMutex.withLock {
             if (path != null) {
@@ -1097,6 +1119,7 @@ class OneDriveService(
         emit(statuses)
     }
 
+    /** Synchronizes a single file at [remotePath], optionally forcing a refresh with [forceSync]. */
     override suspend fun syncFile(remotePath: String, forceSync: Boolean): Flow<NetworkOperation> = flow {
         val operationId = Clock.System.now().toEpochMilliseconds()
         val now = Clock.System.now()
@@ -1141,6 +1164,7 @@ class OneDriveService(
         ))
     }
 
+    /** Synchronizes all files in the root directory, optionally forcing a full refresh with [forceSync]. */
     override suspend fun syncAll(forceSync: Boolean): Flow<NetworkOperation> = flow {
         val operationId = Clock.System.now().toEpochMilliseconds()
         val now = Clock.System.now()
@@ -1245,6 +1269,7 @@ class OneDriveService(
         }
     }
 
+    /** Searches OneDrive for items matching [query], optionally scoped to [path]. */
     override fun searchFiles(
         query: String,
         path: String?,
@@ -1301,6 +1326,7 @@ class OneDriveService(
         }
     }
     
+    /** Returns documents modified [since] the given timestamp using the OneDrive delta API. */
     override fun getRecentChanges(
         since: kotlinx.datetime.Instant,
         path: String?
@@ -1362,6 +1388,7 @@ class OneDriveService(
         }
     }
 
+    /** Retrieves storage quota information (total, used, remaining space) from OneDrive. */
     override suspend fun getQuotaInfo(): Result<StorageQuota> {
         if (!_isConnected) {
             return Result.failure(
@@ -1413,16 +1440,19 @@ class OneDriveService(
         }
     }
     
+    /** Checks whether an item exists at [remotePath] by delegating to [getFileInfo]. */
     override suspend fun exists(remotePath: String): Result<Boolean> {
         return getFileInfo(remotePath).map { true }.recover { false }
     }
     
+    /** Returns the parent directory path of [remotePath], or null if it is the root. */
     override fun getParentPath(remotePath: String): String? {
         if (remotePath == "/" || remotePath.isBlank()) return null
         val parent = remotePath.substringBeforeLast("/")
         return if (parent.isEmpty()) "/" else parent
     }
     
+    /** Validates that [remotePath] is a non-blank path string. */
     override fun validatePath(remotePath: String): Result<Unit> {
         return if (remotePath.isBlank()) {
             Result.failure(Exception("Path cannot be blank"))

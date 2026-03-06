@@ -11,9 +11,7 @@ package digital.vasic.yole.format.tiddlywiki
 
 import digital.vasic.yole.format.*
 
-/**
- * TiddlyWiki metadata fields
- */
+/** Tiddler metadata fields including [title], [tags], [created]/[modified] timestamps, [type], and [customFields]. */
 data class TiddlerMetadata(
     val title: String? = null,
     val tags: List<String> = emptyList(),
@@ -31,6 +29,7 @@ class TiddlyWikiParser : TextParser {
     override val supportedFormat: TextFormat
         get() = FormatRegistry.getById(TextFormat.ID_TIDDLYWIKI) ?: FormatRegistry.formats.last()
 
+    /** Parses TiddlyWiki [content] into a [ParsedDocument], extracting tiddler metadata and converting wikitext to HTML. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val filename = options["filename"] as? String ?: ""
         val extension = getExtension(filename)
@@ -62,6 +61,7 @@ class TiddlyWikiParser : TextParser {
         )
     }
 
+    /** Returns the pre-generated HTML from [document]'s parsed content. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         return document.parsedContent
     }
@@ -433,6 +433,7 @@ class TiddlyWikiParser : TextParser {
         }
     }
 
+    /** Validates TiddlyWiki [content] for unclosed brackets and unmatched bold quote markers. */
     override fun validate(content: String): List<String> {
         val errors = mutableListOf<String>()
 

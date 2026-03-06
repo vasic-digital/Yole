@@ -124,6 +124,7 @@ class SmbService(
     override val rootPath: String
         get() = _rootPath
 
+    /** Returns metadata about this SMB storage service including connection state. */
     override suspend fun getStorageInfo(): NetworkStorage {
         return NetworkStorage(
             id = "smb_${config.name}",
@@ -135,6 +136,7 @@ class SmbService(
         )
     }
 
+    /** Sets the connection flag to mark this service as connected (no SMB negotiation). */
     override suspend fun connect(): Result<Unit> = try {
         stateMutex.withLock { _isConnected = true }
         Result.success(Unit)
@@ -147,6 +149,7 @@ class SmbService(
         )
     }
 
+    /** Clears the connection flag to mark this service as disconnected. */
     override suspend fun disconnect(): Result<Unit> = try {
         stateMutex.withLock { _isConnected = false }
         Result.success(Unit)
@@ -154,6 +157,7 @@ class SmbService(
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
 
+    /** Tests connectivity by verifying the connection flag or performing a connect/disconnect cycle. */
     override suspend fun testConnection(): Result<Boolean> = try {
         if (_isConnected) {
             Result.success(true)
@@ -172,6 +176,7 @@ class SmbService(
         Result.failure(NetworkStorageException.fromThrowable(e, "testConnection"))
     }
 
+    /** Lists files at [path]; always fails because native SMB protocol support is required. */
     override fun listFiles(path: String): Flow<Result<List<NetworkDocument>>> = flow {
         if (!_isConnected) {
             emit(
@@ -208,6 +213,7 @@ class SmbService(
         }
     }
 
+    /** Simulates uploading [localPath] to [remotePath], updating the in-memory file tree. */
     override suspend fun uploadFile(
         localPath: String,
         remotePath: String
@@ -298,6 +304,7 @@ class SmbService(
         }
     }
 
+    /** Simulates downloading [remotePath] to [localPath] and marks the file as synced. */
     override suspend fun downloadFile(
         remotePath: String,
         localPath: String
@@ -370,6 +377,7 @@ class SmbService(
         }
     }
 
+    /** Copies the file tree node from [sourcePath] to [destinationPath]. */
     override suspend fun copyFile(
         sourcePath: String,
         destinationPath: String
@@ -424,6 +432,7 @@ class SmbService(
         )
     }
 
+    /** Removes the node at [remotePath] and all its children from the file tree. */
     override suspend fun deleteFile(remotePath: String): Result<Unit> = try {
         val normalizedPath = normalizePath(remotePath)
 
@@ -459,6 +468,7 @@ class SmbService(
         )
     }
 
+    /** Creates a folder node at [remotePath] in the file tree, auto-creating parent folders. */
     override suspend fun createFolder(remotePath: String): Result<NetworkDocument> = try {
         val normalizedPath = normalizePath(remotePath)
         val now = Clock.System.now()
@@ -494,6 +504,7 @@ class SmbService(
         )
     }
 
+    /** Renames the node at [remotePath] to [newName], updating all children if it is a folder. */
     override suspend fun renameFile(
         remotePath: String,
         newName: String
@@ -546,6 +557,7 @@ class SmbService(
         Result.failure(NetworkStorageException.fromThrowable(e, "renameFile"))
     }
 
+    /** Moves the node and its children from [sourcePath] to [destinationPath] in the file tree. */
     override suspend fun moveFile(
         sourcePath: String,
         destinationPath: String
@@ -629,6 +641,7 @@ class SmbService(
         )
     }
 
+    /** Returns the file tree node for [remotePath], or a synthesized document if not found. */
     override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> = try {
         val normalizedPath = normalizePath(remotePath)
 
@@ -665,11 +678,13 @@ class SmbService(
         )
     }
 
+    /** Emits a snapshot of all currently active network operations. */
     override fun getActiveOperations(): Flow<List<NetworkOperation>> = flow {
         val ops = operationsMutex.withLock { activeOperations.values.toList() }
         emit(ops)
     }
 
+    /** Cancels the active operation identified by [operationId]. */
     override suspend fun cancelOperation(operationId: Long): Result<Unit> = try {
         operationsMutex.withLock {
             val op = activeOperations[operationId]
@@ -685,6 +700,7 @@ class SmbService(
         Result.failure(NetworkStorageException.fromThrowable(e, "cancelOperation"))
     }
 
+    /** Pauses the active operation identified by [operationId]. */
     override suspend fun pauseOperation(operationId: Long): Result<Unit> = try {
         operationsMutex.withLock {
             val op = activeOperations[operationId]
@@ -697,6 +713,7 @@ class SmbService(
         Result.failure(NetworkStorageException.fromThrowable(e, "pauseOperation"))
     }
 
+    /** Resumes the paused operation identified by [operationId]. */
     override suspend fun resumeOperation(operationId: Long): Result<Unit> = try {
         operationsMutex.withLock {
             val op = activeOperations[operationId]
@@ -709,6 +726,7 @@ class SmbService(
         Result.failure(NetworkStorageException.fromThrowable(e, "resumeOperation"))
     }
 
+    /** Emits cached entries, optionally filtered by [path] prefix. */
     override fun getCacheEntries(path: String?): Flow<List<CacheEntry>> = flow {
         val entries = cacheMutex.withLock {
             if (path != null) {
@@ -724,6 +742,7 @@ class SmbService(
         emit(entries)
     }
 
+    /** Adds the file at [remotePath] to the in-memory cache with the given [priority]. */
     override suspend fun addToCache(remotePath: String, priority: Int): Result<Unit> = try {
         val normalizedPath = normalizePath(remotePath)
 
@@ -752,6 +771,7 @@ class SmbService(
         Result.failure(NetworkStorageException.fromThrowable(e, "addToCache"))
     }
 
+    /** Removes the cache entry for [remotePath] from the in-memory cache. */
     override suspend fun removeFromCache(remotePath: String): Result<Unit> = try {
         val normalizedPath = normalizePath(remotePath)
         cacheMutex.withLock {
@@ -762,6 +782,7 @@ class SmbService(
         Result.failure(NetworkStorageException.fromThrowable(e, "removeFromCache"))
     }
 
+    /** Clears all entries from the in-memory cache. */
     override suspend fun clearCache(): Result<Unit> = try {
         cacheMutex.withLock {
             cacheEntries.clear()
@@ -771,6 +792,7 @@ class SmbService(
         Result.failure(NetworkStorageException.fromThrowable(e, "clearCache"))
     }
 
+    /** Emits the sync status map, optionally filtered by [path] prefix. */
     override fun getSyncStatus(path: String?): Flow<Map<String, SyncStatus>> = flow {
         val statusMap = syncMutex.withLock {
             if (path != null) {
@@ -785,6 +807,7 @@ class SmbService(
         emit(statusMap)
     }
 
+    /** Synchronizes a single file at [remotePath], transitioning its status through SYNCING to SYNCED. */
     override suspend fun syncFile(
         remotePath: String,
         forceSync: Boolean
@@ -838,6 +861,7 @@ class SmbService(
         }
     }
 
+    /** Marks all tracked files in the internal tree as SYNCED. */
     override suspend fun syncAll(forceSync: Boolean): Flow<NetworkOperation> = flow {
         // Sync all tracked files in the internal tree
         val paths = fileTreeMutex.withLock { fileTree.keys.toList() }
@@ -852,6 +876,7 @@ class SmbService(
         // Individual files can be synced via syncFile()
     }
 
+    /** Searches files by [query]; always fails because native SMB protocol support is required. */
     override fun searchFiles(
         query: String,
         path: String?,
@@ -860,6 +885,7 @@ class SmbService(
         emit(Result.failure(Exception("SMB search not implemented")))
     }
 
+    /** Returns file tree entries modified at or after [since], optionally filtered by [path]. */
     override fun getRecentChanges(
         since: kotlinx.datetime.Instant,
         path: String?
@@ -888,6 +914,7 @@ class SmbService(
         emit(recentDocs)
     }
 
+    /** Returns a simulated 1 GB quota with used space calculated from the file tree. */
     override suspend fun getQuotaInfo(): Result<StorageQuota> = try {
         // Calculate used space from internal file tree
         val usedSpace = fileTreeMutex.withLock {
@@ -911,6 +938,7 @@ class SmbService(
         Result.failure(NetworkStorageException.fromThrowable(e, "getQuotaInfo"))
     }
 
+    /** Checks whether [remotePath] exists in the in-memory file tree. */
     override suspend fun exists(remotePath: String): Result<Boolean> = try {
         val normalizedPath = normalizePath(remotePath)
         val found = fileTreeMutex.withLock { fileTree.containsKey(normalizedPath) }
@@ -919,6 +947,7 @@ class SmbService(
         Result.failure(NetworkStorageException.fromThrowable(e, "exists"))
     }
 
+    /** Returns the parent directory of [remotePath], or null if it is the root. */
     override fun getParentPath(remotePath: String): String? {
         if (remotePath == "/" || remotePath.isBlank()) return null
         // Remove trailing slash for consistent handling
@@ -928,6 +957,7 @@ class SmbService(
         return if (parent.isEmpty()) "/" else parent
     }
 
+    /** Validates that [remotePath] is non-blank. */
     override fun validatePath(remotePath: String): Result<Unit> = try {
         if (remotePath.isBlank()) {
             Result.failure(Exception("Path cannot be blank"))

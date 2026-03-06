@@ -197,6 +197,7 @@ class FlowLazyLoader<T>(
 ) {
     private val mutex = Mutex()
     private val _content = MutableStateFlow<List<T>>(emptyList())
+    /** Observable state of all loaded content items. */
     val content: StateFlow<List<T>> = _content.asStateFlow()
 
     private var loadedChunks = 0

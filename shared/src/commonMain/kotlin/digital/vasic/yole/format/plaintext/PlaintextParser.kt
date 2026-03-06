@@ -12,15 +12,22 @@ package digital.vasic.yole.format.plaintext
 import digital.vasic.yole.format.*
 
 /**
- * Plaintext file type
+ * Plaintext file type classification for rendering strategy selection.
+ *
+ * @property PLAIN Plain text files (.txt)
+ * @property HTML HTML files (.html, .htm)
+ * @property CODE Source code with syntax highlighting
+ * @property JSON JSON files with pretty-printing support
+ * @property XML XML files
+ * @property MARKDOWN Markdown rendered in plaintext mode
  */
 enum class PlaintextType {
-    PLAIN,      // Plain text (.txt)
-    HTML,       // HTML files (.html, .htm)
-    CODE,       // Source code with syntax highlighting
-    JSON,       // JSON files (with pretty-printing)
-    XML,        // XML files
-    MARKDOWN    // Markdown in plaintext mode
+    PLAIN,
+    HTML,
+    CODE,
+    JSON,
+    XML,
+    MARKDOWN
 }
 
 /**
@@ -31,6 +38,7 @@ class PlaintextParser : TextParser {
     override val supportedFormat: TextFormat
         get() = FormatRegistry.getById(TextFormat.ID_PLAINTEXT) ?: FormatRegistry.formats.last()
 
+    /** Parses plaintext [content] into a [ParsedDocument], auto-detecting the file type for appropriate rendering. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val filename = options["filename"] as? String ?: ""
         val extension = getExtension(filename)
@@ -63,6 +71,7 @@ class PlaintextParser : TextParser {
         )
     }
 
+    /** Returns the pre-generated HTML from [document]'s parsed content. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         return document.parsedContent
     }

@@ -28,65 +28,99 @@ import kotlin.math.pow
  */
 object YoleColors {
 
-    // Brand colors
-    val BrandPrimary = Color(0xFF1976D2)      // Material Blue 700
-    val BrandSecondary = Color(0xFFDC004E)    // Material Pink A400
-    val BrandTertiary = Color(0xFF2E7D32)     // Material Green 800
+    /** Primary brand color (Material Blue 700). */
+    val BrandPrimary = Color(0xFF1976D2)
+    /** Secondary brand color (Material Pink A400). */
+    val BrandSecondary = Color(0xFFDC004E)
+    /** Tertiary brand color (Material Green 800). */
+    val BrandTertiary = Color(0xFF2E7D32)
 
-    // Semantic colors (context-aware)
-    val Success = Color(0xFF4CAF50)           // Green 500
-    val Warning = Color(0xFFFF9800)           // Orange 500
-    val Error = Color(0xFFF44336)             // Red 500
-    val Info = Color(0xFF2196F3)              // Blue 500
+    /** Semantic color indicating success (Green 500). */
+    val Success = Color(0xFF4CAF50)
+    /** Semantic color indicating a warning (Orange 500). */
+    val Warning = Color(0xFFFF9800)
+    /** Semantic color indicating an error (Red 500). */
+    val Error = Color(0xFFF44336)
+    /** Semantic color for informational content (Blue 500). */
+    val Info = Color(0xFF2196F3)
 
-    // Surface colors (for different elevations)
-    val SurfacePrimary = Color(0xFFFFFFFF)    // White
-    val SurfaceSecondary = Color(0xFFF5F5F5)  // Gray 100
-    val SurfaceTertiary = Color(0xFFEEEEEE)   // Gray 200
+    /** Primary surface color for top-level backgrounds. */
+    val SurfacePrimary = Color(0xFFFFFFFF)
+    /** Secondary surface color for slightly elevated elements. */
+    val SurfaceSecondary = Color(0xFFF5F5F5)
+    /** Tertiary surface color for higher-elevation elements. */
+    val SurfaceTertiary = Color(0xFFEEEEEE)
 
-    // Text colors
-    val TextPrimary = Color(0xFF212121)       // Gray 900
-    val TextSecondary = Color(0xFF757575)     // Gray 600
-    val TextTertiary = Color(0xFF9E9E9E)      // Gray 500
-    val TextDisabled = Color(0xFFBDBDBD)      // Gray 400
+    /** Primary text color for body and heading text. */
+    val TextPrimary = Color(0xFF212121)
+    /** Secondary text color for captions and labels. */
+    val TextSecondary = Color(0xFF757575)
+    /** Tertiary text color for placeholder and hint text. */
+    val TextTertiary = Color(0xFF9E9E9E)
+    /** Text color for disabled or inactive elements. */
+    val TextDisabled = Color(0xFFBDBDBD)
 
-    // Interactive colors
-    val InteractiveHover = Color(0xFFE3F2FD)  // Blue 50
-    val InteractivePressed = Color(0xFFBBDEFB) // Blue 100
-    val InteractiveFocus = Color(0xFF90CAF9)  // Blue 200
+    /** Background color for hovered interactive elements. */
+    val InteractiveHover = Color(0xFFE3F2FD)
+    /** Background color for pressed interactive elements. */
+    val InteractivePressed = Color(0xFFBBDEFB)
+    /** Background color for focused interactive elements. */
+    val InteractiveFocus = Color(0xFF90CAF9)
 
-    // Border colors
-    val BorderLight = Color(0xFFE0E0E0)       // Gray 300
-    val BorderMedium = Color(0xFFBDBDBD)      // Gray 400
-    val BorderStrong = Color(0xFF9E9E9E)      // Gray 500
+    /** Light border for subtle separation. */
+    val BorderLight = Color(0xFFE0E0E0)
+    /** Medium border for moderate separation. */
+    val BorderMedium = Color(0xFFBDBDBD)
+    /** Strong border for prominent separation. */
+    val BorderStrong = Color(0xFF9E9E9E)
 
-    // Dark theme variants
+    /** Dark theme color variants optimized for dark backgrounds. */
     object Dark {
-        val BrandPrimary = Color(0xFF90CAF9)      // Blue 200
-        val BrandSecondary = Color(0xFFFF5983)    // Pink A200
-        val BrandTertiary = Color(0xFF81C784)     // Green 300
+        /** Primary brand color for dark theme (Blue 200). */
+        val BrandPrimary = Color(0xFF90CAF9)
+        /** Secondary brand color for dark theme (Pink A200). */
+        val BrandSecondary = Color(0xFFFF5983)
+        /** Tertiary brand color for dark theme (Green 300). */
+        val BrandTertiary = Color(0xFF81C784)
 
-        val Success = Color(0xFF81C784)           // Green 300
-        val Warning = Color(0xFFFFB74D)           // Orange 300
-        val Error = Color(0xFFEF5350)             // Red 400
-        val Info = Color(0xFF64B5F6)              // Blue 300
+        /** Semantic success color for dark theme (Green 300). */
+        val Success = Color(0xFF81C784)
+        /** Semantic warning color for dark theme (Orange 300). */
+        val Warning = Color(0xFFFFB74D)
+        /** Semantic error color for dark theme (Red 400). */
+        val Error = Color(0xFFEF5350)
+        /** Semantic info color for dark theme (Blue 300). */
+        val Info = Color(0xFF64B5F6)
 
-        val SurfacePrimary = Color(0xFF121212)    // Gray 900
-        val SurfaceSecondary = Color(0xFF1E1E1E)  // Gray 800
-        val SurfaceTertiary = Color(0xFF2A2A2A)   // Gray 750
+        /** Primary surface color for dark theme backgrounds. */
+        val SurfacePrimary = Color(0xFF121212)
+        /** Secondary surface color for dark theme elevated elements. */
+        val SurfaceSecondary = Color(0xFF1E1E1E)
+        /** Tertiary surface color for dark theme higher-elevation elements. */
+        val SurfaceTertiary = Color(0xFF2A2A2A)
 
-        val TextPrimary = Color(0xFFFFFFFF)       // White
-        val TextSecondary = Color(0xFFB0B0B0)     // Gray 300
-        val TextTertiary = Color(0xFF808080)      // Gray 500
-        val TextDisabled = Color(0xFF606060)      // Gray 600
+        /** Primary text color for dark theme. */
+        val TextPrimary = Color(0xFFFFFFFF)
+        /** Secondary text color for dark theme captions and labels. */
+        val TextSecondary = Color(0xFFB0B0B0)
+        /** Tertiary text color for dark theme hints and placeholders. */
+        val TextTertiary = Color(0xFF808080)
+        /** Disabled text color for dark theme. */
+        val TextDisabled = Color(0xFF606060)
 
-        val InteractiveHover = Color(0xFF1E3A5F)  // Dark blue
-        val InteractivePressed = Color(0xFF2A4A6B) // Darker blue
-        val InteractiveFocus = Color(0xFF1565C0)  // Blue 800
+        /** Hover background for dark theme interactive elements. */
+        val InteractiveHover = Color(0xFF1E3A5F)
+        /** Pressed background for dark theme interactive elements. */
+        val InteractivePressed = Color(0xFF2A4A6B)
+        /** Focus background for dark theme interactive elements. */
+        val InteractiveFocus = Color(0xFF1565C0)
 
-        val BorderLight = Color(0xFF404040)       // Gray 600
-        val BorderMedium = Color(0xFF555555)      // Gray 550
-        val BorderStrong = Color(0xFF707070)      // Gray 500
+        /** Light border for dark theme. */
+        val BorderLight = Color(0xFF404040)
+        /** Medium border for dark theme. */
+        val BorderMedium = Color(0xFF555555)
+        /** Strong border for dark theme. */
+        val BorderStrong = Color(0xFF707070)
     }
 }
 
@@ -96,7 +130,7 @@ object YoleColors {
  */
 object YoleTypography {
 
-    // Display styles (largest)
+    /** Display large text style (57sp) for the most prominent text. */
     val DisplayLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -105,6 +139,7 @@ object YoleTypography {
         letterSpacing = 0.sp
     )
 
+    /** Display medium text style (45sp) for large prominent text. */
     val DisplayMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -113,6 +148,7 @@ object YoleTypography {
         letterSpacing = 0.sp
     )
 
+    /** Display small text style (36sp) for moderately prominent text. */
     val DisplaySmall = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -121,7 +157,7 @@ object YoleTypography {
         letterSpacing = 0.sp
     )
 
-    // Headline styles
+    /** Headline large text style (32sp) for top-level headings. */
     val HeadlineLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -130,6 +166,7 @@ object YoleTypography {
         letterSpacing = 0.sp
     )
 
+    /** Headline medium text style (28sp) for section headings. */
     val HeadlineMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -138,6 +175,7 @@ object YoleTypography {
         letterSpacing = 0.sp
     )
 
+    /** Headline small text style (24sp) for sub-section headings. */
     val HeadlineSmall = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -146,7 +184,7 @@ object YoleTypography {
         letterSpacing = 0.sp
     )
 
-    // Title styles
+    /** Title large text style (22sp) for primary titles. */
     val TitleLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -155,6 +193,7 @@ object YoleTypography {
         letterSpacing = 0.sp
     )
 
+    /** Title medium text style (16sp) for secondary titles. */
     val TitleMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Medium,
@@ -163,6 +202,7 @@ object YoleTypography {
         letterSpacing = 0.15.sp
     )
 
+    /** Title small text style (14sp) for tertiary titles. */
     val TitleSmall = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Medium,
@@ -171,7 +211,7 @@ object YoleTypography {
         letterSpacing = 0.1.sp
     )
 
-    // Body styles
+    /** Body large text style (16sp) for primary body text. */
     val BodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -180,6 +220,7 @@ object YoleTypography {
         letterSpacing = 0.15.sp
     )
 
+    /** Body medium text style (14sp) for secondary body text. */
     val BodyMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -188,6 +229,7 @@ object YoleTypography {
         letterSpacing = 0.25.sp
     )
 
+    /** Body small text style (12sp) for captions and annotations. */
     val BodySmall = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -196,7 +238,7 @@ object YoleTypography {
         letterSpacing = 0.4.sp
     )
 
-    // Label styles
+    /** Label large text style (14sp) for prominent labels and buttons. */
     val LabelLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Medium,
@@ -205,6 +247,7 @@ object YoleTypography {
         letterSpacing = 0.1.sp
     )
 
+    /** Label medium text style (12sp) for standard labels. */
     val LabelMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Medium,
@@ -213,6 +256,7 @@ object YoleTypography {
         letterSpacing = 0.5.sp
     )
 
+    /** Label small text style (11sp) for compact labels. */
     val LabelSmall = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Medium,
@@ -221,7 +265,7 @@ object YoleTypography {
         letterSpacing = 0.5.sp
     )
 
-    // Monospace for code/editor
+    /** Monospace text style (14sp) for code and editor content. */
     val Code = TextStyle(
         fontFamily = FontFamily.Monospace,
         fontWeight = FontWeight.Normal,
@@ -235,8 +279,11 @@ object YoleTypography {
  * Theme mode enumeration for consistent theme handling.
  */
 enum class ThemeMode {
+    /** Always use light theme. */
     LIGHT,
+    /** Always use dark theme. */
     DARK,
+    /** Follow the system-wide theme preference. */
     SYSTEM
 }
 

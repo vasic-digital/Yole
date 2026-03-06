@@ -19,6 +19,7 @@ class TextileParser : TextParser {
     override val supportedFormat: TextFormat
         get() = FormatRegistry.getById(TextFormat.ID_TEXTILE) ?: FormatRegistry.formats.last()
 
+    /** Parses Textile [content] into a [ParsedDocument] with HTML conversion and line count metadata. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val filename = options["filename"] as? String ?: ""
         val extension = getExtension(filename)
@@ -39,6 +40,7 @@ class TextileParser : TextParser {
         )
     }
 
+    /** Returns the pre-generated HTML from [document]'s parsed content. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         return document.parsedContent
     }
@@ -243,6 +245,7 @@ class TextileParser : TextParser {
         }
     }
 
+    /** Validates Textile [content] for invalid heading levels, unclosed inline code, and unclosed image markers. */
     override fun validate(content: String): List<String> {
         val errors = mutableListOf<String>()
 

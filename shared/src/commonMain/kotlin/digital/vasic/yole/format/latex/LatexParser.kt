@@ -18,10 +18,11 @@ import digital.vasic.yole.format.*
 class LatexParser : TextParser {
     override val supportedFormat = FormatRegistry.formats.first { it.id == TextFormat.ID_LATEX }
 
+    /** Parse LaTeX [content] into a [ParsedDocument] with extracted metadata and validation errors. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val metadata = extractMetadata(content)
         val errors = validate(content)
-        
+
         return ParsedDocument(
             format = supportedFormat,
             rawContent = content,
@@ -31,10 +32,12 @@ class LatexParser : TextParser {
         )
     }
 
+    /** Convert a parsed LaTeX [document] to themed HTML, respecting [lightMode] for styling. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         return convertLatexToHtml(document.rawContent, lightMode)
     }
 
+    /** Validate LaTeX [content] and return a list of errors such as unclosed environments, math mode, or malformed commands. */
     override fun validate(content: String): List<String> {
         val errors = mutableListOf<String>()
 

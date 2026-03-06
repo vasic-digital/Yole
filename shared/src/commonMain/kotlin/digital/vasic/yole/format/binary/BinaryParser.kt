@@ -19,6 +19,7 @@ class BinaryParser : TextParser {
     
     override val supportedFormat = FormatRegistry.formats.first { it.id == TextFormat.ID_BINARY }
     
+    /** Parse binary file [content] into a [ParsedDocument] with MIME type, file size, and preview metadata. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val filename = options["filename"] as? String ?: ""
         val fileSize = options["fileSize"] as? Long ?: 0L
@@ -42,6 +43,7 @@ class BinaryParser : TextParser {
         )
     }
     
+    /** Convert a parsed binary [document] to themed HTML with file info and content preview, respecting [lightMode]. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         val themeClass = if (lightMode) "light" else "dark"
         val mimeType = document.metadata["mime_type"] ?: ""
@@ -89,10 +91,12 @@ class BinaryParser : TextParser {
         """.trimMargin()
     }
     
+    /** Return true if this parser supports the given [format]. */
     override fun canParse(format: TextFormat): Boolean {
         return supportedFormat.id == format.id
     }
-    
+
+    /** Validate binary [content]; always returns an empty list since binary content has no structural constraints. */
     override fun validate(content: String): List<String> {
         // Binary content is always valid
         return emptyList()

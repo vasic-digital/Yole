@@ -18,6 +18,7 @@ class RMarkdownParser : TextParser {
     
     override val supportedFormat = FormatRegistry.formats.first { it.id == TextFormat.ID_RMARKDOWN }
     
+    /** Parses R Markdown [content] into a [ParsedDocument], extracting YAML front matter and code chunks. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val filename = options["filename"] as? String ?: ""
 
@@ -37,6 +38,7 @@ class RMarkdownParser : TextParser {
         )
     }
     
+    /** Renders [document] as themed HTML with styled code chunks and document header based on [lightMode]. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         val (frontMatter, markdownContent, _) = extractFrontMatter(document.rawContent)
         val codeChunks = extractCodeChunks(markdownContent)
@@ -79,10 +81,12 @@ class RMarkdownParser : TextParser {
         """.trimMargin()
     }
     
+    /** Returns true if this parser supports the given [format]. */
     override fun canParse(format: TextFormat): Boolean {
         return supportedFormat.id == format.id
     }
-    
+
+    /** Validates R Markdown [content] for mismatched code chunk delimiters and unclosed YAML front matter. */
     override fun validate(content: String): List<String> {
         val issues = mutableListOf<String>()
 
@@ -244,6 +248,7 @@ fun registerRMarkdownParser() {
     ParserRegistry.register(RMarkdownParser())
 }
 
+/** Represents an R Markdown code chunk with its [language], [code] body, and raw [options] string. */
 data class CodeChunk(
     val language: String,
     val code: String,

@@ -12,18 +12,21 @@ package digital.vasic.yole.format.taskpaper
 import digital.vasic.yole.format.*
 
 /**
- * TaskPaper item type
+ * TaskPaper item type classification.
+ *
+ * @property PROJECT A project heading, identified by a line ending with ":"
+ * @property TASK A task item, typically starting with "- "
+ * @property NOTE A note or description line
+ * @property EMPTY An empty line used as a separator
  */
 enum class TaskpaperItemType {
-    PROJECT,    // Project: line ending with ":"
-    TASK,       // Task: line starting with "- " or "\t- "
-    NOTE,       // Note: any other line
-    EMPTY       // Empty line
+    PROJECT,
+    TASK,
+    NOTE,
+    EMPTY
 }
 
-/**
- * Represents a TaskPaper item (project, task, or note)
- */
+/** Represents a TaskPaper item with its [type], [content], [indentLevel], [lineNumber], and extracted [tags]. */
 data class TaskpaperItem(
     val type: TaskpaperItemType,
     val content: String,
@@ -65,6 +68,7 @@ class TaskpaperParser : TextParser {
     override val supportedFormat: TextFormat
         get() = FormatRegistry.getById(TextFormat.ID_TASKPAPER) ?: FormatRegistry.formats.last()
 
+    /** Parses TaskPaper [content] into a [ParsedDocument] with project, task, and note counts. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val filename = options["filename"] as? String ?: ""
         val extension = getExtension(filename)
@@ -235,6 +239,7 @@ class TaskpaperParser : TextParser {
         return count
     }
 
+    /** Returns the pre-generated HTML from [document]'s parsed content. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         return document.parsedContent
     }
@@ -500,6 +505,7 @@ class TaskpaperParser : TextParser {
         }
     }
 
+    /** Validates TaskPaper [content] for malformed task markers and unclosed tag parameters. */
     override fun validate(content: String): List<String> {
         val errors = mutableListOf<String>()
 

@@ -18,6 +18,7 @@ class OrgModeParser : TextParser {
     
     override val supportedFormat = FormatRegistry.formats.first { it.id == TextFormat.ID_ORGMODE }
     
+    /** Parse Org Mode [content] into a [ParsedDocument] with heading, TODO, and property metadata. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val filename = options["filename"] as? String ?: ""
 
@@ -62,6 +63,7 @@ class OrgModeParser : TextParser {
         return metadataRegex.containsMatchIn(content)
     }
     
+    /** Convert a parsed Org Mode [document] to themed HTML, respecting [lightMode] for styling. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         val themeClass = if (lightMode) "light" else "dark"
         val styles = StyleSheets.getStyleSheet(TextFormat.ID_ORGMODE, lightMode)
@@ -74,10 +76,12 @@ class OrgModeParser : TextParser {
         """.trimMargin()
     }
     
+    /** Return true if this parser supports the given [format]. */
     override fun canParse(format: TextFormat): Boolean {
         return supportedFormat.id == format.id
     }
     
+    /** Validate Org Mode [content] and return a list of issues such as mismatched block delimiters or excessive heading levels. */
     override fun validate(content: String): List<String> {
         val issues = mutableListOf<String>()
         
@@ -273,12 +277,14 @@ fun registerOrgModeParser() {
     ParserRegistry.register(OrgModeParser())
 }
 
+/** Represents an Org Mode heading with its nesting [level], display [title], and optional [todoState]. */
 data class OrgHeading(
     val level: Int,
     val title: String,
     val todoState: String? = null
 )
 
+/** Represents an Org Mode TODO item with its current [state] (e.g., TODO, DONE) and [title]. */
 data class OrgTodo(
     val state: String,
     val title: String

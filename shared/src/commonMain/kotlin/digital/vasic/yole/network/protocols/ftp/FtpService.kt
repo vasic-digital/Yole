@@ -95,6 +95,7 @@ class FtpService(
         }
     }
 
+    /** Returns metadata about this FTP storage instance, including connection state and server location. */
     override suspend fun getStorageInfo(): NetworkStorage {
         return NetworkStorage(
             id = "ftp_${config.name}",
@@ -818,6 +819,7 @@ class FtpService(
         }
     }
 
+    /** Returns a flow emitting the list of currently active upload/download operations. */
     override fun getActiveOperations(): Flow<List<NetworkOperation>> = flow {
         val operations = operationsMutex.withLock {
             activeOperations.values.toList()
@@ -1202,6 +1204,7 @@ class FtpService(
         return Result.success(false)
     }
 
+    /** Returns the parent directory of [remotePath], or null if it is the root. */
     override fun getParentPath(remotePath: String): String? {
         if (remotePath.isBlank()) return null
         if (remotePath == "/") return null
@@ -1211,6 +1214,7 @@ class FtpService(
         return if (parent.isEmpty()) "/" else parent
     }
 
+    /** Validates that [remotePath] is non-blank and suitable for FTP operations. */
     override fun validatePath(remotePath: String): Result<Unit> {
         return if (remotePath.isBlank()) {
             Result.failure(Exception("Path cannot be blank"))

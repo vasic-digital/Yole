@@ -31,14 +31,15 @@ import androidx.compose.ui.unit.dp
  */
 object AccessibilityConstants {
 
-    // Touch target sizes (WCAG 2.1 AA)
-    val MIN_TOUCH_TARGET_SIZE = 44.dp  // iOS/Android minimum
-    val MIN_TOUCH_TARGET_SIZE_LARGE = 48.dp  // Android recommended
+    /** Minimum touch target size per WCAG 2.1 AA (44dp, iOS/Android minimum). */
+    val MIN_TOUCH_TARGET_SIZE = 44.dp
+    /** Recommended large touch target size (48dp, Android guideline). */
+    val MIN_TOUCH_TARGET_SIZE_LARGE = 48.dp
 
-    // Focus indicator minimum width
+    /** Minimum width for keyboard focus indicators. */
     val FOCUS_INDICATOR_WIDTH = 2.dp
 
-    // Keyboard shortcuts
+    /** Platform keyboard shortcut key-binding strings. */
     object Shortcuts {
         const val SAVE = "Ctrl+S"
         const val NEW = "Ctrl+N"
@@ -53,7 +54,7 @@ object AccessibilityConstants {
         const val ESCAPE = "Escape"
     }
 
-    // Semantic roles for screen readers
+    /** Semantic roles exposed to screen readers for UI element identification. */
     enum class SemanticRole {
         BUTTON,
         LINK,
@@ -196,6 +197,7 @@ data class AccessibilitySettings(
     val announceChanges: Boolean = true
 ) {
     companion object {
+        /** Default accessibility settings with standard preferences. */
         val DEFAULT = AccessibilitySettings()
     }
 }

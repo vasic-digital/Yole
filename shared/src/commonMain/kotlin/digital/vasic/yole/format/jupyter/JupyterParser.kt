@@ -19,9 +19,10 @@ class JupyterParser : TextParser {
     
     override val supportedFormat = FormatRegistry.formats.first { it.id == TextFormat.ID_JUPYTER }
     
+    /** Parse Jupyter Notebook JSON [content] into a [ParsedDocument] with cell, kernel, and language metadata. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val filename = options["filename"] as? String ?: ""
-        
+
         return try {
             val json = Json.parseToJsonElement(content)
             val notebook = parseNotebook(json)
@@ -49,6 +50,7 @@ class JupyterParser : TextParser {
         }
     }
     
+    /** Convert a parsed Jupyter Notebook [document] to themed HTML, respecting [lightMode] for styling. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         return try {
             val json = Json.parseToJsonElement(document.rawContent)
@@ -64,10 +66,12 @@ class JupyterParser : TextParser {
         }
     }
     
+    /** Return true if this parser supports the given [format]. */
     override fun canParse(format: TextFormat): Boolean {
         return supportedFormat.id == format.id
     }
-    
+
+    /** Validate that [content] is well-formed JSON suitable for Jupyter Notebook parsing. */
     override fun validate(content: String): List<String> {
         return try {
             Json.parseToJsonElement(content)
@@ -281,6 +285,7 @@ fun registerJupyterParser() {
     ParserRegistry.register(JupyterParser())
 }
 
+/** Represents a parsed Jupyter Notebook with its [cells], [kernel], [language], and [formatVersion]. */
 data class JupyterNotebook(
     val cells: List<NotebookCell>,
     val kernel: String,
@@ -289,6 +294,7 @@ data class JupyterNotebook(
     val title: String? = null
 )
 
+/** Represents a single notebook cell with its [cellType] (code, markdown, raw), [source], and [outputs]. */
 data class NotebookCell(
     val cellType: String,
     val source: String,
@@ -296,6 +302,7 @@ data class NotebookCell(
     val executionCount: Int? = null
 )
 
+/** Represents the output of a notebook cell execution with its [outputType], structured [data], and [text] content. */
 data class CellOutput(
     val outputType: String,
     val data: JsonObject,

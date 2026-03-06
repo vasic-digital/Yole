@@ -94,9 +94,11 @@ class GoogleDriveService(
     private val activeJobsMutex = Mutex()
     private val pauseFlags = mutableMapOf<Long, MutableStateFlow<Boolean>>()
     
+    /** Whether the Google Drive connection is currently active. */
     override val isOnline: Boolean
         get() = _isConnected
-    
+
+    /** The root path used as the base for all Google Drive operations. */
     override val rootPath: String
         get() = "/"
     
@@ -130,6 +132,7 @@ class GoogleDriveService(
         }
     }
     
+    /** Return metadata describing this Google Drive storage connection. */
     override suspend fun getStorageInfo(): NetworkStorage {
         return NetworkStorage(
             id = "googledrive_${config.name}",
@@ -143,6 +146,7 @@ class GoogleDriveService(
         )
     }
     
+    /** Authenticate with Google Drive using OAuth2 tokens and fetch drive info. */
     override suspend fun connect(): Result<Unit> = try {
         // Check if we have valid tokens
         val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
@@ -180,6 +184,7 @@ class GoogleDriveService(
         Result.success(false)
     }
     
+    /** Disconnect from Google Drive by cancelling background tasks and closing the HTTP client. */
     override suspend fun disconnect(): Result<Unit> = try {
         // Cancel background tasks and recreate scope for potential reconnection
         serviceScope.cancel()
@@ -199,6 +204,7 @@ class GoogleDriveService(
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
 
+    /** Test the Google Drive connection by verifying drive about info retrieval. */
     override suspend fun testConnection(): Result<Boolean> {
         return testConnectionInternal()
     }
@@ -252,6 +258,7 @@ class GoogleDriveService(
         }
     }
     
+    /** List files and folders at the given [path] using the Google Drive files.list API. */
     override fun listFiles(path: String): Flow<Result<List<NetworkDocument>>> = flow {
         if (!_isConnected) {
             emit(Result.failure(NetworkStorageException.ConnectionException.NotConnected(
@@ -376,6 +383,7 @@ class GoogleDriveService(
         }
     }
     
+    /** Download a file from Google Drive at [remotePath] to the local [localPath] with progress tracking. */
     override suspend fun downloadFile(
         remotePath: String,
         localPath: String
@@ -479,7 +487,8 @@ class GoogleDriveService(
             emit(errorOperation)
         }
     }
-    
+
+    /** Upload a local file from [localPath] to Google Drive at [remotePath] with progress tracking. */
     override suspend fun uploadFile(
         localPath: String,
         remotePath: String
@@ -612,6 +621,7 @@ class GoogleDriveService(
     
     // ==================== File Operations ====================
 
+    /** Delete a file or folder at [remotePath] on Google Drive using the files.delete API. */
     override suspend fun deleteFile(remotePath: String): Result<Unit> {
         if (!_isConnected) {
             return Result.success(Unit) // Offline: succeed silently for queue-based sync
@@ -650,6 +660,7 @@ class GoogleDriveService(
         }
     }
 
+    /** Create a new folder at [remotePath] on Google Drive using the files.create API. */
     override suspend fun createFolder(remotePath: String): Result<NetworkDocument> {
         if (!_isConnected) {
             return Result.success(NetworkDocument(
@@ -713,6 +724,7 @@ class GoogleDriveService(
         }
     }
 
+    /** Rename a file or folder at [remotePath] to [newName] on Google Drive using the files.patch API. */
     override suspend fun renameFile(remotePath: String, newName: String): Result<Unit> {
         if (!_isConnected) {
             return Result.success(Unit)
@@ -748,6 +760,7 @@ class GoogleDriveService(
         }
     }
 
+    /** Move a file from [sourcePath] to [destinationPath] on Google Drive by updating parent references. */
     override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> {
         if (!_isConnected) {
             return Result.success(NetworkDocument(
@@ -826,6 +839,7 @@ class GoogleDriveService(
         }
     }
 
+    /** Copy a file from [sourcePath] to [destinationPath] on Google Drive using the files.copy API. */
     override suspend fun copyFile(sourcePath: String, destinationPath: String): Result<Unit> {
         if (!_isConnected) {
             return Result.success(Unit)
@@ -867,6 +881,7 @@ class GoogleDriveService(
         }
     }
 
+    /** Retrieve file metadata for [remotePath] from the Google Drive files.get API. */
     override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> {
         if (!_isConnected) {
             return Result.success(NetworkDocument(
@@ -922,6 +937,7 @@ class GoogleDriveService(
         }
     }
     
+    /** Emit a snapshot of all currently active network operations. */
     override fun getActiveOperations(): Flow<List<NetworkOperation>> = flow {
         val operations = operationsMutex.withLock {
             activeOperations.values.toList()
@@ -929,6 +945,7 @@ class GoogleDriveService(
         emit(operations)
     }
     
+    /** Cancel the operation identified by [operationId] and remove it from active tracking. */
     override suspend fun cancelOperation(operationId: Long): Result<Unit> {
         return try {
             activeJobsMutex.withLock {
@@ -943,6 +960,7 @@ class GoogleDriveService(
         }
     }
 
+    /** Pause the in-progress operation identified by [operationId]. */
     override suspend fun pauseOperation(operationId: Long): Result<Unit> {
         return try {
             pauseFlags[operationId]?.value = true
@@ -957,6 +975,7 @@ class GoogleDriveService(
         }
     }
 
+    /** Resume a previously paused operation identified by [operationId]. */
     override suspend fun resumeOperation(operationId: Long): Result<Unit> {
         return try {
             pauseFlags[operationId]?.value = false
@@ -971,6 +990,7 @@ class GoogleDriveService(
         }
     }
     
+    /** Emit cached entries, optionally filtered to those under [path]. */
     override fun getCacheEntries(path: String?): Flow<List<CacheEntry>> = flow {
         val entries = cacheMutex.withLock {
             if (path != null) {
@@ -982,6 +1002,7 @@ class GoogleDriveService(
         emit(entries)
     }
 
+    /** Add [remotePath] to the in-memory cache with the given [priority]. */
     override suspend fun addToCache(remotePath: String, priority: Int): Result<Unit> {
         return try {
             cacheMutex.withLock {
@@ -1004,6 +1025,7 @@ class GoogleDriveService(
         }
     }
 
+    /** Remove the cache entry for [remotePath] from the in-memory cache. */
     override suspend fun removeFromCache(remotePath: String): Result<Unit> {
         return try {
             cacheMutex.withLock {
@@ -1015,6 +1037,7 @@ class GoogleDriveService(
         }
     }
 
+    /** Remove all entries from the in-memory cache. */
     override suspend fun clearCache(): Result<Unit> {
         return try {
             cacheMutex.withLock {
@@ -1026,6 +1049,7 @@ class GoogleDriveService(
         }
     }
 
+    /** Emit sync status entries, optionally filtered to those under [path]. */
     override fun getSyncStatus(path: String?): Flow<Map<String, SyncStatus>> = flow {
         val statuses = syncMutex.withLock {
             if (path != null) {
@@ -1037,6 +1061,7 @@ class GoogleDriveService(
         emit(statuses)
     }
 
+    /** Synchronize a single file at [remotePath], optionally forcing a re-sync with [forceSync]. */
     override suspend fun syncFile(remotePath: String, forceSync: Boolean): Flow<NetworkOperation> = flow {
         val operationId = Clock.System.now().toEpochMilliseconds()
         val now = Clock.System.now()
@@ -1081,6 +1106,7 @@ class GoogleDriveService(
         ))
     }
 
+    /** Synchronize all root-level files, optionally forcing a full re-sync with [forceSync]. */
     override suspend fun syncAll(forceSync: Boolean): Flow<NetworkOperation> = flow {
         val operationId = Clock.System.now().toEpochMilliseconds()
         val now = Clock.System.now()
@@ -1185,6 +1211,7 @@ class GoogleDriveService(
         }
     }
 
+    /** Search for files matching [query] on Google Drive using the files.list API with name filter. */
     override fun searchFiles(
         query: String,
         path: String?,
@@ -1251,6 +1278,7 @@ class GoogleDriveService(
         }
     }
     
+    /** Retrieve files changed [since] the given instant on Google Drive using modifiedTime filter. */
     override fun getRecentChanges(
         since: kotlinx.datetime.Instant,
         path: String?
@@ -1316,6 +1344,7 @@ class GoogleDriveService(
         }
     }
 
+    /** Retrieve Google Drive storage quota information using the about API. */
     override suspend fun getQuotaInfo(): Result<StorageQuota> {
         if (!_isConnected) {
             return Result.failure(
@@ -1364,16 +1393,19 @@ class GoogleDriveService(
         }
     }
     
+    /** Check whether a file or folder exists at [remotePath] on Google Drive. */
     override suspend fun exists(remotePath: String): Result<Boolean> {
         return getFileInfo(remotePath).map { true }.recover { false }
     }
     
+    /** Return the parent directory path of [remotePath], or null if it is the root. */
     override fun getParentPath(remotePath: String): String? {
         if (remotePath == "/" || remotePath.isBlank()) return null
         val parent = remotePath.substringBeforeLast("/")
         return if (parent.isEmpty()) "/" else parent
     }
     
+    /** Validate that [remotePath] is a non-blank path string. */
     override fun validatePath(remotePath: String): Result<Unit> {
         return if (remotePath.isBlank()) {
             Result.failure(Exception("Path cannot be blank"))

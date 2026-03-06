@@ -18,6 +18,7 @@ class RestructuredTextParser : TextParser {
     
     override val supportedFormat = FormatRegistry.formats.first { it.id == TextFormat.ID_RESTRUCTUREDTEXT }
     
+    /** Parses reStructuredText [content] into a [ParsedDocument] with extracted sections and directives. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val sections = extractSections(content)
         val directives = extractDirectives(content)
@@ -34,6 +35,7 @@ class RestructuredTextParser : TextParser {
         )
     }
     
+    /** Renders [document] as themed HTML with reStructuredText styling based on [lightMode]. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         val themeClass = if (lightMode) "light" else "dark"
         val styles = StyleSheets.getStyleSheet(TextFormat.ID_RESTRUCTUREDTEXT, lightMode)
@@ -46,10 +48,12 @@ class RestructuredTextParser : TextParser {
         """.trimMargin()
     }
     
+    /** Returns true if this parser supports the given [format]. */
     override fun canParse(format: TextFormat): Boolean {
         return supportedFormat.id == format.id
     }
-    
+
+    /** Validates reStructuredText [content] for section underlines that are shorter than their titles. */
     override fun validate(content: String): List<String> {
         val issues = mutableListOf<String>()
         
@@ -221,12 +225,14 @@ fun registerRestructuredTextParser() {
     ParserRegistry.register(RestructuredTextParser())
 }
 
+/** Represents a reStructuredText section with its [level], [title], and [underline] character sequence. */
 data class RstSection(
     val level: Int,
     val title: String,
     val underline: String
 )
 
+/** Represents a reStructuredText directive with its [name] and indented [content] body. */
 data class RstDirective(
     val name: String,
     val content: String

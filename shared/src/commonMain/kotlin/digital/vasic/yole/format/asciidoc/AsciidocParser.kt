@@ -18,10 +18,11 @@ import digital.vasic.yole.format.*
 class AsciidocParser : TextParser {
     override val supportedFormat = FormatRegistry.formats.first { it.id == TextFormat.ID_ASCIIDOC }
 
+    /** Parse AsciiDoc [content] into a [ParsedDocument] with extracted metadata and validation errors. */
     override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
         val metadata = extractMetadata(content)
         val errors = validate(content)
-        
+
         return ParsedDocument(
             format = supportedFormat,
             rawContent = content,
@@ -31,10 +32,12 @@ class AsciidocParser : TextParser {
         )
     }
 
+    /** Convert a parsed AsciiDoc [document] to themed HTML, respecting [lightMode] for styling. */
     override fun toHtml(document: ParsedDocument, lightMode: Boolean): String {
         return convertAsciidocToHtml(document.rawContent, lightMode)
     }
 
+    /** Validate AsciiDoc [content] and return a list of structural errors such as unclosed blocks or malformed directives. */
     override fun validate(content: String): List<String> {
         val errors = mutableListOf<String>()
         
