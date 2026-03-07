@@ -87,11 +87,15 @@ val refreshResult = oauth2Flow.refreshAccessToken(refreshToken)
 - 9:00 Uploading files with multipart upload
 - 10:30 Search with Drive query syntax
 - 12:00 Google Docs export to supported formats
-- 13:30 Rate limiting and quota management
+- 13:30 Rate limiting and quota management with `RateLimitedStorageService` decorator
+- 14:00 Resilience patterns: `CircuitBreaker` for failure detection, `ConnectionLimiter` for concurrency control
 - 14:30 Summary
 
 ### Code References
 - `shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/googledrive/GoogleDriveService.kt` -- Google Drive REST API integration
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/common/CircuitBreaker.kt` -- Circuit breaker pattern
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/common/ConnectionLimiter.kt` -- Connection limiter pattern
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/RateLimitedStorageService.kt` -- Rate-limiting decorator
 - `shared/src/commonTest/kotlin/digital/vasic/yole/network/protocols/googledrive/GoogleDriveServiceTest.kt` -- Service tests
 - `shared/src/commonTest/kotlin/digital/vasic/yole/network/protocols/googledrive/GoogleDriveServiceEnhancedTest.kt` -- Enhanced test coverage
 

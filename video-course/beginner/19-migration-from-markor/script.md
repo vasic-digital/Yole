@@ -28,10 +28,12 @@
 - Live demo: same document on Android and Desktop side by side
 
 **[9:00-11:00] Developer Experience Improvements**
-- 4,750+ tests (vs. minimal tests in Markor)
-- 10 extracted KMP modules for reusability
+- 8,200+ test methods across 177 test files (vs. minimal tests in Markor)
+- 10 extracted KMP modules with independent CI/CD
 - Container-based builds for reproducibility
-- Challenges framework for structured validation
+- 14 challenge banks in the Go-based Challenges framework
+- Resilience patterns: CircuitBreaker, ConnectionLimiter, DocumentCache
+- 6 security scanners: SonarQube, Snyk, CodeQL, Gitleaks, OWASP, Detekt
 
 **[11:00-12:00] Summary**
 - 100% file compatibility with Markor

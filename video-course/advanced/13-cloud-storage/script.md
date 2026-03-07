@@ -10,13 +10,17 @@
 - 7:00 Offline-first philosophy: local edits first, sync when connected
 - 9:00 Architecture walkthrough: `StorageConfig`, `NetworkDocument`, `SyncStatus`
 - 11:00 How protocols register and are selected by the user
-- 13:00 Live demo: connecting to Dropbox and Google Drive side by side
+- 13:00 Resilience patterns: CircuitBreaker, ConnectionLimiter, and RateLimitedStorageService applied to all protocols
+- 14:00 Live demo: connecting to Dropbox and Google Drive side by side
 - 14:30 Summary and module roadmap
 
 ### Code References
 - `shared/src/commonMain/kotlin/digital/vasic/yole/network/NetworkStorageService.kt` -- Unified interface with `connect()`, `disconnect()`, `listFiles()`, `downloadFile()`, `uploadFile()`
 - `shared/src/commonMain/kotlin/digital/vasic/yole/network/common/StorageConfig.kt` -- Configuration model for all protocols
 - `shared/src/commonMain/kotlin/digital/vasic/yole/network/common/NetworkDocument.kt` -- Document metadata model returned by all services
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/common/CircuitBreaker.kt` -- Circuit breaker for failure resilience
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/common/ConnectionLimiter.kt` -- Semaphore-based connection limiting
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/RateLimitedStorageService.kt` -- Rate-limiting decorator for any service
 
 ### Key Code Walkthrough
 

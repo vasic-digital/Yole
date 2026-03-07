@@ -26,6 +26,18 @@ Security scanning for Yole covers six categories:
 | OWASP DC | SCA | Known CVEs in dependencies |
 | Detekt | SAST | Kotlin-specific code issues |
 
+### Yole-Specific Security Hardening
+
+Yole has applied comprehensive safety fixes verified by 92 dedicated tests in `SafetyFixesTest.kt`:
+
+| Fix Category | Count | Details |
+|-------------|-------|---------|
+| CancellationException rethrows | 51 | SftpService (15), FtpService (14), SmbService (22) |
+| Query/JSON injection fixes | 8 | GoogleDrive, OneDrive, Dropbox API query sanitization |
+| Path traversal hardening | 4 services | Dropbox, FTP, SFTP, SMB -- `normalizePath()` resolves `..` segments |
+| CoroutineScope lifecycle | 3 services | Dropbox, GoogleDrive, OneDrive -- scope cancelled on disconnect |
+| Resilience patterns | 3 classes | CircuitBreaker, ConnectionLimiter, DocumentCache |
+
 ### Exercises
 1. **Threat model** -- Create a threat model for Yole listing the top 5 attack vectors (e.g., malicious file content, MITM on cloud sync, XSS in HTML preview).
 2. **Scanner selection** -- For each threat in your model, identify which scanner(s) would detect the vulnerability.

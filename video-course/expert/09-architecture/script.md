@@ -143,7 +143,8 @@ fun reduce(state: EditorState, intent: EditorIntent): EditorState = when (intent
 
 #### Timestamps
 - 0:00 Why modularize: build speed, team scaling, code isolation
-- 2:00 Yole's module structure: shared, androidApp, desktopApp, webApp, iosApp
+- 2:00 Yole's module structure: shared + 10 extracted KMP modules + androidApp, desktopApp, webApp, iosApp
+- 3:00 Composite builds: `includeBuild()` in `settings.gradle.kts` wires 10 KMP modules
 - 4:00 Feature module boundaries
 - 6:00 Inter-module communication
 - 8:00 Dependency graph management
@@ -194,7 +195,7 @@ fun reduce(state: EditorState, intent: EditorIntent): EditorState = when (intent
 - 2:00 JVM garbage collection considerations
 - 4:00 iOS/Native memory model
 - 6:00 Wasm memory constraints
-- 8:00 Common leak patterns: retained coroutine scopes, observer leaks
+- 8:00 Common leak patterns: retained coroutine scopes, observer leaks, `serviceScope` lifecycle (see lock ordering: `scopeMutex` -> `stateMutex`)
 - 10:00 Detecting leaks: LeakCanary (Android), Instruments (iOS)
 - 12:00 Prevention patterns: weak references, scope management
 - 14:00 Summary

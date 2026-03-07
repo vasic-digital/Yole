@@ -10,6 +10,8 @@
 - 8:00 `Concurrency-KMP`: lazy loading, platform synchronization
 - 10:00 Network service resilience: retry logic, timeout handling, error recovery
 - 12:00 Resource lifecycle management: connect, use, disconnect, cleanup
+- 12:30 `DocumentCache`: LRU cache with hit/miss tracking for `ParsedDocument` instances
+- 13:00 Resilience testing: 53 dedicated tests in `ResilienceTests.kt`, 42 monitoring tests in `MonitoringMetricsTests.kt`
 - 13:30 Summary
 
 ### Code References
@@ -90,7 +92,7 @@ throttler.submit {
 - 4:00 `LazyDocumentLoader<T>`: defer loading until first access
 - 6:00 `LazyStringLoader`: specialized loader for string content (file reading)
 - 8:00 `FlowLazyLoader<T>`: Flow-based lazy loading with reactive updates
-- 10:00 LRU cache design: eviction policy, size limits, time-based expiration
+- 10:00 `DocumentCache` (LRU): eviction policy, configurable `maxSize`, hit/miss metrics via `hitRate` property
 - 12:00 Cache invalidation strategies: content hash, timestamp, manual
 - 14:00 Network document cache: caching downloaded files locally
 - 16:00 Cache statistics: hit rate, eviction rate, memory consumption
@@ -100,6 +102,9 @@ throttler.submit {
 - `shared/src/commonMain/kotlin/digital/vasic/yole/util/LazyLoading.kt` -- `LazyDocumentLoader<T>`, `LazyStringLoader`, `FlowLazyLoader<T>` typealiases
 - `shared/src/commonMain/kotlin/digital/vasic/yole/format/TextParser.kt` -- `ParsedDocument` with lazy HTML caching
 - `shared/src/commonMain/kotlin/digital/vasic/yole/network/common/CacheEntry.kt` -- Network cache entry model
+- `shared/src/commonMain/kotlin/digital/vasic/yole/format/DocumentCache.kt` -- LRU cache with hit/miss tracking
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/common/CircuitBreaker.kt` -- Circuit breaker with state monitoring
+- `shared/src/commonMain/kotlin/digital/vasic/yole/network/common/ConnectionLimiter.kt` -- Semaphore-based connection limiting
 
 ### Key Code Walkthrough
 
@@ -146,7 +151,7 @@ val html = document.toHtml() // Triggers HTML generation on first call
 ### Timestamps
 - 0:00 Connection lifecycle: connect, authenticate, operate, disconnect
 - 2:00 Connection pooling for HTTP-based protocols (Ktor client)
-- 4:00 Semaphore-based connection limiting: preventing resource exhaustion
+- 4:00 `ConnectionLimiter`: semaphore-based connection limiting with `availablePermits` monitoring
 - 6:00 Platform-specific connection constraints: mobile vs. desktop vs. web
 - 8:00 Timeout configuration: connect timeout, read timeout, idle timeout
 - 10:00 Reconnection strategies: immediate, delayed, exponential backoff

@@ -132,7 +132,7 @@ docker compose run --rm build bash -c \
 ### Timestamps
 - 0:00 Why tests must run in containers (from CLAUDE.md)
 - 2:00 The test runner script: `docker/scripts/test-all.sh`
-- 4:00 Running the full test suite: 4,750+ tests across all platforms
+- 4:00 Running the full test suite: 8,200+ test methods across 177 test files on all platforms
 - 6:00 Running specific test classes in containers
 - 8:00 Desktop tests: `./gradlew :shared:desktopTest` (works with JDK 11)
 - 10:00 AGP version mismatch: why androidApp tests use the container's Android SDK
@@ -160,6 +160,17 @@ docker compose run --rm build ./gradlew test koverHtmlReport
 # Interactive debugging shell
 docker compose run --rm build bash
 ```
+
+### Key Test Categories in the Suite
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Format parsing | 17 formats | Unit tests for all parsers |
+| Resilience | 53 tests | CircuitBreaker, ConnectionLimiter, DocumentCache |
+| Safety | 92 tests | CancellationException, injection, path traversal |
+| Contract | 89 tests | 8 protocols x 10+ contracts |
+| Stress | 30 tests | Concurrent parsing, cache contention, memory stability |
+| Security | 36 tests | XSS, traversal, config security |
 
 ### Exercises
 1. **Run the full suite** -- Execute `docker compose run --rm build ./docker/scripts/test-all.sh` and record the total test count and execution time.

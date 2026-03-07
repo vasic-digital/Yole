@@ -184,20 +184,25 @@ go run ./cmd/runner --bank banks/yole/ \
 
 ---
 
-## Video 16.4: Yole's 9 Challenge Categories (22 min)
+## Video 16.4: Yole's 14 Challenge Categories (22 min)
 
 ### Timestamps
-- 0:00 Overview of Yole's 9 challenge bank files
-- 2:00 `format-parsing.json`: all 17 format parsers with roundtrip validation
-- 4:00 `format-detection.json`: extension-based and content-based format detection
-- 6:00 `network-protocols.json`: Dropbox, Google Drive, OneDrive, WebDAV, FTP, SFTP, Git
-- 8:00 `security.json`: XSS prevention, path traversal, credential security
-- 10:00 `performance.json`: parse time benchmarks, memory limits, large file handling
-- 12:00 `test-coverage.json`: minimum coverage thresholds per module
-- 14:00 `ui-accessibility.json`: screen reader support, color contrast, keyboard navigation
-- 16:00 `cross-platform-build.json`: build verification across Android, Desktop, Web, iOS
-- 18:00 `e2e-userflow.json`: end-to-end user journeys across platforms
-- 20:00 How categories map to Yole's architecture
+- 0:00 Overview of Yole's 14 challenge bank files
+- 1:00 `format-parsing.json`: all 17 format parsers with roundtrip validation
+- 2:30 `format-detection.json`: extension-based and content-based format detection
+- 4:00 `network-protocols.json`: Dropbox, Google Drive, OneDrive, WebDAV, FTP, SFTP, Git
+- 5:30 `security.json`: XSS prevention, path traversal, credential security
+- 7:00 `performance.json`: parse time benchmarks, memory limits, large file handling
+- 8:30 `test-coverage.json`: minimum coverage thresholds per module
+- 10:00 `ui-accessibility.json`: screen reader support, color contrast, keyboard navigation
+- 11:30 `cross-platform-build.json`: build verification across Android, Desktop, Web, iOS
+- 13:00 `e2e-userflow.json`: end-to-end user journeys across platforms
+- 14:30 `concurrency.json`: concurrent access patterns, thread safety, lock ordering
+- 16:00 `resilience.json`: CircuitBreaker, ConnectionLimiter, DocumentCache validation
+- 17:30 `monitoring.json`: performance metrics, cache hit rates, circuit breaker states
+- 19:00 `lazy-loading.json`: lazy parser registration, HttpClient initialization, HTML caching
+- 20:00 `memory.json`: memory stability under load, GC pressure, allocation patterns
+- 21:00 How categories map to Yole's architecture
 - 21:30 Summary
 
 ### Code References
@@ -210,10 +215,15 @@ go run ./cmd/runner --bank banks/yole/ \
 - `Challenges/banks/yole/ui-accessibility.json` -- Accessibility challenges
 - `Challenges/banks/yole/cross-platform-build.json` -- Cross-platform build challenges
 - `Challenges/banks/yole/e2e-userflow.json` -- End-to-end user flow challenges
+- `Challenges/banks/yole/concurrency.json` -- Concurrency safety challenges
+- `Challenges/banks/yole/resilience.json` -- Resilience pattern challenges
+- `Challenges/banks/yole/monitoring.json` -- Monitoring metric challenges
+- `Challenges/banks/yole/lazy-loading.json` -- Lazy loading challenges
+- `Challenges/banks/yole/memory.json` -- Memory stability challenges
 
 ### Exercises
 1. **Category coverage** -- Map each challenge category to the Yole source directories it validates. Identify any source directories not covered by challenges.
-2. **Run each category** -- Execute each of the 9 bank files individually and compare pass rates across categories.
+2. **Run each category** -- Execute each of the 14 bank files individually and compare pass rates across categories.
 
 ---
 

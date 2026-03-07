@@ -22,7 +22,7 @@
 - 0:00 Current parser performance baseline
 - 2:00 Lazy parsing: only parse visible lines
 - 5:00 Incremental parsing: re-parse changed regions only
-- 8:00 Caching strategy: HTML output cache with invalidation
+- 8:00 Caching strategy: HTML output cache with invalidation, `DocumentCache` LRU cache for parsed documents
 - 11:00 Regex compilation: pre-compiling patterns
 - 14:00 String allocation reduction: StringBuilder usage
 - 17:00 Benchmarking before and after optimizations
@@ -91,7 +91,7 @@
 - 2:00 Object lifecycle and finalization
 - 4:00 Memory pressure handling on mobile
 - 6:00 Large document strategies: streaming vs. loading
-- 8:00 Cache eviction policies
+- 8:00 Cache eviction policies (LRU via `DocumentCache`, hit/miss tracking)
 - 10:00 Weak references and soft references
 - 12:00 Memory leak detection tooling
 - 14:00 Summary

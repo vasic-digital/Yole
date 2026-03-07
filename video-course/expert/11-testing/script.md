@@ -3,12 +3,12 @@
 ## Video 11.1: Comprehensive Testing Strategy (22 min)
 
 ### Timestamps
-- 0:00 Introduction: why Yole maintains 2,200+ tests across 88+ test files
+- 0:00 Introduction: why Yole maintains 8,200+ test methods across 177 test files
 - 1:30 The golden rule: **never remove, disable, skip, or leave broken tests**
 - 3:00 Test pyramid: unit tests (parsers), integration tests (cross-format), end-to-end tests (full pipeline)
 - 5:00 KMP testing architecture: `commonTest` for shared logic, `platformTest` for platform-specific behavior
 - 7:00 Test source set structure: `shared/src/commonTest/kotlin/digital/vasic/yole/`
-- 9:00 Test categories in Yole: format tests, integration tests, stress tests, supremacy (edge case) tests
+- 9:00 Test categories in Yole: format tests, integration tests, stress tests, supremacy (edge case) tests, resilience tests (CircuitBreaker, ConnectionLimiter, DocumentCache), contract tests (8 protocols), safety tests, security validation tests, monitoring metrics tests, performance metrics tests
 - 11:00 Coverage targets and Kover configuration in `shared/build.gradle.kts`
 - 13:00 Running the full test suite: `./gradlew test`
 - 14:00 Running a single test class: `./gradlew test --tests "digital.vasic.yole.format.todotxt.TodoTxtParserTest"`
@@ -46,9 +46,11 @@ All issues must be fixed by addressing the root causes:
 ```
 
 ### Key Test Statistics
-- **2,200+ tests** across **88+ test files** in `commonTest`
-- Test categories: format parsers, model, network, UI, security, concurrency, stress, integration
+- **8,200+ test methods** across **177 test files** in commonTest + desktopTest + androidUnitTest + wasmJsTest
+- Test categories: format parsers, model, network, UI, security, concurrency, stress, integration, property-based, contract, resilience, monitoring, performance
+- Dedicated test suites: SafetyFixesTest (92 tests), ContractTestsForProtocols (89 tests), ResilienceTests (53 tests), MonitoringMetricsTests (42 tests), SecurityValidationTests (36 tests), ComprehensiveStressTests (30 tests), PerformanceMetricsTests (29 tests)
 - All tests run on every commit via CI/CD
+- 63.0% line coverage (measured by Kover)
 
 ### Exercises
 1. **Write a format parser test** -- Pick any format (e.g., CSV or LaTeX) and write a new test case that verifies parsing of a specific edge case. Add it to the appropriate test file.

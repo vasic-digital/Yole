@@ -30,9 +30,10 @@
 - Show FormatRegistry, TextParser, TextFormat
 
 **[9:00-10:00] Course Roadmap**
-- Beginner: Getting started, Markdown editor, todo.txt manager, note app
-- Advanced: Custom formats, performance, network storage, UI
-- Expert: Architecture, deployment, testing, community
+- Beginner: Getting started, Markdown editor, todo.txt manager, note app, migration from Markor
+- Advanced: Custom formats, performance, network storage, UI, cloud storage, containers, security scanning
+- Expert: Architecture, deployment, testing, community, challenges framework, monitoring, contributing
+- 10 extracted KMP modules, 14 challenge banks, resilience patterns (CircuitBreaker, ConnectionLimiter, DocumentCache), 6 security scanners
 
 ---
 
@@ -68,7 +69,7 @@
 **[9:00-11:00] Run First Test**
 - `./gradlew test --tests "digital.vasic.yole.format.markdown.*"`
 - Explain test output
-- Show test count (2,427+)
+- Show test count (8,200+ test methods across 177 test files)
 
 **[11:00-12:00] Troubleshooting**
 - Common issues: wrong JDK version, missing Android SDK, Gradle daemon
