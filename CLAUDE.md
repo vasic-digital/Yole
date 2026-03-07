@@ -221,7 +221,7 @@ Tests live in `shared/src/commonTest/kotlin/digital/vasic/yole/format/`:
 └── FormatRegistryStressTest.kt
 ```
 
-~8,800+ tests across ~170+ test files (commonTest + desktopTest + androidUnitTest + wasmJsTest).
+~9,100+ tests across ~192 test files (commonTest + desktopTest + androidUnitTest + wasmJsTest).
 
 Test types include: unit, integration, stress, supremacy/edge-case, mock HTTP, property-based, contract, security, performance metrics, monitoring, resilience, fuzz, snapshot, load, E2E, accessibility, and non-blocking tests.
 
