@@ -13,6 +13,18 @@ package digital.vasic.yole.network.protocols.sftp
  *
  * SFTP via SSH is not currently supported on iOS because the sshj library
  * is JVM-only. All methods return [UnsupportedOperationException] failures.
+ *
+ * TODO: Implement using libssh2 via Kotlin/Native cinterop for SSH/SFTP support.
+ *       Steps:
+ *       1. Create a .def file for libssh2 C headers in the cinterop/ directory
+ *       2. Implement SSH session management (connect, authenticate, disconnect)
+ *       3. Implement SFTP subsystem channel (open, read, write, stat, list)
+ *       4. Support both password and public key authentication
+ *       5. Handle host key verification against a known_hosts store
+ *       6. Wrap all C API calls with proper error handling and resource cleanup
+ *
+ * TODO: Alternatively, evaluate NWConnection with TLS for a pure-Swift/Kotlin approach,
+ *       though SSH protocol implementation from scratch would be complex.
  */
 actual class SshClient actual constructor() {
 

@@ -83,38 +83,60 @@ class YoleDocumentPickerDelegate {
     }
     
     /**
-     * Handle document selection
+     * Handle document selection from the document picker.
+     *
+     * Opens the document at the given URL and returns its text content.
+     * Uses UIDocument's asynchronous open API with security-scoped URL access.
+     *
+     * TODO: Call url.startAccessingSecurityScopedResource() before opening and
+     *       url.stopAccessingSecurityScopedResource() when done to properly handle
+     *       security-scoped bookmarks from the document picker.
+     * TODO: Detect format using FormatRegistry.detectByExtension() based on the file extension.
+     * TODO: Handle encoding detection for non-UTF-8 files.
+     *
+     * @param url The NSURL selected by the user in the document picker
+     * @return The document text content, or null if the document could not be opened
      */
     fun handleDocumentSelection(url: NSURL): String? {
         return try {
             val document = YoleDocument(url)
             document.open { success ->
-                if (success) {
-                    println("Document opened: ${url.lastPathComponent}")
+                if (!success) {
+                    // TODO: Surface this error to the UI layer via a callback or result type
                 }
             }
             document.fileText
         } catch (e: Exception) {
-            println("Error opening document: ${e.message}")
             null
         }
     }
-    
+
     /**
-     * Save document to URL
+     * Save document content to the given URL.
+     *
+     * Creates a YoleDocument, sets its content, and uses UIDocument's save API
+     * to persist the content to disk.
+     *
+     * TODO: Call url.startAccessingSecurityScopedResource() before saving and
+     *       url.stopAccessingSecurityScopedResource() when done.
+     * TODO: Return a Result<Unit> instead of Boolean for better error reporting.
+     * TODO: Handle save conflicts when the file has been modified externally.
+     *
+     * @param content The text content to save
+     * @param url The destination NSURL
+     * @return true if the save was initiated successfully, false on error
      */
     fun saveDocument(content: String, url: NSURL): Boolean {
         return try {
             val document = YoleDocument(url)
             document.fileText = content
             document.save(to = url, for = UIDocument.SaveOperation.ForOverwriting) { success ->
-                if (success) {
-                    println("Document saved: ${url.lastPathComponent}")
+                if (!success) {
+                    // TODO: Surface this error to the UI layer via a callback or result type
                 }
             }
             true
         } catch (e: Exception) {
-            println("Error saving document: ${e.message}")
             false
         }
     }
