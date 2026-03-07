@@ -211,6 +211,29 @@ erDiagram
         Instant timestamp
     }
 
+    CircuitBreaker {
+        String name
+        State state
+        Int failureCount
+        Int failureThreshold
+        Long resetTimeoutMs
+        Long lastFailureTime
+    }
+
+    ConnectionLimiter {
+        String name
+        Int maxConcurrent
+        Int activeConnections
+    }
+
+    DocumentCache {
+        Int maxSize
+        Int size
+        Long hits
+        Long misses
+        Double hitRate
+    }
+
     %% Relationships
 
     Document ||--o| TextFormat : "format maps to"
@@ -236,3 +259,7 @@ erDiagram
     NetworkOperation }o--|| NetworkDocument : "operates on"
 
     TokenResponse ||--o| TokenInfo : "produces info"
+
+    NetworkStorage ||--o| CircuitBreaker : "protected by"
+    NetworkStorage ||--o| ConnectionLimiter : "throttled by"
+    ParsedDocument }o--|| DocumentCache : "cached in"

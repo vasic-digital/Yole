@@ -18,6 +18,12 @@ graph TD
             IOS_MAIN["iosMain"]
             WASM_MAIN["wasmJsMain"]
         end
+        subgraph Resilience
+            CB["CircuitBreaker<br/>CLOSED/OPEN/HALF_OPEN"]
+            CL["ConnectionLimiter<br/>Semaphore-based"]
+            DCACHE["DocumentCache<br/>LRU with Mutex"]
+            PATHUTILS["PathUtils<br/>Path traversal defense"]
+        end
     end
 
     subgraph "Extracted KMP Modules (Composite Builds)"
@@ -76,6 +82,7 @@ graph TD
     classDef legacy fill:#999,stroke:#666,color:#fff
     classDef goModule fill:#00add8,stroke:#007d9c,color:#fff
     classDef sourceSet fill:#7bc97b,stroke:#4a9a4a,color:#000
+    classDef resilience fill:#e74c3c,stroke:#c0392b,color:#fff
 
     class ANDROID,DESKTOP,IOS,WEB platformApp
     class SHARED sharedModule
@@ -83,3 +90,4 @@ graph TD
     class COMMONS,CORE legacy
     class CHALLENGES,CONTAINERS goModule
     class COMMON_MAIN,ANDROID_MAIN,DESKTOP_MAIN,IOS_MAIN,WASM_MAIN sourceSet
+    class CB,CL,DCACHE,PATHUTILS resilience

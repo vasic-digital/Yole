@@ -8,6 +8,7 @@ sequenceDiagram
     participant FR as FormatRegistry
     participant PR as ParserRegistry
     participant Parser as TextParser
+    participant DC as DocumentCache
     participant PD as ParsedDocument
     participant SS as StyleSheets
 
@@ -18,7 +19,7 @@ sequenceDiagram
     Doc->>Doc: Extract title, extension
 
     App->>FR: detectByExtension(".md")
-    FR->>FR: Match against 22 format entries<br/>(17 text + 5 network)
+    FR->>FR: Match against 17 format entries
 
     alt Extension matches single format
         FR-->>App: TextFormat(id="markdown")
@@ -44,12 +45,21 @@ sequenceDiagram
         PR-->>App: Newly created TextParser
     end
 
-    App->>Parser: parse(content, options)
-    Parser->>Parser: Analyze raw markup content
-    Parser->>Parser: Extract metadata<br/>(lines, words, headings, etc.)
-    Parser->>Parser: Run format-specific validation
-    Parser->>PD: Create ParsedDocument(<br/>  format, rawContent,<br/>  parsedContent, metadata, errors<br/>)
-    PD-->>App: ParsedDocument
+    App->>FR: parseWithCache(content, format)
+    FR->>DC: get(contentHash)
+    alt Cache hit
+        DC-->>FR: Cached ParsedDocument
+        FR-->>App: ParsedDocument (from cache)
+    else Cache miss
+        DC-->>FR: null
+        FR->>Parser: parse(content, options)
+        Parser->>Parser: Analyze raw markup content
+        Parser->>Parser: Extract metadata<br/>(lines, words, headings, etc.)
+        Parser->>Parser: Run format-specific validation
+        Parser->>PD: Create ParsedDocument(<br/>  format, rawContent,<br/>  parsedContent, metadata, errors<br/>)
+        FR->>DC: put(contentHash, ParsedDocument)
+        PD-->>App: ParsedDocument
+    end
 
     Note over User,SS: HTML Generation (Lazy + Cached)
 

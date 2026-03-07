@@ -52,6 +52,16 @@ graph TD
         SONAR_TEST --> SONAR_SCAN
     end
 
+    subgraph "Challenges Workflow (challenges.yml)"
+        direction TB
+        CHAL_GO["Set up Go Environment"]
+        CHAL_SUBMOD["Initialize Submodules"]
+        CHAL_BUILD["Build Challenges + Containers"]
+        CHAL_RUN["Run All Challenge Banks<br/>(14 banks, 95+ challenges)"]
+
+        CHAL_GO --> CHAL_SUBMOD --> CHAL_BUILD --> CHAL_RUN
+    end
+
     subgraph "Release Workflow (release.yml)"
         direction TB
         REL_BUILD_APK["Build Android Release APK<br/>(assembleRelease)"]
@@ -81,6 +91,8 @@ graph TD
     MANUAL --> CI_CHECKOUT
     MANUAL --> SEC_GITLEAKS
     MANUAL --> SONAR_TEST
+    PUSH --> CHAL_GO
+    PR --> CHAL_GO
     MANUAL --> REL_BUILD_APK
     MANUAL --> REL_BUILD_JAR
 
@@ -101,4 +113,5 @@ graph TD
     class SEC_GITLEAKS,SEC_OWASP,SEC_SNYK,SEC_CODEQL security
     class SONAR_TEST,SONAR_SCAN sonar
     class REL_BUILD_APK,REL_BUILD_JAR,REL_COLLECT,REL_RELEASE release
+    class CHAL_GO,CHAL_SUBMOD,CHAL_BUILD,CHAL_RUN ci
     class Note1,Note2,Note3 note

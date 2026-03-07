@@ -8,6 +8,8 @@ sequenceDiagram
     participant AUTH as AuthTokenManager
     participant OAuth as OAuth2Flow
     participant HTTP as HttpClient (Ktor)
+    participant CB as CircuitBreaker
+    participant CL as ConnectionLimiter
     participant RL as RateLimiter
     participant API as Remote API
 
@@ -17,6 +19,8 @@ sequenceDiagram
     App->>App: Create StorageConfig<br/>(e.g., DropboxConfig with<br/>appKey, appSecret, accessToken)
     App->>SVC: new DropboxService(config)
     SVC->>AUTH: AuthTokenManager("dropbox")
+    SVC->>CB: CircuitBreaker("dropbox")
+    SVC->>CL: ConnectionLimiter("dropbox", maxConcurrent=5)
     Note over SVC: HttpClient initialized lazily
 
     Note over User,API: Connection Phase
@@ -51,8 +55,17 @@ sequenceDiagram
     Note over User,API: File Operations
 
     App->>SVC: listFiles("/documents")
-    SVC->>RL: Check rate limit
-    RL-->>SVC: Permitted
+    SVC->>CB: execute (check circuit state)
+    alt Circuit OPEN
+        CB-->>SVC: CircuitOpenException
+        SVC-->>App: Result.failure("Service unavailable")
+    else Circuit CLOSED or HALF_OPEN
+        CB-->>SVC: Proceed
+        SVC->>CL: withConnection (acquire semaphore)
+        CL-->>SVC: Connection acquired
+        SVC->>RL: Check rate limit
+        RL-->>SVC: Permitted
+    end
 
     SVC->>HTTP: POST /2/files/list_folder
     HTTP->>API: List folder request
