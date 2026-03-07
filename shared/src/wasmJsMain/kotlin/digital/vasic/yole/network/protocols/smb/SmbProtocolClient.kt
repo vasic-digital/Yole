@@ -14,6 +14,13 @@ package digital.vasic.yole.network.protocols.smb
  * SMB/CIFS is not supported on the web platform because the smbj library
  * is JVM-only and raw TCP sockets are unavailable in a browser environment.
  * All methods return [UnsupportedOperationException] failures.
+ *
+ * This is an intentional platform limitation, not a stub awaiting implementation.
+ * Browser security models fundamentally prevent raw TCP socket access required for SMB.
+ *
+ * TODO: If a server-side proxy becomes available, implement SMB-over-WebSocket by
+ *       routing SMB commands through a WebSocket connection to a backend proxy.
+ *       See the FTP stub for the same architectural pattern.
  */
 actual class SmbProtocolClient actual constructor() {
 

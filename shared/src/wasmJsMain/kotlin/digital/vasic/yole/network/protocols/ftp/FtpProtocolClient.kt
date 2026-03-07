@@ -14,6 +14,16 @@ package digital.vasic.yole.network.protocols.ftp
  * Browsers do not expose raw TCP socket APIs, making FTP protocol communication
  * impossible from client-side web applications.
  * All operations return [Result.failure] with [UnsupportedOperationException].
+ *
+ * This is an intentional platform limitation, not a stub awaiting implementation.
+ * Browser security models fundamentally prevent raw TCP socket access.
+ *
+ * TODO: If a server-side proxy becomes available, implement FTP-over-WebSocket by
+ *       routing FTP commands through a WebSocket connection to a backend proxy that
+ *       translates them into actual FTP protocol traffic. This would require:
+ *       1. A companion server component (e.g., Node.js FTP proxy with WebSocket endpoint)
+ *       2. WebSocket client in this class to communicate with the proxy
+ *       3. JSON-based command/response protocol between browser and proxy
  */
 actual class FtpProtocolClient actual constructor() {
 

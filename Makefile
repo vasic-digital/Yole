@@ -1,87 +1,252 @@
-# License of Makefile: Public Domain / CC0
+# SPDX-FileCopyrightText: 2017-2025 Gregor Santner <gsantner AT mailbox DOT org>
+# SPDX-FileCopyrightText: 2025-2026 Milos Vasic
+# SPDX-License-Identifier: CC0-1.0
+#
+# Yole - Cross-platform text editor
+# Build automation for Android, Desktop, Web, and container-based workflows
+#
+# Usage:
+#   make help              - Show all available targets
+#   make build             - Build Android APK (requires ANDROID_SDK_ROOT)
+#   make desktop           - Run desktop application
+#   make web               - Run web application in browser
+#   make test-shared       - Run shared module tests (desktop JVM)
+#   make container-test    - Run all tests inside a container
+#
 .PHONY: $(shell sed -n -e '/^$$/ { n ; /^[^ .\#][^ ]*:/ { s/:.*$$// ; p ; } ; }' $(MAKEFILE_LIST))
 .NOTPARALLEL: clean
-.DEFAULT_GOAL := all
+.DEFAULT_GOAL := help
 
-env-%:
-	@: $(if ${${*}},,$(error Environment variable $* not set))
+####################################################################################
+# Configuration
 ####################################################################################
 
 DIST_DIR = dist
-MOVE = mv
+FLAVOR := $(or ${FLAVOR},${FLAVOR},Atest)
+ANDROID_BUILD_TOOLS := $(shell test -n "$$ANDROID_SDK_ROOT" && find "$${ANDROID_SDK_ROOT}/build-tools" -iname "aapt" 2>/dev/null | sort -r | head -n1 | xargs dirname 2>/dev/null)
+TOOL_SPELLCHECKING_ISPELL := $(shell command -v ispell 2> /dev/null)
 
-all: $(DIST_DIR) spellcheck lint deptree test build aapt_dump_badging
+# Container runtime: prefer podman, fall back to docker
+CONTAINER_RUNTIME := $(shell command -v podman 2>/dev/null || command -v docker 2>/dev/null)
+COMPOSE_CMD := $(shell command -v podman-compose 2>/dev/null || echo "$(CONTAINER_RUNTIME) compose")
 
 ####################################################################################
+# Help
+####################################################################################
+
+# Show all available targets with descriptions
+help:
+	@echo "Yole Build System"
+	@echo "================="
+	@echo ""
+	@echo "Cross-Platform Targets:"
+	@echo "  make build              Build Android APK (requires ANDROID_SDK_ROOT)"
+	@echo "  make desktop            Run desktop (JVM) application"
+	@echo "  make web                Run web (Wasm) application in browser"
+	@echo ""
+	@echo "Testing Targets:"
+	@echo "  make test-shared        Run shared module tests (desktop JVM, no Android SDK needed)"
+	@echo "  make test-android       Run Android unit tests (requires ANDROID_SDK_ROOT)"
+	@echo "  make test               Legacy: Run Android flavor tests (requires ANDROID_SDK_ROOT)"
+	@echo "  make test-all           Run all tests across all modules"
+	@echo "  make coverage           Run tests with Kover HTML coverage report"
+	@echo "  make test-coverage      Alias for coverage"
+	@echo ""
+	@echo "Container Targets (recommended for CI):"
+	@echo "  make container-build    Build the container image"
+	@echo "  make container-test     Run all tests inside a container"
+	@echo "  make container-release  Build release artifacts inside a container"
+	@echo "  make container-shell    Open an interactive shell in the build container"
+	@echo ""
+	@echo "Security Targets:"
+	@echo "  make security           Start SonarQube for code quality analysis"
+	@echo "  make security-full      Start full security stack (SonarQube + Snyk + Detekt)"
+	@echo "  make security-scan      Run Detekt static analysis"
+	@echo "  make detekt             Alias for security-scan"
+	@echo "  make security-stop      Stop all security services"
+	@echo ""
+	@echo "Code Quality Targets:"
+	@echo "  make lint               Run Android lint (requires ANDROID_SDK_ROOT)"
+	@echo "  make spellcheck         Spellcheck strings.xml with ispell"
+	@echo "  make docs               Generate Dokka HTML API documentation"
+	@echo "  make dokka              Alias for docs"
+	@echo ""
+	@echo "Android Device Targets (require ANDROID_SDK_ROOT):"
+	@echo "  make install            Install APK on connected device"
+	@echo "  make run                Launch app on connected device"
+	@echo ""
+	@echo "Submodule Targets:"
+	@echo "  make challenge          Run Challenges test suite (Go)"
+	@echo ""
+	@echo "Utility Targets:"
+	@echo "  make clean              Clean build artifacts and caches"
+	@echo "  make clean-deep         Deep clean including Gradle caches"
+	@echo "  make submodules         Initialize and update git submodules"
+	@echo ""
+	@echo "Environment Variables:"
+	@echo "  ANDROID_SDK_ROOT        Path to Android SDK (required for Android targets)"
+	@echo "  FLAVOR                  Build flavor (default: Atest)"
+	@echo ""
+
+####################################################################################
+# Internal helpers
+####################################################################################
+
+env-%:
+	@: $(if ${${*}},,$(error Environment variable $* not set))
 
 $(DIST_DIR):
 	mkdir -p ${DIST_DIR}
 
-ANDROID_BUILD_TOOLS := $(shell test -n "$ANDROID_SDK_ROOT" && find "${ANDROID_SDK_ROOT}/build-tools" -iname "aapt" | sort -r | head -n1 | xargs dirname)
-TOOL_SPELLCHECKING_ISPELL := $(shell command -v ispell 2> /dev/null)
-
-FLAVOR := $(or ${FLAVOR},${FLAVOR},Atest)
-
 .NOTPARALLEL: gradle gradle-analyze-log
+
+# Run a Gradle command with logging (requires ANDROID_SDK_ROOT)
 gradle: env-ANDROID_SDK_ROOT
 	mkdir -p $(DIST_DIR)/log/
 	chmod +x gradlew
 	./gradlew --no-daemon --parallel --stacktrace $A  2>&1 | tee "$(DIST_DIR)/log/gradle.log"
 	@echo "-----------------------------------------------------------------------------------"
 
+# Run a Gradle command without requiring ANDROID_SDK_ROOT
+gradle-no-sdk:
+	mkdir -p $(DIST_DIR)/log/
+	chmod +x gradlew
+	./gradlew --no-daemon --parallel --stacktrace $A  2>&1 | tee "$(DIST_DIR)/log/gradle.log"
+	@echo "-----------------------------------------------------------------------------------"
+
+# Verify the last Gradle run was successful
 gradle-analyze-log:
 	mv  "$(DIST_DIR)/log/gradle.log" "$(DIST_DIR)/log/gradle$A.log"
 	cat "$(DIST_DIR)/log/gradle$A.log" | grep "BUILD " | tail -n1 | grep -q "BUILD SUCCESSFUL in"
 
+# Run adb command (requires ANDROID_SDK_ROOT)
 adb: env-ANDROID_SDK_ROOT
 	"${ANDROID_SDK_ROOT}/platform-tools/adb" $A 2>&1 | tee "$(DIST_DIR)/log/adb-$L.log"
 
+# Run aapt command (requires ANDROID_SDK_ROOT)
 aapt: env-ANDROID_SDK_ROOT
 	"${ANDROID_BUILD_TOOLS}/aapt" $A 2>&1 | grep -v 'application-label-' | tee "$(DIST_DIR)/log/aapt$L.log"
 
-build:
-	rm -f $(DIST_DIR)/*.apk
-	$(MAKE) A="clean assembleFlavor$(FLAVOR) -x lint" gradle
-	find app -type f -newermt '-300 seconds' -iname '*.apk' -not -iname '*unsigned.apk' | xargs cp -R -t $(DIST_DIR)/
-	$(MAKE) A="-build" gradle-analyze-log
+####################################################################################
+# Cross-Platform Targets
+####################################################################################
 
-lint:
+# Build Android debug APK
+build: $(DIST_DIR)
+	rm -f $(DIST_DIR)/*.apk
+	$(MAKE) A="clean :androidApp:assembleDebug -x lint" gradle
+	find androidApp -type f -newermt '-300 seconds' -iname '*.apk' -not -iname '*unsigned.apk' | xargs cp -R -t $(DIST_DIR)/ 2>/dev/null || true
+	@echo "Build artifacts in $(DIST_DIR)/"
+	@echo "-----------------------------------------------------------------------------------"
+
+# Run the desktop (JVM) application
+desktop:
+	chmod +x gradlew
+	./gradlew --no-daemon :desktopApp:run
+
+# Run the web (Wasm) application in the browser
+web:
+	chmod +x gradlew
+	./gradlew --no-daemon :webApp:wasmJsBrowserRun
+
+####################################################################################
+# Testing Targets
+####################################################################################
+
+# Run shared module tests on desktop JVM (does not require Android SDK)
+test-shared:
+	chmod +x gradlew
+	./gradlew --no-daemon :shared:desktopTest
+	@echo "-----------------------------------------------------------------------------------"
+
+# Run Android unit tests (requires ANDROID_SDK_ROOT)
+test-android:
+	$(MAKE) A=":androidApp:testDebugUnitTest -x lint" gradle
+	@echo "-----------------------------------------------------------------------------------"
+
+# Run all tests (requires ANDROID_SDK_ROOT) - legacy Android flavor tests
+test: $(DIST_DIR)
+	rm -Rf $(DIST_DIR)/tests
+	$(MAKE) A="test -x lint" gradle
+	@echo "-----------------------------------------------------------------------------------"
+
+# Run all tests across all modules
+test-all:
+	chmod +x gradlew
+	./gradlew --no-daemon test
+	@echo "-----------------------------------------------------------------------------------"
+
+# Run tests with Kover HTML coverage report
+coverage:
+	chmod +x gradlew
+	./gradlew --no-daemon test koverHtmlReport
+	@echo "Coverage report: shared/build/reports/kover/html/index.html"
+	@echo "-----------------------------------------------------------------------------------"
+
+# Alias: test-coverage -> coverage
+test-coverage: coverage
+
+####################################################################################
+# Container Targets
+####################################################################################
+
+# Build the container image for the build environment
+container-build:
+	$(COMPOSE_CMD) build build
+
+# Run all tests inside a container (consistent environment)
+container-test:
+	$(COMPOSE_CMD) run --rm build ./docker/scripts/test-all.sh
+
+# Build release artifacts inside a container
+container-release:
+	$(COMPOSE_CMD) run --rm build ./docker/scripts/build.sh
+
+# Open an interactive shell in the build container
+container-shell:
+	$(COMPOSE_CMD) run --rm build bash
+
+####################################################################################
+# Security Targets
+####################################################################################
+
+# Start SonarQube for code quality analysis (http://localhost:9000)
+security:
+	$(COMPOSE_CMD) --profile security up -d sonarqube
+	@echo "SonarQube starting at http://localhost:9000 (default: admin/admin)"
+
+# Start full security stack (SonarQube + Snyk + Detekt)
+security-full:
+	$(COMPOSE_CMD) --profile full up -d
+	@echo "Full security stack started"
+
+# Run Detekt static analysis
+security-scan:
+	chmod +x gradlew
+	./gradlew --no-daemon detekt
+	@echo "-----------------------------------------------------------------------------------"
+
+# Alias: detekt -> security-scan
+detekt: security-scan
+
+# Stop all security services
+security-stop:
+	$(COMPOSE_CMD) --profile full down
+
+####################################################################################
+# Code Quality Targets
+####################################################################################
+
+# Run Android lint checks (requires ANDROID_SDK_ROOT)
+lint: $(DIST_DIR)
 	rm -Rf $(DIST_DIR)/lint
 	mkdir -p $(DIST_DIR)/lint/
 	$(MAKE) A="lintFlavorDefaultDebug" gradle
-	find app -type f -iname 'lint-results-*' | grep -v 'intermediates' | xargs cp -R -t $(DIST_DIR)/lint
-	$(MAKE) A="-lint" gradle-analyze-log
-
-test:
-	rm -Rf $(DIST_DIR)/tests
-	$(MAKE) A="testFlavorDefaultDebugUnitTest -x lint" gradle
-	mkdir -p app/build/test-results/testFlavorDefaultDebugUnitTest && echo 'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHRlc3RzdWl0ZSBuYW1lPSJkdW1teSIgdGVzdHM9IjEiIHNraXBwZWQ9IjAiIGZhaWx1cmVzPSIwIiBlcnJvcnM9IjAiIHRpbWVzdGFtcD0iMjAyMC0xMi0wOFQwMDowMDowMCIgaG9zdG5hbWU9ImxvY2FsaG9zdCIgdGltZT0iMC4wMSI+CiAgPHByb3BlcnRpZXMvPgogIDx0ZXN0Y2FzZSBuYW1lPSJkdW1teSIgY2xhc3NuYW1lPSJkdW1teSIgdGltZT0iMC4wMSIvPgogIDxzeXN0ZW0tb3V0PjwhW0NEQVRBW11dPjwvc3lzdGVtLW91dD4KICA8c3lzdGVtLWVycj48IVtDREFUQVtdXT48L3N5c3RlbS1lcnI+CjwvdGVzdHN1aXRlPgo=' | base64 -d > 'app/build/test-results/testFlavorDefaultDebugUnitTest/TEST-dummy.xml'
-	find app -type d -iname 'testFlavorDefaultDebugUnitTest' | xargs cp -R -t $(DIST_DIR)/
-	mv ${DIST_DIR}/testFlavorDefaultDebugUnitTest $(DIST_DIR)/tests
-	$(MAKE) A="-test" gradle-analyze-log
-
-deptree:
-	$(MAKE) A="app:dependencies --configuration flavor$(FLAVOR)DebugRuntimeClasspath" gradle
-	$(MAKE) A="-dependency-tree" gradle-analyze-log
-
-clean:
-	$(MAKE) A="clean" gradle
-	rm -Rf $(DIST_DIR) app/build app/flavor* .idea dist
-	find . -type f -iname "*.iml" -delete
-	$(MAKE) $(DIST_DIR)
+	find androidApp -type f -iname 'lint-results-*' | grep -v 'intermediates' | xargs cp -R -t $(DIST_DIR)/lint 2>/dev/null || true
 	@echo "-----------------------------------------------------------------------------------"
 
-install:
-	$(MAKE) A="install -r $(DIST_DIR)/*.apk" L="install" adb
-
-run:
-	$(MAKE) A="shell monkey -p $$(aapt dump badging $(DIST_DIR)/*.apk | grep package: | sed 's@.* name=@@' | sed 's@ .*@@' | xargs | head -n1) -c android.intent.category.LAUNCHER 1" L="run" adb
-
-aapt_dump_badging:
-	$(MAKE) A="dump badging $(DIST_DIR)/*.apk" aapt
-	@echo "-----------------------------------------------------------------------------------"
-
-spellcheck:
+# Spellcheck strings.xml using ispell
+spellcheck: $(DIST_DIR)
 	mkdir -p "$(DIST_DIR)/lint/"
 ifndef TOOL_SPELLCHECKING_ISPELL
 	@echo "Tool ispell (spellcheck) not found in PATH. Spellcheck skipped." > "$(DIST_DIR)/lint/stringsxml-spellcheck.txt"
@@ -97,3 +262,49 @@ endif
 	@cat "$(DIST_DIR)/lint/stringsxml-spellcheck.txt"
 	@echo "-----------------------------------------------------------------------------------"
 
+# Generate API documentation with Dokka
+docs:
+	chmod +x gradlew
+	./gradlew --no-daemon :shared:dokkaHtml
+	@echo "API docs: shared/build/dokka/html/index.html"
+	@echo "-----------------------------------------------------------------------------------"
+
+# Alias: dokka -> docs
+dokka: docs
+
+####################################################################################
+# Android Device Targets
+####################################################################################
+
+# Install APK on connected device via adb
+install:
+	$(MAKE) A="install -r $(DIST_DIR)/*.apk" L="install" adb
+
+# Launch app on connected device via adb
+run:
+	$(MAKE) A="shell monkey -p $$(aapt dump badging $(DIST_DIR)/*.apk | grep package: | sed 's@.* name=@@' | sed 's@ .*@@' | xargs | head -n1) -c android.intent.category.LAUNCHER 1" L="run" adb
+
+####################################################################################
+# Utility Targets
+####################################################################################
+
+# Clean build artifacts
+clean:
+	chmod +x gradlew
+	./gradlew --no-daemon clean 2>/dev/null || true
+	rm -Rf $(DIST_DIR) app/build androidApp/build shared/build desktopApp/build webApp/build .idea dist
+	find . -type f -iname "*.iml" -delete
+	mkdir -p $(DIST_DIR)
+	@echo "-----------------------------------------------------------------------------------"
+
+# Deep clean including Gradle caches
+clean-deep: clean
+	rm -Rf .gradle build
+	@echo "Deep clean complete (Gradle caches removed)"
+	@echo "-----------------------------------------------------------------------------------"
+
+# Initialize and update git submodules
+submodules:
+	git submodule update --init --recursive
+	@echo "Submodules initialized"
+	@echo "-----------------------------------------------------------------------------------"

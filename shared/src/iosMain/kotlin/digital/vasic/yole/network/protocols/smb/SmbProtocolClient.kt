@@ -13,6 +13,17 @@ package digital.vasic.yole.network.protocols.smb
  *
  * SMB/CIFS is not currently supported on iOS because the smbj library
  * is JVM-only. All methods return [UnsupportedOperationException] failures.
+ *
+ * TODO: Implement using libsmb2 via Kotlin/Native cinterop for SMB2/3 support.
+ *       Steps:
+ *       1. Create a .def file for libsmb2 C headers in the cinterop/ directory
+ *       2. Implement SMB2 session setup (connect, authenticate via NTLM/Kerberos)
+ *       3. Implement share tree connect and file operations (list, read, write, delete)
+ *       4. Support SMB3 encryption for secure communication
+ *       5. Handle reconnection on network changes (iOS can switch networks frequently)
+ *
+ * TODO: Alternatively, use iOS's built-in NetFS framework (if available) or
+ *       SMBClient framework for macOS Catalyst builds.
  */
 actual class SmbProtocolClient actual constructor() {
 
