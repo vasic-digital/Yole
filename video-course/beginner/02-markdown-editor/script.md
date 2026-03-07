@@ -78,7 +78,7 @@
 **[13:00-15:00] Running Tests**
 - Execute: `./gradlew test --tests "*.MarkdownParserTests"`
 - Review test output, verify all 20+ tests pass
-- Show how Yole runs 8,200+ test methods across 177 test files: `./gradlew test`
+- Show how Yole runs 8,800+ test methods across 170+ test files: `./gradlew test`
 - Reference: `shared/src/commonTest/kotlin/digital/vasic/yole/format/markdown/`
 
 ### Hands-On Exercise
@@ -330,7 +330,7 @@
 
 **[0:00-1:30] Test Strategy Overview**
 - Explain the testing pyramid: unit tests (most), integration tests, UI tests (fewest)
-- Show Yole's test count: 8,200+ test methods across 177 test files
+- Show Yole's test count: 8,800+ test methods across 170+ test files
 - Goal for this module: achieve 90%+ code coverage on the shared parser
 - Reference: `shared/src/commonTest/kotlin/digital/vasic/yole/format/` for test organization
 

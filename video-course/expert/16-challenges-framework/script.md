@@ -190,7 +190,7 @@ go run ./cmd/runner --bank banks/yole/ \
 - 0:00 Overview of Yole's 14 challenge bank files
 - 1:00 `format-parsing.json`: all 17 format parsers with roundtrip validation
 - 2:30 `format-detection.json`: extension-based and content-based format detection
-- 4:00 `network-protocols.json`: Dropbox, Google Drive, OneDrive, WebDAV, FTP, SFTP, Git
+- 4:00 `network-protocols.json`: Dropbox, Google Drive, OneDrive, WebDAV, FTP, SFTP, Git, S3
 - 5:30 `security.json`: XSS prevention, path traversal, credential security
 - 7:00 `performance.json`: parse time benchmarks, memory limits, large file handling
 - 8:30 `test-coverage.json`: minimum coverage thresholds per module

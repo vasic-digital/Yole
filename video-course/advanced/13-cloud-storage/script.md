@@ -5,7 +5,7 @@
 ### Timestamps
 - 0:00 Introduction to Yole's cloud storage architecture
 - 1:30 The `NetworkStorageService` interface: a unified API for 8 protocols
-- 3:00 Overview of supported protocols: Dropbox, Google Drive, OneDrive, WebDAV, FTP, SFTP, SMB, Git
+- 3:00 Overview of supported protocols: Dropbox, Google Drive, OneDrive, WebDAV, FTP, SFTP, Git, S3
 - 5:00 Protocol categories: cloud APIs (OAuth2), self-hosted (WebDAV, FTP/SFTP), version control (Git)
 - 7:00 Offline-first philosophy: local edits first, sync when connected
 - 9:00 Architecture walkthrough: `StorageConfig`, `NetworkDocument`, `SyncStatus`

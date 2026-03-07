@@ -9,8 +9,8 @@ const releases = [
     highlights: [
       "Complete Kotlin Multiplatform migration with 4 platform targets",
       "10 extracted KMP modules with independent versioning",
-      "4,750+ tests across 148+ test files with 63% line coverage",
-      "Mock HTTP tests for all 5 cloud storage protocol services",
+      "8,800+ tests across 170+ test files with 63% line coverage",
+      "Mock HTTP tests for all 8 cloud storage protocol services",
       "Comprehensive decoupling of shared business logic",
       "Facade bridges for backward compatibility during transition",
       "Go-based Challenges testing framework integrated",

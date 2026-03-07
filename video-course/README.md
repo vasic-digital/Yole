@@ -130,12 +130,12 @@ The Go-based Challenges framework: challenge banks (JSON), running challenges ag
 **Prerequisites:** Modules 9-12, basic Go knowledge.
 
 ### Module 17: Monitoring & Performance (7 videos)
-Resilience patterns (CircuitBreaker, ConnectionLimiter, DocumentCache, RateLimitedStorageService), document caching with hit/miss tracking, connection management, performance metrics (8,200+ test methods, 63.0% coverage), memory profiling, and benchmark testing.
+Resilience patterns (CircuitBreaker, ConnectionLimiter, DocumentCache, RateLimitedStorageService), document caching with hit/miss tracking, connection management, performance metrics (8,800+ test methods, 63.0% coverage), memory profiling, and benchmark testing.
 
 **Prerequisites:** Module 9, Module 6.
 
 ### Module 18: Contributing to Yole (7 videos)
-Complete contributor guide: repository structure (main + 10 KMP modules + 2 Go submodules), git workflow, development environment, running the full test suite (8,200+ test methods across 177 files), adding formats, adding protocols, resilience patterns, security scanning, and code review standards.
+Complete contributor guide: repository structure (main + 10 KMP modules + 2 Go submodules), git workflow, development environment, running the full test suite (8,800+ test methods across 170+ files), adding formats, adding protocols, resilience patterns, security scanning, and code review standards.
 
 **Prerequisites:** Modules 9-12 (or equivalent familiarity with the codebase).
 

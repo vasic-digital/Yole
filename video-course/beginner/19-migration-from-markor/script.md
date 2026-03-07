@@ -18,7 +18,7 @@
 **[3:30-6:00] New Capabilities**
 - Platform support: Android (production), Desktop (beta), iOS (in development), Web/Wasm (in development)
 - Format support: from 2-3 formats to 17 formats (Markdown, Todo.txt, CSV, LaTeX, Org Mode, Plain Text, WikiText, AsciiDoc, reStructuredText, R Markdown, TaskPaper, Textile, Creole, TiddlyWiki, Jupyter, Key-Value, Binary)
-- Cloud storage: 8 protocols (Dropbox, Google Drive, OneDrive, WebDAV, FTP, SFTP, SMB, Git)
+- Cloud storage: 8 protocols (Dropbox, Google Drive, OneDrive, WebDAV, FTP, SFTP, Git, S3)
 - Offline-first architecture with optional cloud sync
 
 **[6:00-9:00] Architecture Differences**
@@ -28,7 +28,7 @@
 - Live demo: same document on Android and Desktop side by side
 
 **[9:00-11:00] Developer Experience Improvements**
-- 8,200+ test methods across 177 test files (vs. minimal tests in Markor)
+- 8,800+ test methods across 170+ test files (vs. minimal tests in Markor)
 - 10 extracted KMP modules with independent CI/CD
 - Container-based builds for reproducibility
 - 14 challenge banks in the Go-based Challenges framework

@@ -60,7 +60,7 @@ const faqCategories = [
     questions: [
       {
         q: "Which text formats does Yole support?",
-        a: "Yole supports 17 text formats: Markdown (GFM), todo.txt, CSV/TSV, LaTeX, Org Mode, reStructuredText, AsciiDoc, Textile, WikiText, TiddlyWiki, Fountain (screenplays), Ledger (accounting), Key-Value (.properties/.env/.ini), Jupyter notebooks, TaskPaper, BibTeX, and Plain Text.",
+        a: "Yole supports 17 text formats: Markdown (GFM), todo.txt, CSV/TSV, LaTeX, Org Mode, reStructuredText, AsciiDoc, Textile, WikiText, TiddlyWiki, Creole, Key-Value (.properties/.env/.ini), Jupyter notebooks, TaskPaper, R Markdown, Binary, and Plain Text.",
       },
       {
         q: "Can I add custom formats?",
@@ -116,7 +116,7 @@ const faqCategories = [
       },
       {
         q: "How do I run the tests?",
-        a: "Run './gradlew test' to execute all tests, or './gradlew :shared:desktopTest' for shared module tests. You can run specific test classes with '--tests' flag. For containerized testing, use 'docker compose run --rm build ./docker/scripts/test-all.sh'. Yole has 4,750+ tests across 148+ test files.",
+        a: "Run './gradlew test' to execute all tests, or './gradlew :shared:desktopTest' for shared module tests. You can run specific test classes with '--tests' flag. For containerized testing, use 'docker compose run --rm build ./docker/scripts/test-all.sh'. Yole has 8,800+ tests across 170+ test files.",
       },
       {
         q: "What is the module structure?",

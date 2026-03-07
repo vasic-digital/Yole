@@ -88,7 +88,7 @@ export default function ArchitecturePage() {
           <pre className="text-sm bg-[var(--color-bg-secondary)] rounded-lg p-4 overflow-x-auto border border-[var(--color-border)]"><code>{`Yole/
 ├── shared/                  # Shared KMP module (depends on extracted modules)
 │   ├── src/commonMain/      # Common Kotlin code
-│   ├── src/commonTest/      # 4,750+ tests
+│   ├── src/commonTest/      # 8,800+ tests
 │   ├── src/androidMain/     # Android expect/actual
 │   ├── src/desktopMain/     # Desktop (JVM) expect/actual
 │   ├── src/iosMain/         # iOS expect/actual
@@ -262,17 +262,17 @@ export default function ArchitecturePage() {
         <h2 className="text-3xl font-bold tracking-tight mb-4">Testing</h2>
         <div className="card">
           <p className="text-[var(--color-text-secondary)] leading-relaxed mb-4">
-            Yole has a comprehensive test suite of 4,750+ tests across 148+ test files.
+            Yole has a comprehensive test suite of 8,800+ tests across 170+ test files.
             Tests cover all 17 format parsers, network protocol clients, authentication
             flows, rate limiting, concurrency, and UI components.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary-500">4,750+</div>
+              <div className="text-2xl font-bold text-primary-500">8,800+</div>
               <div className="text-xs text-[var(--color-text-secondary)]">Total Tests</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary-500">148+</div>
+              <div className="text-2xl font-bold text-primary-500">170+</div>
               <div className="text-xs text-[var(--color-text-secondary)]">Test Files</div>
             </div>
             <div className="text-center">

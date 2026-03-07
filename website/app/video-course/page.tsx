@@ -26,7 +26,7 @@ const levels = [
       { id: 8, title: "Cloud Storage Setup", duration: "12 min", description: "Connecting Dropbox, Google Drive, and OneDrive. OAuth2 authentication and file browsing." },
       { id: 9, title: "WebDAV and Self-Hosted Storage", duration: "10 min", description: "Connecting to Nextcloud, ownCloud, and custom WebDAV servers. FTP and SFTP configuration." },
       { id: 10, title: "Advanced Markdown", duration: "14 min", description: "Tables, task lists, footnotes, math expressions, code blocks with syntax highlighting, and Mermaid diagrams." },
-      { id: 11, title: "LaTeX and Scientific Writing", duration: "12 min", description: "Math equations, document structure, bibliography with BibTeX, and cross-references." },
+      { id: 11, title: "LaTeX and Scientific Writing", duration: "12 min", description: "Math equations, document structure, bibliography management, and cross-references." },
       { id: 12, title: "CSV Data Editing", duration: "8 min", description: "Working with spreadsheet data. Column alignment, header detection, and HTML table preview." },
       { id: 13, title: "Snippets and Templates", duration: "9 min", description: "Creating custom snippets, file templates, and automating repetitive text patterns." },
     ],
