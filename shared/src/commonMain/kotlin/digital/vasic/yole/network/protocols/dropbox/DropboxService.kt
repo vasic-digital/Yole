@@ -66,18 +66,23 @@ class DropboxService(
     private val _injectedAuthTokenManager: AuthTokenManager? = null
 ) : NetworkStorageService {
 
+    // Resilience: circuit breaker and connection limiter
+    private val circuitBreaker = CircuitBreaker(name = "dropbox", failureThreshold = 5)
+    private val connectionLimiter = ConnectionLimiter(name = "dropbox", maxConcurrent = 5)
+
     // Platform file I/O for reading/writing local files
     private val fileIO by lazy { PlatformFileIOFactory.create() }
 
     // Lazy initialization of HttpClient to avoid resource allocation if never used
-    private val httpClient by lazy { _injectedHttpClient ?: createHttpClient() }
-
-    // Track whether httpClient has been initialized to avoid closing uninitialized client
-    private var httpClientInitialized = false
+    // _httpClientAccessed tracks whether the lazy has been triggered, for safe close in disconnect()
+    private var _httpClientAccessed = false
+    private val httpClient by lazy {
+        _httpClientAccessed = true
+        _injectedHttpClient ?: createHttpClient()
+    }
 
     private val authTokenManager = _injectedAuthTokenManager ?: AuthTokenManager("dropbox")
     private val oauth2Flow by lazy {
-        httpClientInitialized = true
         DropboxOAuth2Flow(
             httpClient = httpClient,
             clientId = config.appKey,
@@ -96,15 +101,18 @@ class DropboxService(
     private val activeJobs = mutableMapOf<Long, Job>()
     private val activeJobsMutex = Mutex()
     private val pauseFlags = mutableMapOf<Long, MutableStateFlow<Boolean>>()
-    
+    private val pauseFlagsMutex = Mutex()
+
     override val isOnline: Boolean
         get() = _isConnected
-    
+
     override val rootPath: String
         get() = "/"
-    
+
     // Structured concurrency: use SupervisorJob for background initialization
     private var serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scopeMutex = Mutex()
+    private var initJob: Job? = null
 
     // In-memory cache storage
     private val cacheEntries = mutableMapOf<String, CacheEntry>()
@@ -119,8 +127,14 @@ class DropboxService(
 
     init {
         // Initialize with existing access token if available using structured concurrency
-        serviceScope.launch {
-            initializeConnection()
+        initJob = serviceScope.launch {
+            try {
+                initializeConnection()
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Initialization failure is non-fatal
+            }
         }
     }
     
@@ -149,40 +163,47 @@ class DropboxService(
     
     /** Authenticate with Dropbox using OAuth2 tokens and verify the account. */
     override suspend fun connect(): Result<Unit> {
-        return try {
-            // Cancel any existing scope to avoid leaking coroutines on reconnect
-            serviceScope.cancel()
-            serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        return circuitBreaker.execute {
+            connectionLimiter.withConnection {
+                // Cancel any existing scope to avoid leaking coroutines on reconnect
+                scopeMutex.withLock {
+                    serviceScope.cancel()
+                    serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+                }
 
-            // Check if we have valid tokens
-            val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
-            
-            if (!hasValidToken) {
-                return Result.failure(
-                    NetworkStorageException.ConnectionException.Authentication(
-                        message = "No valid authentication tokens found",
-                        authType = "OAuth2",
-                        username = "dropbox"
+                // Check if we have valid tokens
+                val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
+
+                if (!hasValidToken) {
+                    return@withConnection Result.failure(
+                        NetworkStorageException.ConnectionException.Authentication(
+                            message = "No valid authentication tokens found",
+                            authType = "OAuth2",
+                            username = "dropbox"
+                        )
                     )
-                )
+                }
+
+                // Test connection by getting account info
+                val accountInfoResult = getAccountInfo()
+                if (accountInfoResult.isSuccess) {
+                    stateMutex.withLock { _isConnected = true }
+                    Result.success(Unit)
+                } else {
+                    // Try to refresh token if connection failed
+                    refreshAccessToken()
+                }
             }
-            
-            // Test connection by getting account info
-            val accountInfoResult = getAccountInfo()
-            if (accountInfoResult.isSuccess) {
-                stateMutex.withLock { _isConnected = true }
-                Result.success(Unit)
-            } else {
-                // Try to refresh token if connection failed
-                refreshAccessToken()
+        }.fold(
+            onSuccess = { it },
+            onFailure = { e ->
+                if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+                Result.failure(NetworkStorageException.ConnectionException.Failed(
+                    message = "Dropbox connection failed",
+                    cause = e
+                ))
             }
-        } catch (e: Exception) {
-            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
-            Result.failure(NetworkStorageException.ConnectionException.Failed(
-                message = "Dropbox connection failed",
-                cause = e
-            ))
-        }
+        )
     }
     
     private suspend fun testConnectionInternal(): Result<Boolean> = try {
@@ -196,14 +217,19 @@ class DropboxService(
     /** Disconnect from Dropbox by cancelling background tasks and closing the HTTP client. */
     override suspend fun disconnect(): Result<Unit> {
         return try {
+            // Cancel init job first
+            initJob?.cancel()
+            initJob = null
             // Cancel background tasks and recreate scope for potential reconnection
-            serviceScope.cancel()
-            serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+            scopeMutex.withLock {
+                serviceScope.cancel()
+                serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+            }
             // Only close httpClient if it was actually initialized
-            if (httpClientInitialized) {
+            if (_httpClientAccessed) {
                 try {
                     httpClient.close()
-                } catch (closeException: Exception) {
+                } catch (_: Exception) {
                     // Log but don't fail disconnect for close errors
                 }
             }
@@ -883,6 +909,8 @@ class DropboxService(
             activeJobsMutex.withLock {
                 activeJobs[operationId]?.cancel()
                 activeJobs.remove(operationId)
+            }
+            pauseFlagsMutex.withLock {
                 pauseFlags.remove(operationId)
             }
             operationsMutex.withLock { activeOperations.remove(operationId) }
@@ -895,7 +923,9 @@ class DropboxService(
 
     override suspend fun pauseOperation(operationId: Long): Result<Unit> {
         return try {
-            pauseFlags[operationId]?.value = true
+            pauseFlagsMutex.withLock {
+                pauseFlags[operationId]?.value = true
+            }
             operationsMutex.withLock {
                 activeOperations[operationId]?.let { op ->
                     activeOperations[operationId] = op.copy(status = NetworkOperation.Status.PAUSED, isPaused = true)
@@ -910,7 +940,9 @@ class DropboxService(
 
     override suspend fun resumeOperation(operationId: Long): Result<Unit> {
         return try {
-            pauseFlags[operationId]?.value = false
+            pauseFlagsMutex.withLock {
+                pauseFlags[operationId]?.value = false
+            }
             operationsMutex.withLock {
                 activeOperations[operationId]?.let { op ->
                     activeOperations[operationId] = op.copy(status = NetworkOperation.Status.IN_PROGRESS, isPaused = false)
@@ -1377,26 +1409,11 @@ class DropboxService(
     }
     
     /**
-     * Normalize path for Dropbox API
+     * Normalize path for Dropbox API.
+     * Delegates to [PathUtils.normalizePath] for shared traversal protection.
      */
     private fun normalizePath(path: String): String {
-        if (path.isBlank() || path == "/") return _rootPath
-
-        val basePath = if (_rootPath.isBlank()) path else "$_rootPath/$path"
-        val segments = basePath.split("/").filter { it.isNotEmpty() }
-        val resolved = mutableListOf<String>()
-        for (segment in segments) {
-            when (segment) {
-                "." -> { /* skip current-dir marker */ }
-                ".." -> { if (resolved.isNotEmpty()) resolved.removeLast() }
-                else -> resolved.add(segment)
-            }
-        }
-        val result = "/" + resolved.joinToString("/")
-
-        // Ensure result stays within root boundary
-        val rootPrefix = _rootPath.ifBlank { "/" }
-        return if (result.startsWith(rootPrefix) || rootPrefix == "/") result else _rootPath
+        return PathUtils.normalizePath(path, _rootPath)
     }
     
     private fun jsonEscape(value: String): String =

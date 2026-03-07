@@ -52,6 +52,10 @@ class FtpService(
     private val _injectedFtpClient: FtpProtocolClient? = null
 ) : NetworkStorageService {
 
+    // Resilience: circuit breaker and connection limiter
+    private val circuitBreaker = CircuitBreaker(name = "ftp", failureThreshold = 5)
+    private val connectionLimiter = ConnectionLimiter(name = "ftp", maxConcurrent = 5)
+
     private val ftpClient = _injectedFtpClient ?: FtpProtocolClient()
 
     private var _isConnected = false
@@ -119,51 +123,56 @@ class FtpService(
      * 3. PASS password -> expects 230
      */
     override suspend fun connect(): Result<Unit> {
-        return try {
-            // Validate host configuration
-            if (config.host.isBlank()) {
-                return Result.failure(NetworkStorageException.ConnectionException.Failed(
+        return circuitBreaker.execute {
+            connectionLimiter.withConnection {
+                // Validate host configuration
+                if (config.host.isBlank()) {
+                    return@withConnection Result.failure(NetworkStorageException.ConnectionException.Failed(
+                        message = "FTP connection failed",
+                        cause = Exception("FTP host cannot be blank")
+                    ))
+                }
+
+                // Validate port range (1-65535)
+                if (config.port <= 0 || config.port > 65535) {
+                    return@withConnection Result.failure(NetworkStorageException.ConnectionException.Failed(
+                        message = "FTP connection failed",
+                        cause = Exception("Invalid FTP port: ${config.port}")
+                    ))
+                }
+
+                // Connect to FTP server control channel
+                val connectResult = ftpClient.connect(config.host, config.port)
+                if (connectResult.isFailure) {
+                    return@withConnection Result.failure(NetworkStorageException.ConnectionException.Failed(
+                        message = "FTP connection failed",
+                        cause = connectResult.exceptionOrNull()
+                    ))
+                }
+
+                // Authenticate with USER/PASS
+                val loginResult = ftpClient.login(config.username, config.password)
+                if (loginResult.isFailure) {
+                    ftpClient.disconnect()
+                    return@withConnection Result.failure(NetworkStorageException.ConnectionException.Failed(
+                        message = "FTP connection failed",
+                        cause = loginResult.exceptionOrNull()
+                    ))
+                }
+
+                stateMutex.withLock { _isConnected = true }
+                Result.success(Unit)
+            }
+        }.fold(
+            onSuccess = { it },
+            onFailure = { e ->
+                if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+                Result.failure(NetworkStorageException.ConnectionException.Failed(
                     message = "FTP connection failed",
-                    cause = Exception("FTP host cannot be blank")
+                    cause = e
                 ))
             }
-
-            // Validate port range (1-65535)
-            if (config.port <= 0 || config.port > 65535) {
-                return Result.failure(NetworkStorageException.ConnectionException.Failed(
-                    message = "FTP connection failed",
-                    cause = Exception("Invalid FTP port: ${config.port}")
-                ))
-            }
-
-            // Connect to FTP server control channel
-            val connectResult = ftpClient.connect(config.host, config.port)
-            if (connectResult.isFailure) {
-                return Result.failure(NetworkStorageException.ConnectionException.Failed(
-                    message = "FTP connection failed",
-                    cause = connectResult.exceptionOrNull()
-                ))
-            }
-
-            // Authenticate with USER/PASS
-            val loginResult = ftpClient.login(config.username, config.password)
-            if (loginResult.isFailure) {
-                ftpClient.disconnect()
-                return Result.failure(NetworkStorageException.ConnectionException.Failed(
-                    message = "FTP connection failed",
-                    cause = loginResult.exceptionOrNull()
-                ))
-            }
-
-            stateMutex.withLock { _isConnected = true }
-            Result.success(Unit)
-        } catch (e: Exception) {
-            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
-            Result.failure(NetworkStorageException.ConnectionException.Failed(
-                message = "FTP connection failed",
-                cause = e
-            ))
-        }
+        )
     }
 
     /**
@@ -177,9 +186,16 @@ class FtpService(
             operationsMutex.withLock {
                 activeOperations.clear()
             }
-            jobsMutex.withLock {
-                activeJobs.values.forEach { it.cancel() }
+            // Cancel all active jobs and wait for them to finish
+            val jobsToCancel = jobsMutex.withLock {
+                val jobs = activeJobs.values.toList()
                 activeJobs.clear()
+                jobs
+            }
+            jobsToCancel.forEach { it.cancel() }
+            // Wait briefly for jobs to complete cleanup (non-blocking, with timeout)
+            withTimeoutOrNull(5000) {
+                jobsToCancel.forEach { it.join() }
             }
             Result.success(Unit)
         } catch (e: Exception) {
@@ -1240,26 +1256,10 @@ class FtpService(
 
     /**
      * Normalize path for FTP by prepending the root path.
-     * Ensures consistent path formatting for FTP commands (CWD, LIST, etc.)
+     * Delegates to [PathUtils.normalizePath] for shared traversal protection.
      */
     private fun normalizePath(path: String): String {
-        if (path.isBlank() || path == "/") return _rootPath
-
-        val basePath = if (_rootPath == "/") path else "$_rootPath/$path"
-        val segments = basePath.split("/").filter { it.isNotEmpty() }
-        val resolved = mutableListOf<String>()
-        for (segment in segments) {
-            when (segment) {
-                "." -> { /* skip current-dir marker */ }
-                ".." -> { if (resolved.isNotEmpty()) resolved.removeLast() }
-                else -> resolved.add(segment)
-            }
-        }
-        val result = "/" + resolved.joinToString("/")
-
-        // Ensure result stays within root boundary
-        val rootPrefix = if (_rootPath.isBlank()) "/" else _rootPath
-        return if (result.startsWith(rootPrefix) || rootPrefix == "/") result else _rootPath
+        return PathUtils.normalizePath(path, _rootPath)
     }
 
     /**

@@ -66,18 +66,23 @@ class OneDriveService(
     private val _injectedAuthTokenManager: AuthTokenManager? = null
 ) : NetworkStorageService {
 
+    // Resilience: circuit breaker and connection limiter
+    private val circuitBreaker = CircuitBreaker(name = "onedrive", failureThreshold = 5)
+    private val connectionLimiter = ConnectionLimiter(name = "onedrive", maxConcurrent = 5)
+
     // Platform file I/O for reading/writing local files
     private val fileIO by lazy { PlatformFileIOFactory.create() }
 
     // Lazy initialization of HttpClient to avoid resource allocation if never used
-    private val httpClient by lazy { _injectedHttpClient ?: createHttpClient() }
-
-    // Track whether httpClient has been initialized to avoid closing uninitialized client
-    private var httpClientInitialized = false
+    // _httpClientAccessed tracks whether the lazy has been triggered, for safe close in disconnect()
+    private var _httpClientAccessed = false
+    private val httpClient by lazy {
+        _httpClientAccessed = true
+        _injectedHttpClient ?: createHttpClient()
+    }
 
     private val authTokenManager = _injectedAuthTokenManager ?: AuthTokenManager("onedrive")
     private val oauth2Flow by lazy {
-        httpClientInitialized = true
         OneDriveOAuth2Flow(
             httpClient = httpClient,
             clientId = config.clientId,
@@ -96,15 +101,18 @@ class OneDriveService(
     private val activeJobs = mutableMapOf<Long, Job>()
     private val activeJobsMutex = Mutex()
     private val pauseFlags = mutableMapOf<Long, MutableStateFlow<Boolean>>()
-    
+    private val pauseFlagsMutex = Mutex()
+
     override val isOnline: Boolean
         get() = _isConnected
-    
+
     override val rootPath: String
         get() = "/"
-    
+
     // Structured concurrency: use SupervisorJob for background initialization
     private var serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scopeMutex = Mutex()
+    private var initJob: Job? = null
 
     // In-memory cache storage
     private val cacheEntries = mutableMapOf<String, CacheEntry>()
@@ -119,8 +127,14 @@ class OneDriveService(
 
     init {
         // Initialize with existing access token if available using structured concurrency
-        serviceScope.launch {
-            initializeConnection()
+        initJob = serviceScope.launch {
+            try {
+                initializeConnection()
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Initialization failure is non-fatal
+            }
         }
     }
     
@@ -149,40 +163,47 @@ class OneDriveService(
     
     /** Authenticates and connects to OneDrive, refreshing the OAuth2 token if needed. */
     override suspend fun connect(): Result<Unit> {
-        return try {
-            // Cancel any existing scope to avoid leaking coroutines on reconnect
-            serviceScope.cancel()
-            serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        return circuitBreaker.execute {
+            connectionLimiter.withConnection {
+                // Cancel any existing scope to avoid leaking coroutines on reconnect
+                scopeMutex.withLock {
+                    serviceScope.cancel()
+                    serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+                }
 
-            // Check if we have valid tokens
-            val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
-            
-            if (!hasValidToken) {
-                return Result.failure(
-                    NetworkStorageException.ConnectionException.Authentication(
-                        message = "No valid authentication tokens found",
-                        authType = "OAuth2",
-                        username = "onedrive"
+                // Check if we have valid tokens
+                val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
+
+                if (!hasValidToken) {
+                    return@withConnection Result.failure(
+                        NetworkStorageException.ConnectionException.Authentication(
+                            message = "No valid authentication tokens found",
+                            authType = "OAuth2",
+                            username = "onedrive"
+                        )
                     )
-                )
+                }
+
+                // Test connection by getting drive info
+                val driveInfoResult = getDriveInfo()
+                if (driveInfoResult.isSuccess) {
+                    stateMutex.withLock { _isConnected = true }
+                    Result.success(Unit)
+                } else {
+                    // Try to refresh token if connection failed
+                    refreshAccessToken()
+                }
             }
-            
-            // Test connection by getting drive info
-            val driveInfoResult = getDriveInfo()
-            if (driveInfoResult.isSuccess) {
-                stateMutex.withLock { _isConnected = true }
-                Result.success(Unit)
-            } else {
-                // Try to refresh token if connection failed
-                refreshAccessToken()
+        }.fold(
+            onSuccess = { it },
+            onFailure = { e ->
+                if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+                Result.failure(NetworkStorageException.ConnectionException.Failed(
+                    message = "OneDrive connection failed",
+                    cause = e
+                ))
             }
-        } catch (e: Exception) {
-            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
-            Result.failure(NetworkStorageException.ConnectionException.Failed(
-                message = "OneDrive connection failed",
-                cause = e
-            ))
-        }
+        )
     }
     
     private suspend fun testConnectionInternal(): Result<Boolean> = try {
@@ -195,14 +216,19 @@ class OneDriveService(
     
     /** Disconnects from OneDrive, cancelling background tasks and closing the HTTP client. */
     override suspend fun disconnect(): Result<Unit> = try {
+        // Cancel init job first
+        initJob?.cancel()
+        initJob = null
         // Cancel background tasks and recreate scope for potential reconnection
-        serviceScope.cancel()
-        serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        scopeMutex.withLock {
+            serviceScope.cancel()
+            serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        }
         // Only close httpClient if it was actually initialized
-        if (httpClientInitialized) {
+        if (_httpClientAccessed) {
             try {
                 httpClient.close()
-            } catch (closeException: Exception) {
+            } catch (_: Exception) {
                 // Log but don't fail disconnect for close errors
             }
         }
@@ -1030,6 +1056,8 @@ class OneDriveService(
             activeJobsMutex.withLock {
                 activeJobs[operationId]?.cancel()
                 activeJobs.remove(operationId)
+            }
+            pauseFlagsMutex.withLock {
                 pauseFlags.remove(operationId)
             }
             operationsMutex.withLock { activeOperations.remove(operationId) }
@@ -1043,7 +1071,9 @@ class OneDriveService(
     /** Pauses the active operation identified by [operationId] by setting its pause flag. */
     override suspend fun pauseOperation(operationId: Long): Result<Unit> {
         return try {
-            pauseFlags[operationId]?.value = true
+            pauseFlagsMutex.withLock {
+                pauseFlags[operationId]?.value = true
+            }
             operationsMutex.withLock {
                 activeOperations[operationId]?.let { op ->
                     activeOperations[operationId] = op.copy(status = NetworkOperation.Status.PAUSED, isPaused = true)
@@ -1059,7 +1089,9 @@ class OneDriveService(
     /** Resumes the paused operation identified by [operationId] by clearing its pause flag. */
     override suspend fun resumeOperation(operationId: Long): Result<Unit> {
         return try {
-            pauseFlags[operationId]?.value = false
+            pauseFlagsMutex.withLock {
+                pauseFlags[operationId]?.value = false
+            }
             operationsMutex.withLock {
                 activeOperations[operationId]?.let { op ->
                     activeOperations[operationId] = op.copy(status = NetworkOperation.Status.IN_PROGRESS, isPaused = false)
@@ -1071,7 +1103,7 @@ class OneDriveService(
             Result.failure(NetworkStorageException.fromThrowable(e, "resumeOperation"))
         }
     }
-    
+
     /** Returns cached entries, optionally filtered to those under [path]. */
     override fun getCacheEntries(path: String?): Flow<List<CacheEntry>> = flow {
         val entries = cacheMutex.withLock {

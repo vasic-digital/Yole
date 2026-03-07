@@ -19,13 +19,18 @@ class AuthTokenManager(
 ) {
     private val mutex = Mutex()
     private var _secureStorage: SecureStorage? = secureStorage
-    
+    private val storageInitMutex = Mutex()
+
     /**
-     * Get the secure storage instance, creating it if necessary
+     * Get the secure storage instance, creating it if necessary.
+     * Uses double-checked locking to avoid race conditions during initialization.
      */
     private suspend fun getSecureStorage(): SecureStorage {
-        return _secureStorage ?: SecureStorageFactory.create().getOrThrow().also {
-            _secureStorage = it
+        _secureStorage?.let { return it }
+        return storageInitMutex.withLock {
+            _secureStorage ?: SecureStorageFactory.create().getOrThrow().also {
+                _secureStorage = it
+            }
         }
     }
     
