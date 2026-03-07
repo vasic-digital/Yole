@@ -107,9 +107,42 @@ make all install run
 
 ### Module Structure
 
-All shared business logic lives in the `shared` module. Platform app modules (`androidApp/`, `desktopApp/`, `iosApp/`, `webApp/`) are thin wrappers that depend on `shared`.
+Yole's shared business logic is split between the `shared` module and **10 extracted KMP modules** consumed via Gradle composite builds. Platform app modules (`androidApp/`, `desktopApp/`, `iosApp/`, `webApp/`) are thin wrappers that depend on `shared`.
 
 Legacy Android-only modules (`commons/`, `core/`) are minimal and being phased out.
+
+### Extracted KMP Modules (Composite Builds)
+
+Each module is an independent project with its own repo, tests, and documentation. They are wired into Yole via `includeBuild()` in `settings.gradle.kts`:
+
+| Module | Package | Source |
+|--------|---------|--------|
+| `RateLimiter-KMP` | `digital.vasic.ratelimiter` | Rate limiting utilities |
+| `Concurrency-KMP` | `digital.vasic.concurrency` | Lazy loading, platform sync |
+| `UI-Components-KMP` | `digital.vasic.uicomponents` | Theme, animations, accessibility |
+| `Auth-KMP` | `digital.vasic.auth` | OAuth2 flows, token management |
+| `Security-KMP` | `digital.vasic.security` | Secure storage |
+| `Document-KMP` | `digital.vasic.document` | Document model |
+| `Config-KMP` | `digital.vasic.config` | Network configuration |
+| `Database-KMP` | `digital.vasic.database` | Metadata storage |
+| `Storage-KMP` | `digital.vasic.storage` | Protocol abstractions + implementations |
+| `Formatters-KMP` | `digital.vasic.formatters` | 17 text format parsers |
+
+### Facade Bridges
+
+During the transition, some Yole source files are **facade bridges** — thin typealiases that re-export types from extracted modules under the original `digital.vasic.yole.*` package. This allows existing code to compile without mass-renaming imports.
+
+**Active facades** (typealias files):
+- `util/RateLimiting.kt` — `RateLimiter`, `TokenBucket`, `AdaptiveRateLimiter`, `OperationThrottler`
+- `util/LazyLoading.kt` — `LazyDocumentLoader<T>`, `LazyStringLoader`, `FlowLazyLoader<T>`
+- `util/PlatformSync.kt` — `platformSynchronized()` delegate function
+- `network/auth/OAuth2Flow.kt` — `OAuth2Flow`, `TokenResponse`, `DropboxOAuth2Flow`, `GoogleDriveOAuth2Flow`, `OneDriveOAuth2Flow`
+
+**Not facaded** (original code kept in Yole due to Kotlin typealias limitations with nested objects, sealed class pattern matching, and expect/actual declarations):
+- `ui/Theme.kt`, `ui/Animations.kt`, `ui/Accessibility.kt`
+- `network/common/StorageConfig.kt`
+- `network/auth/AuthTokenManager.kt`
+- All `network/platform/` expect/actual files
 
 ### Shared Module Source Sets
 
@@ -188,7 +221,9 @@ Tests live in `shared/src/commonTest/kotlin/digital/vasic/yole/format/`:
 └── FormatRegistryStressTest.kt
 ```
 
-~2200+ tests across ~88 test files in commonTest.
+~5,200+ tests across ~170+ test files (commonTest + desktopTest + androidUnitTest + wasmJsTest).
+
+Test types include: unit, integration, stress, supremacy/edge-case, mock HTTP, property-based, contract, security, performance metrics, monitoring, and resilience tests.
 
 ## Adding New Formats
 
@@ -207,6 +242,36 @@ Tests live in `shared/src/commonTest/kotlin/digital/vasic/yole/format/`:
 - **Build variants**: `flavorDefault` for dev, `flavorAtest` for testing
 - All tests must pass before merging
 
+## Resilience Patterns
+
+The network protocol layer includes these resilience mechanisms:
+
+- **CircuitBreaker** (`network/common/CircuitBreaker.kt`) — CLOSED/OPEN/HALF_OPEN states, configurable failure threshold and reset timeout
+- **ConnectionLimiter** (`network/common/ConnectionLimiter.kt`) — Semaphore-based concurrent connection limiting, non-blocking
+- **DocumentCache** (`format/DocumentCache.kt`) — LRU cache for ParsedDocument with hit/miss tracking
+- **CancellationException safety** — All catch blocks in all 8 protocol services rethrow CancellationException
+- **Path traversal protection** — normalizePath() resolves `..` segments and enforces root boundary
+- **Query injection protection** — API query strings are sanitized (single-quote escaping, URL encoding, JSON escaping)
+- **CoroutineScope lifecycle** — serviceScope cancelled on reconnect/disconnect to prevent coroutine leaks
+
+## Security Scanning
+
+```bash
+# Start SonarQube locally
+docker compose --profile security up -d sonarqube
+
+# Run Detekt static analysis
+./gradlew detekt
+
+# Run security scan script
+./scripts/run_security_scan.sh
+
+# Full security stack via Docker
+docker compose --profile full up -d
+```
+
+Tools configured: SonarQube (Docker), Snyk (CI + Docker), CodeQL (CI), Gitleaks (CI), Detekt (Gradle), OWASP Dependency Check (CI).
+
 ## Key Dependencies
 
 - Kotlin 2.0.20, Compose Multiplatform 1.7.3
@@ -221,7 +286,7 @@ Tests live in `shared/src/commonTest/kotlin/digital/vasic/yole/format/`:
 ## Key Files
 
 - `shared/build.gradle.kts` — KMP configuration with all platform targets
-- `settings.gradle.kts` — Module includes (shared, androidApp, desktopApp, webApp, iosApp, commons, core)
+- `settings.gradle.kts` — Module includes + 10 composite build `includeBuild()` directives for extracted KMP modules
 - `gradle/libs.versions.toml` — Centralized dependency versions
 - `Makefile` — Legacy Android build automation (requires `ANDROID_SDK_ROOT`)
 - `docker-compose.yml` — Podman/Docker container build environment

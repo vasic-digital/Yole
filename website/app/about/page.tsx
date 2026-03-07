@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: 2025 Milos Vasic
 
 const stats = [
-  { label: "Text Formats", value: "17+" },
-  { label: "Tests", value: "2,200+" },
+  { label: "Text Formats", value: "17" },
+  { label: "Tests", value: "4,750+" },
   { label: "Platforms", value: "4" },
   { label: "License", value: "Apache-2.0" },
 ];
@@ -58,7 +58,9 @@ export default function AboutPage() {
           <p className="text-[var(--color-text-secondary)] leading-relaxed mb-4">
             Yole uses Kotlin Multiplatform (KMP) to share business logic across Android,
             Desktop (JVM), iOS (Native), and Web (Wasm). All 17 text format parsers live in
-            the shared module and are tested with a comprehensive suite of 2,200+ tests.
+            the shared module and are tested with a comprehensive suite of 4,750+ tests.
+            The architecture includes 10 independently extracted KMP modules consumed via
+            Gradle composite builds.
           </p>
           <p className="text-[var(--color-text-secondary)] leading-relaxed">
             Platform-specific code handles UI (Compose Multiplatform), file system access,

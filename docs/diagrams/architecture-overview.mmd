@@ -1,0 +1,85 @@
+%% Yole - High-Level System Architecture
+%% Cross-platform KMP text editor with cloud storage integration
+
+graph TD
+    subgraph Platform Apps
+        ANDROID["Android App<br/><i>androidApp/</i><br/>Production"]
+        DESKTOP["Desktop App<br/><i>desktopApp/</i><br/>JVM - Win/macOS/Linux<br/>Beta"]
+        IOS["iOS App<br/><i>iosApp/</i><br/>In Development"]
+        WEB["Web App<br/><i>webApp/</i><br/>Wasm PWA<br/>In Development"]
+    end
+
+    subgraph Shared Module
+        SHARED["shared/<br/>Kotlin Multiplatform<br/>Common Business Logic"]
+        subgraph Source Sets
+            COMMON_MAIN["commonMain<br/>Primary Codebase"]
+            ANDROID_MAIN["androidMain"]
+            DESKTOP_MAIN["desktopMain"]
+            IOS_MAIN["iosMain"]
+            WASM_MAIN["wasmJsMain"]
+        end
+    end
+
+    subgraph "Extracted KMP Modules (Composite Builds)"
+        RATELIMITER["RateLimiter-KMP<br/><i>digital.vasic.ratelimiter</i>"]
+        CONCURRENCY["Concurrency-KMP<br/><i>digital.vasic.concurrency</i>"]
+        UI_COMPONENTS["UI-Components-KMP<br/><i>digital.vasic.uicomponents</i>"]
+        AUTH["Auth-KMP<br/><i>digital.vasic.auth</i>"]
+        SECURITY["Security-KMP<br/><i>digital.vasic.security</i>"]
+        DOCUMENT["Document-KMP<br/><i>digital.vasic.document</i>"]
+        CONFIG["Config-KMP<br/><i>digital.vasic.config</i>"]
+        DATABASE["Database-KMP<br/><i>digital.vasic.database</i>"]
+        STORAGE["Storage-KMP<br/><i>digital.vasic.storage</i>"]
+        FORMATTERS["Formatters-KMP<br/><i>digital.vasic.formatters</i>"]
+    end
+
+    subgraph "Legacy Android Modules"
+        COMMONS["commons/<br/>Being Phased Out"]
+        CORE["core/<br/>Being Phased Out"]
+    end
+
+    subgraph "Git Submodules (Go)"
+        CHALLENGES["Challenges/<br/>Go Testing Framework<br/>Cross-Platform Challenges"]
+        CONTAINERS["Containers/<br/>Go Container Orchestration"]
+    end
+
+    ANDROID --> SHARED
+    DESKTOP --> SHARED
+    IOS --> SHARED
+    WEB --> SHARED
+
+    SHARED --> COMMON_MAIN
+    COMMON_MAIN --> ANDROID_MAIN
+    COMMON_MAIN --> DESKTOP_MAIN
+    COMMON_MAIN --> IOS_MAIN
+    COMMON_MAIN --> WASM_MAIN
+
+    SHARED --> RATELIMITER
+    SHARED --> CONCURRENCY
+    SHARED --> UI_COMPONENTS
+    SHARED --> AUTH
+    SHARED --> SECURITY
+    SHARED --> DOCUMENT
+    SHARED --> CONFIG
+    SHARED --> DATABASE
+    SHARED --> STORAGE
+    SHARED --> FORMATTERS
+
+    ANDROID --> COMMONS
+    ANDROID --> CORE
+
+    CHALLENGES --> CONTAINERS
+
+    classDef platformApp fill:#4a90d9,stroke:#2c5aa0,color:#fff
+    classDef sharedModule fill:#50b050,stroke:#2d8a2d,color:#fff
+    classDef kmpModule fill:#e8a838,stroke:#c08020,color:#000
+    classDef legacy fill:#999,stroke:#666,color:#fff
+    classDef goModule fill:#00add8,stroke:#007d9c,color:#fff
+    classDef sourceSet fill:#7bc97b,stroke:#4a9a4a,color:#000
+
+    class ANDROID,DESKTOP,IOS,WEB platformApp
+    class SHARED sharedModule
+    class RATELIMITER,CONCURRENCY,UI_COMPONENTS,AUTH,SECURITY,DOCUMENT,CONFIG,DATABASE,STORAGE,FORMATTERS kmpModule
+    class COMMONS,CORE legacy
+    class CHALLENGES,CONTAINERS goModule
+    class COMMON_MAIN,ANDROID_MAIN,DESKTOP_MAIN,IOS_MAIN,WASM_MAIN sourceSet

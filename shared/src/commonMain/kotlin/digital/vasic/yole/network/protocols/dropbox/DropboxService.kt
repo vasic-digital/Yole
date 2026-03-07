@@ -61,19 +61,21 @@ import kotlin.coroutines.coroutineContext
  * must be properly closed. Call [disconnect] when done using this service.
  */
 class DropboxService(
-    override val config: StorageConfig.DropboxConfig
+    override val config: StorageConfig.DropboxConfig,
+    private val _injectedHttpClient: HttpClient? = null,
+    private val _injectedAuthTokenManager: AuthTokenManager? = null
 ) : NetworkStorageService {
 
     // Platform file I/O for reading/writing local files
     private val fileIO by lazy { PlatformFileIOFactory.create() }
 
     // Lazy initialization of HttpClient to avoid resource allocation if never used
-    private val httpClient by lazy { createHttpClient() }
+    private val httpClient by lazy { _injectedHttpClient ?: createHttpClient() }
 
     // Track whether httpClient has been initialized to avoid closing uninitialized client
     private var httpClientInitialized = false
 
-    private val authTokenManager = AuthTokenManager("dropbox")
+    private val authTokenManager = _injectedAuthTokenManager ?: AuthTokenManager("dropbox")
     private val oauth2Flow by lazy {
         httpClientInitialized = true
         DropboxOAuth2Flow(
@@ -148,6 +150,10 @@ class DropboxService(
     /** Authenticate with Dropbox using OAuth2 tokens and verify the account. */
     override suspend fun connect(): Result<Unit> {
         return try {
+            // Cancel any existing scope to avoid leaking coroutines on reconnect
+            serviceScope.cancel()
+            serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
             // Check if we have valid tokens
             val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
             
@@ -171,6 +177,7 @@ class DropboxService(
                 refreshAccessToken()
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.ConnectionException.Failed(
                 message = "Dropbox connection failed",
                 cause = e
@@ -182,6 +189,7 @@ class DropboxService(
         val accountInfoResult = getAccountInfo()
         Result.success(accountInfoResult.isSuccess)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.success(false)
     }
     
@@ -202,6 +210,7 @@ class DropboxService(
             stateMutex.withLock { _isConnected = false }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             stateMutex.withLock { _isConnected = false } // Ensure we mark as disconnected even on error
             Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
         }
@@ -233,6 +242,7 @@ class DropboxService(
                 Result.failure(Exception("Failed to get account info: ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -256,6 +266,7 @@ class DropboxService(
                 Result.failure(tokenResponse.exceptionOrNull() ?: Exception("Token refresh failed"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -276,7 +287,7 @@ class DropboxService(
             
             val requestBody = """
             {
-                "path": "${fullPath.ifBlank { "" }}",
+                "path": "${jsonEscape(fullPath.ifBlank { "" })}",
                 "recursive": false,
                 "include_media_info": false,
                 "include_deleted": false,
@@ -339,6 +350,7 @@ class DropboxService(
             emit(Result.success(documents))
             
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(Result.failure(NetworkStorageException.FileOperationException.ListFailed(
                 path = path,
                 cause = e
@@ -396,7 +408,7 @@ class DropboxService(
                     path("2/files/download")
                 }
                 header("Authorization", "Bearer $accessToken")
-                header("Dropbox-API-Arg", """{"path": "$fullPath"}""")
+                header("Dropbox-API-Arg", """{"path": "${jsonEscape(fullPath)}"}""")
             }
             
             if (response.status.isSuccess()) {
@@ -429,6 +441,7 @@ class DropboxService(
                 emit(errorOperation)
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             val errorOperation = initialOperation?.copy(
                 status = NetworkOperation.Status.FAILED,
                 error = e.message ?: "Unknown error",
@@ -486,7 +499,7 @@ class DropboxService(
                     path("2/files/upload")
                 }
                 header("Authorization", "Bearer $accessToken")
-                header("Dropbox-API-Arg", """{"path": "$fullPath", "mode": "overwrite"}""")
+                header("Dropbox-API-Arg", """{"path": "${jsonEscape(fullPath)}", "mode": "overwrite"}""")
                 header(HttpHeaders.ContentType, "application/octet-stream")
                 setBody(fileBytes)
             }
@@ -513,6 +526,7 @@ class DropboxService(
                 emit(errorOperation)
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             val errorOperation = initialOperation?.copy(
                 status = NetworkOperation.Status.FAILED,
                 error = e.message ?: "Unknown error",
@@ -576,7 +590,7 @@ class DropboxService(
                 }
                 header("Authorization", "Bearer $accessToken")
                 header(HttpHeaders.ContentType, ContentType.Application.Json)
-                setBody("""{"path": "$fullPath"}""")
+                setBody("""{"path": "${jsonEscape(fullPath)}"}""")
             }
 
             if (response.status.isSuccess()) {
@@ -590,6 +604,7 @@ class DropboxService(
                 ))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.FileOperationException.DeleteFailed(
                 path = remotePath,
                 cause = e
@@ -623,7 +638,7 @@ class DropboxService(
                 }
                 header("Authorization", "Bearer $accessToken")
                 header(HttpHeaders.ContentType, ContentType.Application.Json)
-                setBody("""{"path": "$fullPath", "autorename": false}""")
+                setBody("""{"path": "${jsonEscape(fullPath)}", "autorename": false}""")
             }
 
             if (response.status.isSuccess()) {
@@ -651,6 +666,7 @@ class DropboxService(
                 ))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.FileOperationException.CreateFolderFailed(
                 path = remotePath,
                 cause = e
@@ -678,7 +694,7 @@ class DropboxService(
                 }
                 header("Authorization", "Bearer $accessToken")
                 header(HttpHeaders.ContentType, ContentType.Application.Json)
-                setBody("""{"from_path": "$fullPath", "to_path": "$newPath", "autorename": false}""")
+                setBody("""{"from_path": "${jsonEscape(fullPath)}", "to_path": "${jsonEscape(newPath)}", "autorename": false}""")
             }
 
             if (response.status.isSuccess()) {
@@ -691,6 +707,7 @@ class DropboxService(
                 Result.failure(Exception("Dropbox rename failed: ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -753,6 +770,7 @@ class DropboxService(
                 Result.failure(Exception("Dropbox move failed: ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -785,6 +803,7 @@ class DropboxService(
                 Result.failure(Exception("Dropbox copy failed: ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -815,7 +834,7 @@ class DropboxService(
                 }
                 header("Authorization", "Bearer $accessToken")
                 header(HttpHeaders.ContentType, ContentType.Application.Json)
-                setBody("""{"path": "$fullPath", "include_media_info": false, "include_deleted": false, "include_has_explicit_shared_members": false}""")
+                setBody("""{"path": "${jsonEscape(fullPath)}", "include_media_info": false, "include_deleted": false, "include_has_explicit_shared_members": false}""")
             }
 
             if (response.status.isSuccess()) {
@@ -847,6 +866,7 @@ class DropboxService(
                 ))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -868,6 +888,7 @@ class DropboxService(
             operationsMutex.withLock { activeOperations.remove(operationId) }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.fromThrowable(e, "cancelOperation"))
         }
     }
@@ -882,6 +903,7 @@ class DropboxService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.fromThrowable(e, "pauseOperation"))
         }
     }
@@ -896,6 +918,7 @@ class DropboxService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.fromThrowable(e, "resumeOperation"))
         }
     }
@@ -929,6 +952,7 @@ class DropboxService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -940,6 +964,7 @@ class DropboxService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -951,6 +976,7 @@ class DropboxService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -992,6 +1018,7 @@ class DropboxService(
                     syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNC_ERROR }
                 }
             } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
                 syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNC_ERROR }
             }
         } else {
@@ -1105,6 +1132,7 @@ class DropboxService(
                 completedAt = Clock.System.now()
             ))
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.SYNC,
@@ -1134,8 +1162,8 @@ class DropboxService(
 
             val searchPath = path?.let { normalizePath(it) } ?: ""
             val requestBody = buildString {
-                append("""{"query": "$query"""")
-                append(""", "options": {"path": "$searchPath", "max_results": 100""")
+                append("""{"query": "${jsonEscape(query)}"""")
+                append(""", "options": {"path": "${jsonEscape(searchPath)}", "max_results": 100""")
                 if (includeContent) {
                     append(""", "file_categories": [{".\u0074ag": "document"}]""")
                 }
@@ -1192,6 +1220,7 @@ class DropboxService(
                 emit(Result.failure(Exception("Dropbox search failed: ${response.status}")))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(Result.failure(e))
         }
     }
@@ -1213,7 +1242,7 @@ class DropboxService(
             val listPath = path?.let { normalizePath(it) } ?: ""
             val requestBody = """
             {
-                "path": "$listPath",
+                "path": "${jsonEscape(listPath)}",
                 "recursive": true,
                 "include_media_info": false,
                 "include_deleted": false,
@@ -1327,6 +1356,7 @@ class DropboxService(
                 Result.failure(Exception("Failed to get quota info: ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -1350,16 +1380,32 @@ class DropboxService(
      * Normalize path for Dropbox API
      */
     private fun normalizePath(path: String): String {
-        return when {
-            path.isBlank() -> _rootPath
-            path == "/" -> _rootPath
-            else -> {
-                val normalized = if (_rootPath.isBlank()) path else "$_rootPath/$path"
-                normalized.replace("//", "/")
+        if (path.isBlank() || path == "/") return _rootPath
+
+        val basePath = if (_rootPath.isBlank()) path else "$_rootPath/$path"
+        val segments = basePath.split("/").filter { it.isNotEmpty() }
+        val resolved = mutableListOf<String>()
+        for (segment in segments) {
+            when (segment) {
+                "." -> { /* skip current-dir marker */ }
+                ".." -> { if (resolved.isNotEmpty()) resolved.removeLast() }
+                else -> resolved.add(segment)
             }
         }
+        val result = "/" + resolved.joinToString("/")
+
+        // Ensure result stays within root boundary
+        val rootPrefix = _rootPath.ifBlank { "/" }
+        return if (result.startsWith(rootPrefix) || rootPrefix == "/") result else _rootPath
     }
     
+    private fun jsonEscape(value: String): String =
+        value.replace("\\", "\\\\")
+             .replace("\"", "\\\"")
+             .replace("\n", "\\n")
+             .replace("\r", "\\r")
+             .replace("\t", "\\t")
+
     // Dropbox API data classes
     @Serializable
     private data class DropboxAccountInfo(

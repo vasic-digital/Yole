@@ -1,0 +1,115 @@
+%% Yole - Module Dependency Graph
+%% Shows how all modules connect via includeBuild() and implementation() declarations
+
+graph TD
+    subgraph "Platform Applications"
+        ANDROID_APP["androidApp"]
+        DESKTOP_APP["desktopApp"]
+        IOS_APP["iosApp"]
+        WEB_APP["webApp"]
+    end
+
+    subgraph "Shared Module"
+        SHARED["shared<br/>(KMP)"]
+        subgraph "Shared Internal Packages"
+            FORMAT["format/<br/>17 Parsers + FormatRegistry"]
+            NETWORK["network/<br/>Protocol Services"]
+            MODEL["model/<br/>Document"]
+            UI["ui/<br/>Theme, Animations,<br/>Accessibility"]
+            UTIL["util/<br/>Facades"]
+        end
+    end
+
+    subgraph "Extracted KMP Modules"
+        RATELIMITER["RateLimiter-KMP"]
+        CONCURRENCY["Concurrency-KMP"]
+        UI_COMP["UI-Components-KMP"]
+        AUTH["Auth-KMP"]
+        SECURITY["Security-KMP"]
+        DOC["Document-KMP"]
+        CONFIG["Config-KMP"]
+        DB["Database-KMP"]
+        STORAGE["Storage-KMP"]
+        FMTRS["Formatters-KMP"]
+    end
+
+    subgraph "Legacy Modules"
+        COMMONS["commons"]
+        CORE["core"]
+    end
+
+    subgraph "Go Submodules"
+        CHALLENGES["Challenges"]
+        CONTAINERS["Containers"]
+    end
+
+    %% Platform apps depend on shared
+    ANDROID_APP --> SHARED
+    DESKTOP_APP --> SHARED
+    IOS_APP --> SHARED
+    WEB_APP --> SHARED
+
+    %% Android legacy
+    ANDROID_APP -.-> COMMONS
+    ANDROID_APP -.-> CORE
+
+    %% Shared module internal dependencies
+    SHARED --> FORMAT
+    SHARED --> NETWORK
+    SHARED --> MODEL
+    SHARED --> UI
+    SHARED --> UTIL
+
+    %% Shared depends on all 10 extracted modules
+    SHARED -->|"implementation()"| RATELIMITER
+    SHARED -->|"implementation()"| CONCURRENCY
+    SHARED -->|"implementation()"| UI_COMP
+    SHARED -->|"implementation()"| AUTH
+    SHARED -->|"implementation()"| SECURITY
+    SHARED -->|"implementation()"| DOC
+    SHARED -->|"implementation()"| CONFIG
+    SHARED -->|"implementation()"| DB
+    SHARED -->|"implementation()"| STORAGE
+    SHARED -->|"implementation()"| FMTRS
+
+    %% Inter-module dependencies
+    AUTH -->|depends on| SECURITY
+
+    %% Facade bridges (typealiases in shared)
+    UTIL -.->|"typealias"| RATELIMITER
+    UTIL -.->|"typealias"| CONCURRENCY
+    NETWORK -.->|"typealias"| AUTH
+
+    %% Go submodule dependency
+    CHALLENGES -->|"dependency"| CONTAINERS
+
+    %% External dependencies (key ones)
+    subgraph "Key External Dependencies"
+        KTOR["Ktor Client 3.0.2"]
+        COMPOSE["Compose Multiplatform 1.7.3"]
+        COROUTINES["Kotlinx Coroutines 1.9.0"]
+        SERIALIZATION["Kotlinx Serialization 1.7.3"]
+        OKIO["Okio 3.9.1"]
+    end
+
+    SHARED --> KTOR
+    SHARED --> COMPOSE
+    SHARED --> COROUTINES
+    SHARED --> SERIALIZATION
+    SHARED --> OKIO
+
+    classDef app fill:#4a90d9,stroke:#2c5aa0,color:#fff
+    classDef shared fill:#50b050,stroke:#2d8a2d,color:#fff
+    classDef kmp fill:#e8a838,stroke:#c08020,color:#000
+    classDef legacy fill:#999,stroke:#666,color:#fff
+    classDef goMod fill:#00add8,stroke:#007d9c,color:#fff
+    classDef ext fill:#d4a5e8,stroke:#a070c0,color:#000
+    classDef internal fill:#7bc97b,stroke:#4a9a4a,color:#000
+
+    class ANDROID_APP,DESKTOP_APP,IOS_APP,WEB_APP app
+    class SHARED shared
+    class RATELIMITER,CONCURRENCY,UI_COMP,AUTH,SECURITY,DOC,CONFIG,DB,STORAGE,FMTRS kmp
+    class COMMONS,CORE legacy
+    class CHALLENGES,CONTAINERS goMod
+    class KTOR,COMPOSE,COROUTINES,SERIALIZATION,OKIO ext
+    class FORMAT,NETWORK,MODEL,UI,UTIL internal

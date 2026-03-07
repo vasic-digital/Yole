@@ -60,19 +60,21 @@ import kotlin.coroutines.coroutineContext
  * must be properly closed. Call [disconnect] when done using this service.
  */
 class GoogleDriveService(
-    override val config: StorageConfig.GoogleDriveConfig
+    override val config: StorageConfig.GoogleDriveConfig,
+    private val _injectedHttpClient: HttpClient? = null,
+    private val _injectedAuthTokenManager: AuthTokenManager? = null
 ) : NetworkStorageService {
 
     // Platform file I/O for reading/writing local files
     private val fileIO by lazy { PlatformFileIOFactory.create() }
 
     // Lazy initialization of HttpClient to avoid resource allocation if never used
-    private val httpClient by lazy { createHttpClient() }
+    private val httpClient by lazy { _injectedHttpClient ?: createHttpClient() }
 
     // Track whether httpClient has been initialized to avoid closing uninitialized client
     private var httpClientInitialized = false
 
-    private val authTokenManager = AuthTokenManager("googledrive")
+    private val authTokenManager = _injectedAuthTokenManager ?: AuthTokenManager("googledrive")
     private val oauth2Flow by lazy {
         httpClientInitialized = true
         GoogleDriveOAuth2Flow(
@@ -148,6 +150,10 @@ class GoogleDriveService(
     
     /** Authenticate with Google Drive using OAuth2 tokens and fetch drive info. */
     override suspend fun connect(): Result<Unit> = try {
+        // Cancel any existing scope to avoid leaking coroutines on reconnect
+        serviceScope.cancel()
+        serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
         // Check if we have valid tokens
         val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
         
@@ -171,6 +177,7 @@ class GoogleDriveService(
             }
         }
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.ConnectionException.Failed(
             message = "Google Drive connection failed",
             cause = e
@@ -181,6 +188,7 @@ class GoogleDriveService(
         val aboutInfoResult = getAboutInfo()
         Result.success(aboutInfoResult.isSuccess)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.success(false)
     }
     
@@ -200,6 +208,7 @@ class GoogleDriveService(
         stateMutex.withLock { _isConnected = false }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         stateMutex.withLock { _isConnected = false } // Ensure we mark as disconnected even on error
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
@@ -231,6 +240,7 @@ class GoogleDriveService(
                 Result.failure(Exception("Failed to get about info: ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -254,6 +264,7 @@ class GoogleDriveService(
                 Result.failure(tokenResponse.exceptionOrNull() ?: Exception("Token refresh failed"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -319,6 +330,7 @@ class GoogleDriveService(
             emit(Result.success(documents))
             
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(Result.failure(NetworkStorageException.FileOperationException.ListFailed(
                 path = path,
                 cause = e
@@ -347,7 +359,7 @@ class GoogleDriveService(
                 ?: return Result.failure(Exception("No access token available"))
 
             for (segment in segments) {
-                val query = "'$currentParentId' in parents and name='$segment' and trashed=false"
+                val query = "'$currentParentId' in parents and name='${segment.replace("'", "\\'")}' and trashed=false"
                 val response = httpClient.get {
                     url {
                         protocol = URLProtocol.HTTPS
@@ -379,6 +391,7 @@ class GoogleDriveService(
 
             return Result.success(currentParentId)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             return Result.failure(e)
         }
     }
@@ -471,6 +484,7 @@ class GoogleDriveService(
                 throw Exception("Download failed: ${downloadResponse.status}")
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             val errorOperation = NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.DOWNLOAD,
@@ -570,6 +584,7 @@ class GoogleDriveService(
                 throw Exception("Upload failed: ${uploadResponse.status}")
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             val errorOperation = NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.UPLOAD,
@@ -653,6 +668,7 @@ class GoogleDriveService(
                 ))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.FileOperationException.DeleteFailed(
                 path = remotePath,
                 cause = e
@@ -717,6 +733,7 @@ class GoogleDriveService(
                 ))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.FileOperationException.CreateFolderFailed(
                 path = remotePath,
                 cause = e
@@ -756,6 +773,7 @@ class GoogleDriveService(
                 Result.failure(Exception("Google Drive rename failed: ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -835,6 +853,7 @@ class GoogleDriveService(
                 Result.failure(Exception("Google Drive move failed: ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -877,6 +896,7 @@ class GoogleDriveService(
                 Result.failure(Exception("Google Drive copy failed: ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -933,6 +953,7 @@ class GoogleDriveService(
                 ))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -956,6 +977,7 @@ class GoogleDriveService(
             operationsMutex.withLock { activeOperations.remove(operationId) }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.fromThrowable(e, "cancelOperation"))
         }
     }
@@ -971,6 +993,7 @@ class GoogleDriveService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.fromThrowable(e, "pauseOperation"))
         }
     }
@@ -986,6 +1009,7 @@ class GoogleDriveService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.fromThrowable(e, "resumeOperation"))
         }
     }
@@ -1021,6 +1045,7 @@ class GoogleDriveService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -1033,6 +1058,7 @@ class GoogleDriveService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -1045,6 +1071,7 @@ class GoogleDriveService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -1088,6 +1115,7 @@ class GoogleDriveService(
                     syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNC_ERROR }
                 }
             } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
                 syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNC_ERROR }
             }
         } else {
@@ -1198,6 +1226,7 @@ class GoogleDriveService(
                 completedAt = Clock.System.now()
             ))
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.SYNC,
@@ -1227,7 +1256,7 @@ class GoogleDriveService(
 
             // Build Google Drive search query
             val searchQuery = buildString {
-                append("name contains '$query' and trashed = false")
+                append("name contains '${query.replace("'", "\\'")}' and trashed = false")
                 if (path != null && path != "/") {
                     val folderId = getFileIdFromPath(path).getOrNull()
                     if (folderId != null) {
@@ -1235,7 +1264,7 @@ class GoogleDriveService(
                     }
                 }
                 if (includeContent) {
-                    append(" and fullText contains '$query'")
+                    append(" and fullText contains '${query.replace("'", "\\'")}'")
                 }
             }
 
@@ -1274,6 +1303,7 @@ class GoogleDriveService(
                 emit(Result.failure(Exception("Google Drive search failed: ${response.status}")))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(Result.failure(e))
         }
     }
@@ -1389,6 +1419,7 @@ class GoogleDriveService(
                 Result.failure(Exception("Failed to get quota info: ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }

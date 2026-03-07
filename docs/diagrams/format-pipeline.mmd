@@ -1,0 +1,84 @@
+%% Yole - Text Parsing Pipeline
+%% Sequence diagram showing format detection, parsing, and HTML generation
+
+sequenceDiagram
+    participant User
+    participant App as Platform App
+    participant Doc as Document Model
+    participant FR as FormatRegistry
+    participant PR as ParserRegistry
+    participant Parser as TextParser
+    participant PD as ParsedDocument
+    participant SS as StyleSheets
+
+    Note over User,SS: File Opening and Format Detection
+
+    User->>App: Open file (e.g., README.md)
+    App->>Doc: createDocument(path)
+    Doc->>Doc: Extract title, extension
+
+    App->>FR: detectByExtension(".md")
+    FR->>FR: Match against 22 format entries<br/>(17 text + 5 network)
+
+    alt Extension matches single format
+        FR-->>App: TextFormat(id="markdown")
+    else Extension matches multiple formats (e.g., .txt)
+        FR-->>App: First match by priority order
+        App->>FR: detectByContent(content, maxLines=10)
+        FR->>FR: Test regex detectionPatterns<br/>per format in priority order
+        FR-->>App: TextFormat (most specific match)
+    else Extension not recognized
+        FR-->>App: TextFormat(id="plaintext") [fallback]
+    end
+
+    App->>Doc: document.format = detectedFormat.id
+
+    Note over User,SS: Parsing Phase
+
+    App->>PR: getParser(format)
+    alt Parser already instantiated
+        PR-->>App: Cached TextParser instance
+    else Parser registered lazily
+        PR->>Parser: factory() -- instantiate on first use
+        PR->>PR: Cache parser, remove factory
+        PR-->>App: Newly created TextParser
+    end
+
+    App->>Parser: parse(content, options)
+    Parser->>Parser: Analyze raw markup content
+    Parser->>Parser: Extract metadata<br/>(lines, words, headings, etc.)
+    Parser->>Parser: Run format-specific validation
+    Parser->>PD: Create ParsedDocument(<br/>  format, rawContent,<br/>  parsedContent, metadata, errors<br/>)
+    PD-->>App: ParsedDocument
+
+    Note over User,SS: HTML Generation (Lazy + Cached)
+
+    App->>PD: toHtml(lightMode=true)
+
+    alt HTML already cached for this mode
+        PD-->>App: Return cached HTML (zero allocation)
+    else First call -- generate HTML
+        PD->>PR: getParser(format)
+        PR-->>PD: TextParser
+        PD->>Parser: toHtml(document, lightMode)
+        Parser->>SS: getStyleSheet(formatId, lightMode)
+        SS-->>Parser: CSS string (light or dark theme)
+        Parser->>Parser: Generate HTML body from parsedContent
+        Parser-->>PD: Complete HTML (style + body)
+        PD->>PD: Cache in _cachedHtmlLight
+        PD-->>App: Generated HTML
+    end
+
+    Note over User,SS: Subsequent calls return cached HTML instantly
+
+    App->>PD: toHtml(lightMode=true)
+    PD-->>App: Cached HTML (no regeneration)
+
+    App->>PD: toHtml(lightMode=false)
+    Note over PD: Separate cache for dark mode
+    PD->>Parser: toHtml(document, lightMode=false)
+    Parser->>SS: getStyleSheet(formatId, lightMode=false)
+    SS-->>Parser: Dark theme CSS
+    Parser-->>PD: Dark HTML
+    PD->>PD: Cache in _cachedHtmlDark
+    PD-->>App: Dark mode HTML

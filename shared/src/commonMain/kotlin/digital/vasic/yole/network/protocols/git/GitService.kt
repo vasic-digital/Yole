@@ -63,7 +63,8 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * must be properly closed. Call [disconnect] when done, or use try-finally blocks.
  */
 class GitService(
-    override val config: StorageConfig.GitConfig
+    override val config: StorageConfig.GitConfig,
+    private val _injectedHttpClient: HttpClient? = null
 ) : NetworkStorageService {
 
     // Platform file I/O for reading/writing local files
@@ -72,7 +73,7 @@ class GitService(
     // Lazy initialization of HttpClient to avoid resource allocation if never used
     private val httpClient by lazy {
         httpClientInitialized = true
-        createHttpClient()
+        _injectedHttpClient ?: createHttpClient()
     }
 
     // Track whether httpClient has been initialized to avoid closing uninitialized client
@@ -147,6 +148,7 @@ class GitService(
 
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.ConnectionException.Failed(
             message = "Git connection failed",
             cause = e
@@ -166,6 +168,7 @@ class GitService(
         stateMutex.withLock { _isConnected = false }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         stateMutex.withLock { _isConnected = false } // Ensure we mark as disconnected even on error
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
@@ -180,6 +183,7 @@ class GitService(
             Result.failure(connectResult.exceptionOrNull() ?: Exception("Connection test failed"))
         }
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "testConnection"))
     }
 
@@ -266,6 +270,7 @@ class GitService(
                 )))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(Result.failure(NetworkStorageException.FileOperationException.ListFailed(
                 path = path,
                 cause = e
@@ -444,6 +449,7 @@ class GitService(
             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 1.0))
             emit(operation.copy(status = NetworkOperation.Status.COMPLETED, progress = 1.0))
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(operation.copy(
                 status = NetworkOperation.Status.FAILED,
                 error = e.message ?: "Upload failed"
@@ -529,6 +535,7 @@ class GitService(
             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 1.0))
             emit(operation.copy(status = NetworkOperation.Status.COMPLETED, progress = 1.0))
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(operation.copy(
                 status = NetworkOperation.Status.FAILED,
                 error = e.message ?: "Download failed"
@@ -565,6 +572,7 @@ class GitService(
 
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.FileOperationException.CopyFailed(
             sourcePath = sourcePath,
             targetPath = destinationPath,
@@ -658,6 +666,7 @@ class GitService(
 
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.FileOperationException.DeleteFailed(
             path = remotePath,
             cause = e
@@ -753,6 +762,7 @@ class GitService(
             syncStatus = if (createdViaApi) SyncStatus.SYNCED else SyncStatus.PENDING_UPLOAD
         ))
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.FileOperationException.CreateFolderFailed(
             path = remotePath,
             cause = e
@@ -854,6 +864,7 @@ class GitService(
 
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "renameFile"))
     }
 
@@ -962,6 +973,7 @@ class GitService(
             syncStatus = if (movedViaApi) SyncStatus.SYNCED else SyncStatus.PENDING_UPLOAD
         ))
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.FileOperationException.MoveFailed(
             sourcePath = sourcePath,
             targetPath = destinationPath,
@@ -1061,6 +1073,7 @@ class GitService(
             ))
         }
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.FileOperationException.InfoFailed(
             path = remotePath,
             cause = e
@@ -1101,6 +1114,7 @@ class GitService(
             Result.success(false) // Cannot confirm existence when offline
         }
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "exists"))
     }
 
@@ -1119,6 +1133,7 @@ class GitService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "cancelOperation"))
     }
 
@@ -1131,6 +1146,7 @@ class GitService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "pauseOperation"))
     }
 
@@ -1143,6 +1159,7 @@ class GitService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "resumeOperation"))
     }
 
@@ -1172,6 +1189,7 @@ class GitService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "addToCache"))
     }
 
@@ -1180,6 +1198,7 @@ class GitService(
         cacheMutex.withLock { cacheEntries.remove(remotePath) }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "removeFromCache"))
     }
 
@@ -1188,6 +1207,7 @@ class GitService(
         cacheMutex.withLock { cacheEntries.clear() }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "clearCache"))
     }
 
@@ -1230,6 +1250,7 @@ class GitService(
             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 1.0))
             emit(operation.copy(status = NetworkOperation.Status.COMPLETED, progress = 1.0))
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNC_ERROR }
             emit(operation.copy(
                 status = NetworkOperation.Status.FAILED,
@@ -1332,6 +1353,7 @@ class GitService(
                 progress = 1.0
             ))
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(operation.copy(
                 status = NetworkOperation.Status.FAILED,
                 error = e.message ?: "Sync failed"
@@ -1391,6 +1413,7 @@ class GitService(
                 emit(Result.failure(Exception("Git search not implemented")))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(Result.failure(Exception("Git search not implemented")))
         }
     }
@@ -1624,6 +1647,7 @@ class GitService(
             isLowOnSpace = false
         ))
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "getQuotaInfo"))
     }
 
@@ -1642,6 +1666,7 @@ class GitService(
             Result.success(Unit)
         }
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(e)
     }
 

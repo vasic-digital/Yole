@@ -1,0 +1,104 @@
+%% Yole - CI/CD Pipeline Overview
+%% Based on actual GitHub Actions workflows: ci.yml, security.yml, sonar.yml, release.yml
+
+graph TD
+    subgraph "Triggers"
+        PUSH["Push to master"]
+        PR["Pull Request to master"]
+        SCHEDULE["Weekly Schedule<br/>(Mondays 6 AM UTC)"]
+        MANUAL["Manual Dispatch<br/>(workflow_dispatch)"]
+    end
+
+    subgraph "CI Workflow (ci.yml)"
+        direction TB
+        CI_CHECKOUT["Checkout Repository"]
+        CI_JDK["Set up JDK 17 + Android SDK"]
+        CI_GRADLE["Set up Gradle + Cache"]
+
+        CI_TEST_ANDROID["Run shared:testDebugUnitTest<br/>(Android Unit Tests)"]
+        CI_TEST_DESKTOP["Run shared:desktopTest<br/>(Desktop JVM Tests)"]
+        CI_BUILD_APK["Build Android Debug APK<br/>(androidApp:assembleDebug)"]
+        CI_BUILD_JAR["Build Desktop JAR<br/>(desktopApp:jar)"]
+        CI_LINT["Run Android Lint<br/>(lintFlavorDefaultDebug)"]
+        CI_COVERAGE["Generate Kover XML Report<br/>(koverXmlReport)"]
+        CI_CODECOV["Upload to Codecov"]
+
+        CI_ARTIFACTS["Upload Artifacts<br/>- Test results<br/>- Lint results<br/>- Coverage report"]
+
+        CI_CHECKOUT --> CI_JDK --> CI_GRADLE
+        CI_GRADLE --> CI_TEST_ANDROID
+        CI_GRADLE --> CI_TEST_DESKTOP
+        CI_GRADLE --> CI_BUILD_APK
+        CI_GRADLE --> CI_BUILD_JAR
+        CI_TEST_ANDROID --> CI_LINT
+        CI_LINT --> CI_COVERAGE
+        CI_COVERAGE --> CI_CODECOV
+        CI_CODECOV --> CI_ARTIFACTS
+    end
+
+    subgraph "Security Workflow (security.yml)"
+        direction TB
+        SEC_GITLEAKS["Gitleaks<br/>Secret Scanning<br/>(full history)"]
+        SEC_OWASP["OWASP Dependency Check<br/>(Dependency Audit)"]
+        SEC_SNYK["Snyk Vulnerability Scan<br/>(severity >= high)"]
+        SEC_CODEQL["CodeQL Analysis<br/>(java-kotlin)<br/>Static Code Analysis"]
+    end
+
+    subgraph "SonarQube Workflow (sonar.yml)"
+        direction TB
+        SONAR_TEST["Run Tests + Coverage<br/>(test koverXmlReport)"]
+        SONAR_SCAN["SonarQube Scan<br/>Code Quality Analysis"]
+
+        SONAR_TEST --> SONAR_SCAN
+    end
+
+    subgraph "Release Workflow (release.yml)"
+        direction TB
+        REL_BUILD_APK["Build Android Release APK<br/>(assembleRelease)"]
+        REL_BUILD_JAR["Build Desktop JARs"]
+        REL_COLLECT["Collect Release Artifacts"]
+        REL_RELEASE["Create GitHub Release<br/>(softprops/action-gh-release)<br/>Auto-detect prerelease"]
+
+        REL_BUILD_APK --> REL_COLLECT
+        REL_BUILD_JAR --> REL_COLLECT
+        REL_COLLECT --> REL_RELEASE
+    end
+
+    %% Trigger connections
+    PUSH --> CI_CHECKOUT
+    PR --> CI_CHECKOUT
+    PUSH --> SONAR_TEST
+
+    PR --> SEC_GITLEAKS
+    PR --> SEC_OWASP
+    PR --> SEC_SNYK
+    PR --> SEC_CODEQL
+    SCHEDULE --> SEC_GITLEAKS
+    SCHEDULE --> SEC_OWASP
+    SCHEDULE --> SEC_SNYK
+    SCHEDULE --> SEC_CODEQL
+
+    MANUAL --> CI_CHECKOUT
+    MANUAL --> SEC_GITLEAKS
+    MANUAL --> SONAR_TEST
+    MANUAL --> REL_BUILD_APK
+    MANUAL --> REL_BUILD_JAR
+
+    %% Concurrency groups
+    Note1["Concurrency: ci-$$ref<br/>cancel-in-progress: true"]
+    Note2["Concurrency: security-$$ref<br/>cancel-in-progress: true"]
+    Note3["Concurrency: sonar-$$ref<br/>cancel-in-progress: true"]
+
+    classDef trigger fill:#6c5ce7,stroke:#4a3db5,color:#fff
+    classDef ci fill:#00b894,stroke:#008f6d,color:#fff
+    classDef security fill:#e17055,stroke:#b35540,color:#fff
+    classDef sonar fill:#fdcb6e,stroke:#c8a030,color:#000
+    classDef release fill:#74b9ff,stroke:#5090cc,color:#000
+    classDef note fill:#dfe6e9,stroke:#b2bec3,color:#000
+
+    class PUSH,PR,SCHEDULE,MANUAL trigger
+    class CI_CHECKOUT,CI_JDK,CI_GRADLE,CI_TEST_ANDROID,CI_TEST_DESKTOP,CI_BUILD_APK,CI_BUILD_JAR,CI_LINT,CI_COVERAGE,CI_CODECOV,CI_ARTIFACTS ci
+    class SEC_GITLEAKS,SEC_OWASP,SEC_SNYK,SEC_CODEQL security
+    class SONAR_TEST,SONAR_SCAN sonar
+    class REL_BUILD_APK,REL_BUILD_JAR,REL_COLLECT,REL_RELEASE release
+    class Note1,Note2,Note3 note

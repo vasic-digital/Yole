@@ -6,8 +6,11 @@
 
 name: Security
 
-# DISABLED: All automatic triggers removed. Use workflow_dispatch to run manually.
 on:
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly on Mondays at 6 AM UTC
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 
 concurrency:

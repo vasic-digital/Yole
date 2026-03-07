@@ -1,0 +1,100 @@
+%% Yole - OAuth2 Authentication Flow
+%% Covers Dropbox, Google Drive, and OneDrive OAuth2 variants
+
+sequenceDiagram
+    participant User
+    participant App as Platform App
+    participant SVC as Protocol Service
+    participant OAuth as OAuth2Flow<br/>(Dropbox/Google/OneDrive)
+    participant ATM as AuthTokenManager
+    participant SS as SecureStorage<br/>(Platform-specific)
+    participant Browser as System Browser
+    participant Provider as OAuth2 Provider<br/>(Dropbox/Google/Microsoft)
+
+    Note over User,Provider: Initial Authentication (First-Time Setup)
+
+    User->>App: Add cloud storage connection
+    App->>App: Create StorageConfig with<br/>clientId, clientSecret
+
+    App->>OAuth: getAuthorizationUrl()
+    OAuth->>OAuth: Build URL with:<br/>- client_id<br/>- redirect_uri<br/>- response_type=code<br/>- scope (provider-specific)<br/>- state (CSRF protection)
+    OAuth-->>App: Authorization URL
+
+    App->>Browser: Open authorization URL
+    Browser->>Provider: Navigate to consent page
+    Provider->>User: Display permission request
+    User->>Provider: Grant access
+    Provider->>Browser: Redirect to callback URL<br/>with authorization code
+    Browser-->>App: Callback with auth code + state
+
+    App->>OAuth: exchangeCodeForTokens(authCode)
+    OAuth->>Provider: POST /oauth2/token<br/>{grant_type: authorization_code,<br/> code, client_id, client_secret,<br/> redirect_uri}
+    Provider-->>OAuth: TokenResponse<br/>{access_token, refresh_token,<br/> expires_in, token_type}
+    OAuth-->>App: TokenResponse
+
+    Note over User,Provider: Secure Token Storage
+
+    App->>ATM: storeTokenInfo(accessToken,<br/>refreshToken, expiresIn)
+    ATM->>ATM: Acquire mutex lock
+    ATM->>SS: storeToken("dropbox_access", token)
+    SS->>SS: Platform-specific encryption<br/>Android: EncryptedSharedPreferences<br/>iOS: Keychain<br/>Desktop: OS keystore
+    SS-->>ATM: Result.success
+    ATM->>SS: storeToken("dropbox_refresh", token)
+    SS-->>ATM: Result.success
+    ATM->>SS: store("dropbox_expires",<br/>Clock.now() + expiresIn)
+    SS-->>ATM: Result.success
+    ATM-->>App: Result.success
+
+    Note over User,Provider: Subsequent Connection (Token Reuse)
+
+    App->>SVC: connect()
+    SVC->>ATM: hasValidToken()
+    ATM->>ATM: Acquire mutex lock
+    ATM->>SS: retrieveToken("dropbox_access")
+    SS-->>ATM: Access token
+    ATM->>SS: retrieve("dropbox_expires")
+    SS-->>ATM: Expiration timestamp
+    ATM->>ATM: Compare now vs expiresAt
+
+    alt Token valid (not expired)
+        ATM-->>SVC: true
+        SVC->>SVC: Use stored access token
+        SVC-->>App: Connected
+    else Token expired
+        ATM-->>SVC: false
+        Note over SVC,Provider: Token Refresh Cycle
+    end
+
+    Note over User,Provider: Token Refresh Cycle
+
+    SVC->>ATM: getRefreshToken()
+    ATM->>SS: retrieveToken("dropbox_refresh")
+    SS-->>ATM: Refresh token
+    ATM-->>SVC: Refresh token
+
+    SVC->>OAuth: refreshToken(refreshToken)
+    OAuth->>Provider: POST /oauth2/token<br/>{grant_type: refresh_token,<br/> refresh_token, client_id,<br/> client_secret}
+    Provider-->>OAuth: New TokenResponse<br/>{access_token, refresh_token?,<br/> expires_in}
+    OAuth-->>SVC: New tokens
+
+    SVC->>ATM: storeTokenInfo(newAccessToken,<br/>newRefreshToken, expiresIn)
+    ATM->>SS: Update all tokens
+    SS-->>ATM: Stored securely
+    ATM-->>SVC: Result.success
+
+    SVC->>SVC: Resume operations with new token
+
+    Note over User,Provider: Token Invalidation / Logout
+
+    User->>App: Disconnect storage
+    App->>SVC: disconnect()
+    SVC->>ATM: clearTokens()
+    ATM->>SS: deleteToken("dropbox_access")
+    ATM->>SS: deleteToken("dropbox_refresh")
+    ATM->>SS: delete("dropbox_expires")
+    SS-->>ATM: Tokens cleared
+    ATM-->>SVC: Result.success
+    SVC-->>App: Disconnected
+
+    Note over User,Provider: Provider-Specific Differences
+    Note right of Provider: Dropbox: /oauth2/token (api.dropboxapi.com)<br/>Google: /o/oauth2/token (oauth2.googleapis.com)<br/>Microsoft: /oauth2/v2.0/token (login.microsoftonline.com)

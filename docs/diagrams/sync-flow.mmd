@@ -1,0 +1,122 @@
+%% Yole - File Synchronization Flow
+%% Shows offline-first sync with conflict detection
+
+sequenceDiagram
+    participant User
+    participant Editor as Text Editor
+    participant Doc as Document Model
+    participant SVC as NetworkStorageService
+    participant Cache as Cache (CacheEntry)
+    participant Queue as Sync Queue<br/>(NetworkOperation)
+    participant API as Remote Storage API
+
+    Note over User,API: Local Change Detection
+
+    User->>Editor: Edit document content
+    Editor->>Doc: Update content
+    Doc->>Doc: document.touch()<br/>touchTime = currentTimeMillis()
+
+    Editor->>SVC: getSyncStatus("/doc.md")
+    SVC-->>Editor: Flow<Map<String, SyncStatus>>
+
+    Doc->>Doc: hasChanged() = true<br/>(getFileModTime() > modTime)
+
+    Note over User,API: Queue Upload Operation
+
+    Editor->>SVC: syncFile("/doc.md")
+    SVC->>Queue: NetworkOperation.createUpload(<br/>  localPath, remotePath, fileSize)
+    Queue->>Queue: Set status = PENDING<br/>Set priority = 100
+
+    Note over Queue: Backpressure: Operations queued<br/>when offline or rate-limited
+
+    SVC->>SVC: Check isOnline
+
+    alt Online -- proceed immediately
+        Queue->>Queue: status = IN_PROGRESS
+        SVC->>API: Upload file content
+        API-->>SVC: Upload response with metadata
+
+        SVC->>Queue: operation.withStatus(COMPLETED)
+        SVC->>Cache: Update CacheEntry<br/>(lastModified, checksum, size)
+        Cache->>Cache: withContent(size, checksum, now)
+        SVC->>SVC: syncStatusMap[path] = SYNCED
+        SVC-->>Editor: Flow<NetworkOperation>(COMPLETED)
+
+    else Offline -- queue for later
+        Queue->>Queue: Remain PENDING
+        SVC->>SVC: syncStatusMap[path] = PENDING_UPLOAD
+        SVC-->>Editor: Flow<NetworkOperation>(PENDING)
+        Note over Queue: Will retry when connectivity restored
+    end
+
+    Note over User,API: Download / Remote Change Detection
+
+    Editor->>SVC: listFiles("/")
+    SVC->>API: GET file listing
+    API-->>SVC: List with lastModified timestamps
+
+    SVC->>Cache: Compare remote lastModified<br/>vs cached lastModified
+    Cache-->>SVC: Local version older
+
+    SVC->>SVC: syncStatusMap[path] = PENDING_DOWNLOAD
+    SVC->>Queue: NetworkOperation.createDownload(<br/>  remotePath, localPath, size)
+
+    Queue->>Queue: status = IN_PROGRESS
+    SVC->>API: Download file content
+    API-->>SVC: File bytes + metadata
+
+    SVC->>Cache: Create/update CacheEntry
+    Cache->>Cache: CacheEntry.create(<br/>  remoteDocumentId, localPath,<br/>  remotePath, size, contentType)
+
+    SVC->>Queue: operation.withProgress(1.0)
+    SVC->>Queue: operation.withStatus(COMPLETED)
+    SVC->>SVC: syncStatusMap[path] = SYNCED
+    SVC-->>Editor: Updated content available
+
+    Note over User,API: Conflict Detection
+
+    Editor->>SVC: syncFile("/shared-doc.md")
+
+    SVC->>API: Get remote file metadata
+    API-->>SVC: Remote lastModified: T2
+
+    SVC->>Cache: Get cached lastModified
+    Cache-->>SVC: Local lastModified: T1
+
+    SVC->>SVC: Check local pending changes
+
+    alt No conflict (local only OR remote only changed)
+        SVC->>SVC: Proceed with upload or download
+    else Conflict (both changed since last sync)
+        SVC->>SVC: syncStatusMap[path] = CONFLICT
+        SVC-->>Editor: SyncStatus.CONFLICT
+        Editor->>User: Show conflict resolution UI
+        User->>Editor: Choose: Keep Local / Keep Remote / Merge
+        Editor->>SVC: Resolve conflict with chosen strategy
+    end
+
+    Note over User,API: Cache Management
+
+    Editor->>SVC: addToCache("/important.md", priority=200)
+    SVC->>Cache: CacheEntry.create(docId,<br/>  localPath, remotePath, size)
+    Cache->>Cache: withPinStatus(isPinned=true)
+    SVC->>API: Download for offline access
+    API-->>SVC: File content
+    SVC->>Cache: withContent(size, checksum, now)
+    SVC-->>Editor: Cached for offline
+
+    Editor->>SVC: clearCache()
+    SVC->>Cache: Remove non-pinned entries<br/>(canBeEvicted = !isPinned && !isInUse)
+    SVC-->>Editor: Cache cleared
+
+    Note over User,API: Sync All
+
+    Editor->>SVC: syncAll(forceSync=false)
+    SVC->>SVC: Enumerate all tracked paths
+    loop For each tracked file
+        SVC->>SVC: Check syncStatus
+        alt Status != SYNCED or forceSync
+            SVC->>Queue: Create sync operation
+        end
+    end
+    SVC-->>Editor: Flow<NetworkOperation> for each file

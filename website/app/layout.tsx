@@ -25,8 +25,15 @@ export const metadata: Metadata = {
 
 const navLinks = [
   { href: "/", label: "Home" },
-  { href: "/docs", label: "Documentation" },
+  { href: "/formats", label: "Formats" },
+  { href: "/cloud-storage", label: "Cloud Storage" },
+  { href: "/docs", label: "Docs" },
+  { href: "/architecture", label: "Architecture" },
   { href: "/download", label: "Download" },
+  { href: "/video-course", label: "Video Course" },
+  { href: "/community", label: "Community" },
+  { href: "/changelog", label: "Changelog" },
+  { href: "/faq", label: "FAQ" },
   { href: "/about", label: "About" },
 ];
 
@@ -86,24 +93,35 @@ export default function RootLayout({
                 <ul className="space-y-2 text-sm text-[var(--color-text-secondary)]">
                   <li><a href="/download" className="hover:text-primary-500">Download</a></li>
                   <li><a href="/docs" className="hover:text-primary-500">Documentation</a></li>
+                  <li><a href="/formats" className="hover:text-primary-500">Formats</a></li>
+                  <li><a href="/cloud-storage" className="hover:text-primary-500">Cloud Storage</a></li>
+                  <li><a href="/changelog" className="hover:text-primary-500">Changelog</a></li>
                   <li><a href="/about" className="hover:text-primary-500">About</a></li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-3">Formats</h4>
+                <h4 className="font-semibold mb-3">Learn</h4>
                 <ul className="space-y-2 text-sm text-[var(--color-text-secondary)]">
-                  <li><a href="/docs#markdown" className="hover:text-primary-500">Markdown</a></li>
-                  <li><a href="/docs#todotxt" className="hover:text-primary-500">todo.txt</a></li>
-                  <li><a href="/docs#csv" className="hover:text-primary-500">CSV</a></li>
-                  <li><a href="/docs#latex" className="hover:text-primary-500">LaTeX</a></li>
+                  <li><a href="/video-course" className="hover:text-primary-500">Video Course</a></li>
+                  <li><a href="/architecture" className="hover:text-primary-500">Architecture</a></li>
+                  <li><a href="/faq" className="hover:text-primary-500">FAQ</a></li>
+                  <li><a href="/formats#markdown" className="hover:text-primary-500">Markdown</a></li>
+                  <li><a href="/formats#todotxt" className="hover:text-primary-500">todo.txt</a></li>
+                  <li><a href="/formats#latex" className="hover:text-primary-500">LaTeX</a></li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-semibold mb-3">Community</h4>
                 <ul className="space-y-2 text-sm text-[var(--color-text-secondary)]">
+                  <li><a href="/community" className="hover:text-primary-500">Contributing</a></li>
                   <li>
                     <a href="https://github.com/vasic-digital/Yole" className="hover:text-primary-500" target="_blank" rel="noopener noreferrer">
                       GitHub
+                    </a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/vasic-digital/Yole/discussions" className="hover:text-primary-500" target="_blank" rel="noopener noreferrer">
+                      Discussions
                     </a>
                   </li>
                   <li>

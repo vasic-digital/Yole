@@ -20,6 +20,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.allopen") version "2.1.0"
     id("org.jetbrains.dokka") version "2.0.0"
     id("org.jetbrains.kotlinx.kover") version "0.8.3"
+    id("io.gitlab.arturbosch.detekt") version "1.23.7"
 }
 
 kotlin {
@@ -68,6 +69,18 @@ kotlin {
         // Common code for all platforms
         val commonMain by getting {
             dependencies {
+                // Extracted KMP modules (composite builds)
+                implementation("digital.vasic.ratelimiter:RateLimiter-KMP")
+                implementation("digital.vasic.concurrency:Concurrency-KMP")
+                implementation("digital.vasic.uicomponents:UI-Components-KMP")
+                implementation("digital.vasic.auth:Auth-KMP")
+                implementation("digital.vasic.security:Security-KMP")
+                implementation("digital.vasic.document:Document-KMP")
+                implementation("digital.vasic.config:Config-KMP")
+                implementation("digital.vasic.database:Database-KMP")
+                implementation("digital.vasic.storage:Storage-KMP")
+                implementation("digital.vasic.formatters:Formatters-KMP")
+
                 // Kotlin Coroutines - Updated to match version catalog
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 
@@ -104,6 +117,7 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(libs.kotest.framework.engine)
                 implementation(libs.kotest.assertions.core)
+                implementation(libs.ktor.client.mock)
                 // MockK is JVM-only, not compatible with WASM
                 // implementation(libs.mockk)
                 // kotlinx-coroutines-test doesn't have WASM variant
@@ -303,6 +317,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+}
+
+// Detekt configuration for static analysis
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
 }
 
 // Kover configuration for code coverage

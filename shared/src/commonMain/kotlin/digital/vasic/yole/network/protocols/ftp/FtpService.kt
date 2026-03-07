@@ -48,10 +48,11 @@ import kotlinx.datetime.toInstant
  * - **iOS** and **Web/Wasm**: Not supported (UnsupportedOperationException)
  */
 class FtpService(
-    override val config: StorageConfig.FtpConfig
+    override val config: StorageConfig.FtpConfig,
+    private val _injectedFtpClient: FtpProtocolClient? = null
 ) : NetworkStorageService {
 
-    private val ftpClient = FtpProtocolClient()
+    private val ftpClient = _injectedFtpClient ?: FtpProtocolClient()
 
     private var _isConnected = false
     private val stateMutex = Mutex()
@@ -157,6 +158,7 @@ class FtpService(
             stateMutex.withLock { _isConnected = true }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.ConnectionException.Failed(
                 message = "FTP connection failed",
                 cause = e
@@ -181,6 +183,7 @@ class FtpService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             stateMutex.withLock { _isConnected = false } // Ensure we mark as disconnected even on error
             Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
         }
@@ -202,7 +205,7 @@ class FtpService(
             }
 
             // Attempt a real connection test
-            val testClient = FtpProtocolClient()
+            val testClient = _injectedFtpClient ?: FtpProtocolClient()
             val connectResult = testClient.connect(config.host, config.port)
             if (connectResult.isFailure) {
                 return Result.failure(NetworkStorageException.ConnectionException.Failed(
@@ -223,6 +226,7 @@ class FtpService(
 
             Result.success(true)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.ConnectionException.Failed(
                 message = "FTP connection test failed",
                 cause = e
@@ -280,6 +284,7 @@ class FtpService(
 
         emit(Result.success(documents))
     }.catch { e ->
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         emit(Result.failure(NetworkStorageException.FileOperationException.ListFailed(
             path = path,
             cause = e
@@ -392,6 +397,7 @@ class FtpService(
             removeActiveOperation(operationId)
             emit(cancelledOp)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             val errorOperation = NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.DOWNLOAD,
@@ -499,6 +505,7 @@ class FtpService(
             removeActiveOperation(operationId)
             emit(cancelledOp)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             val errorOperation = NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.UPLOAD,
@@ -618,6 +625,7 @@ class FtpService(
                 cause = deleResult.exceptionOrNull()
             ))
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.FileOperationException.DeleteFailed(
                 path = remotePath,
                 cause = e
@@ -666,6 +674,7 @@ class FtpService(
 
             Result.success(folderDoc)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.FileOperationException.CreateFolderFailed(
                 path = remotePath,
                 cause = e
@@ -704,6 +713,7 @@ class FtpService(
 
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.fromThrowable(e, "renameFile"))
         }
     }
@@ -753,6 +763,7 @@ class FtpService(
                 permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
             ))
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.FileOperationException.MoveFailed(
                 sourcePath = sourcePath,
                 targetPath = destinationPath,
@@ -812,6 +823,7 @@ class FtpService(
                 permissions = setOf(DocumentPermission.READ, DocumentPermission.WRITE)
             ))
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.FileOperationException.InfoFailed(
                 path = remotePath,
                 cause = e
@@ -915,6 +927,7 @@ class FtpService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -930,6 +943,7 @@ class FtpService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -944,6 +958,7 @@ class FtpService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -1228,14 +1243,23 @@ class FtpService(
      * Ensures consistent path formatting for FTP commands (CWD, LIST, etc.)
      */
     private fun normalizePath(path: String): String {
-        return when {
-            path.isBlank() -> _rootPath
-            path == "/" -> _rootPath
-            else -> {
-                val normalized = if (_rootPath == "/") path else "$_rootPath/$path"
-                normalized.replace("//", "/")
+        if (path.isBlank() || path == "/") return _rootPath
+
+        val basePath = if (_rootPath == "/") path else "$_rootPath/$path"
+        val segments = basePath.split("/").filter { it.isNotEmpty() }
+        val resolved = mutableListOf<String>()
+        for (segment in segments) {
+            when (segment) {
+                "." -> { /* skip current-dir marker */ }
+                ".." -> { if (resolved.isNotEmpty()) resolved.removeLast() }
+                else -> resolved.add(segment)
             }
         }
+        val result = "/" + resolved.joinToString("/")
+
+        // Ensure result stays within root boundary
+        val rootPrefix = if (_rootPath.isBlank()) "/" else _rootPath
+        return if (result.startsWith(rootPrefix) || rootPrefix == "/") result else _rootPath
     }
 
     /**

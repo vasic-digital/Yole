@@ -1,0 +1,113 @@
+%% Yole - Network Protocol Service Lifecycle
+%% Sequence diagram showing connection, operations, and resource management
+
+sequenceDiagram
+    participant User
+    participant App as Platform App
+    participant SVC as Protocol Service<br/>(e.g., DropboxService)
+    participant AUTH as AuthTokenManager
+    participant OAuth as OAuth2Flow
+    participant HTTP as HttpClient (Ktor)
+    participant RL as RateLimiter
+    participant API as Remote API
+
+    Note over User,API: Service Construction
+
+    User->>App: Configure storage connection
+    App->>App: Create StorageConfig<br/>(e.g., DropboxConfig with<br/>appKey, appSecret, accessToken)
+    App->>SVC: new DropboxService(config)
+    SVC->>AUTH: AuthTokenManager("dropbox")
+    Note over SVC: HttpClient initialized lazily
+
+    Note over User,API: Connection Phase
+
+    App->>SVC: connect()
+    SVC->>AUTH: hasValidToken()
+    AUTH->>AUTH: Check SecureStorage<br/>for access token + expiration
+
+    alt Token valid
+        AUTH-->>SVC: true
+    else Token expired, refresh token available
+        AUTH-->>SVC: false
+        SVC->>OAuth: refreshToken(refreshToken)
+        OAuth->>HTTP: POST /oauth2/token
+        HTTP->>API: Token refresh request
+        API-->>HTTP: New access + refresh tokens
+        HTTP-->>OAuth: TokenResponse
+        OAuth-->>SVC: New tokens
+        SVC->>AUTH: storeTokenInfo(accessToken,<br/>refreshToken, expiresIn)
+    else No tokens at all
+        SVC-->>App: Result.failure("Not authenticated")
+        Note over App: Must complete OAuth2 flow first
+    end
+
+    SVC->>HTTP: GET /2/users/get_current_account
+    HTTP->>API: Validate connection
+    API-->>HTTP: Account info
+    HTTP-->>SVC: Connection confirmed
+    SVC->>SVC: isOnline = true
+    SVC-->>App: Result.success()
+
+    Note over User,API: File Operations
+
+    App->>SVC: listFiles("/documents")
+    SVC->>RL: Check rate limit
+    RL-->>SVC: Permitted
+
+    SVC->>HTTP: POST /2/files/list_folder
+    HTTP->>API: List folder request
+    API-->>HTTP: JSON response
+    HTTP-->>SVC: File listing
+    SVC->>SVC: Parse JSON to List<NetworkDocument>
+    SVC-->>App: Flow<Result<List<NetworkDocument>>>
+
+    App->>SVC: uploadFile(localPath, remotePath)
+    SVC->>RL: Check rate limit
+    RL-->>SVC: Permitted
+    SVC->>SVC: Create NetworkOperation(UPLOAD)
+    SVC->>HTTP: POST content.dropboxapi.com<br/>/2/files/upload
+    HTTP->>API: Upload bytes
+    API-->>HTTP: File metadata
+    HTTP-->>SVC: Upload complete
+    SVC->>SVC: Update operation status: COMPLETED
+    SVC->>SVC: Update sync status map
+    SVC-->>App: Flow<NetworkOperation>
+
+    App->>SVC: downloadFile(remotePath, localPath)
+    SVC->>RL: Check rate limit
+    RL-->>SVC: Permitted
+    SVC->>SVC: Create NetworkOperation(DOWNLOAD)
+    SVC->>HTTP: POST content.dropboxapi.com<br/>/2/files/download
+    HTTP->>API: Download request
+    API-->>HTTP: File bytes
+    HTTP-->>SVC: Download complete
+    SVC->>SVC: Update cache entry
+    SVC-->>App: Flow<NetworkOperation>
+
+    Note over User,API: Error Handling and Rate Limiting
+
+    App->>SVC: deleteFile("/path/to/file")
+    SVC->>RL: Check rate limit
+
+    alt Rate limited (429)
+        RL-->>SVC: Throttled -- wait
+        SVC->>SVC: Backoff delay
+        SVC->>HTTP: Retry after delay
+        HTTP->>API: Delete request
+        API-->>HTTP: Success
+    else API error (500)
+        HTTP->>API: Delete request
+        API-->>HTTP: Server error
+        SVC->>SVC: Retry (up to maxRetries=3)
+    end
+
+    SVC-->>App: Result<Unit>
+
+    Note over User,API: Disconnection and Cleanup
+
+    App->>SVC: disconnect()
+    SVC->>SVC: Cancel background coroutines
+    SVC->>HTTP: close()
+    SVC->>SVC: isOnline = false
+    SVC->>SVC: Clear in-memory caches
+    SVC-->>App: Result.success()

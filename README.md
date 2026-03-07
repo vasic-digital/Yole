@@ -3,7 +3,7 @@
 [![GitHub CI](https://github.com/vasic-digital/Yole/workflows/CI/badge.svg)](https://github.com/vasic-digital/Yole/actions)
 [![Tests & Coverage](https://github.com/vasic-digital/Yole/workflows/Tests%20%26%20Coverage/badge.svg)](https://github.com/vasic-digital/Yole/actions)
 [![Lint & Docs](https://github.com/vasic-digital/Yole/workflows/Lint%20%26%20Docs/badge.svg)](https://github.com/vasic-digital/Yole/actions)
-[![Code Coverage](https://img.shields.io/badge/coverage-75%25-brightgreen.svg)](build/reports/kover/html/index.html)
+[![Code Coverage](https://img.shields.io/badge/coverage-63%25-yellow.svg)](build/reports/kover/html/index.html)
 [![Translate on Crowdin](https://img.shields.io/badge/translate-crowdin-green.svg)](https://crowdin.com/project/markor)
 [![Community Discussion](https://img.shields.io/badge/chat-community-blue.svg)](https://github.com/vasic-digital/Yole/discussions)
 
@@ -91,7 +91,7 @@ Yole is a modern fork of the popular Markor Android text editor, with significan
 | **Architecture** | Legacy Android | **Kotlin Multiplatform** for maximum code sharing |
 | **Documentation** | Basic | **Complete user & developer guides** (13,200+ lines) |
 | **New Formats** | - | AsciiDoc, CSV, Org-mode, LaTeX, reStructuredText, TaskPaper, Textile, Creole, TiddlyWiki, Jupyter, R Markdown, Key-Value |
-| **Testing** | Limited | **Comprehensive test suite** (2200+ tests across 88 test files) |
+| **Testing** | Limited | **Comprehensive test suite** (5,200+ tests across 170+ test files) |
 | **API Docs** | None | **100% KDoc coverage** for all public APIs |
 
 **Key Improvements in Yole:**
@@ -99,8 +99,10 @@ Yole is a modern fork of the popular Markor Android text editor, with significan
 - **Expanded Format Support**: 17 formats with complete 400-1000+ line guides for each
 - **Modern Architecture**: Kotlin Multiplatform (KMP) for maximum code sharing
 - **Comprehensive Documentation**: 13,200+ lines covering user guides, API docs, and developer guides
-- **Enhanced Testing**: 2427 tests across 90+ test files, 100% pass rate
-- **Future-Proof**: Modular KMP design for easy format additions
+- **Enhanced Testing**: 5,200+ tests across 170+ test files, 100% pass rate
+- **Future-Proof**: Modular KMP design with 10 extracted reusable modules for easy format additions
+- **Resilience**: Circuit breaker, connection limiter, LRU caching, and rate limiting for all protocols
+- **Security**: Automated scanning via Snyk, SonarQube, CodeQL, Gitleaks, and Detekt
 
 ## New features in the latest update - Yole v2.15.1 - Modern Android Architecture
 
@@ -220,7 +222,7 @@ You can find binaries (.apk), logs, test results & other outputs in the dist/ di
 Example: `make all install run`.
 
 The project uses modern Android development with the following code style:
-- **Language**: Kotlin with Java 8+ compatibility
+- **Language**: Kotlin with Java 11+ compatibility
 - **Code Style**: Follow [Kotlin coding conventions](https://kotlinlang.org/docs/coding-conventions.html)
 - **Imports**: Group standard Android, androidx, third-party, then project imports
 - **Naming**: CamelCase for classes, lowerCamelCase for methods/variables, UPPER_SNAKE_CASE for constants
@@ -241,7 +243,7 @@ Use the _auto reformat_ menu option of Android Studio before committing or befor
 * **Binary support**: WebView html img/audio/video with support for most common formats
 * **CI/CD**: GitHub Actions
 * **Build system**: Gradle with version catalog, Makefile
-* **Testing**: JUnit 4 with AssertJ assertions
+* **Testing**: Kotlin Test, Kotest 5.9.1, MockK 1.13.13, AssertJ 3.26.3 (5,200+ tests)
 
 ### Resources
 * Project repository: [Changelog](CHANGELOG.md) | [Issues](https://github.com/vasic-digital/Yole/issues?q=is%3Aissue+is%3Aopen) | [Discussions](https://github.com/vasic-digital/Yole/discussions) | [License](/LICENSE.txt) | [GitHub Releases](https://github.com/vasic-digital/Yole/releases) | [Makefile](Makefile)

@@ -25,7 +25,7 @@ plugins {
 
     // Security and code quality plugins
     id("org.owasp.dependencycheck") version "11.1.1"
-    id("io.gitlab.arturbosch.detekt") version "1.23.7"
+    id("io.gitlab.arturbosch.detekt") version "1.23.7" apply false
 }
 
 // Build configuration
@@ -167,16 +167,8 @@ dependencyCheck {
     outputDirectory = "$buildDir/reports/dependency-check"
 }
 
-// Detekt configuration
-detekt {
-    config.setFrom(files("$rootDir/detekt.yml"))
-    buildUponDefaultConfig = true
-    allRules = false
-}
-
-// Note: Detekt tasks for KMP projects require running detekt CLI directly
-// or configuring detekt in the shared module's build.gradle.kts.
-// See: detekt.yml for rule configuration.
+// Note: Detekt is configured in shared/build.gradle.kts for KMP projects.
+// See: config/detekt/detekt.yml for rule configuration.
 
 // Configure Dokka for API documentation
 // Note: Dokka plugin must be applied to modules to generate documentation

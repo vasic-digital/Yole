@@ -143,7 +143,10 @@ package digital.vasic.yole.format
 
 - `shared/build.gradle.kts` - KMP configuration
 - `gradle/libs.versions.toml` - Dependency versions
-- `run_all_tests.sh` - Comprehensive test runner
+- `docker/scripts/test-all.sh` - Comprehensive test runner
+- `docker-compose.yml` - Container build + security scanning environment
+- `config/detekt/detekt.yml` - Static analysis configuration
+- `scripts/run_security_scan.sh` - Local security scanning
 
 ## Quality Requirements
 

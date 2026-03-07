@@ -1,0 +1,238 @@
+%% Yole - Entity-Relationship Data Model
+%% Core data classes and their relationships
+
+erDiagram
+    Document {
+        String id
+        String path
+        String title
+        String extension
+        String content
+        String author
+        String format
+        Long modTime
+        Long touchTime
+        List_String tags
+    }
+
+    TextFormat {
+        String id
+        String name
+        String defaultExtension
+        List_String extensions
+        List_String detectionPatterns
+    }
+
+    ParsedDocument {
+        TextFormat format
+        String rawContent
+        String parsedContent
+        Map_String_String metadata
+        List_String errors
+        String _cachedHtmlLight
+        String _cachedHtmlDark
+    }
+
+    StorageConfig {
+        String name
+        StorageType storageType
+        Boolean isEnabled
+        Int priority
+        Map_String_String metadata
+    }
+
+    WebDavConfig {
+        String url
+        String username
+        String password
+        WebDavAuthenticationType authenticationType
+        Boolean sslEnabled
+        Boolean verifyCertificate
+        Int connectionTimeout
+        Int readTimeout
+    }
+
+    FtpConfig {
+        String host
+        Int port
+        String username
+        String password
+        String rootPath
+        Boolean passiveMode
+        Boolean secureFtp
+        String encoding
+    }
+
+    SftpConfig {
+        String host
+        Int port
+        String username
+        String password
+        String privateKeyPath
+        String privateKeyPassphrase
+        Boolean strictHostKeyChecking
+    }
+
+    SmbConfig {
+        String host
+        String share
+        String domain
+        String username
+        String password
+        Int port
+        Boolean encryption
+    }
+
+    GoogleDriveConfig {
+        String clientId
+        String clientSecret
+        String refreshToken
+        String accessToken
+        String rootFolderId
+        String teamDriveId
+    }
+
+    DropboxConfig {
+        String accessToken
+        String appKey
+        String appSecret
+        String refreshToken
+        String rootPath
+    }
+
+    OneDriveConfig {
+        String clientId
+        String clientSecret
+        String refreshToken
+        String accessToken
+        OneDriveDriveType driveType
+        String driveId
+    }
+
+    GitConfig {
+        String repositoryUrl
+        String branch
+        String username
+        String personalAccessToken
+        String localCachePath
+        Boolean autoSync
+        String commitAuthorName
+    }
+
+    NetworkDocument {
+        String id
+        String name
+        String path
+        Boolean isFolder
+        Long size
+        Instant lastModified
+        SyncStatus syncStatus
+        String documentId
+        String contentType
+        String extension
+        String parentPath
+        Boolean isReadOnly
+        String owner
+        String storageId
+        Set_DocumentPermission permissions
+        Map_String_String metadata
+    }
+
+    NetworkStorage {
+        String id
+        String name
+        StorageType type
+        String location
+        Long totalSpace
+        Long usedSpace
+        Boolean isOnline
+        Instant lastSync
+        Int priority
+        Boolean supportsFolders
+    }
+
+    NetworkOperation {
+        Long id
+        Type type
+        String remotePath
+        String localPath
+        Status status
+        Double progress
+        Long totalSize
+        Long bytesTransferred
+        Instant createdAt
+        Instant startedAt
+        Instant completedAt
+        String error
+        Int retryCount
+        Int maxRetries
+        Long transferSpeed
+    }
+
+    StorageQuota {
+        Long totalSpace
+        Long usedSpace
+        Long availableSpace
+        Double usagePercentage
+        Boolean isFull
+        Boolean isLowOnSpace
+        Instant expiresAt
+    }
+
+    TokenResponse {
+        String accessToken
+        String refreshToken
+        Long expiresIn
+        String tokenType
+    }
+
+    CacheEntry {
+        String id
+        String remoteDocumentId
+        String localPath
+        String remotePath
+        Long size
+        Instant createdAt
+        Instant lastAccessed
+        Instant lastModified
+        Instant expiresAt
+        Boolean isPinned
+        Boolean isInUse
+        Int accessCount
+        String checksum
+        Int priority
+    }
+
+    TokenInfo {
+        Boolean hasAccessToken
+        Boolean hasRefreshToken
+        Boolean isExpired
+        String serviceName
+        Instant timestamp
+    }
+
+    %% Relationships
+
+    Document ||--o| TextFormat : "format maps to"
+    Document ||--o| ParsedDocument : "parsed into"
+    ParsedDocument ||--|| TextFormat : "format"
+
+    StorageConfig ||--|{ WebDavConfig : "subclass"
+    StorageConfig ||--|{ FtpConfig : "subclass"
+    StorageConfig ||--|{ SftpConfig : "subclass"
+    StorageConfig ||--|{ SmbConfig : "subclass"
+    StorageConfig ||--|{ GoogleDriveConfig : "subclass"
+    StorageConfig ||--|{ DropboxConfig : "subclass"
+    StorageConfig ||--|{ OneDriveConfig : "subclass"
+    StorageConfig ||--|{ GitConfig : "subclass"
+
+    NetworkStorage ||--|| StorageConfig : "configured by"
+    NetworkStorage ||--o{ NetworkDocument : "contains"
+    NetworkStorage ||--o| StorageQuota : "has quota"
+
+    NetworkDocument ||--o| Document : "linked to local"
+    NetworkDocument }o--|| CacheEntry : "cached as"
+
+    NetworkOperation }o--|| NetworkDocument : "operates on"
+
+    TokenResponse ||--o| TokenInfo : "produces info"

@@ -61,19 +61,21 @@ import kotlin.coroutines.coroutineContext
  * must be properly closed. Call [disconnect] when done using this service.
  */
 class OneDriveService(
-    override val config: StorageConfig.OneDriveConfig
+    override val config: StorageConfig.OneDriveConfig,
+    private val _injectedHttpClient: HttpClient? = null,
+    private val _injectedAuthTokenManager: AuthTokenManager? = null
 ) : NetworkStorageService {
 
     // Platform file I/O for reading/writing local files
     private val fileIO by lazy { PlatformFileIOFactory.create() }
 
     // Lazy initialization of HttpClient to avoid resource allocation if never used
-    private val httpClient by lazy { createHttpClient() }
+    private val httpClient by lazy { _injectedHttpClient ?: createHttpClient() }
 
     // Track whether httpClient has been initialized to avoid closing uninitialized client
     private var httpClientInitialized = false
 
-    private val authTokenManager = AuthTokenManager("onedrive")
+    private val authTokenManager = _injectedAuthTokenManager ?: AuthTokenManager("onedrive")
     private val oauth2Flow by lazy {
         httpClientInitialized = true
         OneDriveOAuth2Flow(
@@ -148,6 +150,10 @@ class OneDriveService(
     /** Authenticates and connects to OneDrive, refreshing the OAuth2 token if needed. */
     override suspend fun connect(): Result<Unit> {
         return try {
+            // Cancel any existing scope to avoid leaking coroutines on reconnect
+            serviceScope.cancel()
+            serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
             // Check if we have valid tokens
             val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
             
@@ -171,6 +177,7 @@ class OneDriveService(
                 refreshAccessToken()
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.ConnectionException.Failed(
                 message = "OneDrive connection failed",
                 cause = e
@@ -182,6 +189,7 @@ class OneDriveService(
         val driveInfoResult = getDriveInfo()
         Result.success(driveInfoResult.isSuccess)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.success(false)
     }
     
@@ -201,6 +209,7 @@ class OneDriveService(
         stateMutex.withLock { _isConnected = false }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         stateMutex.withLock { _isConnected = false } // Ensure we mark as disconnected even on error
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
@@ -241,6 +250,7 @@ class OneDriveService(
                 Result.failure(Exception("Failed to get drive info: ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -264,6 +274,7 @@ class OneDriveService(
                 Result.failure(tokenResponse.exceptionOrNull() ?: Exception("Token refresh failed"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -338,6 +349,7 @@ class OneDriveService(
             emit(Result.success(documents))
             
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(Result.failure(NetworkStorageException.FileOperationException.ListFailed(
                 path = path,
                 cause = e
@@ -389,6 +401,7 @@ class OneDriveService(
                 Result.failure(Exception("Failed to resolve path '$path': ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -493,6 +506,7 @@ class OneDriveService(
                 throw Exception("Download failed: ${downloadResponse.status}")
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             val errorOperation = NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.DOWNLOAD,
@@ -597,6 +611,7 @@ class OneDriveService(
                 throw Exception("Upload failed: ${uploadResponse.status}")
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             val errorOperation = NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.UPLOAD,
@@ -697,6 +712,7 @@ class OneDriveService(
                 ))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.FileOperationException.DeleteFailed(
                 path = remotePath,
                 cause = e
@@ -767,6 +783,7 @@ class OneDriveService(
                 ))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.FileOperationException.CreateFolderFailed(
                 path = remotePath,
                 cause = e
@@ -811,6 +828,7 @@ class OneDriveService(
                 Result.failure(Exception("OneDrive rename failed: ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -883,6 +901,7 @@ class OneDriveService(
                 Result.failure(Exception("OneDrive move failed: ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -930,6 +949,7 @@ class OneDriveService(
                 Result.failure(Exception("OneDrive copy failed: ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -991,6 +1011,7 @@ class OneDriveService(
                 ))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -1014,6 +1035,7 @@ class OneDriveService(
             operationsMutex.withLock { activeOperations.remove(operationId) }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.fromThrowable(e, "cancelOperation"))
         }
     }
@@ -1029,6 +1051,7 @@ class OneDriveService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.fromThrowable(e, "pauseOperation"))
         }
     }
@@ -1044,6 +1067,7 @@ class OneDriveService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(NetworkStorageException.fromThrowable(e, "resumeOperation"))
         }
     }
@@ -1079,6 +1103,7 @@ class OneDriveService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -1091,6 +1116,7 @@ class OneDriveService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -1103,6 +1129,7 @@ class OneDriveService(
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }
@@ -1146,6 +1173,7 @@ class OneDriveService(
                     syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNC_ERROR }
                 }
             } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
                 syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNC_ERROR }
             }
         } else {
@@ -1256,6 +1284,7 @@ class OneDriveService(
                 completedAt = Clock.System.now()
             ))
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.SYNC,
@@ -1289,9 +1318,9 @@ class OneDriveService(
                 url {
                     protocol = URLProtocol.HTTPS
                     host = "graph.microsoft.com"
-                    path("v1.0", driveType, "drive", "root", "search(q='$query')")
+                    path("v1.0", driveType, "drive", "root", "search(q='${query.replace("'", "").encodeURLParameter()}')")
                     config.driveId?.let {
-                        path("drives", it, "root", "search(q='$query')")
+                        path("drives", it, "root", "search(q='${query.replace("'", "").encodeURLParameter()}')")
                     }
                     parameter("select", "id,name,size,createdDateTime,lastModifiedDateTime,folder,file")
                     parameter("top", "100")
@@ -1322,6 +1351,7 @@ class OneDriveService(
                 emit(Result.failure(Exception("OneDrive search failed: ${response.status}")))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(Result.failure(e))
         }
     }
@@ -1436,6 +1466,7 @@ class OneDriveService(
                 Result.failure(Exception("Failed to get quota info: ${response.status}"))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             Result.failure(e)
         }
     }

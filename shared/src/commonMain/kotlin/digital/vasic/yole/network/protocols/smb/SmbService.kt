@@ -141,6 +141,7 @@ class SmbService(
         stateMutex.withLock { _isConnected = true }
         Result.success(Unit)
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(
             NetworkStorageException.ConnectionException.Failed(
                 message = "SMB connection failed",
@@ -154,6 +155,7 @@ class SmbService(
         stateMutex.withLock { _isConnected = false }
         Result.success(Unit)
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
 
@@ -173,6 +175,7 @@ class SmbService(
             }
         }
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "testConnection"))
     }
 
@@ -202,6 +205,7 @@ class SmbService(
                 )
             )
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(
                 Result.failure(
                     NetworkStorageException.FileOperationException.ListFailed(
@@ -295,6 +299,7 @@ class SmbService(
             operationsMutex.withLock { activeOperations.remove(operation.id) }
             emit(completedOp)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             val failedOp = operation.copy(
                 status = NetworkOperation.Status.FAILED,
                 error = e.message ?: "Upload failed"
@@ -368,6 +373,7 @@ class SmbService(
             operationsMutex.withLock { activeOperations.remove(operation.id) }
             emit(completedOp)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             val failedOp = operation.copy(
                 status = NetworkOperation.Status.FAILED,
                 error = e.message ?: "Download failed"
@@ -423,6 +429,7 @@ class SmbService(
 
         Result.success(Unit)
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(
             NetworkStorageException.FileOperationException.CopyFailed(
                 sourcePath = sourcePath,
@@ -460,6 +467,7 @@ class SmbService(
 
         Result.success(Unit)
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(
             NetworkStorageException.FileOperationException.DeleteFailed(
                 path = remotePath,
@@ -496,6 +504,7 @@ class SmbService(
 
         Result.success(document)
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(
             NetworkStorageException.FileOperationException.CreateFolderFailed(
                 path = remotePath,
@@ -554,6 +563,7 @@ class SmbService(
 
         Result.success(Unit)
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "renameFile"))
     }
 
@@ -632,6 +642,7 @@ class SmbService(
 
         Result.success(movedDoc)
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(
             NetworkStorageException.FileOperationException.MoveFailed(
                 sourcePath = sourcePath,
@@ -670,6 +681,7 @@ class SmbService(
 
         Result.success(document)
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(
             NetworkStorageException.FileOperationException.InfoFailed(
                 path = remotePath,
@@ -697,6 +709,7 @@ class SmbService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "cancelOperation"))
     }
 
@@ -710,6 +723,7 @@ class SmbService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "pauseOperation"))
     }
 
@@ -723,6 +737,7 @@ class SmbService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "resumeOperation"))
     }
 
@@ -768,6 +783,7 @@ class SmbService(
 
         Result.success(Unit)
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "addToCache"))
     }
 
@@ -779,6 +795,7 @@ class SmbService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "removeFromCache"))
     }
 
@@ -789,6 +806,7 @@ class SmbService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "clearCache"))
     }
 
@@ -847,6 +865,7 @@ class SmbService(
             operationsMutex.withLock { activeOperations.remove(operation.id) }
             emit(completedOp)
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             val normalizedPath = normalizePath(remotePath)
             syncMutex.withLock {
                 syncStatusMap[normalizedPath] = SyncStatus.SYNC_ERROR
@@ -935,6 +954,7 @@ class SmbService(
             )
         )
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "getQuotaInfo"))
     }
 
@@ -944,6 +964,7 @@ class SmbService(
         val found = fileTreeMutex.withLock { fileTree.containsKey(normalizedPath) }
         Result.success(found)
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "exists"))
     }
 
@@ -965,6 +986,7 @@ class SmbService(
             Result.success(Unit)
         }
     } catch (e: Exception) {
+        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(e)
     }
 
@@ -975,9 +997,23 @@ class SmbService(
      * Removes trailing slashes (unless root) and ensures leading slash.
      */
     private fun normalizePath(path: String): String {
-        if (path.isBlank() || path == "/") return path
-        val trimmed = path.trimEnd('/')
-        return if (trimmed.startsWith("/")) trimmed else "/$trimmed"
+        if (path.isBlank() || path == "/") return _rootPath
+
+        val basePath = if (_rootPath == "/") path else "$_rootPath/$path"
+        val segments = basePath.split("/").filter { it.isNotEmpty() }
+        val resolved = mutableListOf<String>()
+        for (segment in segments) {
+            when (segment) {
+                "." -> { /* skip current-dir marker */ }
+                ".." -> { if (resolved.isNotEmpty()) resolved.removeLast() }
+                else -> resolved.add(segment)
+            }
+        }
+        val result = "/" + resolved.joinToString("/")
+
+        // Ensure result stays within root boundary
+        val rootPrefix = if (_rootPath.isBlank()) "/" else _rootPath
+        return if (result.startsWith(rootPrefix) || rootPrefix == "/") result else _rootPath
     }
 
     /**

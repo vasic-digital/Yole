@@ -1,0 +1,35 @@
+build:
+  maxIssues: 0
+
+complexity:
+  LongMethod:
+    threshold: 100
+  LongParameterList:
+    functionThreshold: 8
+    constructorThreshold: 10
+  ComplexMethod:
+    threshold: 30
+  TooManyFunctions:
+    thresholdInFiles: 30
+    thresholdInClasses: 25
+
+style:
+  MaxLineLength:
+    maxLineLength: 150
+  WildcardImport:
+    active: false
+  MagicNumber:
+    active: false
+  ReturnCount:
+    max: 5
+
+potential-bugs:
+  active: true
+
+performance:
+  active: true
+
+exceptions:
+  active: true
+  SwallowedException:
+    active: true

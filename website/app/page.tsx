@@ -25,16 +25,26 @@ const platforms = [
   { name: "Android", status: "Production", icon: "phone", description: "Full-featured editor on Google Play" },
   { name: "Desktop", status: "Beta", icon: "desktop", description: "Windows, macOS, and Linux via JVM" },
   { name: "iOS", status: "Development", icon: "tablet", description: "Coming soon for iPhone and iPad" },
-  { name: "Web", status: "Planned", icon: "globe", description: "Browser-based editor via WebAssembly" },
+  { name: "Web", status: "Development", icon: "globe", description: "Browser-based editor via WebAssembly" },
+];
+
+const stats = [
+  { label: "Tests", value: "4,750+" },
+  { label: "Text Formats", value: "17" },
+  { label: "Protocols", value: "8" },
+  { label: "Platforms", value: "4" },
 ];
 
 const features = [
-  { title: "17+ Text Formats", description: "From Markdown and todo.txt to LaTeX and Fountain screenplays. One editor for all your text files." },
+  { title: "17 Text Formats", description: "From Markdown and todo.txt to LaTeX and Fountain screenplays. One editor for all your text files." },
   { title: "Offline-First", description: "Everything works without an internet connection. Your data stays on your device by default." },
-  { title: "Cloud Storage", description: "Optional integration with Dropbox, Google Drive, OneDrive, FTP, SFTP, and WebDAV." },
+  { title: "8 Cloud Protocols", description: "Optional integration with Dropbox, Google Drive, OneDrive, WebDAV, FTP, SFTP, Git, and S3." },
   { title: "Cross-Platform", description: "Built with Kotlin Multiplatform. Write once, run on Android, Desktop, iOS, and Web." },
   { title: "Open Source", description: "Apache-2.0 licensed. Inspect the code, contribute, and build on top of it." },
   { title: "Syntax Highlighting", description: "Context-aware highlighting for every supported format with customizable themes." },
+  { title: "Modular Architecture", description: "10 independently extracted KMP modules. Clean separation of concerns with facade bridges." },
+  { title: "Comprehensive Testing", description: "4,750+ tests across 148+ test files with 63% line coverage. Mock HTTP tests for all protocols." },
+  { title: "Video Course", description: "19 free video tutorials from beginner to expert. Learn Yole at your own pace." },
 ];
 
 export default function HomePage() {
@@ -50,16 +60,25 @@ export default function HomePage() {
             Cross-Platform Text Editor
           </p>
           <p className="text-lg text-[var(--color-text-secondary)] max-w-2xl mx-auto mb-10">
-            A powerful editor supporting 17+ text formats. Offline-first with optional cloud storage.
-            Built with Kotlin Multiplatform for Android, Desktop, iOS, and Web.
+            A powerful editor supporting 17 text formats and 8 cloud storage protocols.
+            Offline-first with optional cloud sync. Built with Kotlin Multiplatform for
+            Android, Desktop, iOS, and Web.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <a href="/download" className="btn-primary text-lg px-8 py-4">
               Download Yole
             </a>
-            <a href="/docs" className="btn-secondary text-lg px-8 py-4">
-              Read the Docs
+            <a href="/video-course" className="btn-secondary text-lg px-8 py-4">
+              Video Course
             </a>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+            {stats.map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="text-2xl md:text-3xl font-bold text-primary-500">{stat.value}</div>
+                <div className="text-sm text-[var(--color-text-secondary)]">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -85,7 +104,7 @@ export default function HomePage() {
       {/* Format Showcase */}
       <section className="py-20">
         <div className="container-page">
-          <h2 className="section-heading text-center">17+ Text Formats</h2>
+          <h2 className="section-heading text-center">17 Text Formats</h2>
           <p className="section-subheading text-center">
             One editor for Markdown, todo.txt, CSV, LaTeX, and many more.
           </p>
@@ -93,7 +112,7 @@ export default function HomePage() {
             {formats.map((format) => (
               <a
                 key={format.id}
-                href={`/docs#${format.id}`}
+                href={`/formats#${format.id}`}
                 className="card flex items-start gap-4 group"
               >
                 <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary-500/10 text-primary-500 flex items-center justify-center font-bold text-lg">
@@ -150,8 +169,36 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* Explore Section */}
       <section className="py-20">
+        <div className="container-page">
+          <h2 className="section-heading text-center">Explore Yole</h2>
+          <p className="section-subheading text-center">
+            Dive deeper into formats, cloud storage, architecture, and more.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <a href="/formats" className="card text-center group">
+              <h3 className="font-semibold text-lg mb-2 group-hover:text-primary-500 transition-colors">Formats</h3>
+              <p className="text-sm text-[var(--color-text-secondary)]">17 text formats with syntax examples and use cases.</p>
+            </a>
+            <a href="/cloud-storage" className="card text-center group">
+              <h3 className="font-semibold text-lg mb-2 group-hover:text-primary-500 transition-colors">Cloud Storage</h3>
+              <p className="text-sm text-[var(--color-text-secondary)]">8 protocols with feature comparison and setup guides.</p>
+            </a>
+            <a href="/video-course" className="card text-center group">
+              <h3 className="font-semibold text-lg mb-2 group-hover:text-primary-500 transition-colors">Video Course</h3>
+              <p className="text-sm text-[var(--color-text-secondary)]">19 free videos from beginner to expert level.</p>
+            </a>
+            <a href="/architecture" className="card text-center group">
+              <h3 className="font-semibold text-lg mb-2 group-hover:text-primary-500 transition-colors">Architecture</h3>
+              <p className="text-sm text-[var(--color-text-secondary)]">KMP modules, parsing pipeline, and system design.</p>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-[var(--color-bg-secondary)]">
         <div className="container-page text-center">
           <h2 className="section-heading">Open Source and Free</h2>
           <p className="text-lg text-[var(--color-text-secondary)] max-w-2xl mx-auto mb-8">
@@ -167,8 +214,8 @@ export default function HomePage() {
             >
               View on GitHub
             </a>
-            <a href="/about" className="btn-secondary">
-              Learn More
+            <a href="/community" className="btn-secondary">
+              Join the Community
             </a>
           </div>
         </div>

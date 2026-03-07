@@ -57,7 +57,8 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * must be properly closed. Call [disconnect] when done, or use try-finally blocks.
  */
 class WebDavService(
-    override val config: StorageConfig.WebDavConfig
+    override val config: StorageConfig.WebDavConfig,
+    private val _injectedHttpClient: HttpClient? = null
 ) : NetworkStorageService {
 
     // Platform file I/O for reading/writing local files
@@ -66,7 +67,7 @@ class WebDavService(
     // Lazy initialization of HttpClient to avoid resource allocation if never used
     private val httpClient by lazy {
         httpClientInitialized = true
-        createHttpClient()
+        _injectedHttpClient ?: createHttpClient()
     }
 
     // Track whether httpClient has been initialized to avoid closing uninitialized client
@@ -122,6 +123,7 @@ class WebDavService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.ConnectionException.Failed(
             message = "WebDAV connection failed",
             cause = e
@@ -140,6 +142,7 @@ class WebDavService(
         stateMutex.withLock { _isConnected = false }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         stateMutex.withLock { _isConnected = false }
         Result.failure(NetworkStorageException.fromThrowable(e, "disconnect"))
     }
@@ -158,6 +161,7 @@ class WebDavService(
             }
         }
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "testConnection"))
     }
 
@@ -196,6 +200,7 @@ class WebDavService(
                 )))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(Result.failure(NetworkStorageException.FileOperationException.ListFailed(
                 path = path,
                 cause = e
@@ -255,6 +260,7 @@ class WebDavService(
                 ))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             // Fallback: emit progress sequence for offline/test scenarios
             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.5))
             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 1.0))
@@ -331,6 +337,7 @@ class WebDavService(
                 ))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             // Fallback: emit progress sequence for offline/test scenarios
             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.5))
             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 1.0))
@@ -366,6 +373,7 @@ class WebDavService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.FileOperationException.CopyFailed(
             sourcePath = sourcePath,
             targetPath = destinationPath,
@@ -393,6 +401,7 @@ class WebDavService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.FileOperationException.DeleteFailed(
             path = remotePath,
             cause = e
@@ -433,6 +442,7 @@ class WebDavService(
             syncStatus = SyncStatus.SYNCED
         ))
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.FileOperationException.CreateFolderFailed(
             path = remotePath,
             cause = e
@@ -476,6 +486,7 @@ class WebDavService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "renameFile"))
     }
 
@@ -527,6 +538,7 @@ class WebDavService(
             syncStatus = SyncStatus.SYNCED
         ))
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.FileOperationException.MoveFailed(
             sourcePath = sourcePath,
             targetPath = destinationPath,
@@ -554,7 +566,7 @@ class WebDavService(
 
                 if (response.status.value in 200..299 || response.status.value == 207) {
                     val responseBody = response.bodyAsText()
-                    val documents = parseMultistatusResponse(responseBody, remotePath)
+                    val documents = parseMultistatusResponse(responseBody, remotePath, filterParent = false)
                     if (documents.isNotEmpty()) {
                         return Result.success(documents.first())
                     }
@@ -580,6 +592,7 @@ class WebDavService(
             syncStatus = SyncStatus.SYNCED
         ))
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.FileOperationException.InfoFailed(
             path = remotePath,
             cause = e
@@ -606,6 +619,7 @@ class WebDavService(
             Result.success(false)
         }
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "exists"))
     }
 
@@ -624,6 +638,7 @@ class WebDavService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "cancelOperation"))
     }
 
@@ -636,6 +651,7 @@ class WebDavService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "pauseOperation"))
     }
 
@@ -648,6 +664,7 @@ class WebDavService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "resumeOperation"))
     }
 
@@ -677,6 +694,7 @@ class WebDavService(
         }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "addToCache"))
     }
 
@@ -685,6 +703,7 @@ class WebDavService(
         cacheMutex.withLock { cacheEntries.remove(remotePath) }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "removeFromCache"))
     }
 
@@ -693,6 +712,7 @@ class WebDavService(
         cacheMutex.withLock { cacheEntries.clear() }
         Result.success(Unit)
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "clearCache"))
     }
 
@@ -737,6 +757,7 @@ class WebDavService(
             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 1.0))
             emit(operation.copy(status = NetworkOperation.Status.COMPLETED, progress = 1.0))
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNC_ERROR }
             emit(operation.copy(
                 status = NetworkOperation.Status.FAILED,
@@ -832,6 +853,7 @@ class WebDavService(
                 progress = 1.0
             ))
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(operation.copy(
                 status = NetworkOperation.Status.FAILED,
                 error = e.message ?: "Sync failed"
@@ -885,6 +907,7 @@ class WebDavService(
                 emit(Result.failure(Exception("WebDAV search not implemented")))
             }
         } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(Result.failure(Exception("WebDAV search not implemented")))
         }
     }
@@ -1031,6 +1054,7 @@ class WebDavService(
             isLowOnSpace = false
         ))
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "getQuotaInfo"))
     } }
 
@@ -1049,6 +1073,7 @@ class WebDavService(
             Result.success(Unit)
         }
     } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(e)
     }
 
@@ -1119,9 +1144,11 @@ class WebDavService(
      * Parse a WebDAV multistatus XML response to extract NetworkDocument entries.
      * Uses simple string parsing (no JVM-only XML parser) for KMP compatibility.
      */
-    private fun parseMultistatusResponse(xml: String, requestPath: String): List<NetworkDocument> {
+    private fun parseMultistatusResponse(xml: String, requestPath: String, filterParent: Boolean = true): List<NetworkDocument> {
         val documents = mutableListOf<NetworkDocument>()
         val normalizedRequestPath = requestPath.trimEnd('/')
+        // Also compute the full base URL path for parent directory filtering
+        val normalizedBasePath = extractPathFromHref(buildWebDavUrl(requestPath)).trimEnd('/')
 
         // Split on response elements
         val responses = splitXmlElements(xml, "response")
@@ -1130,7 +1157,8 @@ class WebDavService(
             return parseMultistatusResponse(
                 xml.replace("d:response", "response")
                     .replace("D:response", "response"),
-                requestPath
+                requestPath,
+                filterParent
             ).takeIf { xml.contains("d:response") || xml.contains("D:response") }
                 ?: documents
         }
@@ -1145,8 +1173,11 @@ class WebDavService(
             val decodedHref = decodeUrl(href)
             val resourcePath = extractPathFromHref(decodedHref)
 
-            // Skip the parent directory itself
-            if (resourcePath.trimEnd('/') == normalizedRequestPath) continue
+            // Skip the parent directory itself (only when listing directory contents)
+            if (filterParent) {
+                val trimmedResourcePath = resourcePath.trimEnd('/')
+                if (trimmedResourcePath == normalizedRequestPath || trimmedResourcePath == normalizedBasePath) continue
+            }
 
             val displayName = extractXmlValue(responseXml, "displayname")
                 ?: extractXmlValue(responseXml, "d:displayname")

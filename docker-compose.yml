@@ -46,6 +46,32 @@ services:
       - security
       - full
 
+  # Snyk CLI for vulnerability scanning
+  snyk:
+    image: docker.io/snyk/snyk:gradle-jdk17
+    container_name: yole-snyk
+    volumes:
+      - .:/project
+    working_dir: /project
+    environment:
+      - SNYK_TOKEN=${SNYK_TOKEN:-}
+    profiles:
+      - security
+      - full
+
+  # Detekt static analysis runner
+  detekt:
+    image: docker.io/library/eclipse-temurin:17-jdk
+    container_name: yole-detekt
+    volumes:
+      - .:/workspace
+      - ${HOME}/.gradle:/root/.gradle
+    working_dir: /workspace
+    command: ./gradlew detekt
+    profiles:
+      - security
+      - full
+
 volumes:
   sonarqube_data:
   sonarqube_logs:

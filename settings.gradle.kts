@@ -68,6 +68,18 @@ rootProject.name = "Yole"
 // Enable Gradle version catalog
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
+// Extracted KMP modules (composite builds)
+includeBuild("../RateLimiter-KMP")
+includeBuild("../Concurrency-KMP")
+includeBuild("../UI-Components-KMP")
+includeBuild("../Auth-KMP")
+includeBuild("../Security-KMP")
+includeBuild("../Document-KMP")
+includeBuild("../Config-KMP")
+includeBuild("../Database-KMP")
+includeBuild("../Storage-KMP")
+includeBuild("../Formatters-KMP")
+
 // Existing Android modules
 include(":commons")
 include(":core")
