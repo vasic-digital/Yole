@@ -248,56 +248,30 @@ Offline-first, open source, free.
 <<<`,
   },
   {
-    id: "fountain",
-    name: "Fountain",
-    icon: "F",
-    description: "Screenplay writing format with automatic detection of scene headings, characters, dialogue, parentheticals, and transitions. Industry-standard for screenwriters.",
-    extensions: [".fountain", ".spmd"],
-    useCases: ["Screenplays", "Stage plays", "TV scripts", "Short films", "Film production"],
-    example: `Title: The Editor
-Author: Milos Vasic
+    id: "creole",
+    name: "Creole",
+    icon: "E",
+    description: "Standardized wiki markup language designed to be a common syntax across different wiki engines. Supports bold, italic, links, lists, tables, and images with a consistent, portable syntax.",
+    extensions: [".creole"],
+    useCases: ["Wiki pages", "Cross-wiki content", "Collaborative documentation", "Wiki migration", "Portable wiki markup"],
+    example: `= Yole Text Editor =
 
-INT. OFFICE - NIGHT
+A **cross-platform** text editor supporting //17+ formats//.
 
-A developer sits at a desk, multiple monitors glowing.
+== Features ==
+* Offline-first editing
+* Cloud storage integration
+** Dropbox
+** Google Drive
+# Numbered list item
 
-DEVELOPER
-(typing furiously)
-One editor to rule them all.
+| Platform | Status |
+| Android  | Production |
+| Desktop  | Beta |
 
-COLLEAGUE
-What are you working on?
+[[https://github.com/vasic-digital/Yole|Yole on GitHub]]
 
-DEVELOPER
-Yole. Cross-platform. Seventeen formats.
-
-> FADE TO:
-
-EXT. CONFERENCE - DAY
-
-A presentation screen shows "Yole v2.15.1 Released."`,
-  },
-  {
-    id: "ledger",
-    name: "Ledger",
-    icon: "$",
-    description: "Plain-text double-entry accounting format for personal and business financial tracking. Supports transaction records, account hierarchies, and balance assertions.",
-    extensions: [".ledger", ".journal"],
-    useCases: ["Personal finance", "Business accounting", "Expense tracking", "Budget management", "Financial reporting"],
-    example: `; Yole Project Expenses
-2026-03-01 * Server Hosting
-    Expenses:Infrastructure     $49.99
-    Assets:Checking
-
-2026-03-05 * Domain Renewal
-    Expenses:Infrastructure     $12.00
-    Assets:Checking
-
-2026-03-07 * Coffee for Development
-    Expenses:Food:Coffee         $4.50
-    Assets:Cash
-
-P 2026-03-07 EUR $1.08`,
+<<image src="yole-logo.png" alt="Yole">>`,
   },
   {
     id: "keyvalue",
@@ -368,28 +342,46 @@ Release Planning:
   - Deploy to F-Droid @deploy`,
   },
   {
-    id: "bibtex",
-    name: "BibTeX",
-    icon: "B",
-    description: "Bibliography and citation management format for academic and scientific writing. Supports various entry types and integrates with LaTeX documents.",
-    extensions: [".bib"],
-    useCases: ["Academic citations", "Research bibliographies", "Publication management", "Thesis references", "Paper writing"],
-    example: `@article{vasic2026yole,
-  title     = {Yole: A Cross-Platform Text Editor},
-  author    = {Vasic, Milos},
-  journal   = {Open Source Software},
-  year      = {2026},
-  volume    = {11},
-  pages     = {1--15},
-  doi       = {10.1234/yole.2026}
-}
+    id: "rmarkdown",
+    name: "R Markdown",
+    icon: "R",
+    description: "Data science document format combining R code, output, and narrative text. Supports YAML front matter, code chunks with execution options, inline expressions, and multiple output formats.",
+    extensions: [".Rmd", ".rmd"],
+    useCases: ["Data science reports", "Statistical analysis", "Reproducible research", "Teaching materials", "Data visualization"],
+    example: `---
+title: "Yole Format Analysis"
+author: "Milos Vasic"
+date: "2026-03-08"
+output: html_document
+---
 
-@inproceedings{kmp2025,
-  title     = {Kotlin Multiplatform in Practice},
-  author    = {JetBrains Team},
-  booktitle = {KotlinConf 2025},
-  year      = {2025}
-}`,
+## Supported Formats
+
+Yole supports **17 text formats** across multiple platforms.
+
+\`\`\`{r format-count}
+formats <- c("Markdown", "todo.txt", "CSV", "LaTeX")
+cat("Analyzed:", length(formats), "formats\\n")
+\`\`\`
+
+The total test count is \`r 5600\` tests.`,
+  },
+  {
+    id: "binary",
+    name: "Binary",
+    icon: "B",
+    description: "Binary file detection with media preview support. Automatically identifies non-text files and provides appropriate preview for images, audio, and video using WebView.",
+    extensions: [".bin", ".dat"],
+    useCases: ["Binary file detection", "Image preview", "Audio playback", "Video preview", "File type identification"],
+    example: `(Binary files are detected automatically)
+
+Supported preview types:
+- Images: PNG, JPG, GIF, WebP, SVG
+- Audio: MP3, OGG, WAV, FLAC
+- Video: MP4, WebM, MKV
+
+Binary detection uses byte analysis to
+distinguish text from non-text content.`,
   },
   {
     id: "plaintext",
@@ -409,7 +401,7 @@ Supported Platforms:
 
 Quick Stats:
   - 17+ text formats
-  - 4,750+ tests
+  - 5,600+ tests
   - 8 cloud protocols
   - Apache-2.0 license`,
   },

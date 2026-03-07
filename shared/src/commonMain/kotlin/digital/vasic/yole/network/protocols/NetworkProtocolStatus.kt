@@ -50,23 +50,6 @@ package digital.vasic.yole.network.protocols
  * - **Wasm**: HTTP-based protocols are fully supported. TCP-based protocols throw
  *   [UnsupportedOperationException] on Wasm.
  *
- * ## Format Parser Adapters
- *
- * Five "format parsers" exist as transport-layer adapters so the
- * [FormatRegistry][digital.vasic.yole.format.FormatRegistry] can represent
- * storage backends alongside actual text format parsers:
- *
- * | Adapter | Package |
- * |---------|---------|
- * | [DropboxParser][digital.vasic.yole.format.dropbox.DropboxParser] | `format.dropbox` |
- * | [FtpParser][digital.vasic.yole.format.ftp.FtpParser] | `format.ftp` |
- * | [SftpParser][digital.vasic.yole.format.sftp.SftpParser] | `format.sftp` |
- * | [GoogleDriveParser][digital.vasic.yole.format.googledrive.GoogleDriveParser] | `format.googledrive` |
- * | [OneDriveParser][digital.vasic.yole.format.onedrive.OneDriveParser] | `format.onedrive` |
- *
- * These are **not** file format parsers. They pass content through as plain text.
- * Actual file operations are handled by the corresponding service classes above.
- *
  * @see digital.vasic.yole.network.NetworkStorageService
  * @see digital.vasic.yole.format.FormatRegistry
  */

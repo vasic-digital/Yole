@@ -66,13 +66,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Note: OWASP dependency-check Gradle plugin is not currently configured
-      # in build.gradle.kts. When the plugin is added, uncomment the step below.
-      # - name: Run OWASP Dependency Check
-      #   run: ./gradlew dependencyCheckAnalyze
-
-      - name: List dependencies for audit
-        run: ./gradlew dependencies --configuration runtimeClasspath || true
+      - name: Run OWASP Dependency Check
+        run: ./gradlew dependencyCheckAnalyze
 
   snyk:
     name: Vulnerability Scan (Snyk)

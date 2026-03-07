@@ -12,13 +12,13 @@ const formats = [
   { name: "Textile", icon: "X", description: "Lightweight markup with inline formatting and block elements", id: "textile" },
   { name: "WikiText", icon: "W", description: "MediaWiki-compatible syntax with templates and links", id: "wikitext" },
   { name: "TiddlyWiki", icon: "D", description: "Non-linear personal wiki with transclusion support", id: "tiddlywiki" },
-  { name: "Fountain", icon: "F", description: "Screenplay writing with automatic scene and character formatting", id: "fountain" },
-  { name: "Ledger", icon: "$", description: "Plain-text double-entry accounting and financial tracking", id: "ledger" },
+  { name: "Creole", icon: "E", description: "Standardized wiki markup with a common syntax across wiki engines", id: "creole" },
   { name: "Key-Value", icon: "K", description: "Configuration files, .properties, and .env formats", id: "keyvalue" },
   { name: "Jupyter", icon: "J", description: "Interactive notebook format with code cells and outputs", id: "jupyter" },
   { name: "TaskPaper", icon: "P", description: "Plain-text task management with projects and tags", id: "taskpaper" },
-  { name: "BibTeX", icon: "B", description: "Bibliography and citation management for academic work", id: "bibtex" },
+  { name: "R Markdown", icon: "R", description: "Data science documents combining R code, output, and narrative", id: "rmarkdown" },
   { name: "Plain Text", icon: "#", description: "Simple plain text editing with line numbers and word wrap", id: "plaintext" },
+  { name: "Binary", icon: "B", description: "Binary file detection with media preview for images, audio, and video", id: "binary" },
 ];
 
 const platforms = [
@@ -29,21 +29,21 @@ const platforms = [
 ];
 
 const stats = [
-  { label: "Tests", value: "4,750+" },
+  { label: "Tests", value: "5,600+" },
   { label: "Text Formats", value: "17" },
   { label: "Protocols", value: "8" },
   { label: "Platforms", value: "4" },
 ];
 
 const features = [
-  { title: "17 Text Formats", description: "From Markdown and todo.txt to LaTeX and Fountain screenplays. One editor for all your text files." },
+  { title: "17 Text Formats", description: "From Markdown and todo.txt to LaTeX and Jupyter notebooks. One editor for all your text files." },
   { title: "Offline-First", description: "Everything works without an internet connection. Your data stays on your device by default." },
   { title: "8 Cloud Protocols", description: "Optional integration with Dropbox, Google Drive, OneDrive, WebDAV, FTP, SFTP, Git, and S3." },
   { title: "Cross-Platform", description: "Built with Kotlin Multiplatform. Write once, run on Android, Desktop, iOS, and Web." },
   { title: "Open Source", description: "Apache-2.0 licensed. Inspect the code, contribute, and build on top of it." },
   { title: "Syntax Highlighting", description: "Context-aware highlighting for every supported format with customizable themes." },
   { title: "Modular Architecture", description: "10 independently extracted KMP modules. Clean separation of concerns with facade bridges." },
-  { title: "Comprehensive Testing", description: "4,750+ tests across 148+ test files with 63% line coverage. Mock HTTP tests for all protocols." },
+  { title: "Comprehensive Testing", description: "5,600+ tests across 170+ test files with 63% line coverage. Mock HTTP tests for all protocols." },
   { title: "Video Course", description: "19 free video tutorials from beginner to expert. Learn Yole at your own pace." },
 ];
 

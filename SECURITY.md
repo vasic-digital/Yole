@@ -70,12 +70,44 @@ The following are in scope for security reports:
 - No telemetry or data collection
 - Offline-first architecture
 
+### Resilience Patterns
+
+The network protocol layer includes these resilience mechanisms to protect against cascading failures and resource exhaustion:
+
+- **CircuitBreaker** (`network/common/CircuitBreaker.kt`): Implements a CLOSED/OPEN/HALF_OPEN state machine with configurable failure threshold and reset timeout. Prevents repeated calls to failing services.
+- **ConnectionLimiter** (`network/common/ConnectionLimiter.kt`): Semaphore-based concurrent connection limiting. Non-blocking design prevents resource exhaustion under high load.
+- **DocumentCache** (`format/DocumentCache.kt`): LRU cache for `ParsedDocument` instances with hit/miss tracking and configurable maximum size.
+
+### CancellationException Safety
+
+All `catch` blocks in all eight protocol service implementations (FTP, SFTP, SMB, WebDAV, Git, Dropbox, Google Drive, OneDrive) rethrow `kotlin.coroutines.cancellation.CancellationException`. This ensures that structured concurrency is never silently broken when a coroutine is cancelled, preventing coroutine leaks and hung operations.
+
+### Query and JSON Injection Protection
+
+API query strings sent to cloud providers (Google Drive, OneDrive, Dropbox) are sanitized before transmission:
+
+- Single-quote escaping to prevent query injection in search and filter operations
+- URL encoding for path and query parameters
+- JSON escaping for request bodies containing user-supplied data
+
+### Path Traversal Defense
+
+All protocol services that handle file paths use `normalizePath()` which resolves `..` path segments and enforces root boundary constraints. This prevents directory traversal attacks that could access files outside the configured storage root.
+
+### CoroutineScope Lifecycle
+
+Protocol services that maintain a `serviceScope` cancel it on reconnect and disconnect operations. This prevents coroutine leaks from orphaned background operations when connection state changes.
+
 ### Code Security
 
-- Static analysis with Detekt and KtLint
-- Dependency scanning with OWASP Dependency-Check
-- Secret scanning with Gitleaks
-- Code quality analysis with SonarQube
+- **Detekt**: Static analysis configured in `config/detekt/detekt.yml` with security-focused rules
+- **Snyk**: Dependency vulnerability scanning in CI/CD and Docker
+- **SonarQube**: Code quality and security analysis (Docker-based local instance)
+- **CodeQL**: GitHub-native static analysis for Java/Kotlin
+- **Gitleaks**: Secret scanning across full git history
+- **OWASP Dependency-Check**: Gradle plugin (version 11.1.1, `failBuildOnCVSS = 9.0f`)
+
+For detailed instructions on running security scans locally and in CI, see [docs/SECURITY_SCANNING.md](docs/SECURITY_SCANNING.md).
 
 ## Security Checklist for Contributors
 

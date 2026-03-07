@@ -73,9 +73,14 @@ run_check "OWASP Dependency Check" "./gradlew dependencyCheckAnalyze --info 2>&1
 echo -e "${BLUE}[3/6] Static Analysis (Detekt)${NC}"
 run_check "Detekt Static Analysis" "./gradlew detekt --info 2>&1 | tail -20" "false"
 
-# 4. KtLint - Code Style
+# 4. KtLint - Code Style (only if plugin is configured)
 echo -e "${BLUE}[4/6] Code Style (KtLint)${NC}"
-run_check "KtLint Check" "./gradlew ktlintCheck --info 2>&1 | tail -20" "false"
+if ./gradlew tasks --all 2>/dev/null | grep -q "ktlintCheck"; then
+    run_check "KtLint Check" "./gradlew ktlintCheck --info 2>&1 | tail -20" "false"
+else
+    echo -e "${YELLOW}[SKIP] KtLint plugin not configured in build.gradle.kts${NC}"
+    echo ""
+fi
 
 # 5. Android Lint
 echo -e "${BLUE}[5/6] Android Lint${NC}"
