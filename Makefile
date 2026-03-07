@@ -285,6 +285,15 @@ run:
 	$(MAKE) A="shell monkey -p $$(aapt dump badging $(DIST_DIR)/*.apk | grep package: | sed 's@.* name=@@' | sed 's@ .*@@' | xargs | head -n1) -c android.intent.category.LAUNCHER 1" L="run" adb
 
 ####################################################################################
+# Submodule Targets
+####################################################################################
+
+# Run Challenges test suite (Go-based cross-platform challenges)
+challenge:
+	cd Challenges && go test ./... -race -count=1
+	@echo "-----------------------------------------------------------------------------------"
+
+####################################################################################
 # Utility Targets
 ####################################################################################
 
