@@ -31,13 +31,36 @@ package digital.vasic.yole.format
  */
 object FormatRegistry {
     /**
+     * Lazy holder for the formats list. Exposed so tests can check
+     * [isFormatsInitialized] without triggering initialization.
+     */
+    private val lazyFormats = lazy { createFormats() }
+
+    /**
      * All supported text formats in order of detection priority.
-     * 
+     *
      * Order matters: more specific formats should come before more general ones
      * to ensure proper detection. For example, Markdown should be checked before
      * plain text since plain text would match almost any content.
+     *
+     * Lazily initialized: the format list is only constructed on first access,
+     * reducing startup overhead when FormatRegistry is referenced but formats
+     * are not immediately needed.
      */
-    val formats: List<TextFormat> = listOf(
+    val formats: List<TextFormat> by lazyFormats
+
+    /**
+     * Whether the formats list has been initialized (for testing/monitoring).
+     * Returns true if the lazy [formats] property has been accessed at least once.
+     * Checking this property does NOT trigger initialization.
+     */
+    val isFormatsInitialized: Boolean get() = lazyFormats.isInitialized()
+
+    /**
+     * Creates the format list. Extracted to a private method so it can
+     * be referenced from the [lazyFormats] delegate.
+     */
+    private fun createFormats(): List<TextFormat> = listOf(
         // Data science formats (before Markdown since R Markdown is more specific)
         TextFormat(
             id = ID_RMARKDOWN,

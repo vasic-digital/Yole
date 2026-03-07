@@ -37,9 +37,9 @@ android {
             val keystoreFile = rootProject.file("docker/keys/yole.keystore")
             if (keystoreFile.exists()) {
                 storeFile = keystoreFile
-                storePassword = "yole123"
-                keyAlias = "yole"
-                keyPassword = "yole123"
+                storePassword = System.getenv("YOLE_KEYSTORE_PASSWORD") ?: "yole123"
+                keyAlias = System.getenv("YOLE_KEY_ALIAS") ?: "yole"
+                keyPassword = System.getenv("YOLE_KEY_PASSWORD") ?: "yole123"
             }
         }
     }

@@ -40,14 +40,35 @@ package digital.vasic.yole.format
 object StyleSheets {
 
     /**
+     * Cache for stylesheet lookups keyed by "formatId:lightMode".
+     *
+     * Since stylesheets are compile-time constants, this cache merely avoids
+     * repeated `when` dispatch. The cache is populated lazily on first access
+     * for each format+theme combination.
+     */
+    private val styleSheetCache = mutableMapOf<String, String>()
+
+    /**
+     * Whether the cache has been populated (for testing/monitoring).
+     */
+    val cacheSize: Int get() = styleSheetCache.size
+
+    /**
      * Get the appropriate stylesheet for a given format and theme.
+     *
+     * Results are cached after the first call for each format+theme combination.
+     * Subsequent calls with the same arguments return the cached reference
+     * without re-evaluating the `when` expression.
      *
      * @param formatId The format identifier (e.g., TextFormat.ID_MARKDOWN)
      * @param lightMode true for light theme, false for dark theme
      * @return Complete HTML div + style tags with appropriate CSS
      */
     fun getStyleSheet(formatId: String, lightMode: Boolean): String {
-        return when (formatId) {
+        val cacheKey = "$formatId:$lightMode"
+        styleSheetCache[cacheKey]?.let { return it }
+
+        val result = when (formatId) {
             TextFormat.ID_MARKDOWN -> MARKDOWN_STYLES
             TextFormat.ID_WIKITEXT -> WIKITEXT_STYLES
             TextFormat.ID_RESTRUCTUREDTEXT -> if (lightMode) RST_STYLES_LIGHT else RST_STYLES_DARK
@@ -56,6 +77,15 @@ object StyleSheets {
             TextFormat.ID_LATEX -> if (lightMode) LATEX_STYLES_LIGHT else LATEX_STYLES_DARK
             else -> "" // No predefined styles for this format
         }
+        styleSheetCache[cacheKey] = result
+        return result
+    }
+
+    /**
+     * Clear the stylesheet cache (primarily for testing).
+     */
+    fun clearCache() {
+        styleSheetCache.clear()
     }
 
     /**
