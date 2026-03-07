@@ -53,6 +53,10 @@ class SmbService(
     override val config: StorageConfig.SmbConfig
 ) : NetworkStorageService {
 
+    // Resilience: circuit breaker and connection limiter
+    private val circuitBreaker = CircuitBreaker(name = "smb", failureThreshold = 5)
+    private val connectionLimiter = ConnectionLimiter(name = "smb", maxConcurrent = 5)
+
     // Platform file I/O for reading/writing local files
     private val fileIO by lazy { PlatformFileIOFactory.create() }
 
@@ -137,16 +141,23 @@ class SmbService(
     }
 
     /** Sets the connection flag to mark this service as connected (no SMB negotiation). */
-    override suspend fun connect(): Result<Unit> = try {
-        stateMutex.withLock { _isConnected = true }
-        Result.success(Unit)
-    } catch (e: Exception) {
-        if (e is kotlin.coroutines.cancellation.CancellationException) throw e
-        Result.failure(
-            NetworkStorageException.ConnectionException.Failed(
-                message = "SMB connection failed",
-                cause = e
-            )
+    override suspend fun connect(): Result<Unit> {
+        return circuitBreaker.execute {
+            connectionLimiter.withConnection {
+                stateMutex.withLock { _isConnected = true }
+                Result.success(Unit)
+            }
+        }.fold(
+            onSuccess = { it },
+            onFailure = { e ->
+                if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+                Result.failure(
+                    NetworkStorageException.ConnectionException.Failed(
+                        message = "SMB connection failed",
+                        cause = e
+                    )
+                )
+            }
         )
     }
 
@@ -994,26 +1005,10 @@ class SmbService(
 
     /**
      * Normalize a file path for consistent lookup in the internal tree.
-     * Removes trailing slashes (unless root) and ensures leading slash.
+     * Delegates to [PathUtils.normalizePath] for shared traversal protection.
      */
     private fun normalizePath(path: String): String {
-        if (path.isBlank() || path == "/") return _rootPath
-
-        val basePath = if (_rootPath == "/") path else "$_rootPath/$path"
-        val segments = basePath.split("/").filter { it.isNotEmpty() }
-        val resolved = mutableListOf<String>()
-        for (segment in segments) {
-            when (segment) {
-                "." -> { /* skip current-dir marker */ }
-                ".." -> { if (resolved.isNotEmpty()) resolved.removeLast() }
-                else -> resolved.add(segment)
-            }
-        }
-        val result = "/" + resolved.joinToString("/")
-
-        // Ensure result stays within root boundary
-        val rootPrefix = if (_rootPath.isBlank()) "/" else _rootPath
-        return if (result.startsWith(rootPrefix) || rootPrefix == "/") result else _rootPath
+        return PathUtils.normalizePath(path, _rootPath)
     }
 
     /**

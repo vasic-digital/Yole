@@ -52,6 +52,10 @@ class SftpService(
     override val config: StorageConfig.SftpConfig
 ) : NetworkStorageService {
 
+    // Resilience: circuit breaker and connection limiter
+    private val circuitBreaker = CircuitBreaker(name = "sftp", failureThreshold = 5)
+    private val connectionLimiter = ConnectionLimiter(name = "sftp", maxConcurrent = 5)
+
     private var _isConnected = false
     private val stateMutex = Mutex()
     private var _rootPath = config.rootPath.ifBlank { "/" }
@@ -106,37 +110,42 @@ class SftpService(
 
     /** Establishes an SFTP connection by validating authentication and performing an SSH handshake. */
     override suspend fun connect(): Result<Unit> {
-        return try {
-            // Validate authentication configuration before attempting connection
-            val authValidation = validateAuthentication()
-            if (authValidation.isFailure) {
-                return authValidation
-            }
+        return circuitBreaker.execute {
+            connectionLimiter.withConnection {
+                // Validate authentication configuration before attempting connection
+                val authValidation = validateAuthentication()
+                if (authValidation.isFailure) {
+                    return@withConnection authValidation
+                }
 
-            // Test SFTP connection (SSH handshake, key exchange, authentication)
-            val connectionTest = testSftpConnection()
-            if (connectionTest.isSuccess) {
-                stateMutex.withLock { _isConnected = true }
-                // Initialize the virtual file system with default directory listing
-                initializeVirtualFileSystem()
-                Result.success(Unit)
-            } else {
+                // Test SFTP connection (SSH handshake, key exchange, authentication)
+                val connectionTest = testSftpConnection()
+                if (connectionTest.isSuccess) {
+                    stateMutex.withLock { _isConnected = true }
+                    // Initialize the virtual file system with default directory listing
+                    initializeVirtualFileSystem()
+                    Result.success(Unit)
+                } else {
+                    Result.failure(
+                        NetworkStorageException.ConnectionException.Failed(
+                            message = "SFTP connection failed",
+                            cause = connectionTest.exceptionOrNull()
+                        )
+                    )
+                }
+            }
+        }.fold(
+            onSuccess = { it },
+            onFailure = { e ->
+                if (e is kotlin.coroutines.cancellation.CancellationException) throw e
                 Result.failure(
                     NetworkStorageException.ConnectionException.Failed(
                         message = "SFTP connection failed",
-                        cause = connectionTest.exceptionOrNull()
+                        cause = e
                     )
                 )
             }
-        } catch (e: Exception) {
-            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
-            Result.failure(
-                NetworkStorageException.ConnectionException.Failed(
-                    message = "SFTP connection failed",
-                    cause = e
-                )
-            )
-        }
+        )
     }
 
     /**
@@ -1301,24 +1310,9 @@ class SftpService(
 
     /**
      * Normalize path for SFTP by prepending the root path.
+     * Delegates to [PathUtils.normalizePath] for shared traversal protection.
      */
     private fun normalizePath(path: String): String {
-        if (path.isBlank() || path == "/") return _rootPath
-
-        val basePath = if (_rootPath == "/") path else "$_rootPath/$path"
-        val segments = basePath.split("/").filter { it.isNotEmpty() }
-        val resolved = mutableListOf<String>()
-        for (segment in segments) {
-            when (segment) {
-                "." -> { /* skip current-dir marker */ }
-                ".." -> { if (resolved.isNotEmpty()) resolved.removeLast() }
-                else -> resolved.add(segment)
-            }
-        }
-        val result = "/" + resolved.joinToString("/")
-
-        // Ensure result stays within root boundary
-        val rootPrefix = if (_rootPath.isBlank()) "/" else _rootPath
-        return if (result.startsWith(rootPrefix) || rootPrefix == "/") result else _rootPath
+        return PathUtils.normalizePath(path, _rootPath)
     }
 }

@@ -402,6 +402,36 @@ object FormatRegistry {
          }
      }
 
+    /**
+     * LRU cache for parsed documents, keyed by format ID and content hash.
+     * Avoids re-parsing identical content for the same format.
+     */
+    val documentCache = DocumentCache()
+
+    /**
+     * Parse content using the appropriate parser, with caching.
+     *
+     * If a [ParsedDocument] with the same format and content hash is already
+     * cached, it is returned immediately. Otherwise, the content is parsed,
+     * cached, and returned.
+     *
+     * @param content The raw text content to parse
+     * @param format The [TextFormat] to use for parsing
+     * @param options Optional parsing options passed to the parser
+     * @return The parsed document (possibly from cache)
+     * @throws IllegalArgumentException if no parser exists for [format]
+     */
+    suspend fun parseWithCache(content: String, format: TextFormat, options: Map<String, Any> = emptyMap()): ParsedDocument {
+        val cacheKey = "${format.id}:${content.hashCode()}"
+        documentCache.get(cacheKey)?.let { return it }
+
+        val parser = ParserRegistry.getParser(format)
+            ?: throw IllegalArgumentException("No parser for format: ${format.id}")
+        val result = parser.parse(content, options)
+        documentCache.put(cacheKey, result)
+        return result
+    }
+
     // Format ID constants
     const val ID_UNKNOWN = "unknown"
     const val ID_PLAINTEXT = "plaintext"

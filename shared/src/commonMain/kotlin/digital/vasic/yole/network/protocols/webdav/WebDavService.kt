@@ -61,6 +61,10 @@ class WebDavService(
     private val _injectedHttpClient: HttpClient? = null
 ) : NetworkStorageService {
 
+    // Resilience: circuit breaker and connection limiter
+    private val circuitBreaker = CircuitBreaker(name = "webdav", failureThreshold = 5)
+    private val connectionLimiter = ConnectionLimiter(name = "webdav", maxConcurrent = 5)
+
     // Platform file I/O for reading/writing local files
     private val fileIO by lazy { PlatformFileIOFactory.create() }
 
@@ -107,27 +111,34 @@ class WebDavService(
     }
 
     /** Connects to the WebDAV server by sending an OPTIONS request to verify capability. */
-    override suspend fun connect(): Result<Unit> = try {
-        // Attempt an OPTIONS request to verify WebDAV capability
-        try {
-            val baseUrl = config.url.trimEnd('/')
-            val response = httpClient.request(baseUrl) {
-                method = HttpMethod("OPTIONS")
-                applyAuth()
+    override suspend fun connect(): Result<Unit> {
+        return circuitBreaker.execute {
+            connectionLimiter.withConnection {
+                // Attempt an OPTIONS request to verify WebDAV capability
+                try {
+                    val baseUrl = config.url.trimEnd('/')
+                    val response = httpClient.request(baseUrl) {
+                        method = HttpMethod("OPTIONS")
+                        applyAuth()
+                    }
+                    // Any response (even 4xx) means the server is reachable
+                    stateMutex.withLock { _isConnected = true }
+                } catch (_: Exception) {
+                    // Network error - still mark as connected for offline-capable usage
+                    stateMutex.withLock { _isConnected = true }
+                }
+                Result.success(Unit)
             }
-            // Any response (even 4xx) means the server is reachable
-            stateMutex.withLock { _isConnected = true }
-        } catch (_: Exception) {
-            // Network error - still mark as connected for offline-capable usage
-            stateMutex.withLock { _isConnected = true }
-        }
-        Result.success(Unit)
-    } catch (e: Exception) {
-            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
-        Result.failure(NetworkStorageException.ConnectionException.Failed(
-            message = "WebDAV connection failed",
-            cause = e
-        ))
+        }.fold(
+            onSuccess = { it },
+            onFailure = { e ->
+                if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+                Result.failure(NetworkStorageException.ConnectionException.Failed(
+                    message = "WebDAV connection failed",
+                    cause = e
+                ))
+            }
+        )
     }
 
     /** Disconnects by closing the underlying [HttpClient] if it was initialized. */

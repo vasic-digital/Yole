@@ -67,6 +67,10 @@ class GitService(
     private val _injectedHttpClient: HttpClient? = null
 ) : NetworkStorageService {
 
+    // Resilience: circuit breaker and connection limiter
+    private val circuitBreaker = CircuitBreaker(name = "git", failureThreshold = 5)
+    private val connectionLimiter = ConnectionLimiter(name = "git", maxConcurrent = 5)
+
     // Platform file I/O for reading/writing local files
     private val fileIO by lazy { PlatformFileIOFactory.create() }
 
@@ -121,38 +125,45 @@ class GitService(
     }
 
     /** Connects to the Git remote by fetching the Smart HTTP info/refs endpoint. */
-    override suspend fun connect(): Result<Unit> = try {
-        // Mark httpClient as initialized when accessed
-        httpClientInitialized = true
+    override suspend fun connect(): Result<Unit> {
+        return circuitBreaker.execute {
+            connectionLimiter.withConnection {
+                // Mark httpClient as initialized when accessed
+                httpClientInitialized = true
 
-        // Test Git connection using the Smart HTTP protocol info/refs endpoint
-        val repoUrl = config.repositoryUrl.ifBlank { "https://github.com" }
-        val infoRefsUrl = buildGitUrl(repoUrl, "info/refs?service=git-upload-pack")
+                // Test Git connection using the Smart HTTP protocol info/refs endpoint
+                val repoUrl = config.repositoryUrl.ifBlank { "https://github.com" }
+                val infoRefsUrl = buildGitUrl(repoUrl, "info/refs?service=git-upload-pack")
 
-        try {
-            val response = httpClient.get(infoRefsUrl) {
-                applyAuth()
+                try {
+                    val response = httpClient.get(infoRefsUrl) {
+                        applyAuth()
+                    }
+                    // Any response means we could reach the server
+                    stateMutex.withLock { _isConnected = true }
+
+                    // If we got a successful response, try to parse the refs
+                    if (response.status.isSuccess()) {
+                        val body = response.bodyAsText()
+                        parseGitRefs(body)
+                    }
+                } catch (_: Exception) {
+                    // Network error - in test environments, simulate success for validation
+                    stateMutex.withLock { _isConnected = true }
+                }
+
+                Result.success(Unit)
             }
-            // Any response means we could reach the server
-            stateMutex.withLock { _isConnected = true }
-
-            // If we got a successful response, try to parse the refs
-            if (response.status.isSuccess()) {
-                val body = response.bodyAsText()
-                parseGitRefs(body)
+        }.fold(
+            onSuccess = { it },
+            onFailure = { e ->
+                if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+                Result.failure(NetworkStorageException.ConnectionException.Failed(
+                    message = "Git connection failed",
+                    cause = e
+                ))
             }
-        } catch (_: Exception) {
-            // Network error - in test environments, simulate success for validation
-            stateMutex.withLock { _isConnected = true }
-        }
-
-        Result.success(Unit)
-    } catch (e: Exception) {
-            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
-        Result.failure(NetworkStorageException.ConnectionException.Failed(
-            message = "Git connection failed",
-            cause = e
-        ))
+        )
     }
 
     /** Disconnects from the Git remote and closes the underlying [HttpClient]. */
