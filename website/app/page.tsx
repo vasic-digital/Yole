@@ -29,7 +29,7 @@ const platforms = [
 ];
 
 const stats = [
-  { label: "Tests", value: "9,100+" },
+  { label: "Tests", value: "9,300+" },
   { label: "Text Formats", value: "17" },
   { label: "Protocols", value: "8" },
   { label: "Platforms", value: "4" },
@@ -43,7 +43,7 @@ const features = [
   { title: "Open Source", description: "Apache-2.0 licensed. Inspect the code, contribute, and build on top of it." },
   { title: "Syntax Highlighting", description: "Context-aware highlighting for every supported format with customizable themes." },
   { title: "Modular Architecture", description: "10 independently extracted KMP modules. Clean separation of concerns with facade bridges." },
-  { title: "Comprehensive Testing", description: "9,100+ tests across 190+ test files with 63% line coverage. Mock HTTP tests for all protocols." },
+  { title: "Comprehensive Testing", description: "9,300+ tests across 190+ test files with 63% line coverage. Mock HTTP tests for all protocols." },
   { title: "Video Course", description: "19 free video tutorials from beginner to expert. Learn Yole at your own pace." },
 ];
 

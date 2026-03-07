@@ -401,7 +401,7 @@ Supported Platforms:
 
 Quick Stats:
   - 17+ text formats
-  - 9,100+ tests
+  - 9,300+ tests
   - 8 cloud protocols
   - Apache-2.0 license`,
   },
