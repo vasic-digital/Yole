@@ -252,7 +252,7 @@ docker compose run --rm build ./docker/scripts/test-all.sh
 ```
 
 The CI pipeline reports:
-- Total test count (8,200+ methods across 177 test files)
+- Total test count (9,400+ methods across 195 test files)
 - Failure details with stack traces
 - Coverage report via Kover (63.0% line coverage)
 

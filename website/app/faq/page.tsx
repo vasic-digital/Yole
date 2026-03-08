@@ -116,7 +116,7 @@ const faqCategories = [
       },
       {
         q: "How do I run the tests?",
-        a: "Run './gradlew test' to execute all tests, or './gradlew :shared:desktopTest' for shared module tests. You can run specific test classes with '--tests' flag. For containerized testing, use 'docker compose run --rm build ./docker/scripts/test-all.sh'. Yole has 8,800+ tests across 170+ test files.",
+        a: "Run './gradlew test' to execute all tests, or './gradlew :shared:desktopTest' for shared module tests. You can run specific test classes with '--tests' flag. For containerized testing, use 'docker compose run --rm build ./docker/scripts/test-all.sh'. Yole has 9,400+ tests across 195 test files.",
       },
       {
         q: "What is the module structure?",

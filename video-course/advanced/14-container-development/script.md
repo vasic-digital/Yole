@@ -132,7 +132,7 @@ docker compose run --rm build bash -c \
 ### Timestamps
 - 0:00 Why tests must run in containers (from CLAUDE.md)
 - 2:00 The test runner script: `docker/scripts/test-all.sh`
-- 4:00 Running the full test suite: 8,800+ test methods across 170+ test files on all platforms
+- 4:00 Running the full test suite: 9,400+ test methods across 195 test files on all platforms
 - 6:00 Running specific test classes in containers
 - 8:00 Desktop tests: `./gradlew :shared:desktopTest` (works with JDK 11)
 - 10:00 AGP version mismatch: why androidApp tests use the container's Android SDK
