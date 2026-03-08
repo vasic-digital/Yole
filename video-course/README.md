@@ -135,7 +135,7 @@ Resilience patterns (CircuitBreaker, ConnectionLimiter, DocumentCache, RateLimit
 **Prerequisites:** Module 9, Module 6.
 
 ### Module 18: Contributing to Yole (7 videos)
-Complete contributor guide: repository structure (main + 10 KMP modules + 2 Go submodules), git workflow, development environment, running the full test suite (9,400+ test methods across 170+ files), adding formats, adding protocols, resilience patterns, security scanning, and code review standards.
+Complete contributor guide: repository structure (main + 10 KMP modules + 2 Go submodules), git workflow, development environment, running the full test suite (9,400+ test methods across 195 files), adding formats, adding protocols, resilience patterns, security scanning, and code review standards.
 
 **Prerequisites:** Modules 9-12 (or equivalent familiarity with the codebase).
 
