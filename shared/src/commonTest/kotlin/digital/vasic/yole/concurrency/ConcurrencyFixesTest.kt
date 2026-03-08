@@ -23,6 +23,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Comprehensive tests for concurrency safety fixes across protocol services.
@@ -838,7 +839,7 @@ class ConcurrencyFixesTest {
         val jobs = (1..50).map { i ->
             async {
                 val expiresAt = kotlinx.datetime.Clock.System.now()
-                    .plus(kotlin.time.Duration.Companion.seconds(i.toLong()))
+                    .plus(i.toLong().seconds)
                 manager.storeTokenExpiration(expiresAt)
             }
         }

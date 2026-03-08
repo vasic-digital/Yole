@@ -32,7 +32,7 @@ class SimpleCompilationTest {
 
     @Test
     fun `test format registry has all core formats`() {
-        val allFormats = FormatRegistry.allFormats()
+        val allFormats = FormatRegistry.formats
         assertTrue(allFormats.isNotEmpty(), "FormatRegistry should contain formats")
 
         val formatIds = allFormats.map { it.id }
