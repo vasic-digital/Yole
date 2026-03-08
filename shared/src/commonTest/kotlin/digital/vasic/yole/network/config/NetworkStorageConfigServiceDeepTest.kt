@@ -16,6 +16,8 @@ package digital.vasic.yole.network.config
 import digital.vasic.yole.network.common.*
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Deep test suite for NetworkStorageConfigService.
@@ -615,7 +617,7 @@ class NetworkStorageConfigServiceDeepTest {
     // ==================== STATE MANAGEMENT ====================
 
     @Test
-    fun `removeStorage on non-existent storage returns failure`() = runTest {
+    fun `removeStorage on non-existent storage returns failure`() = runBlocking {
         val service = createService()
         val result = service.removeStorage("non-existent-id")
         assertTrue(result.isFailure)
@@ -625,7 +627,7 @@ class NetworkStorageConfigServiceDeepTest {
     }
 
     @Test
-    fun `setActiveStorage on non-existent storage returns failure`() = runTest {
+    fun `setActiveStorage on non-existent storage returns failure`() = runBlocking {
         val service = createService()
         val result = service.setActiveStorage("non-existent-id")
         assertTrue(result.isFailure)
@@ -637,14 +639,14 @@ class NetworkStorageConfigServiceDeepTest {
     // ==================== refreshConnectionStatus ====================
 
     @Test
-    fun `refreshConnectionStatus succeeds with empty storages`() = runTest {
+    fun `refreshConnectionStatus succeeds with empty storages`() = runBlocking {
         val service = createService()
         val result = service.refreshConnectionStatus()
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `refreshConnectionStatus returns empty map when no storages configured`() = runTest {
+    fun `refreshConnectionStatus returns empty map when no storages configured`() = runBlocking {
         val service = createService()
         service.refreshConnectionStatus()
         assertTrue(service.connectionStatus.value.isEmpty())

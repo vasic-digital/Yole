@@ -12,6 +12,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Instant
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Desktop (JVM) tests for [FtpProtocolClient] and [FtpService].
@@ -152,7 +154,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpProtocolClient connect to localhost port 0 fails`() = runTest {
+    fun `FtpProtocolClient connect to localhost port 0 fails`() = runBlocking {
         val client = FtpProtocolClient()
         val result = client.connect("localhost", 0)
         assertTrue(result.isFailure, "Connecting to port 0 should fail")
@@ -160,7 +162,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpProtocolClient connect to invalid host fails`() = runTest {
+    fun `FtpProtocolClient connect to invalid host fails`() = runBlocking {
         val client = FtpProtocolClient()
         val result = client.connect("this.host.does.not.exist.invalid", 21)
         assertTrue(result.isFailure, "Connecting to invalid host should fail")
@@ -168,7 +170,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpProtocolClient disconnect when not connected succeeds`() = runTest {
+    fun `FtpProtocolClient disconnect when not connected succeeds`() = runBlocking {
         val client = FtpProtocolClient()
         val result = client.disconnect()
         assertTrue(result.isSuccess, "Disconnecting when not connected should succeed gracefully")
@@ -180,7 +182,7 @@ class FtpProtocolClientTest {
     // ================================================================
 
     @Test
-    fun `FtpService connect with blank host returns failure`() = runTest {
+    fun `FtpService connect with blank host returns failure`() = runBlocking {
         val config = createConfig(host = "")
         val service = FtpService(config)
         val result = service.connect()
@@ -191,7 +193,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService connect with blank host containing spaces returns failure`() = runTest {
+    fun `FtpService connect with blank host containing spaces returns failure`() = runBlocking {
         val config = createConfig(host = "   ")
         val service = FtpService(config)
         val result = service.connect()
@@ -199,7 +201,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService connect with port 0 returns failure`() = runTest {
+    fun `FtpService connect with port 0 returns failure`() = runBlocking {
         val config = createConfig(port = 0)
         val service = FtpService(config)
         val result = service.connect()
@@ -210,7 +212,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService connect with negative port returns failure`() = runTest {
+    fun `FtpService connect with negative port returns failure`() = runBlocking {
         val config = createConfig(port = -1)
         val service = FtpService(config)
         val result = service.connect()
@@ -218,7 +220,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService connect with port exceeding 65535 returns failure`() = runTest {
+    fun `FtpService connect with port exceeding 65535 returns failure`() = runBlocking {
         val config = createConfig(port = 99999)
         val service = FtpService(config)
         val result = service.connect()
@@ -226,7 +228,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService testConnection with blank host returns failure`() = runTest {
+    fun `FtpService testConnection with blank host returns failure`() = runBlocking {
         val config = createConfig(host = "")
         val service = FtpService(config)
         val result = service.testConnection()
@@ -234,7 +236,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService testConnection with port 0 returns failure`() = runTest {
+    fun `FtpService testConnection with port 0 returns failure`() = runBlocking {
         val config = createConfig(port = 0)
         val service = FtpService(config)
         val result = service.testConnection()
@@ -242,7 +244,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService testConnection with negative port returns failure`() = runTest {
+    fun `FtpService testConnection with negative port returns failure`() = runBlocking {
         val config = createConfig(port = -1)
         val service = FtpService(config)
         val result = service.testConnection()
@@ -254,7 +256,7 @@ class FtpProtocolClientTest {
     // ================================================================
 
     @Test
-    fun `FtpService getStorageInfo returns correct details`() = runTest {
+    fun `FtpService getStorageInfo returns correct details`() = runBlocking {
         val config = createConfig(name = "my-ftp", host = "ftp.example.com", port = 2121, rootPath = "/data")
         val service = FtpService(config)
         val info = service.getStorageInfo()
@@ -349,7 +351,7 @@ class FtpProtocolClientTest {
     // ================================================================
 
     @Test
-    fun `FtpService listFiles when not connected emits failure`() = runTest {
+    fun `FtpService listFiles when not connected emits failure`() = runBlocking {
         val service = FtpService(createConfig())
         val result = service.listFiles("/").first()
         assertTrue(result.isFailure)
@@ -359,7 +361,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService downloadFile when not connected emits failed operation`() = runTest {
+    fun `FtpService downloadFile when not connected emits failed operation`() = runBlocking {
         val service = FtpService(createConfig())
         val operation = service.downloadFile("/remote/file.txt", "/local/file.txt").first()
         assertEquals(NetworkOperation.Status.FAILED, operation.status)
@@ -367,7 +369,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService uploadFile when not connected emits failed operation`() = runTest {
+    fun `FtpService uploadFile when not connected emits failed operation`() = runBlocking {
         val service = FtpService(createConfig())
         val operation = service.uploadFile("/local/file.txt", "/remote/file.txt").first()
         assertEquals(NetworkOperation.Status.FAILED, operation.status)
@@ -375,7 +377,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService deleteFile when not connected returns failure`() = runTest {
+    fun `FtpService deleteFile when not connected returns failure`() = runBlocking {
         val service = FtpService(createConfig())
         val result = service.deleteFile("/remote/file.txt")
         assertTrue(result.isFailure)
@@ -385,7 +387,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService createFolder when not connected returns failure`() = runTest {
+    fun `FtpService createFolder when not connected returns failure`() = runBlocking {
         val service = FtpService(createConfig())
         val result = service.createFolder("/remote/newdir")
         assertTrue(result.isFailure)
@@ -395,7 +397,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService renameFile when not connected returns failure`() = runTest {
+    fun `FtpService renameFile when not connected returns failure`() = runBlocking {
         val service = FtpService(createConfig())
         val result = service.renameFile("/remote/old.txt", "new.txt")
         assertTrue(result.isFailure)
@@ -405,7 +407,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService moveFile when not connected returns failure`() = runTest {
+    fun `FtpService moveFile when not connected returns failure`() = runBlocking {
         val service = FtpService(createConfig())
         val result = service.moveFile("/remote/src.txt", "/remote/dest.txt")
         assertTrue(result.isFailure)
@@ -415,7 +417,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService copyFile always fails - not supported by FTP`() = runTest {
+    fun `FtpService copyFile always fails - not supported by FTP`() = runBlocking {
         val service = FtpService(createConfig())
         val result = service.copyFile("/remote/src.txt", "/remote/dest.txt")
         assertTrue(result.isFailure)
@@ -425,7 +427,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService getFileInfo when not connected returns failure`() = runTest {
+    fun `FtpService getFileInfo when not connected returns failure`() = runBlocking {
         val service = FtpService(createConfig())
         val result = service.getFileInfo("/remote/file.txt")
         assertTrue(result.isFailure)
@@ -435,14 +437,14 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService searchFiles returns failure - not supported by FTP`() = runTest {
+    fun `FtpService searchFiles returns failure - not supported by FTP`() = runBlocking {
         val service = FtpService(createConfig())
         val result = service.searchFiles("query", "/").first()
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `FtpService exists when not connected returns false`() = runTest {
+    fun `FtpService exists when not connected returns false`() = runBlocking {
         val service = FtpService(createConfig())
         val result = service.exists("/remote/file.txt")
         assertTrue(result.isSuccess)
@@ -450,7 +452,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService getQuotaInfo returns zero quota - not supported by FTP`() = runTest {
+    fun `FtpService getQuotaInfo returns zero quota - not supported by FTP`() = runBlocking {
         val service = FtpService(createConfig())
         val result = service.getQuotaInfo()
         assertTrue(result.isSuccess)
@@ -466,7 +468,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService disconnect when not connected succeeds`() = runTest {
+    fun `FtpService disconnect when not connected succeeds`() = runBlocking {
         val service = FtpService(createConfig())
         val result = service.disconnect()
         assertTrue(result.isSuccess)
@@ -478,7 +480,7 @@ class FtpProtocolClientTest {
     // ================================================================
 
     @Test
-    fun `FtpService addToCache and getCacheEntries`() = runTest {
+    fun `FtpService addToCache and getCacheEntries`() = runBlocking {
         val service = FtpService(createConfig())
         val addResult = service.addToCache("/docs/file.txt", priority = 5)
         assertTrue(addResult.isSuccess)
@@ -490,7 +492,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService removeFromCache removes entry`() = runTest {
+    fun `FtpService removeFromCache removes entry`() = runBlocking {
         val service = FtpService(createConfig())
         service.addToCache("/docs/file.txt", priority = 1)
         service.removeFromCache("/docs/file.txt")
@@ -499,7 +501,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService clearCache empties all entries`() = runTest {
+    fun `FtpService clearCache empties all entries`() = runBlocking {
         val service = FtpService(createConfig())
         service.addToCache("/a.txt", priority = 1)
         service.addToCache("/b.txt", priority = 2)
@@ -514,7 +516,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService getCacheEntries with null path returns all entries`() = runTest {
+    fun `FtpService getCacheEntries with null path returns all entries`() = runBlocking {
         val service = FtpService(createConfig())
         service.addToCache("/alpha/one.txt", priority = 1)
         service.addToCache("/beta/two.txt", priority = 2)
@@ -523,7 +525,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService getCacheEntries with path prefix filters correctly`() = runTest {
+    fun `FtpService getCacheEntries with path prefix filters correctly`() = runBlocking {
         val service = FtpService(createConfig())
         service.addToCache("/alpha/one.txt", priority = 1)
         service.addToCache("/beta/two.txt", priority = 2)
@@ -537,7 +539,7 @@ class FtpProtocolClientTest {
     // ================================================================
 
     @Test
-    fun `FtpService syncFile when not connected still completes sync operation`() = runTest {
+    fun `FtpService syncFile when not connected still completes sync operation`() = runBlocking {
         val service = FtpService(createConfig())
         val operation = service.syncFile("/remote/file.txt", forceSync = false).first()
         assertEquals(NetworkOperation.Status.COMPLETED, operation.status)
@@ -546,7 +548,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService syncAll when not connected still completes`() = runTest {
+    fun `FtpService syncAll when not connected still completes`() = runBlocking {
         val service = FtpService(createConfig())
         val operation = service.syncAll(forceSync = false).first()
         assertEquals(NetworkOperation.Status.COMPLETED, operation.status)
@@ -554,14 +556,14 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService getSyncStatus initially empty`() = runTest {
+    fun `FtpService getSyncStatus initially empty`() = runBlocking {
         val service = FtpService(createConfig())
         val statuses = service.getSyncStatus(null).first()
         assertTrue(statuses.isEmpty())
     }
 
     @Test
-    fun `FtpService getSyncStatus after syncFile has entry`() = runTest {
+    fun `FtpService getSyncStatus after syncFile has entry`() = runBlocking {
         val service = FtpService(createConfig())
         service.syncFile("/remote/test.txt", forceSync = false).first()
         val statuses = service.getSyncStatus(null).first()
@@ -573,28 +575,28 @@ class FtpProtocolClientTest {
     // ================================================================
 
     @Test
-    fun `FtpService getActiveOperations initially empty`() = runTest {
+    fun `FtpService getActiveOperations initially empty`() = runBlocking {
         val service = FtpService(createConfig())
         val ops = service.getActiveOperations().first()
         assertTrue(ops.isEmpty())
     }
 
     @Test
-    fun `FtpService cancelOperation for nonexistent operation succeeds`() = runTest {
+    fun `FtpService cancelOperation for nonexistent operation succeeds`() = runBlocking {
         val service = FtpService(createConfig())
         val result = service.cancelOperation(999L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `FtpService pauseOperation for nonexistent operation succeeds`() = runTest {
+    fun `FtpService pauseOperation for nonexistent operation succeeds`() = runBlocking {
         val service = FtpService(createConfig())
         val result = service.pauseOperation(999L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `FtpService resumeOperation for nonexistent operation succeeds`() = runTest {
+    fun `FtpService resumeOperation for nonexistent operation succeeds`() = runBlocking {
         val service = FtpService(createConfig())
         val result = service.resumeOperation(999L)
         assertTrue(result.isSuccess)
@@ -605,7 +607,7 @@ class FtpProtocolClientTest {
     // ================================================================
 
     @Test
-    fun `FtpService getRecentChanges when not connected emits empty list`() = runTest {
+    fun `FtpService getRecentChanges when not connected emits empty list`() = runBlocking {
         val service = FtpService(createConfig())
         val recent = service.getRecentChanges(
             since = Instant.fromEpochMilliseconds(0L),
@@ -619,7 +621,7 @@ class FtpProtocolClientTest {
     // ================================================================
 
     @Test
-    fun `FtpService getStorageInfo with custom rootPath reflects in location`() = runTest {
+    fun `FtpService getStorageInfo with custom rootPath reflects in location`() = runBlocking {
         val config = createConfig(rootPath = "/uploads/docs")
         val service = FtpService(config)
         val info = service.getStorageInfo()
@@ -627,7 +629,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpService getStorageInfo with blank rootPath defaults to slash`() = runTest {
+    fun `FtpService getStorageInfo with blank rootPath defaults to slash`() = runBlocking {
         val config = createConfig(rootPath = "")
         val service = FtpService(config)
         val info = service.getStorageInfo()
@@ -690,7 +692,7 @@ class FtpProtocolClientTest {
     // ================================================================
 
     @Test
-    fun `FtpService copyFile even when connected would fail`() = runTest {
+    fun `FtpService copyFile even when connected would fail`() = runBlocking {
         // copyFile is not supported by FTP regardless of connection state
         val service = FtpService(createConfig())
         val result = service.copyFile("/a", "/b")
@@ -718,7 +720,7 @@ class FtpProtocolClientTest {
     // ================================================================
 
     @Test
-    fun `FtpProtocolClient double disconnect is safe`() = runTest {
+    fun `FtpProtocolClient double disconnect is safe`() = runBlocking {
         val client = FtpProtocolClient()
         val r1 = client.disconnect()
         assertTrue(r1.isSuccess)
@@ -728,7 +730,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpProtocolClient operations fail when not connected`() = runTest {
+    fun `FtpProtocolClient operations fail when not connected`() = runBlocking {
         val client = FtpProtocolClient()
 
         val loginResult = client.login("user", "pass")
@@ -775,7 +777,7 @@ class FtpProtocolClientTest {
     }
 
     @Test
-    fun `FtpProtocolClient still not connected after failed connect attempt`() = runTest {
+    fun `FtpProtocolClient still not connected after failed connect attempt`() = runBlocking {
         val client = FtpProtocolClient()
         client.connect("localhost", 0)
         assertFalse(client.isConnected)

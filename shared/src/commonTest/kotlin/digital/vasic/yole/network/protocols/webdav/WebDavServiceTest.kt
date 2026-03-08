@@ -9,6 +9,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Comprehensive test suite for WebDavService network protocol implementation.
@@ -42,7 +44,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testConnectSuccess() = runTest {
+    fun testConnectSuccess() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val result = webDavService.connect()
         
@@ -50,7 +52,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testDisconnectSuccess() = runTest {
+    fun testDisconnectSuccess() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         webDavService.connect()
         val result = webDavService.disconnect()
@@ -59,7 +61,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testStorageInfo() = runTest {
+    fun testStorageInfo() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val storageInfo = webDavService.getStorageInfo()
         
@@ -70,7 +72,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testListFilesWhenNotConnected() = runTest {
+    fun testListFilesWhenNotConnected() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val result = webDavService.listFiles("/").first()
         
@@ -79,7 +81,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testDownloadFileWhenNotConnected() = runTest {
+    fun testDownloadFileWhenNotConnected() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val operations = webDavService.downloadFile("/test.md", "/tmp/test.md")
         
@@ -90,7 +92,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testUploadFileWhenNotConnected() = runTest {
+    fun testUploadFileWhenNotConnected() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val operations = webDavService.uploadFile("/tmp/test.md", "/test.md")
         
@@ -101,7 +103,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testDeleteFileWhenNotConnected() = runTest {
+    fun testDeleteFileWhenNotConnected() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val result = webDavService.deleteFile("/test.md")
         
@@ -109,7 +111,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testCreateFolderWhenNotConnected() = runTest {
+    fun testCreateFolderWhenNotConnected() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val result = webDavService.createFolder("/test-folder")
         
@@ -120,7 +122,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testRenameFileWhenNotConnected() = runTest {
+    fun testRenameFileWhenNotConnected() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val result = webDavService.renameFile("/test.md", "renamed.md")
         
@@ -128,7 +130,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testMoveFileWhenNotConnected() = runTest {
+    fun testMoveFileWhenNotConnected() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val result = webDavService.moveFile("/test.md", "/moved/test.md")
         
@@ -139,7 +141,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testCopyFileWhenNotConnected() = runTest {
+    fun testCopyFileWhenNotConnected() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val result = webDavService.copyFile("/test.md", "/copy/test.md")
         
@@ -147,7 +149,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testGetFileInfoWhenNotConnected() = runTest {
+    fun testGetFileInfoWhenNotConnected() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val result = webDavService.getFileInfo("/test.md")
         
@@ -158,7 +160,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testGetQuotaInfoWhenNotConnected() = runTest {
+    fun testGetQuotaInfoWhenNotConnected() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val result = webDavService.getQuotaInfo()
         
@@ -173,7 +175,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testExistsWhenNotConnected() = runTest {
+    fun testExistsWhenNotConnected() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val result = webDavService.exists("/test.md")
         
@@ -219,7 +221,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testSearchFilesWhenNotConnected() = runTest {
+    fun testSearchFilesWhenNotConnected() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val result = webDavService.searchFiles("test", "/", false).first()
         
@@ -228,7 +230,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testGetRecentChangesWhenNotConnected() = runTest {
+    fun testGetRecentChangesWhenNotConnected() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val since = Clock.System.now()
         val changes = webDavService.getRecentChanges(since, "/").first()
@@ -237,7 +239,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testSyncFileWhenNotConnected() = runTest {
+    fun testSyncFileWhenNotConnected() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val operations = webDavService.syncFile("/test.md", false)
         
@@ -254,7 +256,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testSyncAllWhenNotConnected() = runTest {
+    fun testSyncAllWhenNotConnected() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val operations = webDavService.syncAll(false)
 
@@ -270,7 +272,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testActiveOperationsFlow() = runTest {
+    fun testActiveOperationsFlow() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val activeOps = webDavService.getActiveOperations().first()
         
@@ -278,7 +280,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testCacheOperations() = runTest {
+    fun testCacheOperations() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         
         val cacheEntries = webDavService.getCacheEntries("/").first()
@@ -295,7 +297,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testSyncStatusFlow() = runTest {
+    fun testSyncStatusFlow() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val syncStatus = webDavService.getSyncStatus("/").first()
         
@@ -303,7 +305,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testTestConnection() = runTest {
+    fun testTestConnection() = runBlocking {
         webDavService = WebDavService(webDavConfig)
         val result = webDavService.testConnection()
         
@@ -312,7 +314,7 @@ class WebDavServiceTest {
     }
     
     @Test
-    fun testDifferentWebDavServers() = runTest {
+    fun testDifferentWebDavServers() = runBlocking {
         // Test Nextcloud URL
         val nextcloudConfig = webDavConfig.copy(url = "https://nextcloud.example.com/remote.php/dav/files/username/")
         val nextcloudService = WebDavService(nextcloudConfig)

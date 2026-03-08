@@ -25,6 +25,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Comprehensive coverage tests targeting uncovered branches in:
@@ -844,7 +846,7 @@ class NetworkServiceCoverageTest {
     // ==================== ConfigService refreshConnectionStatus ====================
 
     @Test
-    fun testRefreshConnectionStatusEmptyResult() = runTest {
+    fun testRefreshConnectionStatusEmptyResult() = runBlocking {
         val service = NetworkStorageConfigService()
         val result = service.refreshConnectionStatus()
         assertTrue(result.isSuccess)
@@ -852,7 +854,7 @@ class NetworkServiceCoverageTest {
     }
 
     @Test
-    fun testRefreshConnectionStatusTwice() = runTest {
+    fun testRefreshConnectionStatusTwice() = runBlocking {
         val service = NetworkStorageConfigService()
         val result1 = service.refreshConnectionStatus()
         assertTrue(result1.isSuccess)
@@ -864,7 +866,7 @@ class NetworkServiceCoverageTest {
     // ==================== ConfigService removeStorage and setActiveStorage on empty state ====================
 
     @Test
-    fun testRemoveStorageNonExistentReturnsGenericError() = runTest {
+    fun testRemoveStorageNonExistentReturnsGenericError() = runBlocking {
         val service = NetworkStorageConfigService()
         val result = service.removeStorage("does-not-exist")
         assertTrue(result.isFailure)
@@ -875,7 +877,7 @@ class NetworkServiceCoverageTest {
     }
 
     @Test
-    fun testSetActiveStorageNonExistentReturnsGenericError() = runTest {
+    fun testSetActiveStorageNonExistentReturnsGenericError() = runBlocking {
         val service = NetworkStorageConfigService()
         val result = service.setActiveStorage("does-not-exist")
         assertTrue(result.isFailure)

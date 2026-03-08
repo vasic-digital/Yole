@@ -9,6 +9,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.hours
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Enhanced comprehensive test suite for GoogleDriveService
@@ -30,7 +32,7 @@ class GoogleDriveServiceEnhancedTest {
     private lateinit var mockSecureStorage: SecureStorage
     
     @BeforeTest
-    fun setup() = runTest {
+    fun setup() = runBlocking {
         mockSecureStorage = MockSecureStorage()
         googleDriveService = GoogleDriveService(googleDriveConfig)
         
@@ -57,7 +59,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedStorageInfo() = runTest {
+    fun testEnhancedStorageInfo() = runBlocking {
         val storageInfo = googleDriveService.getStorageInfo()
         
         assertEquals("googledrive_test-gdrive-enhanced", storageInfo.id)
@@ -70,7 +72,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedConnectWithoutTokens() = runTest {
+    fun testEnhancedConnectWithoutTokens() = runBlocking {
         // Test with cleared tokens
         try {
             val authTokenManager = AuthTokenManager("googledrive", mockSecureStorage)
@@ -89,7 +91,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedDisconnect() = runTest {
+    fun testEnhancedDisconnect() = runBlocking {
         // First connect
         googleDriveService.connect()
         
@@ -102,7 +104,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedTestConnection() = runTest {
+    fun testEnhancedTestConnection() = runBlocking {
         val result = googleDriveService.testConnection()
         
         // Test connection should complete (may succeed or fail depending on network)
@@ -110,7 +112,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedListFilesWhenNotConnected() = runTest {
+    fun testEnhancedListFilesWhenNotConnected() = runBlocking {
         val result = googleDriveService.listFiles("/").first()
         
         assertTrue(result.isFailure, "List files should fail when not connected")
@@ -120,7 +122,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedDownloadFileWhenNotConnected() = runTest {
+    fun testEnhancedDownloadFileWhenNotConnected() = runBlocking {
         val operations = googleDriveService.downloadFile("/test.md", "/tmp/test.md")
         
         val firstOperation = operations.first()
@@ -130,7 +132,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedUploadFileWhenNotConnected() = runTest {
+    fun testEnhancedUploadFileWhenNotConnected() = runBlocking {
         val operations = googleDriveService.uploadFile("/tmp/test.md", "/test.md")
         
         val firstOperation = operations.first()
@@ -140,7 +142,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedFileOperationsWhenNotConnected() = runTest {
+    fun testEnhancedFileOperationsWhenNotConnected() = runBlocking {
         // Test delete file
         val deleteResult = googleDriveService.deleteFile("/test.md")
         assertTrue(deleteResult.isSuccess, "Delete should succeed (mock implementation)")
@@ -180,7 +182,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedQuotaInfo() = runTest {
+    fun testEnhancedQuotaInfo() = runBlocking {
         val result = googleDriveService.getQuotaInfo()
 
         // Quota info requires API access and will fail without valid token
@@ -188,7 +190,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedExists() = runTest {
+    fun testEnhancedExists() = runBlocking {
         val result = googleDriveService.exists("/test.md")
 
         assertTrue(result.isSuccess, "Exists check should succeed")
@@ -196,7 +198,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedPathOperations() = runTest {
+    fun testEnhancedPathOperations() = runBlocking {
         // Test getParentPath
         assertEquals("/", googleDriveService.getParentPath("/test.md"))
         assertEquals("/folder", googleDriveService.getParentPath("/folder/test.md"))
@@ -215,14 +217,14 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedActiveOperations() = runTest {
+    fun testEnhancedActiveOperations() = runBlocking {
         val activeOps = googleDriveService.getActiveOperations().first()
         
         assertTrue(activeOps.isEmpty(), "Active operations should be empty initially")
     }
     
     @Test
-    fun testEnhancedCacheOperations() = runTest {
+    fun testEnhancedCacheOperations() = runBlocking {
         // Test get cache entries
         val cacheEntries = googleDriveService.getCacheEntries("/").first()
         assertTrue(cacheEntries.isEmpty(), "Cache entries should be empty")
@@ -241,14 +243,14 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedSyncStatus() = runTest {
+    fun testEnhancedSyncStatus() = runBlocking {
         val syncStatus = googleDriveService.getSyncStatus("/").first()
         
         assertTrue(syncStatus.isEmpty(), "Sync status should be empty initially")
     }
     
     @Test
-    fun testEnhancedSyncOperations() = runTest {
+    fun testEnhancedSyncOperations() = runBlocking {
         // Test sync file - syncFile emits progress and completion even when not connected
         val syncFileOperations = googleDriveService.syncFile("/test.md", false)
         val syncFileOps = mutableListOf<NetworkOperation>()
@@ -271,7 +273,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedSearchFiles() = runTest {
+    fun testEnhancedSearchFiles() = runBlocking {
         val result = googleDriveService.searchFiles("test", "/", false).first()
         
         assertTrue(result.isSuccess, "Search should succeed")
@@ -281,7 +283,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedRecentChanges() = runTest {
+    fun testEnhancedRecentChanges() = runBlocking {
         val since = Clock.System.now()
         val changes = googleDriveService.getRecentChanges(since, "/").first()
         
@@ -289,7 +291,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedOperationManagement() = runTest {
+    fun testEnhancedOperationManagement() = runBlocking {
         // Test cancel operation
         val cancelResult = googleDriveService.cancelOperation(12345L)
         assertTrue(cancelResult.isSuccess, "Cancel operation should succeed")
@@ -331,7 +333,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedTokenRefreshScenario() = runTest {
+    fun testEnhancedTokenRefreshScenario() = runBlocking {
         // Test with expired access token but valid refresh token
         try {
             val authTokenManager = AuthTokenManager("googledrive", mockSecureStorage)
@@ -370,7 +372,7 @@ class GoogleDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedQuotaCalculation() = runTest {
+    fun testEnhancedQuotaCalculation() = runBlocking {
         val result = googleDriveService.getQuotaInfo()
 
         // Quota info requires API access; verify it completes

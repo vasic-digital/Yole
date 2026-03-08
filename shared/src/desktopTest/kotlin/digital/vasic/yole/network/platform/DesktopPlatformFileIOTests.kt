@@ -17,6 +17,8 @@ import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import java.io.File
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Desktop-specific tests for PlatformFileIO (DesktopFileIO).
@@ -47,7 +49,7 @@ class DesktopPlatformFileIOTests {
     // ==================== File Read Tests ====================
 
     @Test
-    fun `readFileBytes returns content of existing file`() = runTest {
+    fun `readFileBytes returns content of existing file`() = runBlocking {
         val file = tempFolder.newFile("read_test.txt")
         val content = "Hello, Desktop FileIO!"
         file.writeText(content)
@@ -58,14 +60,14 @@ class DesktopPlatformFileIOTests {
     }
 
     @Test
-    fun `readFileBytes returns failure for non-existent file`() = runTest {
+    fun `readFileBytes returns failure for non-existent file`() = runBlocking {
         val path = File(tempFolder.root, "nonexistent_file.txt").absolutePath
         val result = fileIO.readFileBytes(path)
         assertTrue(result.isFailure, "Reading non-existent file should fail")
     }
 
     @Test
-    fun `readFileBytes handles empty file`() = runTest {
+    fun `readFileBytes handles empty file`() = runBlocking {
         val file = tempFolder.newFile("empty_file.txt")
         val result = fileIO.readFileBytes(file.absolutePath)
         assertTrue(result.isSuccess, "Reading empty file should succeed")
@@ -73,7 +75,7 @@ class DesktopPlatformFileIOTests {
     }
 
     @Test
-    fun `readFileBytes handles binary content`() = runTest {
+    fun `readFileBytes handles binary content`() = runBlocking {
         val file = tempFolder.newFile("binary_file.bin")
         val binaryContent = ByteArray(256) { it.toByte() }
         file.writeBytes(binaryContent)
@@ -84,7 +86,7 @@ class DesktopPlatformFileIOTests {
     }
 
     @Test
-    fun `readFileBytes handles UTF-8 content`() = runTest {
+    fun `readFileBytes handles UTF-8 content`() = runBlocking {
         val file = tempFolder.newFile("utf8_file.txt")
         val utf8Content = "English \u4e2d\u6587 \u0420\u0443\u0441\u0441\u043a\u0438\u0439 \u65e5\u672c\u8a9e"
         file.writeText(utf8Content, Charsets.UTF_8)
@@ -97,7 +99,7 @@ class DesktopPlatformFileIOTests {
     // ==================== File Write Tests ====================
 
     @Test
-    fun `writeFileBytes creates new file with content`() = runTest {
+    fun `writeFileBytes creates new file with content`() = runBlocking {
         val path = File(tempFolder.root, "write_test.txt").absolutePath
         val content = "Written by PlatformFileIO"
 
@@ -107,7 +109,7 @@ class DesktopPlatformFileIOTests {
     }
 
     @Test
-    fun `writeFileBytes overwrites existing file`() = runTest {
+    fun `writeFileBytes overwrites existing file`() = runBlocking {
         val file = tempFolder.newFile("overwrite_test.txt")
         file.writeText("original content")
 
@@ -118,7 +120,7 @@ class DesktopPlatformFileIOTests {
     }
 
     @Test
-    fun `writeFileBytes creates parent directories`() = runTest {
+    fun `writeFileBytes creates parent directories`() = runBlocking {
         val path = File(tempFolder.root, "deep/nested/dir/file.txt").absolutePath
         val content = "deep nested content"
 
@@ -128,7 +130,7 @@ class DesktopPlatformFileIOTests {
     }
 
     @Test
-    fun `writeFileBytes handles empty byte array`() = runTest {
+    fun `writeFileBytes handles empty byte array`() = runBlocking {
         val path = File(tempFolder.root, "empty_write.txt").absolutePath
         val result = fileIO.writeFileBytes(path, ByteArray(0))
         assertTrue(result.isSuccess)
@@ -136,7 +138,7 @@ class DesktopPlatformFileIOTests {
     }
 
     @Test
-    fun `writeFileBytes handles large content`() = runTest {
+    fun `writeFileBytes handles large content`() = runBlocking {
         val path = File(tempFolder.root, "large_write.bin").absolutePath
         val largeContent = ByteArray(1024 * 100) { (it % 256).toByte() } // 100KB
 
@@ -146,7 +148,7 @@ class DesktopPlatformFileIOTests {
     }
 
     @Test
-    fun `writeFileBytes binary roundtrip`() = runTest {
+    fun `writeFileBytes binary roundtrip`() = runBlocking {
         val path = File(tempFolder.root, "binary_roundtrip.bin").absolutePath
         val data = ByteArray(512) { (it * 7 % 256).toByte() }
 
@@ -159,25 +161,25 @@ class DesktopPlatformFileIOTests {
     // ==================== File Existence Tests ====================
 
     @Test
-    fun `fileExists returns true for existing file`() = runTest {
+    fun `fileExists returns true for existing file`() = runBlocking {
         val file = tempFolder.newFile("exists_test.txt")
         assertTrue(fileIO.fileExists(file.absolutePath))
     }
 
     @Test
-    fun `fileExists returns false for non-existent file`() = runTest {
+    fun `fileExists returns false for non-existent file`() = runBlocking {
         val path = File(tempFolder.root, "does_not_exist.txt").absolutePath
         assertFalse(fileIO.fileExists(path))
     }
 
     @Test
-    fun `fileExists returns true for existing directory`() = runTest {
+    fun `fileExists returns true for existing directory`() = runBlocking {
         val dir = tempFolder.newFolder("exists_dir")
         assertTrue(fileIO.fileExists(dir.absolutePath))
     }
 
     @Test
-    fun `fileExists returns false for empty path`() = runTest {
+    fun `fileExists returns false for empty path`() = runBlocking {
         // Empty path should not crash
         val exists = fileIO.fileExists("")
         // Just verify it returns without exception
@@ -187,7 +189,7 @@ class DesktopPlatformFileIOTests {
     // ==================== File Size Tests ====================
 
     @Test
-    fun `fileSize returns correct size for existing file`() = runTest {
+    fun `fileSize returns correct size for existing file`() = runBlocking {
         val file = tempFolder.newFile("size_test.txt")
         val content = "12345678901234567890" // 20 bytes
         file.writeText(content)
@@ -197,21 +199,21 @@ class DesktopPlatformFileIOTests {
     }
 
     @Test
-    fun `fileSize returns 0 for empty file`() = runTest {
+    fun `fileSize returns 0 for empty file`() = runBlocking {
         val file = tempFolder.newFile("empty_size_test.txt")
         val size = fileIO.fileSize(file.absolutePath)
         assertEquals(0L, size)
     }
 
     @Test
-    fun `fileSize returns -1 for non-existent file`() = runTest {
+    fun `fileSize returns -1 for non-existent file`() = runBlocking {
         val path = File(tempFolder.root, "no_such_file.txt").absolutePath
         val size = fileIO.fileSize(path)
         assertEquals(-1L, size)
     }
 
     @Test
-    fun `fileSize returns correct size for binary file`() = runTest {
+    fun `fileSize returns correct size for binary file`() = runBlocking {
         val file = tempFolder.newFile("binary_size.bin")
         val data = ByteArray(1024)
         file.writeBytes(data)
@@ -223,7 +225,7 @@ class DesktopPlatformFileIOTests {
     // ==================== Path Resolution Tests ====================
 
     @Test
-    fun `ensureParentDirectories creates missing directories`() = runTest {
+    fun `ensureParentDirectories creates missing directories`() = runBlocking {
         val path = File(tempFolder.root, "a/b/c/file.txt").absolutePath
         val result = fileIO.ensureParentDirectories(path)
         assertTrue(result.isSuccess, "Ensuring parent directories should succeed")
@@ -234,7 +236,7 @@ class DesktopPlatformFileIOTests {
     }
 
     @Test
-    fun `ensureParentDirectories succeeds when directories already exist`() = runTest {
+    fun `ensureParentDirectories succeeds when directories already exist`() = runBlocking {
         val dir = tempFolder.newFolder("existing_parent")
         val path = File(dir, "file.txt").absolutePath
 
@@ -243,7 +245,7 @@ class DesktopPlatformFileIOTests {
     }
 
     @Test
-    fun `ensureParentDirectories handles deeply nested path`() = runTest {
+    fun `ensureParentDirectories handles deeply nested path`() = runBlocking {
         val path = File(tempFolder.root, "l1/l2/l3/l4/l5/l6/l7/file.txt").absolutePath
         val result = fileIO.ensureParentDirectories(path)
         assertTrue(result.isSuccess)
@@ -253,7 +255,7 @@ class DesktopPlatformFileIOTests {
     // ==================== File Permissions Tests ====================
 
     @Test
-    fun `read-only file cannot be overwritten`() = runTest {
+    fun `read-only file cannot be overwritten`() = runBlocking {
         val file = tempFolder.newFile("readonly_test.txt")
         file.writeText("original")
         file.setReadOnly()
@@ -271,7 +273,7 @@ class DesktopPlatformFileIOTests {
     }
 
     @Test
-    fun `read from file with read permission succeeds`() = runTest {
+    fun `read from file with read permission succeeds`() = runBlocking {
         val file = tempFolder.newFile("readable_test.txt")
         file.writeText("readable content")
         file.setReadable(true)
@@ -284,7 +286,7 @@ class DesktopPlatformFileIOTests {
     // ==================== Edge Cases ====================
 
     @Test
-    fun `handle file with special characters in name`() = runTest {
+    fun `handle file with special characters in name`() = runBlocking {
         val file = tempFolder.newFile("file with spaces.txt")
         file.writeText("content")
 
@@ -294,7 +296,7 @@ class DesktopPlatformFileIOTests {
     }
 
     @Test
-    fun `handle file with dots in name`() = runTest {
+    fun `handle file with dots in name`() = runBlocking {
         val file = tempFolder.newFile("file.name.with.dots.txt")
         file.writeText("dotted")
 
@@ -305,7 +307,7 @@ class DesktopPlatformFileIOTests {
     }
 
     @Test
-    fun `write then read large number of small files`() = runTest {
+    fun `write then read large number of small files`() = runBlocking {
         val count = 50
         for (i in 1..count) {
             val path = File(tempFolder.root, "batch_$i.txt").absolutePath
@@ -320,7 +322,7 @@ class DesktopPlatformFileIOTests {
     }
 
     @Test
-    fun `fileSize after write matches written bytes`() = runTest {
+    fun `fileSize after write matches written bytes`() = runBlocking {
         val path = File(tempFolder.root, "size_match.txt").absolutePath
         val data = "Exact size test content: 12345"
         fileIO.writeFileBytes(path, data.toByteArray(Charsets.UTF_8))

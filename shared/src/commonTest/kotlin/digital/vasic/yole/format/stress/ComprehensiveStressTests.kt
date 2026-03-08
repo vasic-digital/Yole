@@ -39,6 +39,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 import kotlin.time.measureTime
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Comprehensive stress tests covering concurrent parsing, format detection,
@@ -46,6 +47,17 @@ import kotlin.time.measureTime
  * registry thread safety, and memory stability.
  */
 class ComprehensiveStressTests {
+
+    @BeforeTest
+    fun setUp() {
+        ParserRegistry.clear()
+        ParserInitializer.registerAllParsers()
+    }
+
+    @AfterTest
+    fun tearDown() {
+        ParserRegistry.clear()
+    }
 
     // All parsers for comprehensive testing
     private val allParsers: List<TextParser> = listOf(
@@ -92,7 +104,7 @@ class ComprehensiveStressTests {
     // ==================== CONCURRENT PARSING (ALL 17 FORMATS) ====================
 
     @Test
-    fun `concurrent parsing of all 17 formats with 100 coroutines`() = runTest {
+    fun `concurrent parsing of all 17 formats with 100 coroutines`() = runBlocking {
         val results = (1..100).map { i ->
             async {
                 val parserIndex = i % allParsers.size
@@ -109,7 +121,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `concurrent parsing same format from multiple coroutines`() = runTest {
+    fun `concurrent parsing same format from multiple coroutines`() = runBlocking {
         val parser = MarkdownParser()
         val content = "# Concurrent Test\n\n**Bold** and *italic* text.\n\n- Item 1\n- Item 2"
 
@@ -126,7 +138,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `concurrent parsing different documents same parser`() = runTest {
+    fun `concurrent parsing different documents same parser`() = runBlocking {
         val parser = CsvParser()
         val documents = (1..100).map { i ->
             "id,name,value\n${i},Item${i},${i * 10}"
@@ -146,7 +158,7 @@ class ComprehensiveStressTests {
     // ==================== RAPID FORMAT DETECTION ====================
 
     @Test
-    fun `rapid format detection 10000 calls`() = runTest {
+    fun `rapid format detection 10000 calls`() = runBlocking {
         val testContents = listOf(
             "# Markdown heading" to FormatRegistry.ID_MARKDOWN,
             "(A) Task @work" to FormatRegistry.ID_TODOTXT,
@@ -168,7 +180,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `rapid extension detection 10000 calls`() = runTest {
+    fun `rapid extension detection 10000 calls`() = runBlocking {
         val extensions = listOf("md", "txt", "csv", "tex", "org", "wiki", "rst", "adoc", "tid", "ini")
 
         val results = (1..1000).flatMap { _ ->
@@ -184,7 +196,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `rapid filename detection 10000 calls`() = runTest {
+    fun `rapid filename detection 10000 calls`() = runBlocking {
         val filenames = listOf(
             "README.md", "todo.txt", "data.csv", "paper.tex", "notes.org",
             "page.wiki", "doc.rst", "manual.adoc", "tiddler.tid", "config.ini"
@@ -205,7 +217,7 @@ class ComprehensiveStressTests {
     // ==================== DOCUMENT CACHE UNDER HIGH CONTENTION ====================
 
     @Test
-    fun `document cache contention 50 coroutines 1000 operations each`() = runTest {
+    fun `document cache contention 50 coroutines 1000 operations each`() = runBlocking {
         val parser = MarkdownParser()
         val documents = (1..50).map { i ->
             parser.parse("# Document $i\n\nContent for document $i with **bold** text.")
@@ -231,7 +243,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `cache invalidation under concurrent access`() = runTest {
+    fun `cache invalidation under concurrent access`() = runBlocking {
         val parser = LatexParser()
         val doc = parser.parse("\\documentclass{article}\n\\begin{document}\nHello world.\n\\end{document}")
 
@@ -256,7 +268,7 @@ class ComprehensiveStressTests {
     // ==================== CIRCUIT BREAKER UNDER RAPID FAILURE ====================
 
     @Test
-    fun `circuit breaker simulation with 1000 rapid calls`() = runTest {
+    fun `circuit breaker simulation with 1000 rapid calls`() = runBlocking {
         // Simulate circuit breaker behavior: parse invalid content rapidly
         // and verify the system remains stable
         val parser = MarkdownParser()
@@ -285,7 +297,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `rapid alternating success and failure parsing`() = runTest {
+    fun `rapid alternating success and failure parsing`() = runBlocking {
         val csvParser = CsvParser()
         val results = mutableListOf<Boolean>()
 
@@ -306,7 +318,7 @@ class ComprehensiveStressTests {
     // ==================== CONNECTION LIMITER FAIRNESS ====================
 
     @Test
-    fun `connection limiter fairness across concurrent requests`() = runTest {
+    fun `connection limiter fairness across concurrent requests`() = runBlocking {
         // Test that FormatRegistry operations are fair under contention
         val formatIds = listOf(
             FormatRegistry.ID_MARKDOWN, FormatRegistry.ID_CSV,
@@ -338,7 +350,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `concurrent format lookup fairness across all formats`() = runTest {
+    fun `concurrent format lookup fairness across all formats`() = runBlocking {
         val allFormatIds = FormatRegistry.formats.map { it.id }
 
         val results = (1..1000).map { i ->
@@ -355,7 +367,7 @@ class ComprehensiveStressTests {
     // ==================== LARGE DOCUMENT PARSING ====================
 
     @Test
-    fun `large markdown document parsing 1MB`() = runTest {
+    fun `large markdown document parsing 1MB`() = runBlocking {
         val parser = MarkdownParser()
 
         // Generate ~1MB document
@@ -386,7 +398,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `large CSV document parsing 10MB`() = runTest {
+    fun `large CSV document parsing 10MB`() = runBlocking {
         val parser = CsvParser()
 
         // Generate ~10MB CSV
@@ -409,7 +421,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `large LaTeX document parsing`() = runTest {
+    fun `large LaTeX document parsing`() = runBlocking {
         val parser = LatexParser()
 
         val largeContent = buildString {
@@ -441,7 +453,7 @@ class ComprehensiveStressTests {
     // ==================== FORMAT REGISTRY THREAD SAFETY ====================
 
     @Test
-    fun `FormatRegistry thread safety under concurrent access`() = runTest {
+    fun `FormatRegistry thread safety under concurrent access`() = runBlocking {
         // Concurrent mixed operations on FormatRegistry
         val results = (1..1000).map { i ->
             async {
@@ -462,7 +474,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `FormatRegistry consistency under repeated access`() = runTest {
+    fun `FormatRegistry consistency under repeated access`() = runBlocking {
         // Verify that repeated access produces consistent results
         val formatId = FormatRegistry.ID_MARKDOWN
         val results = (1..500).map {
@@ -478,7 +490,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `ParserRegistry thread safety with concurrent getParser calls`() = runTest {
+    fun `ParserRegistry thread safety with concurrent getParser calls`() = runBlocking {
         // Save original state
         val formatIds = listOf(
             FormatRegistry.ID_MARKDOWN,
@@ -505,7 +517,7 @@ class ComprehensiveStressTests {
     // ==================== REPEATED PARSE-THEN-TOHTML CYCLES ====================
 
     @Test
-    fun `repeated parse then toHtml cycles 1000 iterations`() = runTest {
+    fun `repeated parse then toHtml cycles 1000 iterations`() = runBlocking {
         val parser = MarkdownParser()
         val content = "# Test Document\n\nParagraph with **bold** and *italic*.\n\n- Item 1\n- Item 2"
 
@@ -525,7 +537,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `parse then toHtml cycles with cache verification`() = runTest {
+    fun `parse then toHtml cycles with cache verification`() = runBlocking {
         val parser = OrgModeParser()
         val content = "* Heading 1\n** TODO Task\nContent here.\n** DONE Completed"
 
@@ -548,7 +560,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `parse then toHtml with alternating light and dark modes`() = runTest {
+    fun `parse then toHtml with alternating light and dark modes`() = runBlocking {
         val parser = LatexParser()
         val content = "\\documentclass{article}\n\\begin{document}\n\\section{Test}\nContent.\n\\end{document}"
 
@@ -569,7 +581,7 @@ class ComprehensiveStressTests {
     // ==================== MEMORY STABILITY ====================
 
     @Test
-    fun `memory stability parse 10K small documents`() = runTest {
+    fun `memory stability parse 10K small documents`() = runBlocking {
         val parser = MarkdownParser()
         val documents = mutableListOf<ParsedDocument>()
 
@@ -594,7 +606,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `memory stability parse and clear HTML cache repeatedly`() = runTest {
+    fun `memory stability parse and clear HTML cache repeatedly`() = runBlocking {
         val parser = CsvParser()
 
         repeat(5000) { i ->
@@ -614,7 +626,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `memory stability concurrent parsing with cleanup`() = runTest {
+    fun `memory stability concurrent parsing with cleanup`() = runBlocking {
         val parsers = listOf(
             MarkdownParser(), CsvParser(), LatexParser(), OrgModeParser(), TodoTxtParser()
         )
@@ -639,7 +651,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `memory stability all parsers used in rotation`() = runTest {
+    fun `memory stability all parsers used in rotation`() = runBlocking {
         val totalIterations = 10000
         var parsedCount = 0
 
@@ -658,7 +670,7 @@ class ComprehensiveStressTests {
     // ==================== ADDITIONAL STRESS SCENARIOS ====================
 
     @Test
-    fun `concurrent format detection and parsing pipeline`() = runTest {
+    fun `concurrent format detection and parsing pipeline`() = runBlocking {
         val testInputs = listOf(
             "# Markdown" to "md",
             "a,b,c\n1,2,3" to "csv",
@@ -689,7 +701,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `stress test ParsedDocument copy under contention`() = runTest {
+    fun `stress test ParsedDocument copy under contention`() = runBlocking {
         val parser = MarkdownParser()
         val original = parser.parse("# Original\n\nContent here.")
 
@@ -711,7 +723,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `stress test ParsedDocument equality and hashCode`() = runTest {
+    fun `stress test ParsedDocument equality and hashCode`() = runBlocking {
         val parser = MarkdownParser()
         val content = "# Test\n\nContent."
 
@@ -731,7 +743,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `stress test rapid format switching`() = runTest {
+    fun `stress test rapid format switching`() = runBlocking {
         // Rapidly switch between different format parsers
         val parserPairs = allParsers.zip(formatContents.values.toList())
 
@@ -749,7 +761,7 @@ class ComprehensiveStressTests {
     }
 
     @Test
-    fun `stress test concurrent HTML generation all formats`() = runTest {
+    fun `stress test concurrent HTML generation all formats`() = runBlocking {
         val results = formatContents.entries.flatMap { (formatId, content) ->
             val parser = allParsers.firstOrNull { it.supportedFormat.id == formatId }
             if (parser != null) {

@@ -7,6 +7,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Stress tests for concurrent network service operations.
@@ -27,7 +28,7 @@ class ConcurrencyStressTest {
     )
 
     @Test
-    fun testConcurrentConnectDisconnect() = runTest {
+    fun testConcurrentConnectDisconnect() = runBlocking {
         val service = SmbService(smbConfig)
 
         // Rapid connect/disconnect cycles from multiple coroutines
@@ -46,7 +47,7 @@ class ConcurrencyStressTest {
     }
 
     @Test
-    fun testConcurrentStateAccess() = runTest {
+    fun testConcurrentStateAccess() = runBlocking {
         val service = SmbService(smbConfig)
         service.connect()
 
@@ -68,7 +69,7 @@ class ConcurrencyStressTest {
     }
 
     @Test
-    fun testConcurrentFileOperations() = runTest {
+    fun testConcurrentFileOperations() = runBlocking {
         val service = SmbService(smbConfig)
         service.connect()
 
@@ -91,7 +92,7 @@ class ConcurrencyStressTest {
     }
 
     @Test
-    fun testNoDeadlockUnderContention() = runTest {
+    fun testNoDeadlockUnderContention() = runBlocking {
         val service = SmbService(smbConfig)
 
         // High contention: many coroutines competing for the same resource
@@ -110,7 +111,7 @@ class ConcurrencyStressTest {
     }
 
     @Test
-    fun testConnectDisconnectLeavesConsistentState() = runTest {
+    fun testConnectDisconnectLeavesConsistentState() = runBlocking {
         val service = SmbService(smbConfig)
 
         // Connect then disconnect many times sequentially

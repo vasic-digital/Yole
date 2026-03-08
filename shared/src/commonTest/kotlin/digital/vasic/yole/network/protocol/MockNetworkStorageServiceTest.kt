@@ -13,6 +13,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Test suite for MockNetworkStorageService in the protocol package.
@@ -39,7 +41,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testConnectDisconnect() = runTest {
+    fun testConnectDisconnect() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
 
         // Test connect
@@ -54,7 +56,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testListFiles() = runTest {
+    fun testListFiles() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -74,7 +76,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testDownloadFile() = runTest {
+    fun testDownloadFile() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -93,7 +95,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testUploadFile() = runTest {
+    fun testUploadFile() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -112,7 +114,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testDeleteFile() = runTest {
+    fun testDeleteFile() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -121,7 +123,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testCreateFolder() = runTest {
+    fun testCreateFolder() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -136,7 +138,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testRenameFile() = runTest {
+    fun testRenameFile() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -146,7 +148,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testMoveFile() = runTest {
+    fun testMoveFile() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -161,7 +163,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testCopyFile() = runTest {
+    fun testCopyFile() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -171,7 +173,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testGetFileInfo() = runTest {
+    fun testGetFileInfo() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -187,7 +189,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testGetActiveOperations() = runTest {
+    fun testGetActiveOperations() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -196,7 +198,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testCancelOperation() = runTest {
+    fun testCancelOperation() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -206,7 +208,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testPauseOperation() = runTest {
+    fun testPauseOperation() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -216,7 +218,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testResumeOperation() = runTest {
+    fun testResumeOperation() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -226,7 +228,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testGetStorageInfo() = runTest {
+    fun testGetStorageInfo() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -240,7 +242,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testTestConnection() = runTest {
+    fun testTestConnection() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -250,7 +252,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testGetCacheEntries() = runTest {
+    fun testGetCacheEntries() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -259,7 +261,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testAddToCache() = runTest {
+    fun testAddToCache() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -268,7 +270,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testRemoveFromCache() = runTest {
+    fun testRemoveFromCache() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -277,7 +279,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testClearCache() = runTest {
+    fun testClearCache() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -286,7 +288,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testGetSyncStatus() = runTest {
+    fun testGetSyncStatus() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -295,7 +297,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testSyncFile() = runTest {
+    fun testSyncFile() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -313,7 +315,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testSyncAll() = runTest {
+    fun testSyncAll() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -325,7 +327,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testSearchFiles() = runTest {
+    fun testSearchFiles() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -342,7 +344,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testGetRecentChanges() = runTest {
+    fun testGetRecentChanges() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -356,7 +358,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testGetQuotaInfo() = runTest {
+    fun testGetQuotaInfo() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 
@@ -377,7 +379,7 @@ class MockNetworkStorageServiceTest {
     }
 
     @Test
-    fun testExists() = runTest {
+    fun testExists() = runBlocking {
         mockService = MockNetworkStorageService(mockConfig)
         mockService.connect()
 

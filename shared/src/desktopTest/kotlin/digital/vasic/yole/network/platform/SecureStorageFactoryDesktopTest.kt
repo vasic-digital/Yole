@@ -14,6 +14,8 @@ import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import java.io.File
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Desktop-specific tests for SecureStorageFactory.
@@ -31,7 +33,7 @@ class SecureStorageFactoryDesktopTest {
     val tempFolder = TemporaryFolder()
 
     @Test
-    fun `should create DesktopSecureStorage instance`() = runTest {
+    fun `should create DesktopSecureStorage instance`() = runBlocking {
         val result = SecureStorageFactory.create()
         
         assertTrue(result.isSuccess, "Factory creation should succeed")
@@ -43,7 +45,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should report secure storage as available on desktop`() = runTest {
+    fun `should report secure storage as available on desktop`() = runBlocking {
         val isAvailable = SecureStorageFactory.isAvailable()
         
         // Desktop should support secure storage via file system and crypto
@@ -51,7 +53,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should create storage in user home directory`() = runTest {
+    fun `should create storage in user home directory`() = runBlocking {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -72,7 +74,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should create storage directory structure`() = runTest {
+    fun `should create storage directory structure`() = runBlocking {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -90,7 +92,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should handle unavailable home directory`() = runTest {
+    fun `should handle unavailable home directory`() = runBlocking {
         // Test with custom home directory that might not exist
         val originalHome = System.getProperty("user.home")
         val originalHomeEnv = System.getenv("HOME")
@@ -115,7 +117,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should create functional storage instances`() = runTest {
+    fun `should create functional storage instances`() = runBlocking {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -138,7 +140,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should handle permission issues gracefully`() = runTest {
+    fun `should handle permission issues gracefully`() = runBlocking {
         // Test with a read-only directory
         val readOnlyDir = tempFolder.newFolder("readonly_test")
         readOnlyDir.setReadOnly()
@@ -166,7 +168,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should validate security status of created storage`() = runTest {
+    fun `should validate security status of created storage`() = runBlocking {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -183,7 +185,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should handle rapid successive creation calls`() = runTest {
+    fun `should handle rapid successive creation calls`() = runBlocking {
         // Test factory under load
         val creationResults = (1..10).map {
             SecureStorageFactory.create()
@@ -197,7 +199,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should maintain consistency across factory calls`() = runTest {
+    fun `should maintain consistency across factory calls`() = runBlocking {
         val result1 = SecureStorageFactory.isAvailable()
         val result2 = SecureStorageFactory.isAvailable()
         
@@ -206,7 +208,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should handle cross-platform home directory detection`() = runTest {
+    fun `should handle cross-platform home directory detection`() = runBlocking {
         // Test that factory works with different environment setups
         val originalHome = System.getProperty("user.home")
         val originalHomeEnv = System.getenv("HOME")
@@ -235,7 +237,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should create storage with proper encryption setup`() = runTest {
+    fun `should create storage with proper encryption setup`() = runBlocking {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         

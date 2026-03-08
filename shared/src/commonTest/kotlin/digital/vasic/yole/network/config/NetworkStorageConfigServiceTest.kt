@@ -7,6 +7,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Test suite for NetworkStorageConfigService.
@@ -288,7 +290,7 @@ class NetworkStorageConfigServiceTest {
     }
 
     @Test
-    fun testRefreshConnectionStatus() = runTest {
+    fun testRefreshConnectionStatus() = runBlocking {
         configService = NetworkStorageConfigService()
 
         val result = configService.refreshConnectionStatus()

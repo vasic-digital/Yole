@@ -48,6 +48,17 @@ import kotlin.test.*
  */
 class PlatformParsingTests {
 
+    @BeforeTest
+    fun setUp() {
+        ParserRegistry.clear()
+        ParserInitializer.registerAllParsers()
+    }
+
+    @AfterTest
+    fun tearDown() {
+        ParserRegistry.clear()
+    }
+
     private val markdownParser = MarkdownParser()
     private val plaintextParser = PlaintextParser()
     private val todoTxtParser = TodoTxtParser()

@@ -27,6 +27,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Integration stress tests for network storage system.
@@ -37,7 +38,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== MULTI-SERVICE INITIALIZATION ====================
 
     @Test
-    fun `all services can be created concurrently`() = runTest {
+    fun `all services can be created concurrently`() = runBlocking {
         val services = (1..10).map { i ->
             async {
                 listOf(
@@ -56,7 +57,7 @@ class NetworkStorageIntegrationStressTest {
     }
 
     @Test
-    fun `all service types can coexist`() = runTest {
+    fun `all service types can coexist`() = runBlocking {
         val ftpService = createFtpService("ftp")
         val smbService = createSmbService("smb")
         val webdavService = createWebDavService("webdav")
@@ -88,7 +89,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== CONCURRENT OPERATIONS ACROSS SERVICES ====================
 
     @Test
-    fun `concurrent file info across multiple services`() = runTest {
+    fun `concurrent file info across multiple services`() = runBlocking {
         val services = listOf(
             createFtpService("ftp"),
             createSmbService("smb"),
@@ -116,7 +117,7 @@ class NetworkStorageIntegrationStressTest {
     }
 
     @Test
-    fun `concurrent folder operations across services`() = runTest {
+    fun `concurrent folder operations across services`() = runBlocking {
         val ftpService = createFtpService("ftp")
         val smbService = createSmbService("smb")
 
@@ -151,7 +152,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== SERVICE SWITCHING STRESS ====================
 
     @Test
-    fun `rapid service switching`() = runTest {
+    fun `rapid service switching`() = runBlocking {
         val ftpService = createFtpService("ftp")
         val smbService = createSmbService("smb")
 
@@ -172,7 +173,7 @@ class NetworkStorageIntegrationStressTest {
     }
 
     @Test
-    fun `interleaved operations across services`() = runTest {
+    fun `interleaved operations across services`() = runBlocking {
         val services = listOf(
             createFtpService("ftp"),
             createSmbService("smb"),
@@ -206,7 +207,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== QUOTA AND STORAGE INFO ====================
 
     @Test
-    fun `concurrent quota checks across services`() = runTest {
+    fun `concurrent quota checks across services`() = runBlocking {
         val services = listOf(
             createFtpService("ftp"),
             createSmbService("smb"),
@@ -230,7 +231,7 @@ class NetworkStorageIntegrationStressTest {
     }
 
     @Test
-    fun `concurrent storage info across services`() = runTest {
+    fun `concurrent storage info across services`() = runBlocking {
         val services = listOf(
             createFtpService("ftp"),
             createSmbService("smb"),
@@ -252,7 +253,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== CACHE OPERATIONS ACROSS SERVICES ====================
 
     @Test
-    fun `cache operations across multiple services`() = runTest {
+    fun `cache operations across multiple services`() = runBlocking {
         val ftpService = createFtpService("ftp")
         val smbService = createSmbService("smb")
 
@@ -276,7 +277,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== SYNC OPERATIONS ====================
 
     @Test
-    fun `concurrent sync operations`() = runTest {
+    fun `concurrent sync operations`() = runBlocking {
         val webdavService = createWebDavService("webdav")
 
         val syncJobs = (1..30).map { i ->
@@ -293,7 +294,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== ERROR HANDLING INTEGRATION ====================
 
     @Test
-    fun `services handle disconnected operations gracefully`() = runTest {
+    fun `services handle disconnected operations gracefully`() = runBlocking {
         val ftpService = createFtpService("ftp")
         val smbService = createSmbService("smb")
         val webdavService = createWebDavService("webdav")
@@ -310,7 +311,7 @@ class NetworkStorageIntegrationStressTest {
     }
 
     @Test
-    fun `services recover after disconnect and reconnect`() = runTest {
+    fun `services recover after disconnect and reconnect`() = runBlocking {
         // Use SMB service which always connects successfully in test environments.
         // FTP now makes real TCP socket connections that fail without a running server.
         val smbService = createSmbService("smb")
@@ -337,7 +338,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== PATH OPERATIONS ACROSS SERVICES ====================
 
     @Test
-    fun `path utilities work consistently across services`() = runTest {
+    fun `path utilities work consistently across services`() = runBlocking {
         val services = listOf(
             createFtpService("ftp"),
             createSmbService("smb"),
@@ -365,7 +366,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== OPERATION TYPE VERIFICATION ====================
 
     @Test
-    fun `upload operations have correct type`() = runTest {
+    fun `upload operations have correct type`() = runBlocking {
         val ftpService = createFtpService("ftp")
         ftpService.connect()
 
@@ -376,7 +377,7 @@ class NetworkStorageIntegrationStressTest {
     }
 
     @Test
-    fun `download operations have correct type`() = runTest {
+    fun `download operations have correct type`() = runBlocking {
         val smbService = createSmbService("smb")
         smbService.connect()
 
@@ -387,7 +388,7 @@ class NetworkStorageIntegrationStressTest {
     }
 
     @Test
-    fun `sync operations have correct type`() = runTest {
+    fun `sync operations have correct type`() = runBlocking {
         val webdavService = createWebDavService("webdav")
 
         val operations = webdavService.syncFile("/file.txt", false).toList()

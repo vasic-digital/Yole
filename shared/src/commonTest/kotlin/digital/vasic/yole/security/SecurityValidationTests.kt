@@ -46,6 +46,17 @@ import kotlin.test.*
  */
 class SecurityValidationTests {
 
+    @BeforeTest
+    fun setUp() {
+        ParserRegistry.clear()
+        ParserInitializer.registerAllParsers()
+    }
+
+    @AfterTest
+    fun tearDown() {
+        ParserRegistry.clear()
+    }
+
     // ====================================================================
     // 1. XSS Prevention - HTML output escapes dangerous content
     // ====================================================================

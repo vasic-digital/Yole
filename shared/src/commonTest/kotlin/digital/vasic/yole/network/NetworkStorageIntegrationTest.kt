@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Comprehensive integration test suite for all network storage implementations
@@ -76,7 +78,7 @@ class NetworkStorageIntegrationTest {
     )
     
     @BeforeTest
-    fun setup() = runTest {
+    fun setup() = runBlocking {
         mockSecureStorage = MockSecureStorage()
         
         // Initialize auth token managers for cloud services
@@ -122,7 +124,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testAllServicesImplementSameInterface() = runTest {
+    fun testAllServicesImplementSameInterface() = runBlocking {
         // Create instances of all services
         val dropboxService = DropboxService(dropboxConfig)
         val googleDriveService = GoogleDriveService(googleDriveConfig)
@@ -165,7 +167,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testUnifiedFileOperations() = runTest {
+    fun testUnifiedFileOperations() = runBlocking {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -201,7 +203,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testUnifiedUploadDownloadOperations() = runTest {
+    fun testUnifiedUploadDownloadOperations() = runBlocking {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -236,7 +238,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testUnifiedFolderOperations() = runTest {
+    fun testUnifiedFolderOperations() = runBlocking {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -276,7 +278,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testProtocolSpecificFeatures() = runTest {
+    fun testProtocolSpecificFeatures() = runBlocking {
         val dropboxService = DropboxService(dropboxConfig)
         val googleDriveService = GoogleDriveService(googleDriveConfig)
         val ftpService = FtpService(ftpConfig)
@@ -312,7 +314,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testErrorHandlingConsistency() = runTest {
+    fun testErrorHandlingConsistency() = runBlocking {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -347,7 +349,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testSyncAndCacheOperations() = runTest {
+    fun testSyncAndCacheOperations() = runBlocking {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -388,7 +390,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testQuotaAndSpaceInformation() = runTest {
+    fun testQuotaAndSpaceInformation() = runBlocking {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -427,7 +429,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testSearchAndRecentChanges() = runTest {
+    fun testSearchAndRecentChanges() = runBlocking {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -449,7 +451,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testOperationManagement() = runTest {
+    fun testOperationManagement() = runBlocking {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -472,7 +474,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testCrossProtocolCompatibility() = runTest {
+    fun testCrossProtocolCompatibility() = runBlocking {
         // Create all services
         val services = listOf(
             DropboxService(dropboxConfig),

@@ -39,6 +39,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
+import kotlinx.coroutines.runBlocking
 
 /**
  * Performance baseline tests establishing measurable bounds for
@@ -48,6 +49,17 @@ import kotlin.time.measureTime
  * 60+ test methods covering all 17 formats and system components.
  */
 class PerformanceBaselineTests {
+
+    @BeforeTest
+    fun setUp() {
+        ParserRegistry.clear()
+        ParserInitializer.registerAllParsers()
+    }
+
+    @AfterTest
+    fun tearDown() {
+        ParserRegistry.clear()
+    }
 
     // ====================================================================
     // Content generators for each format at variable sizes
@@ -641,7 +653,7 @@ class PerformanceBaselineTests {
     // ====================================================================
 
     @Test
-    fun `cache hit faster than cache miss`() = runTest {
+    fun `cache hit faster than cache miss`() = runBlocking {
         val cache = DocumentCache()
         val testFormat = TextFormat(
             id = "plaintext", name = "Plain Text",
@@ -664,7 +676,7 @@ class PerformanceBaselineTests {
     }
 
     @Test
-    fun `cache 1000 hits under 100ms total`() = runTest {
+    fun `cache 1000 hits under 100ms total`() = runBlocking {
         val cache = DocumentCache()
         val testFormat = TextFormat(
             id = "plaintext", name = "Plain Text",
@@ -684,7 +696,7 @@ class PerformanceBaselineTests {
     }
 
     @Test
-    fun `cache 1000 misses under 100ms total`() = runTest {
+    fun `cache 1000 misses under 100ms total`() = runBlocking {
         val cache = DocumentCache()
         val elapsed = measureTime {
             repeat(1000) { i -> cache.get("miss_$i") }
@@ -694,7 +706,7 @@ class PerformanceBaselineTests {
     }
 
     @Test
-    fun `cache put 100 entries under 100ms`() = runTest {
+    fun `cache put 100 entries under 100ms`() = runBlocking {
         val cache = DocumentCache()
         val testFormat = TextFormat(
             id = "plaintext", name = "Plain Text",
@@ -719,7 +731,7 @@ class PerformanceBaselineTests {
     // ====================================================================
 
     @Test
-    fun `circuitBreaker overhead under 5ms per call`() = runTest {
+    fun `circuitBreaker overhead under 5ms per call`() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 100)
 
         // Measure direct call
@@ -740,7 +752,7 @@ class PerformanceBaselineTests {
     }
 
     @Test
-    fun `circuitBreaker single successful call under 10ms`() = runTest {
+    fun `circuitBreaker single successful call under 10ms`() = runBlocking {
         val cb = CircuitBreaker()
         val elapsed = measureTime { cb.execute { "result" } }
         assertTrue(elapsed.inWholeMilliseconds < 10,
@@ -748,7 +760,7 @@ class PerformanceBaselineTests {
     }
 
     @Test
-    fun `circuitBreaker open rejection under 10ms`() = runTest {
+    fun `circuitBreaker open rejection under 10ms`() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 1, resetTimeout = 60.seconds)
         cb.execute { throw RuntimeException("trigger open") }
 
@@ -758,7 +770,7 @@ class PerformanceBaselineTests {
     }
 
     @Test
-    fun `circuitBreaker 100 mixed calls under 500ms`() = runTest {
+    fun `circuitBreaker 100 mixed calls under 500ms`() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 50)
         val elapsed = measureTime {
             repeat(100) { i ->
@@ -778,7 +790,7 @@ class PerformanceBaselineTests {
     // ====================================================================
 
     @Test
-    fun `connectionLimiter single operation under 10ms overhead`() = runTest {
+    fun `connectionLimiter single operation under 10ms overhead`() = runBlocking {
         val limiter = ConnectionLimiter(maxConcurrent = 5)
         val elapsed = measureTime { limiter.withConnection { "result" } }
         assertTrue(elapsed.inWholeMilliseconds < 10,
@@ -786,7 +798,7 @@ class PerformanceBaselineTests {
     }
 
     @Test
-    fun `connectionLimiter 100 sequential operations under 500ms`() = runTest {
+    fun `connectionLimiter 100 sequential operations under 500ms`() = runBlocking {
         val limiter = ConnectionLimiter(maxConcurrent = 5)
         val elapsed = measureTime {
             repeat(100) { i ->
@@ -798,7 +810,7 @@ class PerformanceBaselineTests {
     }
 
     @Test
-    fun `connectionLimiter permits released promptly`() = runTest {
+    fun `connectionLimiter permits released promptly`() = runBlocking {
         val limiter = ConnectionLimiter(maxConcurrent = 1)
         val elapsed = measureTime {
             repeat(50) { i ->

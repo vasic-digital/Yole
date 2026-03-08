@@ -6,6 +6,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Enhanced comprehensive test suite for FtpService
@@ -78,7 +80,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedStorageInfo() = runTest {
+    fun testEnhancedStorageInfo() = runBlocking {
         val storageInfo = ftpService.getStorageInfo()
         
         assertEquals("ftp_test-ftp-enhanced", storageInfo.id)
@@ -91,7 +93,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedConnectWithValidConfiguration() = runTest {
+    fun testEnhancedConnectWithValidConfiguration() = runBlocking {
         val result = ftpService.connect()
 
         // Real FTP client cannot connect to non-existent server
@@ -104,7 +106,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedConnectWithInvalidConfiguration() = runTest {
+    fun testEnhancedConnectWithInvalidConfiguration() = runBlocking {
         // Test with invalid host
         val invalidHostConfig = ftpConfig.copy(host = "")
         val invalidHostService = FtpService(invalidHostConfig)
@@ -121,7 +123,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedDisconnect() = runTest {
+    fun testEnhancedDisconnect() = runBlocking {
         // First attempt connect (will fail with real client, no server available)
         ftpService.connect()
 
@@ -134,7 +136,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedTestConnection() = runTest {
+    fun testEnhancedTestConnection() = runBlocking {
         val result = ftpService.testConnection()
 
         // Real FTP client cannot connect to non-existent server
@@ -144,7 +146,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedListFilesWhenNotConnected() = runTest {
+    fun testEnhancedListFilesWhenNotConnected() = runBlocking {
         val result = ftpService.listFiles("/").first()
         
         assertTrue(result.isFailure, "List files should fail when not connected")
@@ -154,7 +156,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedListFilesWhenConnected() = runTest {
+    fun testEnhancedListFilesWhenConnected() = runBlocking {
         // Attempt connect (will fail with real client, no server available)
         val connectResult = ftpService.connect()
         assertTrue(connectResult.isFailure, "Connection should fail when server is unreachable")
@@ -168,7 +170,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedDownloadFileWhenNotConnected() = runTest {
+    fun testEnhancedDownloadFileWhenNotConnected() = runBlocking {
         val operations = ftpService.downloadFile("/test.txt", "/tmp/test.txt")
         
         val firstOperation = operations.first()
@@ -180,7 +182,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedDownloadFileWhenConnected() = runTest {
+    fun testEnhancedDownloadFileWhenConnected() = runBlocking {
         // Attempt connect (will fail with real client, no server available)
         val connectResult = ftpService.connect()
         assertTrue(connectResult.isFailure, "Connection should fail when server is unreachable")
@@ -197,7 +199,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedUploadFileWhenNotConnected() = runTest {
+    fun testEnhancedUploadFileWhenNotConnected() = runBlocking {
         val operations = ftpService.uploadFile("/tmp/test.txt", "/test.txt")
         
         val firstOperation = operations.first()
@@ -207,7 +209,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedUploadFileWhenConnected() = runTest {
+    fun testEnhancedUploadFileWhenConnected() = runBlocking {
         // Attempt connect (will fail with real client, no server available)
         val connectResult = ftpService.connect()
         assertTrue(connectResult.isFailure, "Connection should fail when server is unreachable")
@@ -222,7 +224,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedFileOperationsWhenConnected() = runTest {
+    fun testEnhancedFileOperationsWhenConnected() = runBlocking {
         // Attempt connect (will fail with real client, no server available)
         val connectResult = ftpService.connect()
         assertTrue(connectResult.isFailure, "Connection should fail when server is unreachable")
@@ -252,7 +254,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedGetFileInfo() = runTest {
+    fun testEnhancedGetFileInfo() = runBlocking {
         // Attempt connect (will fail with real client, no server available)
         val connectResult = ftpService.connect()
         assertTrue(connectResult.isFailure, "Connection should fail when server is unreachable")
@@ -265,7 +267,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedQuotaInfo() = runTest {
+    fun testEnhancedQuotaInfo() = runBlocking {
         val result = ftpService.getQuotaInfo()
         
         assertTrue(result.isSuccess, "Get quota info should succeed")
@@ -284,7 +286,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedExists() = runTest {
+    fun testEnhancedExists() = runBlocking {
         // Attempt connect (will fail with real client, no server available)
         val connectResult = ftpService.connect()
         assertTrue(connectResult.isFailure, "Connection should fail when server is unreachable")
@@ -296,7 +298,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedPathOperations() = runTest {
+    fun testEnhancedPathOperations() = runBlocking {
         // Test getParentPath
         assertEquals("/", ftpService.getParentPath("/test.txt"))
         assertEquals("/public_html", ftpService.getParentPath("/public_html/test.txt"))
@@ -318,7 +320,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedActiveOperations() = runTest {
+    fun testEnhancedActiveOperations() = runBlocking {
         // Attempt connect (will fail, but active operations should still work)
         ftpService.connect()
 
@@ -328,7 +330,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedCacheOperations() = runTest {
+    fun testEnhancedCacheOperations() = runBlocking {
         // Test get cache entries
         val cacheEntries = ftpService.getCacheEntries("/").first()
         assertTrue(cacheEntries.isEmpty(), "Cache entries should be empty")
@@ -347,14 +349,14 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedSyncStatus() = runTest {
+    fun testEnhancedSyncStatus() = runBlocking {
         val syncStatus = ftpService.getSyncStatus("/").first()
         
         assertTrue(syncStatus.isEmpty(), "Sync status should be empty initially")
     }
     
     @Test
-    fun testEnhancedSyncOperations() = runTest {
+    fun testEnhancedSyncOperations() = runBlocking {
         // Test sync file
         val syncFileOperations = ftpService.syncFile("/test.txt", false)
         val syncFileOp = syncFileOperations.first()
@@ -371,7 +373,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedSearchFiles() = runTest {
+    fun testEnhancedSearchFiles() = runBlocking {
         val result = ftpService.searchFiles("test", "/", false).first()
         
         assertTrue(result.isFailure, "Search should fail for FTP")
@@ -379,7 +381,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedRecentChanges() = runTest {
+    fun testEnhancedRecentChanges() = runBlocking {
         val since = Clock.System.now()
         val changes = ftpService.getRecentChanges(since, "/").first()
         
@@ -387,7 +389,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedOperationManagement() = runTest {
+    fun testEnhancedOperationManagement() = runBlocking {
         // Test cancel operation
         val cancelResult = ftpService.cancelOperation(12345L)
         assertTrue(cancelResult.isSuccess, "Cancel operation should succeed")
@@ -402,7 +404,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testSecureFtpConfiguration() = runTest {
+    fun testSecureFtpConfiguration() = runBlocking {
         val secureStorageInfo = secureFtpService.getStorageInfo()
 
         assertEquals("ftp_test-secure-ftp", secureStorageInfo.id)
@@ -418,7 +420,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testFtpProtocolLimitations() = runTest {
+    fun testFtpProtocolLimitations() = runBlocking {
         // FTP has several limitations compared to modern protocols
         
         // 1. No reliable folder support
@@ -444,7 +446,7 @@ class FtpServiceEnhancedTest {
     }
     
     @Test
-    fun testFtpConnectionScenarios() = runTest {
+    fun testFtpConnectionScenarios() = runBlocking {
         // Test connection timeout handling
         val timeoutConfig = ftpConfig.copy(connectionTimeout = 1000) // 1 second timeout
         val timeoutService = FtpService(timeoutConfig)

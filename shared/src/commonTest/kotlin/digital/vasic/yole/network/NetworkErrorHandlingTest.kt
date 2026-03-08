@@ -17,6 +17,8 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.*
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Comprehensive error handling and edge case tests covering:
@@ -30,7 +32,7 @@ import kotlin.time.Duration.Companion.days
 class NetworkErrorHandlingTest {
 
     @Test
-    fun testNetworkTimeoutScenarios() = runTest {
+    fun testNetworkTimeoutScenarios() = runBlocking {
         val timeoutScenarios = listOf(
             1 to "1 second",
             5 to "5 seconds",
@@ -60,7 +62,7 @@ class NetworkErrorHandlingTest {
     }
 
     @Test
-    fun testAuthenticationFailureScenarios() = runTest {
+    fun testAuthenticationFailureScenarios() = runBlocking {
         val authFailureScenarios = listOf(
             "invalid_token" to "Invalid access token",
             "expired_token" to "Token has expired",
@@ -94,7 +96,7 @@ class NetworkErrorHandlingTest {
     }
 
     @Test
-    fun testCorruptDataHandling() = runTest {
+    fun testCorruptDataHandling() = runBlocking {
         val corruptDataScenarios = listOf(
             "null_bytes" to "\u0000\u0000\u0000",
             "invalid_json" to "{invalid json",
@@ -123,7 +125,7 @@ class NetworkErrorHandlingTest {
     }
 
     @Test
-    fun testInvalidPathHandling() = runTest {
+    fun testInvalidPathHandling() = runBlocking {
         val invalidPaths = listOf(
             "" to "Empty path",
             "/" to "Root only",
@@ -168,7 +170,7 @@ class NetworkErrorHandlingTest {
     }
 
     @Test
-    fun testConcurrentErrorScenarios() = runTest {
+    fun testConcurrentErrorScenarios() = runBlocking {
         val concurrentErrors = 50
         val results = mutableListOf<ErrorScenarioResult>()
 
@@ -224,7 +226,7 @@ class NetworkErrorHandlingTest {
     }
 
     @Test
-    fun testGracefulDegradation() = runTest {
+    fun testGracefulDegradation() = runBlocking {
         // 1. Simulate slow network
         val slowNetworkResult = testUnderSlowNetwork()
         assertTrue(slowNetworkResult.operationsCompleted, "Should complete operations under slow network")
@@ -247,7 +249,7 @@ class NetworkErrorHandlingTest {
     }
 
     @Test
-    fun testBoundaryConditions() = runTest {
+    fun testBoundaryConditions() = runBlocking {
         val boundaryTests = listOf<Pair<() -> Unit, String>>(
             // Size boundaries
             Pair({ testSizeBoundary(0L) }, "Zero size"),
@@ -291,7 +293,7 @@ class NetworkErrorHandlingTest {
     }
 
     @Test
-    fun testRecoveryMechanisms() = runTest {
+    fun testRecoveryMechanisms() = runBlocking {
         // 1. Token refresh recovery
         val tokenRefreshRecovery = testTokenRefreshRecovery()
         assertTrue(tokenRefreshRecovery.successful, "Token refresh recovery should work")

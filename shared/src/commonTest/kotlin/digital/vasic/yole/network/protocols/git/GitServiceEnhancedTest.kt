@@ -18,6 +18,8 @@ import digital.vasic.yole.network.common.*
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Enhanced test suite for GitService.
@@ -71,7 +73,7 @@ class GitServiceEnhancedTest {
     // ==================== CONNECTION TESTS ====================
 
     @Test
-    fun `disconnect returns success`() = runTest {
+    fun `disconnect returns success`() = runBlocking {
         // Note: connect() may fail due to network, but disconnect should always succeed
         val result = service.disconnect()
         assertTrue(result.isSuccess)
@@ -79,7 +81,7 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `disconnect when not connected succeeds`() = runTest {
+    fun `disconnect when not connected succeeds`() = runBlocking {
         assertFalse(service.isOnline)
         val result = service.disconnect()
         assertTrue(result.isSuccess)
@@ -87,7 +89,7 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `multiple disconnect calls succeed`() = runTest {
+    fun `multiple disconnect calls succeed`() = runBlocking {
         assertTrue(service.disconnect().isSuccess)
         assertFalse(service.isOnline)
         assertTrue(service.disconnect().isSuccess)
@@ -97,7 +99,7 @@ class GitServiceEnhancedTest {
     // ==================== STORAGE INFO TESTS ====================
 
     @Test
-    fun `getStorageInfo returns correct metadata`() = runTest {
+    fun `getStorageInfo returns correct metadata`() = runBlocking {
         val info = service.getStorageInfo()
         assertEquals("git_test-git", info.id)
         assertEquals("test-git", info.name)
@@ -105,7 +107,7 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `getStorageInfo reflects disconnected state`() = runTest {
+    fun `getStorageInfo reflects disconnected state`() = runBlocking {
         val info = service.getStorageInfo()
         assertFalse(info.isOnline)
     }
@@ -113,7 +115,7 @@ class GitServiceEnhancedTest {
     // ==================== LIST FILES TESTS ====================
 
     @Test
-    fun `listFiles fails when not connected`() = runTest {
+    fun `listFiles fails when not connected`() = runBlocking {
         val results = service.listFiles("/").toList()
         assertEquals(1, results.size)
         assertTrue(results[0].isFailure)
@@ -122,7 +124,7 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `listFiles with different paths returns correct failure`() = runTest {
+    fun `listFiles with different paths returns correct failure`() = runBlocking {
         val paths = listOf("/", "/src", "/src/main", "/docs")
         for (path in paths) {
             val results = service.listFiles(path).toList()
@@ -134,7 +136,7 @@ class GitServiceEnhancedTest {
     // ==================== UPLOAD TESTS ====================
 
     @Test
-    fun `uploadFile fails when not connected`() = runTest {
+    fun `uploadFile fails when not connected`() = runBlocking {
         val results = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
         assertTrue(results.isNotEmpty())
         val lastResult = results.last()
@@ -143,7 +145,7 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `uploadFile has correct operation type when failing`() = runTest {
+    fun `uploadFile has correct operation type when failing`() = runBlocking {
         val results = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
         assertTrue(results.all { it.type == NetworkOperation.Type.UPLOAD })
     }
@@ -151,7 +153,7 @@ class GitServiceEnhancedTest {
     // ==================== DOWNLOAD TESTS ====================
 
     @Test
-    fun `downloadFile fails when not connected`() = runTest {
+    fun `downloadFile fails when not connected`() = runBlocking {
         val results = service.downloadFile("/remote/file.txt", "/local/file.txt").toList()
         assertTrue(results.isNotEmpty())
         val lastResult = results.last()
@@ -160,7 +162,7 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `downloadFile has correct operation type when failing`() = runTest {
+    fun `downloadFile has correct operation type when failing`() = runBlocking {
         val results = service.downloadFile("/remote/file.txt", "/local/file.txt").toList()
         assertTrue(results.all { it.type == NetworkOperation.Type.DOWNLOAD })
     }
@@ -168,25 +170,25 @@ class GitServiceEnhancedTest {
     // ==================== FILE OPERATION TESTS ====================
 
     @Test
-    fun `copyFile returns success`() = runTest {
+    fun `copyFile returns success`() = runBlocking {
         val result = service.copyFile("/source/file.txt", "/dest/file.txt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `deleteFile returns success`() = runTest {
+    fun `deleteFile returns success`() = runBlocking {
         val result = service.deleteFile("/remote/file.txt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `renameFile returns success`() = runTest {
+    fun `renameFile returns success`() = runBlocking {
         val result = service.renameFile("/remote/old.txt", "new.txt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `moveFile returns success with correct document`() = runTest {
+    fun `moveFile returns success with correct document`() = runBlocking {
         val result = service.moveFile("/source/file.txt", "/dest/file.txt")
         assertTrue(result.isSuccess)
         val document = result.getOrNull()
@@ -198,7 +200,7 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `moveFile returns document with correct permissions`() = runTest {
+    fun `moveFile returns document with correct permissions`() = runBlocking {
         val result = service.moveFile("/source/file.txt", "/dest/file.txt")
         val document = result.getOrNull()
         assertNotNull(document)
@@ -210,7 +212,7 @@ class GitServiceEnhancedTest {
     // ==================== FOLDER OPERATION TESTS ====================
 
     @Test
-    fun `createFolder returns success with correct document`() = runTest {
+    fun `createFolder returns success with correct document`() = runBlocking {
         val result = service.createFolder("/src/newfolder")
         assertTrue(result.isSuccess)
         val document = result.getOrNull()
@@ -222,7 +224,7 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `createFolder returns document with execute permission`() = runTest {
+    fun `createFolder returns document with execute permission`() = runBlocking {
         val result = service.createFolder("/src/newfolder")
         val document = result.getOrNull()
         assertNotNull(document)
@@ -232,7 +234,7 @@ class GitServiceEnhancedTest {
     // ==================== FILE INFO TESTS ====================
 
     @Test
-    fun `getFileInfo returns success with correct document`() = runTest {
+    fun `getFileInfo returns success with correct document`() = runBlocking {
         val result = service.getFileInfo("/src/main.kt")
         assertTrue(result.isSuccess)
         val document = result.getOrNull()
@@ -244,7 +246,7 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `exists returns result`() = runTest {
+    fun `exists returns result`() = runBlocking {
         val result = service.exists("/src/main.kt")
         assertTrue(result.isSuccess)
         // Mock implementation returns false
@@ -254,26 +256,26 @@ class GitServiceEnhancedTest {
     // ==================== OPERATION MANAGEMENT TESTS ====================
 
     @Test
-    fun `getActiveOperations returns empty flow`() = runTest {
+    fun `getActiveOperations returns empty flow`() = runBlocking {
         val operations = service.getActiveOperations().toList()
         assertTrue(operations.isNotEmpty())
         assertTrue(operations[0].isEmpty())
     }
 
     @Test
-    fun `cancelOperation returns success`() = runTest {
+    fun `cancelOperation returns success`() = runBlocking {
         val result = service.cancelOperation(12345L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `pauseOperation returns success`() = runTest {
+    fun `pauseOperation returns success`() = runBlocking {
         val result = service.pauseOperation(12345L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `resumeOperation returns success`() = runTest {
+    fun `resumeOperation returns success`() = runBlocking {
         val result = service.resumeOperation(12345L)
         assertTrue(result.isSuccess)
     }
@@ -281,40 +283,40 @@ class GitServiceEnhancedTest {
     // ==================== CACHE OPERATION TESTS ====================
 
     @Test
-    fun `getCacheEntries returns empty list`() = runTest {
+    fun `getCacheEntries returns empty list`() = runBlocking {
         val entries = service.getCacheEntries("/").toList()
         assertTrue(entries.isNotEmpty())
         assertTrue(entries[0].isEmpty())
     }
 
     @Test
-    fun `getCacheEntries with null path returns empty list`() = runTest {
+    fun `getCacheEntries with null path returns empty list`() = runBlocking {
         val entries = service.getCacheEntries(null).toList()
         assertTrue(entries.isNotEmpty())
         assertTrue(entries[0].isEmpty())
     }
 
     @Test
-    fun `addToCache returns success`() = runTest {
+    fun `addToCache returns success`() = runBlocking {
         val result = service.addToCache("/src/main.kt", 1)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `addToCache with different priorities succeeds`() = runTest {
+    fun `addToCache with different priorities succeeds`() = runBlocking {
         assertTrue(service.addToCache("/file1.kt", 0).isSuccess)
         assertTrue(service.addToCache("/file2.kt", 1).isSuccess)
         assertTrue(service.addToCache("/file3.kt", 10).isSuccess)
     }
 
     @Test
-    fun `removeFromCache returns success`() = runTest {
+    fun `removeFromCache returns success`() = runBlocking {
         val result = service.removeFromCache("/src/main.kt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `clearCache returns success`() = runTest {
+    fun `clearCache returns success`() = runBlocking {
         val result = service.clearCache()
         assertTrue(result.isSuccess)
     }
@@ -322,21 +324,21 @@ class GitServiceEnhancedTest {
     // ==================== SYNC OPERATION TESTS ====================
 
     @Test
-    fun `getSyncStatus returns empty map`() = runTest {
+    fun `getSyncStatus returns empty map`() = runBlocking {
         val status = service.getSyncStatus("/").toList()
         assertTrue(status.isNotEmpty())
         assertTrue(status[0].isEmpty())
     }
 
     @Test
-    fun `getSyncStatus with null path returns empty map`() = runTest {
+    fun `getSyncStatus with null path returns empty map`() = runBlocking {
         val status = service.getSyncStatus(null).toList()
         assertTrue(status.isNotEmpty())
         assertTrue(status[0].isEmpty())
     }
 
     @Test
-    fun `syncFile returns progress flow`() = runTest {
+    fun `syncFile returns progress flow`() = runBlocking {
         val results = service.syncFile("/src/main.kt", false).toList()
         assertTrue(results.isNotEmpty())
 
@@ -347,14 +349,14 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `syncFile with forceSync flag succeeds`() = runTest {
+    fun `syncFile with forceSync flag succeeds`() = runBlocking {
         val results = service.syncFile("/src/main.kt", true).toList()
         assertTrue(results.isNotEmpty())
         assertEquals(NetworkOperation.Status.COMPLETED, results.last().status)
     }
 
     @Test
-    fun `syncAll returns flow`() = runTest {
+    fun `syncAll returns flow`() = runBlocking {
         val results = service.syncAll(false).toList()
         // syncAll now returns FAILED operation when not connected
         assertEquals(1, results.size, "syncAll should return one failed operation when not connected")
@@ -366,21 +368,21 @@ class GitServiceEnhancedTest {
     // ==================== SEARCH TESTS ====================
 
     @Test
-    fun `searchFiles returns failure for unimplemented`() = runTest {
+    fun `searchFiles returns failure for unimplemented`() = runBlocking {
         val results = service.searchFiles("query", "/", false).toList()
         assertTrue(results.isNotEmpty())
         assertTrue(results[0].isFailure)
     }
 
     @Test
-    fun `searchFiles with includeContent flag returns failure`() = runTest {
+    fun `searchFiles with includeContent flag returns failure`() = runBlocking {
         val results = service.searchFiles("query", "/", true).toList()
         assertTrue(results.isNotEmpty())
         assertTrue(results[0].isFailure)
     }
 
     @Test
-    fun `searchFiles with null path returns failure`() = runTest {
+    fun `searchFiles with null path returns failure`() = runBlocking {
         val results = service.searchFiles("query", null, false).toList()
         assertTrue(results.isNotEmpty())
         assertTrue(results[0].isFailure)
@@ -389,7 +391,7 @@ class GitServiceEnhancedTest {
     // ==================== RECENT CHANGES TESTS ====================
 
     @Test
-    fun `getRecentChanges returns empty list`() = runTest {
+    fun `getRecentChanges returns empty list`() = runBlocking {
         val since = kotlinx.datetime.Clock.System.now()
         val results = service.getRecentChanges(since, "/").toList()
         assertTrue(results.isNotEmpty())
@@ -397,7 +399,7 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `getRecentChanges with null path returns empty list`() = runTest {
+    fun `getRecentChanges with null path returns empty list`() = runBlocking {
         val since = kotlinx.datetime.Clock.System.now()
         val results = service.getRecentChanges(since, null).toList()
         assertTrue(results.isNotEmpty())
@@ -407,7 +409,7 @@ class GitServiceEnhancedTest {
     // ==================== QUOTA TESTS ====================
 
     @Test
-    fun `getQuotaInfo returns valid quota for git`() = runTest {
+    fun `getQuotaInfo returns valid quota for git`() = runBlocking {
         val result = service.getQuotaInfo()
         assertTrue(result.isSuccess)
         val quota = result.getOrNull()
@@ -421,7 +423,7 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `getQuotaInfo returns zero usage percentage`() = runTest {
+    fun `getQuotaInfo returns zero usage percentage`() = runBlocking {
         val result = service.getQuotaInfo()
         val quota = result.getOrNull()
         assertNotNull(quota)
@@ -470,7 +472,7 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `storage info has GIT type`() = runTest {
+    fun `storage info has GIT type`() = runBlocking {
         val info = service.getStorageInfo()
         assertEquals(StorageType.GIT, info.type)
     }
@@ -496,7 +498,7 @@ class GitServiceEnhancedTest {
     // ==================== EDGE CASE TESTS ====================
 
     @Test
-    fun `operations handle special characters in paths`() = runTest {
+    fun `operations handle special characters in paths`() = runBlocking {
         val specialPaths = listOf(
             "/path with spaces/file.kt",
             "/path-with-dashes/file.kt",
@@ -511,7 +513,7 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `operations handle deep paths`() = runTest {
+    fun `operations handle deep paths`() = runBlocking {
         val deepPath = "/src/main/kotlin/digital/vasic/yole/file.kt"
         val result = service.getFileInfo(deepPath)
         assertTrue(result.isSuccess)
@@ -519,13 +521,13 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `operations handle unicode paths`() = runTest {
+    fun `operations handle unicode paths`() = runBlocking {
         val result = service.getFileInfo("/docs/文档/README.md")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `operations handle git-specific paths`() = runTest {
+    fun `operations handle git-specific paths`() = runBlocking {
         // Git repo paths
         val gitPaths = listOf(
             "/.gitignore",
@@ -543,19 +545,19 @@ class GitServiceEnhancedTest {
     // ==================== GIT WORKFLOW TESTS ====================
 
     @Test
-    fun `file operations return git storageId`() = runTest {
+    fun `file operations return git storageId`() = runBlocking {
         val result = service.getFileInfo("/README.md")
         assertEquals("git", result.getOrNull()?.storageId)
     }
 
     @Test
-    fun `folder operations return git storageId`() = runTest {
+    fun `folder operations return git storageId`() = runBlocking {
         val result = service.createFolder("/new-folder")
         assertEquals("git", result.getOrNull()?.storageId)
     }
 
     @Test
-    fun `move operation returns git storageId`() = runTest {
+    fun `move operation returns git storageId`() = runBlocking {
         val result = service.moveFile("/old/file.kt", "/new/file.kt")
         assertEquals("git", result.getOrNull()?.storageId)
     }
@@ -563,7 +565,7 @@ class GitServiceEnhancedTest {
     // ==================== RESOURCE MANAGEMENT TESTS ====================
 
     @Test
-    fun `multiple disconnect calls do not throw`() = runTest {
+    fun `multiple disconnect calls do not throw`() = runBlocking {
         service.disconnect()
         service.disconnect()
         service.disconnect()
@@ -572,7 +574,7 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `service state is consistent after disconnect`() = runTest {
+    fun `service state is consistent after disconnect`() = runBlocking {
         service.disconnect()
         assertFalse(service.isOnline)
 
@@ -583,7 +585,7 @@ class GitServiceEnhancedTest {
     // ==================== CONFIG VARIATIONS ====================
 
     @Test
-    fun `service with empty repository URL uses default`() = runTest {
+    fun `service with empty repository URL uses default`() = runBlocking {
         val emptyConfig = StorageConfig.GitConfig(
             name = "empty-git",
             repositoryUrl = "",
@@ -598,7 +600,7 @@ class GitServiceEnhancedTest {
     }
 
     @Test
-    fun `service with different branches works correctly`() = runTest {
+    fun `service with different branches works correctly`() = runBlocking {
         val branches = listOf("main", "master", "develop", "feature/test")
         for (branch in branches) {
             val cfg = StorageConfig.GitConfig(

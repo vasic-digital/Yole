@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Deep test suite for WebDavService.
@@ -170,44 +172,44 @@ class WebDavServiceDeepTest {
     // ==================== STORAGE INFO ====================
 
     @Test
-    fun `getStorageInfo returns correct id`() = runTest {
+    fun `getStorageInfo returns correct id`() = runBlocking {
         val info = service.getStorageInfo()
         assertEquals("webdav_test-webdav", info.id)
     }
 
     @Test
-    fun `getStorageInfo returns correct name`() = runTest {
+    fun `getStorageInfo returns correct name`() = runBlocking {
         val info = service.getStorageInfo()
         assertEquals("test-webdav", info.name)
     }
 
     @Test
-    fun `getStorageInfo returns WEBDAV type`() = runTest {
+    fun `getStorageInfo returns WEBDAV type`() = runBlocking {
         val info = service.getStorageInfo()
         assertEquals(StorageType.WEBDAV, info.type)
     }
 
     @Test
-    fun `getStorageInfo uses config url as location`() = runTest {
+    fun `getStorageInfo uses config url as location`() = runBlocking {
         val info = service.getStorageInfo()
         assertEquals(config.url, info.location)
     }
 
     @Test
-    fun `getStorageInfo shows offline when not connected`() = runTest {
+    fun `getStorageInfo shows offline when not connected`() = runBlocking {
         val info = service.getStorageInfo()
         assertFalse(info.isOnline)
     }
 
     @Test
-    fun `getStorageInfo shows online after connect`() = runTest {
+    fun `getStorageInfo shows online after connect`() = runBlocking {
         service.connect()
         val info = service.getStorageInfo()
         assertTrue(info.isOnline)
     }
 
     @Test
-    fun `getStorageInfo shows offline after disconnect`() = runTest {
+    fun `getStorageInfo shows offline after disconnect`() = runBlocking {
         service.connect()
         service.disconnect()
         val info = service.getStorageInfo()
@@ -217,14 +219,14 @@ class WebDavServiceDeepTest {
     // ==================== CONNECTION STATE ====================
 
     @Test
-    fun `connect returns success`() = runTest {
+    fun `connect returns success`() = runBlocking {
         val result = service.connect()
         assertTrue(result.isSuccess)
         assertTrue(service.isOnline)
     }
 
     @Test
-    fun `disconnect returns success`() = runTest {
+    fun `disconnect returns success`() = runBlocking {
         service.connect()
         val result = service.disconnect()
         assertTrue(result.isSuccess)
@@ -232,7 +234,7 @@ class WebDavServiceDeepTest {
     }
 
     @Test
-    fun `disconnect without prior connect succeeds`() = runTest {
+    fun `disconnect without prior connect succeeds`() = runBlocking {
         val result = service.disconnect()
         assertTrue(result.isSuccess)
         assertFalse(service.isOnline)
@@ -244,14 +246,14 @@ class WebDavServiceDeepTest {
     }
 
     @Test
-    fun `testConnection succeeds`() = runTest {
+    fun `testConnection succeeds`() = runBlocking {
         val result = service.testConnection()
         assertTrue(result.isSuccess)
         assertTrue(result.getOrNull() == true)
     }
 
     @Test
-    fun `testConnection when already connected succeeds`() = runTest {
+    fun `testConnection when already connected succeeds`() = runBlocking {
         service.connect()
         val result = service.testConnection()
         assertTrue(result.isSuccess)
@@ -260,25 +262,25 @@ class WebDavServiceDeepTest {
     // ==================== CACHE OPERATIONS LIFECYCLE ====================
 
     @Test
-    fun `getCacheEntries initially returns empty list`() = runTest {
+    fun `getCacheEntries initially returns empty list`() = runBlocking {
         val entries = service.getCacheEntries("/").first()
         assertTrue(entries.isEmpty())
     }
 
     @Test
-    fun `getCacheEntries with null path initially empty`() = runTest {
+    fun `getCacheEntries with null path initially empty`() = runBlocking {
         val entries = service.getCacheEntries(null).first()
         assertTrue(entries.isEmpty())
     }
 
     @Test
-    fun `addToCache succeeds`() = runTest {
+    fun `addToCache succeeds`() = runBlocking {
         val result = service.addToCache("/file.txt", 1)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `addToCache then getCacheEntries returns entry`() = runTest {
+    fun `addToCache then getCacheEntries returns entry`() = runBlocking {
         service.addToCache("/file.txt", 1)
         val entries = service.getCacheEntries("/").first()
         assertEquals(1, entries.size)
@@ -286,7 +288,7 @@ class WebDavServiceDeepTest {
     }
 
     @Test
-    fun `addToCache multiple entries all returned`() = runTest {
+    fun `addToCache multiple entries all returned`() = runBlocking {
         service.addToCache("/file1.txt", 1)
         service.addToCache("/file2.txt", 2)
         service.addToCache("/file3.txt", 3)
@@ -295,7 +297,7 @@ class WebDavServiceDeepTest {
     }
 
     @Test
-    fun `getCacheEntries filters by path prefix`() = runTest {
+    fun `getCacheEntries filters by path prefix`() = runBlocking {
         service.addToCache("/docs/file1.txt", 1)
         service.addToCache("/photos/file2.jpg", 1)
         val docEntries = service.getCacheEntries("/docs").first()
@@ -303,7 +305,7 @@ class WebDavServiceDeepTest {
     }
 
     @Test
-    fun `removeFromCache removes specific entry`() = runTest {
+    fun `removeFromCache removes specific entry`() = runBlocking {
         service.addToCache("/file.txt", 1)
         service.removeFromCache("/file.txt")
         val entries = service.getCacheEntries(null).first()
@@ -311,13 +313,13 @@ class WebDavServiceDeepTest {
     }
 
     @Test
-    fun `removeFromCache returns success for nonexistent entry`() = runTest {
+    fun `removeFromCache returns success for nonexistent entry`() = runBlocking {
         val result = service.removeFromCache("/nonexistent.txt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `clearCache removes all entries`() = runTest {
+    fun `clearCache removes all entries`() = runBlocking {
         service.addToCache("/file1.txt", 1)
         service.addToCache("/file2.txt", 2)
         service.clearCache()
@@ -326,20 +328,20 @@ class WebDavServiceDeepTest {
     }
 
     @Test
-    fun `clearCache returns success when already empty`() = runTest {
+    fun `clearCache returns success when already empty`() = runBlocking {
         val result = service.clearCache()
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `addToCache with different priorities succeeds`() = runTest {
+    fun `addToCache with different priorities succeeds`() = runBlocking {
         assertTrue(service.addToCache("/a.txt", 0).isSuccess)
         assertTrue(service.addToCache("/b.txt", 5).isSuccess)
         assertTrue(service.addToCache("/c.txt", 100).isSuccess)
     }
 
     @Test
-    fun `addToCache overwrites existing entry with same path`() = runTest {
+    fun `addToCache overwrites existing entry with same path`() = runBlocking {
         service.addToCache("/file.txt", 1)
         service.addToCache("/file.txt", 5)
         val entries = service.getCacheEntries(null).first()
@@ -349,19 +351,19 @@ class WebDavServiceDeepTest {
     // ==================== SYNC STATUS OPERATIONS ====================
 
     @Test
-    fun `getSyncStatus initially returns empty map`() = runTest {
+    fun `getSyncStatus initially returns empty map`() = runBlocking {
         val status = service.getSyncStatus("/").first()
         assertTrue(status.isEmpty())
     }
 
     @Test
-    fun `getSyncStatus with null path initially empty`() = runTest {
+    fun `getSyncStatus with null path initially empty`() = runBlocking {
         val status = service.getSyncStatus(null).first()
         assertTrue(status.isEmpty())
     }
 
     @Test
-    fun `syncFile returns progress flow ending with COMPLETED`() = runTest {
+    fun `syncFile returns progress flow ending with COMPLETED`() = runBlocking {
         val results = service.syncFile("/file.txt", false).toList()
         assertTrue(results.isNotEmpty())
         assertEquals(NetworkOperation.Status.COMPLETED, results.last().status)
@@ -369,13 +371,13 @@ class WebDavServiceDeepTest {
     }
 
     @Test
-    fun `syncFile with forceSync returns COMPLETED`() = runTest {
+    fun `syncFile with forceSync returns COMPLETED`() = runBlocking {
         val results = service.syncFile("/file.txt", true).toList()
         assertEquals(NetworkOperation.Status.COMPLETED, results.last().status)
     }
 
     @Test
-    fun `syncFile updates sync status to SYNCED`() = runTest {
+    fun `syncFile updates sync status to SYNCED`() = runBlocking {
         service.syncFile("/docs/file.txt", false).toList()
         val status = service.getSyncStatus("/docs").first()
         assertTrue(status.containsKey("/docs/file.txt"))
@@ -383,13 +385,13 @@ class WebDavServiceDeepTest {
     }
 
     @Test
-    fun `syncFile ends with progress 1 point 0`() = runTest {
+    fun `syncFile ends with progress 1 point 0`() = runBlocking {
         val results = service.syncFile("/file.txt", false).toList()
         assertEquals(1.0, results.last().progress)
     }
 
     @Test
-    fun `getSyncStatus filters by path prefix`() = runTest {
+    fun `getSyncStatus filters by path prefix`() = runBlocking {
         service.syncFile("/docs/a.txt", false).toList()
         service.syncFile("/photos/b.jpg", false).toList()
         val docStatuses = service.getSyncStatus("/docs").first()
@@ -400,31 +402,31 @@ class WebDavServiceDeepTest {
     // ==================== OPERATION MANAGEMENT ====================
 
     @Test
-    fun `getActiveOperations initially returns empty list`() = runTest {
+    fun `getActiveOperations initially returns empty list`() = runBlocking {
         val operations = service.getActiveOperations().first()
         assertTrue(operations.isEmpty())
     }
 
     @Test
-    fun `cancelOperation returns success`() = runTest {
+    fun `cancelOperation returns success`() = runBlocking {
         val result = service.cancelOperation(12345L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `cancelOperation with zero id returns success`() = runTest {
+    fun `cancelOperation with zero id returns success`() = runBlocking {
         val result = service.cancelOperation(0L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `pauseOperation returns success`() = runTest {
+    fun `pauseOperation returns success`() = runBlocking {
         val result = service.pauseOperation(12345L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `resumeOperation returns success`() = runTest {
+    fun `resumeOperation returns success`() = runBlocking {
         val result = service.resumeOperation(12345L)
         assertTrue(result.isSuccess)
     }
@@ -432,14 +434,14 @@ class WebDavServiceDeepTest {
     // ==================== EXISTS (disconnected) ====================
 
     @Test
-    fun `exists when disconnected returns false`() = runTest {
+    fun `exists when disconnected returns false`() = runBlocking {
         val result = service.exists("/file.txt")
         assertTrue(result.isSuccess)
         assertFalse(result.getOrNull() ?: true)
     }
 
     @Test
-    fun `exists with deep path when disconnected returns false`() = runTest {
+    fun `exists with deep path when disconnected returns false`() = runBlocking {
         val result = service.exists("/a/b/c/d/file.txt")
         assertTrue(result.isSuccess)
         assertFalse(result.getOrNull() ?: true)
@@ -448,7 +450,7 @@ class WebDavServiceDeepTest {
     // ==================== GET FILE INFO (disconnected) ====================
 
     @Test
-    fun `getFileInfo when disconnected returns default document`() = runTest {
+    fun `getFileInfo when disconnected returns default document`() = runBlocking {
         val result = service.getFileInfo("/test.md")
         assertTrue(result.isSuccess)
         val doc = result.getOrNull()
@@ -460,7 +462,7 @@ class WebDavServiceDeepTest {
     }
 
     @Test
-    fun `getFileInfo extracts file name from path`() = runTest {
+    fun `getFileInfo extracts file name from path`() = runBlocking {
         val result = service.getFileInfo("/documents/report.pdf")
         val doc = result.getOrNull()
         assertNotNull(doc)
@@ -470,7 +472,7 @@ class WebDavServiceDeepTest {
     // ==================== QUOTA INFO ====================
 
     @Test
-    fun `getQuotaInfo returns success with default values`() = runTest {
+    fun `getQuotaInfo returns success with default values`() = runBlocking {
         val result = service.getQuotaInfo()
         assertTrue(result.isSuccess)
         val quota = result.getOrNull()
@@ -481,28 +483,28 @@ class WebDavServiceDeepTest {
     }
 
     @Test
-    fun `getQuotaInfo is not full`() = runTest {
+    fun `getQuotaInfo is not full`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertFalse(quota.isFull)
     }
 
     @Test
-    fun `getQuotaInfo is not low on space`() = runTest {
+    fun `getQuotaInfo is not low on space`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertFalse(quota.isLowOnSpace)
     }
 
     @Test
-    fun `getQuotaInfo consistent total equals used plus available`() = runTest {
+    fun `getQuotaInfo consistent total equals used plus available`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertEquals(quota.totalSpace, quota.usedSpace + quota.availableSpace)
     }
 
     @Test
-    fun `getQuotaInfo usage percentage is 0 point 1`() = runTest {
+    fun `getQuotaInfo usage percentage is 0 point 1`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertEquals(0.1, quota.usagePercentage)
@@ -511,7 +513,7 @@ class WebDavServiceDeepTest {
     // ==================== CONFIGURATION VARIATIONS ====================
 
     @Test
-    fun `service with different URL`() = runTest {
+    fun `service with different URL`() = runBlocking {
         val differentConfig = config.copy(url = "https://nextcloud.example.com/dav/")
         val differentService = WebDavService(differentConfig)
         val info = differentService.getStorageInfo()
@@ -542,7 +544,7 @@ class WebDavServiceDeepTest {
     }
 
     @Test
-    fun `multiple sequential cache operations consistency`() = runTest {
+    fun `multiple sequential cache operations consistency`() = runBlocking {
         service.addToCache("/a.txt", 1)
         service.addToCache("/b.txt", 2)
         service.removeFromCache("/a.txt")
@@ -552,7 +554,7 @@ class WebDavServiceDeepTest {
     }
 
     @Test
-    fun `sync then cache get consistency`() = runTest {
+    fun `sync then cache get consistency`() = runBlocking {
         service.syncFile("/file.txt", false).toList()
         val statuses = service.getSyncStatus("/file").first()
         assertTrue(statuses.containsKey("/file.txt"))

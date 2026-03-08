@@ -6,6 +6,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Enhanced comprehensive test suite for SftpService
@@ -106,7 +108,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedStorageInfo() = runTest {
+    fun testEnhancedStorageInfo() = runBlocking {
         val storageInfo = passwordAuthService.getStorageInfo()
         
         assertEquals("sftp_test-sftp-password", storageInfo.id)
@@ -119,7 +121,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedAuthenticationValidation() = runTest {
+    fun testEnhancedAuthenticationValidation() = runBlocking {
         // Test password authentication validation
         val passwordResult = passwordAuthService.connect()
         assertTrue(passwordResult.isSuccess, "Password authentication should be valid")
@@ -134,7 +136,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedInvalidAuthentication() = runTest {
+    fun testEnhancedInvalidAuthentication() = runBlocking {
         // Test configuration without any authentication method
         val invalidConfig = StorageConfig.SftpConfig(
             name = "test-sftp-invalid",
@@ -156,7 +158,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedConnectWithInvalidConfiguration() = runTest {
+    fun testEnhancedConnectWithInvalidConfiguration() = runBlocking {
         // Test with invalid host
         val invalidHostConfig = passwordAuthConfig.copy(host = "")
         val invalidHostService = SftpService(invalidHostConfig)
@@ -173,7 +175,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedStrictHostKeyChecking() = runTest {
+    fun testEnhancedStrictHostKeyChecking() = runBlocking {
         // Test with strict host key checking enabled but no known_hosts file
         val strictConfig = passwordAuthConfig.copy(
             strictHostKeyChecking = true,
@@ -189,7 +191,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedDisconnect() = runTest {
+    fun testEnhancedDisconnect() = runBlocking {
         // First connect
         passwordAuthService.connect()
         
@@ -202,7 +204,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedTestConnection() = runTest {
+    fun testEnhancedTestConnection() = runBlocking {
         val result = passwordAuthService.testConnection()
         
         assertTrue(result.isSuccess, "Test connection should succeed")
@@ -210,7 +212,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedListFilesWhenNotConnected() = runTest {
+    fun testEnhancedListFilesWhenNotConnected() = runBlocking {
         val result = passwordAuthService.listFiles("/").first()
         
         assertTrue(result.isFailure, "List files should fail when not connected")
@@ -220,7 +222,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedListFilesWhenConnected() = runTest {
+    fun testEnhancedListFilesWhenConnected() = runBlocking {
         // Connect first
         passwordAuthService.connect()
         
@@ -245,7 +247,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedDownloadFileWhenNotConnected() = runTest {
+    fun testEnhancedDownloadFileWhenNotConnected() = runBlocking {
         val operations = passwordAuthService.downloadFile("/document.pdf", "/tmp/document.pdf")
         
         val firstOperation = operations.first()
@@ -255,7 +257,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedDownloadFileWhenConnected() = runTest {
+    fun testEnhancedDownloadFileWhenConnected() = runBlocking {
         // Connect first
         passwordAuthService.connect()
         
@@ -284,7 +286,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedUploadFileWhenNotConnected() = runTest {
+    fun testEnhancedUploadFileWhenNotConnected() = runBlocking {
         val operations = passwordAuthService.uploadFile("/tmp/report.md", "/report.md")
         
         val firstOperation = operations.first()
@@ -294,7 +296,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedUploadFileWhenConnected() = runTest {
+    fun testEnhancedUploadFileWhenConnected() = runBlocking {
         // Connect first
         passwordAuthService.connect()
         
@@ -323,7 +325,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedFileOperationsWhenConnected() = runTest {
+    fun testEnhancedFileOperationsWhenConnected() = runBlocking {
         // Connect first
         passwordAuthService.connect()
         
@@ -360,7 +362,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedGetFileInfo() = runTest {
+    fun testEnhancedGetFileInfo() = runBlocking {
         // Connect first
         passwordAuthService.connect()
         
@@ -379,7 +381,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedQuotaInfo() = runTest {
+    fun testEnhancedQuotaInfo() = runBlocking {
         val result = passwordAuthService.getQuotaInfo()
         
         assertTrue(result.isSuccess, "Get quota info should succeed")
@@ -399,7 +401,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedExists() = runTest {
+    fun testEnhancedExists() = runBlocking {
         // Connect first
         passwordAuthService.connect()
         
@@ -410,7 +412,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedPathOperations() = runTest {
+    fun testEnhancedPathOperations() = runBlocking {
         // Test getParentPath - with rootPath = "/home/testuser"
         // getParentPath works on the input path directly, not the normalized path
         assertEquals("/", passwordAuthService.getParentPath("/test.txt"))
@@ -427,7 +429,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedActiveOperations() = runTest {
+    fun testEnhancedActiveOperations() = runBlocking {
         // Connect first
         passwordAuthService.connect()
         
@@ -437,7 +439,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedCacheOperations() = runTest {
+    fun testEnhancedCacheOperations() = runBlocking {
         // Test get cache entries
         val cacheEntries = passwordAuthService.getCacheEntries("/").first()
         assertTrue(cacheEntries.isEmpty(), "Cache entries should be empty")
@@ -456,14 +458,14 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedSyncStatus() = runTest {
+    fun testEnhancedSyncStatus() = runBlocking {
         val syncStatus = passwordAuthService.getSyncStatus("/").first()
         
         assertTrue(syncStatus.isEmpty(), "Sync status should be empty initially")
     }
     
     @Test
-    fun testEnhancedSyncOperations() = runTest {
+    fun testEnhancedSyncOperations() = runBlocking {
         // Test sync file
         val syncFileOperations = passwordAuthService.syncFile("/test.txt", false)
         val syncFileOp = syncFileOperations.first()
@@ -480,7 +482,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedSearchFiles() = runTest {
+    fun testEnhancedSearchFiles() = runBlocking {
         val result = passwordAuthService.searchFiles("test", "/", false).first()
         
         assertTrue(result.isFailure, "Search should fail for SFTP")
@@ -488,7 +490,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedRecentChanges() = runTest {
+    fun testEnhancedRecentChanges() = runBlocking {
         val since = Clock.System.now()
         val changes = passwordAuthService.getRecentChanges(since, "/").first()
         
@@ -496,7 +498,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedOperationManagement() = runTest {
+    fun testEnhancedOperationManagement() = runBlocking {
         // Test cancel operation
         val cancelResult = passwordAuthService.cancelOperation(12345L)
         assertTrue(cancelResult.isSuccess, "Cancel operation should succeed")
@@ -511,7 +513,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedSftpSecurityFeatures() = runTest {
+    fun testEnhancedSftpSecurityFeatures() = runBlocking {
         // Test key-based authentication service
         val keyStorageInfo = keyAuthService.getStorageInfo()
         assertEquals("sftp://sftp.secure.com:22/data", keyStorageInfo.location)
@@ -530,7 +532,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedSftpVsFtpAdvantages() = runTest {
+    fun testEnhancedSftpVsFtpAdvantages() = runBlocking {
         // SFTP has several advantages over basic FTP
         
         // 1. Reliable folder support
@@ -559,7 +561,7 @@ class SftpServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedConnectionScenarios() = runTest {
+    fun testEnhancedConnectionScenarios() = runBlocking {
         // Test connection timeout
         val timeoutConfig = passwordAuthConfig.copy(connectionTimeout = 5000) // 5 second timeout
         val timeoutService = SftpService(timeoutConfig)

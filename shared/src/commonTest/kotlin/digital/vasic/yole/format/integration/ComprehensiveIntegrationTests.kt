@@ -42,6 +42,17 @@ import kotlin.time.measureTime
  */
 class ComprehensiveIntegrationTests {
 
+    @BeforeTest
+    fun setUp() {
+        ParserRegistry.clear()
+        ParserInitializer.registerAllParsers()
+    }
+
+    @AfterTest
+    fun tearDown() {
+        ParserRegistry.clear()
+    }
+
     // All parsers
     private val markdownParser = MarkdownParser()
     private val plaintextParser = PlaintextParser()

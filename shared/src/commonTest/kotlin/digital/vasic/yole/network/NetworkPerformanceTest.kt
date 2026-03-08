@@ -31,7 +31,7 @@ class NetworkPerformanceTest {
     private val performanceDatabase = MockPerformanceDatabase()
 
     @Test
-    fun testConcurrentNetworkOperations() = runTest {
+    fun testConcurrentNetworkOperations() = runBlocking {
         val concurrentOperations = 100
         val results = mutableListOf<NetworkOperationResult>()
 
@@ -62,7 +62,7 @@ class NetworkPerformanceTest {
     }
 
     @Test
-    fun testMemoryEfficiencyUnderLoad() = runTest {
+    fun testMemoryEfficiencyUnderLoad() = runBlocking {
         val operationsPerBatch = 50
         val numberOfBatches = 10
 
@@ -101,7 +101,7 @@ class NetworkPerformanceTest {
     }
 
     @Test
-    fun testLargeDocumentHandling() = runTest {
+    fun testLargeDocumentHandling() = runBlocking {
         val documentSizes = listOf(
             1_000L to "1KB",
             10_000L to "10KB",
@@ -165,7 +165,7 @@ class NetworkPerformanceTest {
     }
 
     @Test
-    fun testResponseTimeBenchmarks() = runTest {
+    fun testResponseTimeBenchmarks() = runBlocking {
         val benchmarks = mutableMapOf<String, List<Duration>>()
 
         // Benchmark different types of operations
@@ -222,7 +222,7 @@ class NetworkPerformanceTest {
     }
 
     @Test
-    fun testResourceLeakDetection() = runTest {
+    fun testResourceLeakDetection() = runBlocking {
         val iterations = 1000
         val durationSnapshots = mutableListOf<Duration>()
 
@@ -261,7 +261,7 @@ class NetworkPerformanceTest {
     }
 
     @Test
-    fun testScalabilityLimits() = runTest {
+    fun testScalabilityLimits() = runBlocking {
         val scaleFactors = listOf(10, 50, 100, 500, 1000)
         val scalabilityResults = mutableListOf<ScalabilityResult>()
 

@@ -9,6 +9,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Comprehensive test suite for OneDriveService network protocol implementation.
@@ -44,7 +46,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testConnectSuccess() = runTest {
+    fun testConnectSuccess() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val result = oneDriveService.connect()
         
@@ -54,7 +56,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testDisconnectSuccess() = runTest {
+    fun testDisconnectSuccess() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         oneDriveService.connect()
         val result = oneDriveService.disconnect()
@@ -63,7 +65,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testStorageInfo() = runTest {
+    fun testStorageInfo() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val storageInfo = oneDriveService.getStorageInfo()
         
@@ -74,7 +76,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testListFilesWhenNotConnected() = runTest {
+    fun testListFilesWhenNotConnected() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val result = oneDriveService.listFiles("/").first()
         
@@ -83,7 +85,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testDownloadFileWhenNotConnected() = runTest {
+    fun testDownloadFileWhenNotConnected() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val operations = oneDriveService.downloadFile("/test.md", "/tmp/test.md")
         
@@ -94,7 +96,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testUploadFileWhenNotConnected() = runTest {
+    fun testUploadFileWhenNotConnected() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val operations = oneDriveService.uploadFile("/tmp/test.md", "/test.md")
         
@@ -105,7 +107,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testDeleteFileWhenNotConnected() = runTest {
+    fun testDeleteFileWhenNotConnected() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val result = oneDriveService.deleteFile("/test.md")
         
@@ -113,7 +115,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testCreateFolderWhenNotConnected() = runTest {
+    fun testCreateFolderWhenNotConnected() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val result = oneDriveService.createFolder("/test-folder")
         
@@ -124,7 +126,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testRenameFileWhenNotConnected() = runTest {
+    fun testRenameFileWhenNotConnected() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val result = oneDriveService.renameFile("/test.md", "renamed.md")
         
@@ -132,7 +134,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testMoveFileWhenNotConnected() = runTest {
+    fun testMoveFileWhenNotConnected() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val result = oneDriveService.moveFile("/test.md", "/moved/test.md")
         
@@ -143,7 +145,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testCopyFileWhenNotConnected() = runTest {
+    fun testCopyFileWhenNotConnected() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val result = oneDriveService.copyFile("/test.md", "/copy/test.md")
         
@@ -151,7 +153,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testGetFileInfoWhenNotConnected() = runTest {
+    fun testGetFileInfoWhenNotConnected() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val result = oneDriveService.getFileInfo("/test.md")
         
@@ -162,7 +164,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testGetQuotaInfoWhenNotConnected() = runTest {
+    fun testGetQuotaInfoWhenNotConnected() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val result = oneDriveService.getQuotaInfo()
 
@@ -171,7 +173,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testExistsWhenNotConnected() = runTest {
+    fun testExistsWhenNotConnected() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val result = oneDriveService.exists("/test.md")
         
@@ -231,7 +233,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testSearchFilesWhenNotConnected() = runTest {
+    fun testSearchFilesWhenNotConnected() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val result = oneDriveService.searchFiles("test", "/", false).first()
         
@@ -240,7 +242,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testGetRecentChangesWhenNotConnected() = runTest {
+    fun testGetRecentChangesWhenNotConnected() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val since = Clock.System.now()
         val changes = oneDriveService.getRecentChanges(since, "/").first()
@@ -249,7 +251,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testSyncFileWhenNotConnected() = runTest {
+    fun testSyncFileWhenNotConnected() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val operations = oneDriveService.syncFile("/test.md", false)
         
@@ -268,7 +270,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testSyncAllWhenNotConnected() = runTest {
+    fun testSyncAllWhenNotConnected() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val operations = oneDriveService.syncAll(false)
 
@@ -284,7 +286,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testActiveOperationsFlow() = runTest {
+    fun testActiveOperationsFlow() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val activeOps = oneDriveService.getActiveOperations().first()
         
@@ -292,7 +294,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testCacheOperations() = runTest {
+    fun testCacheOperations() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         
         val cacheEntries = oneDriveService.getCacheEntries("/").first()
@@ -309,7 +311,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testSyncStatusFlow() = runTest {
+    fun testSyncStatusFlow() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val syncStatus = oneDriveService.getSyncStatus("/").first()
         
@@ -317,7 +319,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testTestConnection() = runTest {
+    fun testTestConnection() = runBlocking {
         oneDriveService = OneDriveService(oneDriveConfig)
         val result = oneDriveService.testConnection()
         
@@ -327,7 +329,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testTokenRefreshScenario() = runTest {
+    fun testTokenRefreshScenario() = runBlocking {
         // Test with expired access token scenario
         val configWithExpiredToken = oneDriveConfig.copy(accessToken = "expired-token")
         oneDriveService = OneDriveService(configWithExpiredToken)
@@ -338,7 +340,7 @@ class OneDriveServiceTest {
     }
     
     @Test
-    fun testSharePointVsPersonalOneDrive() = runTest {
+    fun testSharePointVsPersonalOneDrive() = runBlocking {
         // Test personal OneDrive
         val personalConfig = oneDriveConfig.copy(
             driveType = OneDriveDriveType.ME,

@@ -9,6 +9,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Comprehensive test suite for SmbService network protocol implementation.
@@ -46,7 +48,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testConnectSuccess() = runTest {
+    fun testConnectSuccess() = runBlocking {
         smbService = SmbService(smbConfig)
         val result = smbService.connect()
         
@@ -54,7 +56,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testDisconnectSuccess() = runTest {
+    fun testDisconnectSuccess() = runBlocking {
         smbService = SmbService(smbConfig)
         smbService.connect()
         val result = smbService.disconnect()
@@ -63,7 +65,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testStorageInfo() = runTest {
+    fun testStorageInfo() = runBlocking {
         smbService = SmbService(smbConfig)
         val storageInfo = smbService.getStorageInfo()
         
@@ -74,7 +76,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testListFilesWhenNotConnected() = runTest {
+    fun testListFilesWhenNotConnected() = runBlocking {
         smbService = SmbService(smbConfig)
         val result = smbService.listFiles("/").first()
         
@@ -83,7 +85,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testDownloadFileWhenNotConnected() = runTest {
+    fun testDownloadFileWhenNotConnected() = runBlocking {
         smbService = SmbService(smbConfig)
         val operations = smbService.downloadFile("/test.md", "/tmp/test.md")
         
@@ -94,7 +96,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testUploadFileWhenNotConnected() = runTest {
+    fun testUploadFileWhenNotConnected() = runBlocking {
         smbService = SmbService(smbConfig)
         val operations = smbService.uploadFile("/tmp/test.md", "/test.md")
         
@@ -105,7 +107,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testDeleteFileWhenNotConnected() = runTest {
+    fun testDeleteFileWhenNotConnected() = runBlocking {
         smbService = SmbService(smbConfig)
         val result = smbService.deleteFile("/test.md")
         
@@ -113,7 +115,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testCreateFolderWhenNotConnected() = runTest {
+    fun testCreateFolderWhenNotConnected() = runBlocking {
         smbService = SmbService(smbConfig)
         val result = smbService.createFolder("/test-folder")
         
@@ -125,7 +127,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testRenameFileWhenNotConnected() = runTest {
+    fun testRenameFileWhenNotConnected() = runBlocking {
         smbService = SmbService(smbConfig)
         val result = smbService.renameFile("/test.md", "renamed.md")
         
@@ -133,7 +135,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testMoveFileWhenNotConnected() = runTest {
+    fun testMoveFileWhenNotConnected() = runBlocking {
         smbService = SmbService(smbConfig)
         val result = smbService.moveFile("/test.md", "/moved/test.md")
         
@@ -145,7 +147,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testCopyFileWhenNotConnected() = runTest {
+    fun testCopyFileWhenNotConnected() = runBlocking {
         smbService = SmbService(smbConfig)
         val result = smbService.copyFile("/test.md", "/copy/test.md")
         
@@ -153,7 +155,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testGetFileInfoWhenNotConnected() = runTest {
+    fun testGetFileInfoWhenNotConnected() = runBlocking {
         smbService = SmbService(smbConfig)
         val result = smbService.getFileInfo("/test.md")
         
@@ -165,7 +167,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testGetQuotaInfoWhenNotConnected() = runTest {
+    fun testGetQuotaInfoWhenNotConnected() = runBlocking {
         smbService = SmbService(smbConfig)
         val result = smbService.getQuotaInfo()
         
@@ -178,7 +180,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testExistsWhenNotConnected() = runTest {
+    fun testExistsWhenNotConnected() = runBlocking {
         smbService = SmbService(smbConfig)
         val result = smbService.exists("/test.md")
         
@@ -226,7 +228,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testSearchFilesWhenNotConnected() = runTest {
+    fun testSearchFilesWhenNotConnected() = runBlocking {
         smbService = SmbService(smbConfig)
         val result = smbService.searchFiles("test", "/", false).first()
         
@@ -235,7 +237,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testGetRecentChangesWhenNotConnected() = runTest {
+    fun testGetRecentChangesWhenNotConnected() = runBlocking {
         smbService = SmbService(smbConfig)
         val since = Clock.System.now()
         val changes = smbService.getRecentChanges(since, "/").first()
@@ -244,7 +246,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testSyncFileWhenNotConnected() = runTest {
+    fun testSyncFileWhenNotConnected() = runBlocking {
         smbService = SmbService(smbConfig)
         val operations = smbService.syncFile("/test.md", false)
         
@@ -270,7 +272,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testSyncAllWhenNotConnected() = runTest {
+    fun testSyncAllWhenNotConnected() = runBlocking {
         smbService = SmbService(smbConfig)
         val operations = smbService.syncAll(false)
         
@@ -283,7 +285,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testActiveOperationsFlow() = runTest {
+    fun testActiveOperationsFlow() = runBlocking {
         smbService = SmbService(smbConfig)
         val activeOps = smbService.getActiveOperations().first()
         
@@ -291,7 +293,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testCacheOperations() = runTest {
+    fun testCacheOperations() = runBlocking {
         smbService = SmbService(smbConfig)
         
         val cacheEntries = smbService.getCacheEntries("/").first()
@@ -308,7 +310,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testSyncStatusFlow() = runTest {
+    fun testSyncStatusFlow() = runBlocking {
         smbService = SmbService(smbConfig)
         val syncStatus = smbService.getSyncStatus("/").first()
         
@@ -316,7 +318,7 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testTestConnection() = runTest {
+    fun testTestConnection() = runBlocking {
         smbService = SmbService(smbConfig)
         val result = smbService.testConnection()
         

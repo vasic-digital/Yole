@@ -22,6 +22,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Stress tests for network protocol services.
@@ -32,7 +33,7 @@ class NetworkProtocolStressTest {
     // ==================== FTP STRESS TESTS ====================
 
     @Test
-    fun `FTP concurrent connect disconnect cycles`() = runTest {
+    fun `FTP concurrent connect disconnect cycles`() = runBlocking {
         val config = StorageConfig.FtpConfig(
             name = "stress-ftp",
             host = "ftp.example.com",
@@ -61,7 +62,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `FTP rapid file info requests`() = runTest {
+    fun `FTP rapid file info requests`() = runBlocking {
         val config = StorageConfig.FtpConfig(
             name = "stress-ftp",
             host = "ftp.example.com",
@@ -90,7 +91,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `FTP concurrent cache operations`() = runTest {
+    fun `FTP concurrent cache operations`() = runBlocking {
         val config = StorageConfig.FtpConfig(
             name = "stress-ftp",
             host = "ftp.example.com",
@@ -118,7 +119,7 @@ class NetworkProtocolStressTest {
     // ==================== SMB STRESS TESTS ====================
 
     @Test
-    fun `SMB concurrent connect disconnect cycles`() = runTest {
+    fun `SMB concurrent connect disconnect cycles`() = runBlocking {
         val config = StorageConfig.SmbConfig(
             name = "stress-smb",
             host = "192.168.1.100",
@@ -147,7 +148,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `SMB rapid folder operations`() = runTest {
+    fun `SMB rapid folder operations`() = runBlocking {
         val config = StorageConfig.SmbConfig(
             name = "stress-smb",
             host = "192.168.1.100",
@@ -172,7 +173,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `SMB concurrent file move operations`() = runTest {
+    fun `SMB concurrent file move operations`() = runBlocking {
         val config = StorageConfig.SmbConfig(
             name = "stress-smb",
             host = "192.168.1.100",
@@ -199,7 +200,7 @@ class NetworkProtocolStressTest {
     // ==================== WEBDAV STRESS TESTS ====================
 
     @Test
-    fun `WebDAV concurrent connect disconnect cycles`() = runTest {
+    fun `WebDAV concurrent connect disconnect cycles`() = runBlocking {
         val config = StorageConfig.WebDavConfig(
             name = "stress-webdav",
             url = "https://webdav.example.com/dav",
@@ -224,7 +225,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `WebDAV rapid sync operations`() = runTest {
+    fun `WebDAV rapid sync operations`() = runBlocking {
         val config = StorageConfig.WebDavConfig(
             name = "stress-webdav",
             url = "https://webdav.example.com/dav",
@@ -245,7 +246,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `WebDAV concurrent quota checks`() = runTest {
+    fun `WebDAV concurrent quota checks`() = runBlocking {
         val config = StorageConfig.WebDavConfig(
             name = "stress-webdav",
             url = "https://webdav.example.com/dav",
@@ -267,7 +268,7 @@ class NetworkProtocolStressTest {
     // ==================== GIT STRESS TESTS ====================
 
     @Test
-    fun `Git rapid file operations`() = runTest {
+    fun `Git rapid file operations`() = runBlocking {
         val config = StorageConfig.GitConfig(
             name = "stress-git",
             repositoryUrl = "https://github.com/example/repo.git",
@@ -289,7 +290,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `Git concurrent folder creation`() = runTest {
+    fun `Git concurrent folder creation`() = runBlocking {
         val config = StorageConfig.GitConfig(
             name = "stress-git",
             repositoryUrl = "https://github.com/example/repo.git",
@@ -311,7 +312,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `Git path validation stress`() = runTest {
+    fun `Git path validation stress`() = runBlocking {
         val config = StorageConfig.GitConfig(
             name = "stress-git",
             repositoryUrl = "https://github.com/example/repo.git",
@@ -336,7 +337,7 @@ class NetworkProtocolStressTest {
     // ==================== CROSS-PROTOCOL STRESS TESTS ====================
 
     @Test
-    fun `Multiple protocols concurrent operations`() = runTest {
+    fun `Multiple protocols concurrent operations`() = runBlocking {
         val ftpConfig = StorageConfig.FtpConfig(
             name = "ftp", host = "ftp.example.com", port = 21,
             username = "user", password = "pass", rootPath = "/"
@@ -379,7 +380,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `Rapid protocol switching`() = runTest {
+    fun `Rapid protocol switching`() = runBlocking {
         val ftpConfig = StorageConfig.FtpConfig(
             name = "ftp", host = "ftp.example.com", port = 21,
             username = "user", password = "pass", rootPath = "/"
@@ -413,7 +414,7 @@ class NetworkProtocolStressTest {
     // ==================== EDGE CASE STRESS TESTS ====================
 
     @Test
-    fun `Stress test with empty paths`() = runTest {
+    fun `Stress test with empty paths`() = runBlocking {
         val config = StorageConfig.FtpConfig(
             name = "ftp", host = "ftp.example.com", port = 21,
             username = "user", password = "pass", rootPath = "/"
@@ -435,7 +436,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `Stress test with special characters in paths`() = runTest {
+    fun `Stress test with special characters in paths`() = runBlocking {
         val config = StorageConfig.WebDavConfig(
             name = "webdav", url = "https://webdav.example.com",
             username = "user", password = "pass"
@@ -464,7 +465,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `Stress test connection state consistency`() = runTest {
+    fun `Stress test connection state consistency`() = runBlocking {
         val config = StorageConfig.SmbConfig(
             name = "smb", host = "192.168.1.100", share = "docs",
             domain = "WORKGROUP", username = "user", password = "pass", path = "/"

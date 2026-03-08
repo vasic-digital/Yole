@@ -45,6 +45,8 @@ import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 import kotlin.test.*
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Targeted mock HTTP coverage tests for all five HTTP-based protocol
@@ -189,7 +191,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 1. GoogleDrive: searchFiles with path filter ====================
 
     @Test
-    fun gdSearchFilesWithPathFilter() = runTest {
+    fun gdSearchFilesWithPathFilter() = runBlocking {
         var capturedUrl: String? = null
         val service = gdService { request ->
             capturedUrl = request.url.toString()
@@ -205,7 +207,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 2. GoogleDrive: searchFiles with includeContent ====================
 
     @Test
-    fun gdSearchFilesWithIncludeContent() = runTest {
+    fun gdSearchFilesWithIncludeContent() = runBlocking {
         var capturedUrl: String? = null
         val service = gdService { request ->
             val url = request.url.toString()
@@ -226,7 +228,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 3. GoogleDrive: searchFiles API error ====================
 
     @Test
-    fun gdSearchFilesApiError() = runTest {
+    fun gdSearchFilesApiError() = runBlocking {
         val service = gdService { request ->
             val url = request.url.toString()
             when {
@@ -242,7 +244,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 4. GoogleDrive: getRecentChanges returns docs ====================
 
     @Test
-    fun gdGetRecentChangesReturnsDocuments() = runTest {
+    fun gdGetRecentChangesReturnsDocuments() = runBlocking {
         val service = gdService { request ->
             val url = request.url.toString()
             when {
@@ -260,7 +262,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 5. GoogleDrive: getRecentChanges with path ====================
 
     @Test
-    fun gdGetRecentChangesWithPath() = runTest {
+    fun gdGetRecentChangesWithPath() = runBlocking {
         val service = gdService { request ->
             val url = request.url.toString()
             when {
@@ -277,7 +279,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 6. GoogleDrive: getRecentChanges API error returns empty ====================
 
     @Test
-    fun gdGetRecentChangesApiErrorReturnsEmpty() = runTest {
+    fun gdGetRecentChangesApiErrorReturnsEmpty() = runBlocking {
         val service = gdService { request ->
             val url = request.url.toString()
             when {
@@ -294,7 +296,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 7. GoogleDrive: getRecentChanges when offline ====================
 
     @Test
-    fun gdGetRecentChangesWhenOfflineReturnsEmpty() = runTest {
+    fun gdGetRecentChangesWhenOfflineReturnsEmpty() = runBlocking {
         val service = gdService { request ->
             respond("Unauthorized", HttpStatusCode.Unauthorized)
         }
@@ -306,7 +308,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 8. GoogleDrive: syncFile when connected ====================
 
     @Test
-    fun gdSyncFileWhenConnected() = runTest {
+    fun gdSyncFileWhenConnected() = runBlocking {
         val service = gdService { request ->
             val url = request.url.toString()
             when {
@@ -324,7 +326,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 9. GoogleDrive: syncFile when offline ====================
 
     @Test
-    fun gdSyncFileWhenOffline() = runTest {
+    fun gdSyncFileWhenOffline() = runBlocking {
         val service = gdService { request ->
             respond("Unauthorized", HttpStatusCode.Unauthorized)
         }
@@ -336,7 +338,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 10. GoogleDrive: syncAll when connected ====================
 
     @Test
-    fun gdSyncAllWhenConnected() = runTest {
+    fun gdSyncAllWhenConnected() = runBlocking {
         val service = gdService { request ->
             val url = request.url.toString()
             when {
@@ -353,7 +355,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 11. GoogleDrive: syncAll when offline ====================
 
     @Test
-    fun gdSyncAllWhenOffline() = runTest {
+    fun gdSyncAllWhenOffline() = runBlocking {
         val service = gdService { request ->
             respond("Unauthorized", HttpStatusCode.Unauthorized)
         }
@@ -365,7 +367,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 12. GoogleDrive: getQuotaInfo API error ====================
 
     @Test
-    fun gdGetQuotaInfoApiError() = runTest {
+    fun gdGetQuotaInfoApiError() = runBlocking {
         val service = gdService { request ->
             val url = request.url.toString()
             when {
@@ -382,7 +384,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 13. GoogleDrive: listFiles with non-root path ====================
 
     @Test
-    fun gdListFilesWithNonRootPath() = runTest {
+    fun gdListFilesWithNonRootPath() = runBlocking {
         val service = gdService { request ->
             val url = request.url.toString()
             when {
@@ -399,7 +401,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 14. GoogleDrive: getActiveOperations ====================
 
     @Test
-    fun gdGetActiveOperations() = runTest {
+    fun gdGetActiveOperations() = runBlocking {
         val service = gdService { request ->
             respond(gdAboutJson, HttpStatusCode.OK, jsonHeaders())
         }
@@ -411,7 +413,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 15. GoogleDrive: cancelOperation ====================
 
     @Test
-    fun gdCancelOperation() = runTest {
+    fun gdCancelOperation() = runBlocking {
         val service = gdService { request ->
             respond(gdAboutJson, HttpStatusCode.OK, jsonHeaders())
         }
@@ -422,7 +424,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 16. GoogleDrive: pauseOperation and resumeOperation ====================
 
     @Test
-    fun gdPauseAndResumeOperation() = runTest {
+    fun gdPauseAndResumeOperation() = runBlocking {
         val service = gdService { request ->
             respond(gdAboutJson, HttpStatusCode.OK, jsonHeaders())
         }
@@ -433,7 +435,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 17. GoogleDrive: cache operations ====================
 
     @Test
-    fun gdCacheOperations() = runTest {
+    fun gdCacheOperations() = runBlocking {
         val service = gdService { request ->
             respond(gdAboutJson, HttpStatusCode.OK, jsonHeaders())
         }
@@ -448,7 +450,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 18. GoogleDrive: getSyncStatus ====================
 
     @Test
-    fun gdGetSyncStatus() = runTest {
+    fun gdGetSyncStatus() = runBlocking {
         val service = gdService { request ->
             respond(gdAboutJson, HttpStatusCode.OK, jsonHeaders())
         }
@@ -459,7 +461,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 19. GoogleDrive: clearCache ====================
 
     @Test
-    fun gdClearCache() = runTest {
+    fun gdClearCache() = runBlocking {
         val service = gdService { request ->
             respond(gdAboutJson, HttpStatusCode.OK, jsonHeaders())
         }
@@ -473,7 +475,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 20. OneDrive: BUSINESS drive type ====================
 
     @Test
-    fun odBusinessDriveType() = runTest {
+    fun odBusinessDriveType() = runBlocking {
         var capturedUrl: String? = null
         val service = odService(
             handler = { request ->
@@ -490,7 +492,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 21. OneDrive: SHAREPOINT drive type ====================
 
     @Test
-    fun odSharePointDriveType() = runTest {
+    fun odSharePointDriveType() = runBlocking {
         var capturedUrl: String? = null
         val service = odService(
             handler = { request ->
@@ -507,7 +509,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 22. OneDrive: GROUP drive type ====================
 
     @Test
-    fun odGroupDriveType() = runTest {
+    fun odGroupDriveType() = runBlocking {
         var capturedUrl: String? = null
         val service = odService(
             handler = { request ->
@@ -524,7 +526,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 23. OneDrive: searchFiles API error ====================
 
     @Test
-    fun odSearchFilesApiError() = runTest {
+    fun odSearchFilesApiError() = runBlocking {
         val service = odService { request ->
             val url = request.url.toString()
             when {
@@ -540,7 +542,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 24. OneDrive: getRecentChanges returns docs ====================
 
     @Test
-    fun odGetRecentChangesReturnsDocuments() = runTest {
+    fun odGetRecentChangesReturnsDocuments() = runBlocking {
         val recentItemsJson = """
             {"value":[{"id":"i1","name":"recent.txt","size":100,"lastModifiedDateTime":"2026-03-06T10:00:00Z","file":{"mimeType":"text/plain"}}],"@odata.nextLink":null}
         """.trimIndent()
@@ -561,7 +563,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 25. OneDrive: getRecentChanges when offline ====================
 
     @Test
-    fun odGetRecentChangesWhenOfflineReturnsEmpty() = runTest {
+    fun odGetRecentChangesWhenOfflineReturnsEmpty() = runBlocking {
         val service = odService { request ->
             respond("Unauthorized", HttpStatusCode.Unauthorized)
         }
@@ -573,7 +575,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 26. OneDrive: getRecentChanges API error ====================
 
     @Test
-    fun odGetRecentChangesApiErrorReturnsEmpty() = runTest {
+    fun odGetRecentChangesApiErrorReturnsEmpty() = runBlocking {
         val service = odService { request ->
             val url = request.url.toString()
             when {
@@ -590,7 +592,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 27. OneDrive: syncFile when connected ====================
 
     @Test
-    fun odSyncFileWhenConnected() = runTest {
+    fun odSyncFileWhenConnected() = runBlocking {
         val service = odService { request ->
             val url = request.url.toString()
             when {
@@ -607,7 +609,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 28. OneDrive: syncFile when offline ====================
 
     @Test
-    fun odSyncFileWhenOffline() = runTest {
+    fun odSyncFileWhenOffline() = runBlocking {
         val service = odService { request ->
             respond("Unauthorized", HttpStatusCode.Unauthorized)
         }
@@ -619,7 +621,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 29. OneDrive: syncAll when connected ====================
 
     @Test
-    fun odSyncAllWhenConnected() = runTest {
+    fun odSyncAllWhenConnected() = runBlocking {
         val service = odService { request ->
             val url = request.url.toString()
             when {
@@ -636,7 +638,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 30. OneDrive: syncAll when offline ====================
 
     @Test
-    fun odSyncAllWhenOffline() = runTest {
+    fun odSyncAllWhenOffline() = runBlocking {
         val service = odService { request ->
             respond("Unauthorized", HttpStatusCode.Unauthorized)
         }
@@ -648,7 +650,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 31. OneDrive: getQuotaInfo API error ====================
 
     @Test
-    fun odGetQuotaInfoApiError() = runTest {
+    fun odGetQuotaInfoApiError() = runBlocking {
         val service = odService { request ->
             val url = request.url.toString()
             when {
@@ -668,7 +670,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 32. OneDrive: cache operations ====================
 
     @Test
-    fun odCacheOperations() = runTest {
+    fun odCacheOperations() = runBlocking {
         val service = odService { request ->
             respond(odDriveJson, HttpStatusCode.OK, jsonHeaders())
         }
@@ -682,7 +684,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 33. OneDrive: getSyncStatus ====================
 
     @Test
-    fun odGetSyncStatus() = runTest {
+    fun odGetSyncStatus() = runBlocking {
         val service = odService { request ->
             respond(odDriveJson, HttpStatusCode.OK, jsonHeaders())
         }
@@ -693,7 +695,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 34. OneDrive: getActiveOperations and cancel/pause/resume ====================
 
     @Test
-    fun odOperationManagement() = runTest {
+    fun odOperationManagement() = runBlocking {
         val service = odService { request ->
             respond(odDriveJson, HttpStatusCode.OK, jsonHeaders())
         }
@@ -707,7 +709,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 35. OneDrive: listFiles with SHAREPOINT type ====================
 
     @Test
-    fun odListFilesWithSharePointType() = runTest {
+    fun odListFilesWithSharePointType() = runBlocking {
         var capturedUrl: String? = null
         val service = odService(
             handler = { request ->
@@ -733,7 +735,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 36. Dropbox: listFiles with unknown tag returns null (filtered out) ====================
 
     @Test
-    fun dbListFilesUnknownTagFiltered() = runTest {
+    fun dbListFilesUnknownTagFiltered() = runBlocking {
         val service = dbService { request ->
             val path = request.url.encodedPath
             when {
@@ -754,7 +756,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 37. Dropbox: getRecentChanges returns recent files and folders ====================
 
     @Test
-    fun dbGetRecentChangesReturnsRecentDocs() = runTest {
+    fun dbGetRecentChangesReturnsRecentDocs() = runBlocking {
         val service = dbService { request ->
             val path = request.url.encodedPath
             when {
@@ -774,7 +776,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 38. Dropbox: getRecentChanges when offline ====================
 
     @Test
-    fun dbGetRecentChangesWhenOfflineReturnsEmpty() = runTest {
+    fun dbGetRecentChangesWhenOfflineReturnsEmpty() = runBlocking {
         val auth = AuthTokenManager("dropbox", MockSecureStorage())
         // Don't store any tokens => offline
         val service = DropboxService(dbConfig(), mockClient { respond("", HttpStatusCode.OK) }, auth)
@@ -786,7 +788,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 39. Dropbox: getRecentChanges API error returns empty ====================
 
     @Test
-    fun dbGetRecentChangesApiErrorReturnsEmpty() = runTest {
+    fun dbGetRecentChangesApiErrorReturnsEmpty() = runBlocking {
         val service = dbService { request ->
             val path = request.url.encodedPath
             when {
@@ -804,7 +806,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 40. Dropbox: syncFile when connected ====================
 
     @Test
-    fun dbSyncFileWhenConnected() = runTest {
+    fun dbSyncFileWhenConnected() = runBlocking {
         val service = dbService { request ->
             val path = request.url.encodedPath
             when {
@@ -822,7 +824,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 41. Dropbox: syncFile when offline ====================
 
     @Test
-    fun dbSyncFileWhenOffline() = runTest {
+    fun dbSyncFileWhenOffline() = runBlocking {
         val auth = AuthTokenManager("dropbox", MockSecureStorage())
         val service = DropboxService(dbConfig(), mockClient { respond("", HttpStatusCode.OK) }, auth)
         val ops = service.syncFile("/a.txt", false).toList()
@@ -833,7 +835,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 42. Dropbox: syncAll when connected ====================
 
     @Test
-    fun dbSyncAllWhenConnected() = runTest {
+    fun dbSyncAllWhenConnected() = runBlocking {
         val service = dbService { request ->
             val path = request.url.encodedPath
             when {
@@ -852,7 +854,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 43. Dropbox: syncAll when offline ====================
 
     @Test
-    fun dbSyncAllWhenOffline() = runTest {
+    fun dbSyncAllWhenOffline() = runBlocking {
         val auth = AuthTokenManager("dropbox", MockSecureStorage())
         val service = DropboxService(dbConfig(), mockClient { respond("", HttpStatusCode.OK) }, auth)
         val ops = service.syncAll(false).toList()
@@ -863,7 +865,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 44. Dropbox: getQuotaInfo high usage (low on space) ====================
 
     @Test
-    fun dbGetQuotaInfoHighUsage() = runTest {
+    fun dbGetQuotaInfoHighUsage() = runBlocking {
         val service = dbService { request ->
             val path = request.url.encodedPath
             when {
@@ -884,7 +886,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 45. Dropbox: searchFiles with includeContent ====================
 
     @Test
-    fun dbSearchFilesWithIncludeContent() = runTest {
+    fun dbSearchFilesWithIncludeContent() = runBlocking {
         var capturedBody: String? = null
         val searchResultJson = """{"matches":[],"has_more":false}"""
         val service = dbService { request ->
@@ -907,7 +909,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 46. Dropbox: cache operations ====================
 
     @Test
-    fun dbCacheOperations() = runTest {
+    fun dbCacheOperations() = runBlocking {
         val service = dbService { request ->
             val path = request.url.encodedPath
             when {
@@ -925,7 +927,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 47. Dropbox: getActiveOperations and cancel/pause/resume ====================
 
     @Test
-    fun dbOperationManagement() = runTest {
+    fun dbOperationManagement() = runBlocking {
         val service = dbService { request ->
             val path = request.url.encodedPath
             when {
@@ -943,7 +945,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 48. Dropbox: getSyncStatus with and without path ====================
 
     @Test
-    fun dbGetSyncStatus() = runTest {
+    fun dbGetSyncStatus() = runBlocking {
         val service = dbService { request ->
             val path = request.url.encodedPath
             when {
@@ -960,7 +962,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 49. Dropbox: normalizePath with non-empty rootPath ====================
 
     @Test
-    fun dbNormalizePathWithRootPath() = runTest {
+    fun dbNormalizePathWithRootPath() = runBlocking {
         var capturedBody: String? = null
         val service = dbService(
             handler = { request ->
@@ -986,7 +988,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 50. WebDAV: connect with successful OPTIONS ====================
 
     @Test
-    fun webDavConnectSuccess() = runTest {
+    fun webDavConnectSuccess() = runBlocking {
         val config = StorageConfig.WebDavConfig(
             name = "test-wd",
             url = "https://dav.example.com/files",
@@ -1010,7 +1012,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 51. WebDAV: disconnect marks offline ====================
 
     @Test
-    fun webDavDisconnectSuccess() = runTest {
+    fun webDavDisconnectSuccess() = runBlocking {
         val config = StorageConfig.WebDavConfig(
             name = "test-wd",
             url = "https://dav.example.com/files",
@@ -1029,7 +1031,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 52. Git: connect with info/refs ====================
 
     @Test
-    fun gitConnectSuccess() = runTest {
+    fun gitConnectSuccess() = runBlocking {
         val config = StorageConfig.GitConfig(
             name = "test-git",
             repositoryUrl = "https://github.com/testuser/testrepo",
@@ -1056,7 +1058,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 53. Git: disconnect ====================
 
     @Test
-    fun gitDisconnectSuccess() = runTest {
+    fun gitDisconnectSuccess() = runBlocking {
         val config = StorageConfig.GitConfig(
             name = "test-git",
             repositoryUrl = "https://github.com/testuser/testrepo",
@@ -1075,7 +1077,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 54. OneDrive: listFiles with non-root path ====================
 
     @Test
-    fun odListFilesNonRootPath() = runTest {
+    fun odListFilesNonRootPath() = runBlocking {
         val handler: MockRequestHandler = { request ->
             val url = request.url.toString()
             when {
@@ -1094,7 +1096,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 55. OneDrive: deleteFile when connected (success path) ====================
 
     @Test
-    fun odDeleteFileSuccess() = runTest {
+    fun odDeleteFileSuccess() = runBlocking {
         val handler: MockRequestHandler = { request ->
             val url = request.url.toString()
             when {
@@ -1112,7 +1114,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 56. OneDrive: createFolder when connected (success) ====================
 
     @Test
-    fun odCreateFolderSuccess() = runTest {
+    fun odCreateFolderSuccess() = runBlocking {
         val handler: MockRequestHandler = { request ->
             val url = request.url.toString()
             when {
@@ -1131,7 +1133,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 57. OneDrive: renameFile when connected ====================
 
     @Test
-    fun odRenameFileSuccess() = runTest {
+    fun odRenameFileSuccess() = runBlocking {
         val handler: MockRequestHandler = { request ->
             val url = request.url.toString()
             when {
@@ -1149,7 +1151,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 58. OneDrive: moveFile when connected ====================
 
     @Test
-    fun odMoveFileSuccess() = runTest {
+    fun odMoveFileSuccess() = runBlocking {
         val handler: MockRequestHandler = { request ->
             val url = request.url.toString()
             when {
@@ -1167,7 +1169,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 59. OneDrive: copyFile when connected (202 Accepted) ====================
 
     @Test
-    fun odCopyFileAccepted() = runTest {
+    fun odCopyFileAccepted() = runBlocking {
         val handler: MockRequestHandler = { request ->
             val url = request.url.toString()
             when {
@@ -1185,7 +1187,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 60. OneDrive: getFileInfo when connected ====================
 
     @Test
-    fun odGetFileInfoSuccess() = runTest {
+    fun odGetFileInfoSuccess() = runBlocking {
         val handler: MockRequestHandler = { request ->
             val url = request.url.toString()
             when {
@@ -1204,7 +1206,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 61. GoogleDrive: renameFile when connected ====================
 
     @Test
-    fun gdRenameFileSuccess() = runTest {
+    fun gdRenameFileSuccess() = runBlocking {
         val service = gdService { request ->
             val url = request.url.toString()
             when {
@@ -1220,7 +1222,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 62. GoogleDrive: moveFile when connected ====================
 
     @Test
-    fun gdMoveFileSuccess() = runTest {
+    fun gdMoveFileSuccess() = runBlocking {
         val service = gdService { request ->
             val url = request.url.toString()
             when {
@@ -1236,7 +1238,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 63. GoogleDrive: copyFile when connected ====================
 
     @Test
-    fun gdCopyFileSuccess() = runTest {
+    fun gdCopyFileSuccess() = runBlocking {
         val service = gdService { request ->
             val url = request.url.toString()
             when {
@@ -1253,7 +1255,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 64. GoogleDrive: getFileInfo when connected ====================
 
     @Test
-    fun gdGetFileInfoSuccess() = runTest {
+    fun gdGetFileInfoSuccess() = runBlocking {
         val service = gdService { request ->
             val url = request.url.toString()
             when {
@@ -1270,7 +1272,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 65. GoogleDrive: deleteFile when connected ====================
 
     @Test
-    fun gdDeleteFileSuccess() = runTest {
+    fun gdDeleteFileSuccess() = runBlocking {
         val service = gdService { request ->
             val url = request.url.toString()
             when {
@@ -1287,7 +1289,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 66. GoogleDrive: createFolder when connected ====================
 
     @Test
-    fun gdCreateFolderSuccess() = runTest {
+    fun gdCreateFolderSuccess() = runBlocking {
         val service = gdService { request ->
             val url = request.url.toString()
             when {
@@ -1305,7 +1307,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 67. GoogleDrive: exists when connected (file found) ====================
 
     @Test
-    fun gdExistsFileFound() = runTest {
+    fun gdExistsFileFound() = runBlocking {
         val service = gdService { request ->
             val url = request.url.toString()
             when {
@@ -1321,7 +1323,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 68. Dropbox: renameFile when connected ====================
 
     @Test
-    fun dbRenameFileSuccess() = runTest {
+    fun dbRenameFileSuccess() = runBlocking {
         val renameResponseJson = """{"metadata":{".tag":"file","name":"new.txt","id":"id:m","path_display":"/new.txt"}}"""
         val handler: MockRequestHandler = { request ->
             val p = request.url.encodedPath
@@ -1340,7 +1342,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 69. Dropbox: moveFile when connected ====================
 
     @Test
-    fun dbMoveFileSuccess() = runTest {
+    fun dbMoveFileSuccess() = runBlocking {
         val moveResponseJson = """{"metadata":{".tag":"file","name":"moved.txt","id":"id:m","path_display":"/dest/moved.txt"}}"""
         val handler: MockRequestHandler = { request ->
             val p = request.url.encodedPath
@@ -1360,7 +1362,7 @@ class HttpProtocolsCoverageTest {
     // ==================== 70. Dropbox: copyFile when connected ====================
 
     @Test
-    fun dbCopyFileSuccess() = runTest {
+    fun dbCopyFileSuccess() = runBlocking {
         val handler: MockRequestHandler = { request ->
             val p = request.url.encodedPath
             when {

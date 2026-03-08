@@ -14,6 +14,8 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.*
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Implementation tests for AuthTokenManager covering:
@@ -37,14 +39,14 @@ class AuthTokenManagerImplTest {
     }
 
     @AfterTest
-    fun tearDown() = runTest {
+    fun tearDown() = runBlocking {
         secureStorage.clear()
     }
 
     // ==================== Token Storage Tests ====================
 
     @Test
-    fun testStoreAccessToken() = runTest {
+    fun testStoreAccessToken() = runBlocking {
         // When
         val result = authTokenManager.storeAccessToken(testToken)
 
@@ -53,7 +55,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testGetAccessToken() = runTest {
+    fun testGetAccessToken() = runBlocking {
         // Given
         authTokenManager.storeAccessToken(testToken)
 
@@ -66,7 +68,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testGetAccessTokenNotFound() = runTest {
+    fun testGetAccessTokenNotFound() = runBlocking {
         // When
         val result = authTokenManager.getAccessToken()
 
@@ -76,7 +78,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testStoreRefreshToken() = runTest {
+    fun testStoreRefreshToken() = runBlocking {
         // When
         val result = authTokenManager.storeRefreshToken(testRefreshToken)
 
@@ -85,7 +87,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testGetRefreshToken() = runTest {
+    fun testGetRefreshToken() = runBlocking {
         // Given
         authTokenManager.storeRefreshToken(testRefreshToken)
 
@@ -100,7 +102,7 @@ class AuthTokenManagerImplTest {
     // ==================== Token Expiration Tests ====================
 
     @Test
-    fun testStoreTokenExpiration() = runTest {
+    fun testStoreTokenExpiration() = runBlocking {
         // Given
         val expiresAt = Clock.System.now().plus(1.hours)
 
@@ -112,7 +114,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testIsTokenExpired() = runTest {
+    fun testIsTokenExpired() = runBlocking {
         // Given
         val expiredTime = Clock.System.now().minus(1.hours)
         authTokenManager.storeTokenExpiration(expiredTime)
@@ -126,7 +128,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testIsTokenNotExpired() = runTest {
+    fun testIsTokenNotExpired() = runBlocking {
         // Given
         val validTime = Clock.System.now().plus(1.hours)
         authTokenManager.storeTokenExpiration(validTime)
@@ -140,7 +142,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testIsTokenExpiredNoExpirationStored() = runTest {
+    fun testIsTokenExpiredNoExpirationStored() = runBlocking {
         // When
         val result = authTokenManager.isTokenExpired()
 
@@ -152,7 +154,7 @@ class AuthTokenManagerImplTest {
     // ==================== Token Validation Tests ====================
 
     @Test
-    fun testHasValidToken() = runTest {
+    fun testHasValidToken() = runBlocking {
         // Given
         authTokenManager.storeAccessToken(testToken)
         val validTime = Clock.System.now().plus(1.hours)
@@ -167,7 +169,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testHasValidTokenExpired() = runTest {
+    fun testHasValidTokenExpired() = runBlocking {
         // Given
         authTokenManager.storeAccessToken(testToken)
         val expiredTime = Clock.System.now().minus(1.hours)
@@ -182,7 +184,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testHasValidTokenNoToken() = runTest {
+    fun testHasValidTokenNoToken() = runBlocking {
         // When
         val result = authTokenManager.hasValidToken()
 
@@ -194,7 +196,7 @@ class AuthTokenManagerImplTest {
     // ==================== Token Deletion Tests ====================
 
     @Test
-    fun testClearTokens() = runTest {
+    fun testClearTokens() = runBlocking {
         // Given
         authTokenManager.storeAccessToken(testToken)
         authTokenManager.storeRefreshToken(testRefreshToken)
@@ -213,7 +215,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testClearTokensForMultipleServices() = runTest {
+    fun testClearTokensForMultipleServices() = runBlocking {
         // Given - create multiple token managers for different services
         val services = listOf("service1", "service2", "service3")
         val managers = services.map { service ->
@@ -239,7 +241,7 @@ class AuthTokenManagerImplTest {
     // ==================== Edge Cases ====================
 
     @Test
-    fun testEmptyServiceName() = runTest {
+    fun testEmptyServiceName() = runBlocking {
         // Given
         val emptyServiceManager = AuthTokenManager("", secureStorage)
 
@@ -251,7 +253,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testSpecialCharactersInTokens() = runTest {
+    fun testSpecialCharactersInTokens() = runBlocking {
         // Given
         val specialToken = "token_with_special_chars_!@#\$%^&*()_+-=[]{}|;':\",./<>?"
 
@@ -263,7 +265,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testVeryLongServiceNames() = runTest {
+    fun testVeryLongServiceNames() = runBlocking {
         // Given
         val longService = "a".repeat(1000)
         val longServiceManager = AuthTokenManager(longService, secureStorage)
@@ -276,7 +278,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testConcurrentTokenOperations() = runTest {
+    fun testConcurrentTokenOperations() = runBlocking {
         // Given
         val operations = 100
 
@@ -291,7 +293,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testTokenOverwrite() = runTest {
+    fun testTokenOverwrite() = runBlocking {
         // Given
         val originalToken = "original_token"
         val newToken = "new_token"
@@ -309,7 +311,7 @@ class AuthTokenManagerImplTest {
     // ==================== Token Info Tests ====================
 
     @Test
-    fun testStoreTokenInfo() = runTest {
+    fun testStoreTokenInfo() = runBlocking {
         // When
         val result = authTokenManager.storeTokenInfo(
             accessToken = testToken,
@@ -330,7 +332,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testGetTokenInfo() = runTest {
+    fun testGetTokenInfo() = runBlocking {
         // Given
         authTokenManager.storeTokenInfo(
             accessToken = testToken,
@@ -351,7 +353,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testGetTokenInfoNoTokens() = runTest {
+    fun testGetTokenInfoNoTokens() = runBlocking {
         // When - no tokens stored
         val result = authTokenManager.getTokenInfo()
 
@@ -367,7 +369,7 @@ class AuthTokenManagerImplTest {
     // ==================== Storage Failure Tests ====================
 
     @Test
-    fun testStorageFailure() = runTest {
+    fun testStorageFailure() = runBlocking {
         // Given
         secureStorage.shouldFail = true
 
@@ -379,7 +381,7 @@ class AuthTokenManagerImplTest {
     }
 
     @Test
-    fun testRecoverFromStorageFailure() = runTest {
+    fun testRecoverFromStorageFailure() = runBlocking {
         // Given - make storage fail
         secureStorage.shouldFail = true
         val firstResult = authTokenManager.storeAccessToken(testToken)

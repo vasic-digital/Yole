@@ -14,6 +14,8 @@ import digital.vasic.yole.network.protocols.dropbox.DropboxService
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Comprehensive test suite for DropboxService (via StorageConfig.DropboxConfig)
@@ -75,7 +77,7 @@ class DropboxStorageTest {
     // ==================== Storage Info Tests ====================
 
     @Test
-    fun testGetStorageInfo() = runTest {
+    fun testGetStorageInfo() = runBlocking {
         val storageInfo = service.getStorageInfo()
         assertNotNull(storageInfo)
         assertNotNull(storageInfo.id)
@@ -84,7 +86,7 @@ class DropboxStorageTest {
     }
 
     @Test
-    fun testDropboxSupportsFolders() = runTest {
+    fun testDropboxSupportsFolders() = runBlocking {
         val storageInfo = service.getStorageInfo()
         assertTrue(storageInfo.supportsFolders, "Dropbox should support folders")
     }
@@ -92,14 +94,14 @@ class DropboxStorageTest {
     // ==================== Connection Tests ====================
 
     @Test
-    fun testDisconnect() = runTest {
+    fun testDisconnect() = runBlocking {
         // Disconnect should succeed even when not connected
         val result = service.disconnect()
         assertTrue(result.isSuccess, "Disconnect should succeed")
     }
 
     @Test
-    fun testConnectWithoutNetworkReturnsFailure() = runTest {
+    fun testConnectWithoutNetworkReturnsFailure() = runBlocking {
         // Without a real network, connect should fail gracefully
         val result = service.connect()
         // Should complete (either success or failure depending on implementation)
@@ -107,7 +109,7 @@ class DropboxStorageTest {
     }
 
     @Test
-    fun testTestConnectionWithoutNetwork() = runTest {
+    fun testTestConnectionWithoutNetwork() = runBlocking {
         val result = service.testConnection()
         assertTrue(result.isSuccess || result.isFailure, "testConnection should complete")
     }
@@ -115,7 +117,7 @@ class DropboxStorageTest {
     // ==================== Quota Tests ====================
 
     @Test
-    fun testGetQuotaInfo() = runTest {
+    fun testGetQuotaInfo() = runBlocking {
         val result = service.getQuotaInfo()
         // getQuotaInfo now makes real API calls; without auth it fails when not connected
         assertTrue(result.isFailure, "getQuotaInfo should fail when not connected")
@@ -124,7 +126,7 @@ class DropboxStorageTest {
     // ==================== Exists Tests ====================
 
     @Test
-    fun testExistsCheck() = runTest {
+    fun testExistsCheck() = runBlocking {
         val result = service.exists("/test.txt")
         assertTrue(result.isSuccess, "exists should succeed")
     }
@@ -210,7 +212,7 @@ class DropboxStorageTest {
     }
 
     @Test
-    fun testMultipleServiceInstances() = runTest {
+    fun testMultipleServiceInstances() = runBlocking {
         val configs = (1..10).map { i ->
             StorageConfig.DropboxConfig(
                 name = "dropbox-$i",
@@ -230,7 +232,7 @@ class DropboxStorageTest {
     }
 
     @Test
-    fun testOperationManagement() = runTest {
+    fun testOperationManagement() = runBlocking {
         // These should complete without throwing, even when not connected
         val cancelResult = service.cancelOperation(12345L)
         assertTrue(cancelResult.isSuccess, "cancelOperation should succeed")
@@ -243,7 +245,7 @@ class DropboxStorageTest {
     }
 
     @Test
-    fun testCacheOperations() = runTest {
+    fun testCacheOperations() = runBlocking {
         val addResult = service.addToCache("/test.txt", 100)
         assertTrue(addResult.isSuccess, "addToCache should succeed")
 

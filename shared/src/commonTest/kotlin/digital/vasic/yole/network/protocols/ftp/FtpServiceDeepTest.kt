@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Deep test suite for FtpService.
@@ -117,13 +119,13 @@ class FtpServiceDeepTest {
     // ==================== CONNECTION STATE MANAGEMENT ====================
 
     @Test
-    fun `connect fails when server is unreachable`() = runTest {
+    fun `connect fails when server is unreachable`() = runBlocking {
         val result = service.connect()
         assertTrue(result.isFailure, "FTP connection should fail when no server is available")
     }
 
     @Test
-    fun `connect with blank host fails immediately`() = runTest {
+    fun `connect with blank host fails immediately`() = runBlocking {
         val blankHostConfig = config.copy(host = "")
         val blankHostService = FtpService(blankHostConfig)
         val result = blankHostService.connect()
@@ -132,7 +134,7 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `connect with invalid port fails`() = runTest {
+    fun `connect with invalid port fails`() = runBlocking {
         val invalidPortConfig = config.copy(port = 99999)
         val invalidPortService = FtpService(invalidPortConfig)
         val result = invalidPortService.connect()
@@ -141,7 +143,7 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `connect with port zero fails`() = runTest {
+    fun `connect with port zero fails`() = runBlocking {
         val zeroPortConfig = config.copy(port = 0)
         val zeroPortService = FtpService(zeroPortConfig)
         val result = zeroPortService.connect()
@@ -150,7 +152,7 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `connect with negative port fails`() = runTest {
+    fun `connect with negative port fails`() = runBlocking {
         val negativePortConfig = config.copy(port = -1)
         val negativePortService = FtpService(negativePortConfig)
         val result = negativePortService.connect()
@@ -159,19 +161,19 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `isOnline remains false after failed connect`() = runTest {
+    fun `isOnline remains false after failed connect`() = runBlocking {
         service.connect()
         assertFalse(service.isOnline)
     }
 
     @Test
-    fun `disconnect succeeds even without prior connection`() = runTest {
+    fun `disconnect succeeds even without prior connection`() = runBlocking {
         val result = service.disconnect()
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `disconnect ensures service goes offline`() = runTest {
+    fun `disconnect ensures service goes offline`() = runBlocking {
         service.connect() // will fail, that's fine
         val result = service.disconnect()
         assertTrue(result.isSuccess)
@@ -179,7 +181,7 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `multiple disconnect calls succeed`() = runTest {
+    fun `multiple disconnect calls succeed`() = runBlocking {
         assertTrue(service.disconnect().isSuccess)
         assertTrue(service.disconnect().isSuccess)
         assertTrue(service.disconnect().isSuccess)
@@ -189,20 +191,20 @@ class FtpServiceDeepTest {
     // ==================== TEST CONNECTION ====================
 
     @Test
-    fun `testConnection fails when server is unreachable`() = runTest {
+    fun `testConnection fails when server is unreachable`() = runBlocking {
         val result = service.testConnection()
         assertTrue(result.isFailure, "testConnection should fail without a real server")
     }
 
     @Test
-    fun `testConnection with blank host fails`() = runTest {
+    fun `testConnection with blank host fails`() = runBlocking {
         val blankService = FtpService(config.copy(host = ""))
         val result = blankService.testConnection()
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `testConnection with invalid port fails`() = runTest {
+    fun `testConnection with invalid port fails`() = runBlocking {
         val invalidService = FtpService(config.copy(port = 100000))
         val result = invalidService.testConnection()
         assertTrue(result.isFailure)
@@ -211,56 +213,56 @@ class FtpServiceDeepTest {
     // ==================== STORAGE INFO ====================
 
     @Test
-    fun `getStorageInfo returns correct id`() = runTest {
+    fun `getStorageInfo returns correct id`() = runBlocking {
         val info = service.getStorageInfo()
         assertEquals("ftp_test-ftp", info.id)
     }
 
     @Test
-    fun `getStorageInfo returns correct name`() = runTest {
+    fun `getStorageInfo returns correct name`() = runBlocking {
         val info = service.getStorageInfo()
         assertEquals("test-ftp", info.name)
     }
 
     @Test
-    fun `getStorageInfo returns FTP type`() = runTest {
+    fun `getStorageInfo returns FTP type`() = runBlocking {
         val info = service.getStorageInfo()
         assertEquals(StorageType.FTP, info.type)
     }
 
     @Test
-    fun `getStorageInfo returns correct location with host and port`() = runTest {
+    fun `getStorageInfo returns correct location with host and port`() = runBlocking {
         val info = service.getStorageInfo()
         assertEquals("ftp://ftp.example.com:21/", info.location)
     }
 
     @Test
-    fun `getStorageInfo shows offline when not connected`() = runTest {
+    fun `getStorageInfo shows offline when not connected`() = runBlocking {
         val info = service.getStorageInfo()
         assertFalse(info.isOnline)
     }
 
     @Test
-    fun `getStorageInfo reports supportsFolders as false`() = runTest {
+    fun `getStorageInfo reports supportsFolders as false`() = runBlocking {
         val info = service.getStorageInfo()
         assertFalse(info.supportsFolders)
     }
 
     @Test
-    fun `getStorageInfo reports supportsMetadata as false`() = runTest {
+    fun `getStorageInfo reports supportsMetadata as false`() = runBlocking {
         val info = service.getStorageInfo()
         assertFalse(info.supportsMetadata)
     }
 
     @Test
-    fun `getStorageInfo with custom port reflects in location`() = runTest {
+    fun `getStorageInfo with custom port reflects in location`() = runBlocking {
         val customPortService = FtpService(config.copy(port = 2121))
         val info = customPortService.getStorageInfo()
         assertTrue(info.location.contains("2121"))
     }
 
     @Test
-    fun `getStorageInfo with root path reflects in location`() = runTest {
+    fun `getStorageInfo with root path reflects in location`() = runBlocking {
         val rootPathService = FtpService(config.copy(rootPath = "/public_html"))
         val info = rootPathService.getStorageInfo()
         assertTrue(info.location.contains("/public_html"))
@@ -269,32 +271,32 @@ class FtpServiceDeepTest {
     // ==================== UPLOAD FILE (disconnected) ====================
 
     @Test
-    fun `uploadFile when disconnected emits FAILED status`() = runTest {
+    fun `uploadFile when disconnected emits FAILED status`() = runBlocking {
         val results = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
         assertTrue(results.isNotEmpty())
         assertEquals(NetworkOperation.Status.FAILED, results.last().status)
     }
 
     @Test
-    fun `uploadFile when disconnected has correct error message`() = runTest {
+    fun `uploadFile when disconnected has correct error message`() = runBlocking {
         val results = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
         assertEquals("FTP not connected", results.last().error)
     }
 
     @Test
-    fun `uploadFile when disconnected has UPLOAD type`() = runTest {
+    fun `uploadFile when disconnected has UPLOAD type`() = runBlocking {
         val results = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
         assertTrue(results.all { it.type == NetworkOperation.Type.UPLOAD })
     }
 
     @Test
-    fun `uploadFile when disconnected preserves remote path`() = runTest {
+    fun `uploadFile when disconnected preserves remote path`() = runBlocking {
         val results = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
         assertEquals("/remote/file.txt", results.last().remotePath)
     }
 
     @Test
-    fun `uploadFile when disconnected preserves local path`() = runTest {
+    fun `uploadFile when disconnected preserves local path`() = runBlocking {
         val results = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
         assertEquals("/local/file.txt", results.last().localPath)
     }
@@ -302,32 +304,32 @@ class FtpServiceDeepTest {
     // ==================== DOWNLOAD FILE (disconnected) ====================
 
     @Test
-    fun `downloadFile when disconnected emits FAILED status`() = runTest {
+    fun `downloadFile when disconnected emits FAILED status`() = runBlocking {
         val results = service.downloadFile("/remote/file.txt", "/local/file.txt").toList()
         assertTrue(results.isNotEmpty())
         assertEquals(NetworkOperation.Status.FAILED, results.last().status)
     }
 
     @Test
-    fun `downloadFile when disconnected has correct error message`() = runTest {
+    fun `downloadFile when disconnected has correct error message`() = runBlocking {
         val results = service.downloadFile("/remote/file.txt", "/local/file.txt").toList()
         assertEquals("FTP not connected", results.last().error)
     }
 
     @Test
-    fun `downloadFile when disconnected has DOWNLOAD type`() = runTest {
+    fun `downloadFile when disconnected has DOWNLOAD type`() = runBlocking {
         val results = service.downloadFile("/remote/file.txt", "/local/file.txt").toList()
         assertTrue(results.all { it.type == NetworkOperation.Type.DOWNLOAD })
     }
 
     @Test
-    fun `downloadFile when disconnected preserves remote path`() = runTest {
+    fun `downloadFile when disconnected preserves remote path`() = runBlocking {
         val results = service.downloadFile("/remote/file.txt", "/local/file.txt").toList()
         assertEquals("/remote/file.txt", results.last().remotePath)
     }
 
     @Test
-    fun `downloadFile when disconnected preserves local path`() = runTest {
+    fun `downloadFile when disconnected preserves local path`() = runBlocking {
         val results = service.downloadFile("/remote/file.txt", "/local/file.txt").toList()
         assertEquals("/local/file.txt", results.last().localPath)
     }
@@ -335,13 +337,13 @@ class FtpServiceDeepTest {
     // ==================== COPY FILE (protocol limitation) ====================
 
     @Test
-    fun `copyFile always fails because FTP has no COPY command`() = runTest {
+    fun `copyFile always fails because FTP has no COPY command`() = runBlocking {
         val result = service.copyFile("/source.txt", "/dest.txt")
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `copyFile failure exception indicates FTP limitation`() = runTest {
+    fun `copyFile failure exception indicates FTP limitation`() = runBlocking {
         val result = service.copyFile("/source.txt", "/dest.txt")
         val exception = result.exceptionOrNull()
         assertNotNull(exception)
@@ -351,7 +353,7 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `copyFile fails regardless of connection state`() = runTest {
+    fun `copyFile fails regardless of connection state`() = runBlocking {
         // Even after a connect attempt, copy should fail
         service.connect()
         val result = service.copyFile("/a.txt", "/b.txt")
@@ -361,13 +363,13 @@ class FtpServiceDeepTest {
     // ==================== DELETE FILE (disconnected) ====================
 
     @Test
-    fun `deleteFile when disconnected fails with NotConnected`() = runTest {
+    fun `deleteFile when disconnected fails with NotConnected`() = runBlocking {
         val result = service.deleteFile("/remote/file.txt")
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `deleteFile when disconnected exception is NotConnected`() = runTest {
+    fun `deleteFile when disconnected exception is NotConnected`() = runBlocking {
         val result = service.deleteFile("/remote/file.txt")
         val exception = result.exceptionOrNull()
         assertIs<NetworkStorageException.ConnectionException.NotConnected>(exception)
@@ -376,13 +378,13 @@ class FtpServiceDeepTest {
     // ==================== CREATE FOLDER (disconnected) ====================
 
     @Test
-    fun `createFolder when disconnected fails`() = runTest {
+    fun `createFolder when disconnected fails`() = runBlocking {
         val result = service.createFolder("/new-folder")
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `createFolder when disconnected exception is NotConnected`() = runTest {
+    fun `createFolder when disconnected exception is NotConnected`() = runBlocking {
         val result = service.createFolder("/new-folder")
         val exception = result.exceptionOrNull()
         assertIs<NetworkStorageException.ConnectionException.NotConnected>(exception)
@@ -391,13 +393,13 @@ class FtpServiceDeepTest {
     // ==================== RENAME FILE (disconnected) ====================
 
     @Test
-    fun `renameFile when disconnected fails`() = runTest {
+    fun `renameFile when disconnected fails`() = runBlocking {
         val result = service.renameFile("/old.txt", "new.txt")
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `renameFile when disconnected exception is NotConnected`() = runTest {
+    fun `renameFile when disconnected exception is NotConnected`() = runBlocking {
         val result = service.renameFile("/old.txt", "new.txt")
         val exception = result.exceptionOrNull()
         assertIs<NetworkStorageException.ConnectionException.NotConnected>(exception)
@@ -406,13 +408,13 @@ class FtpServiceDeepTest {
     // ==================== MOVE FILE (disconnected) ====================
 
     @Test
-    fun `moveFile when disconnected fails`() = runTest {
+    fun `moveFile when disconnected fails`() = runBlocking {
         val result = service.moveFile("/source.txt", "/dest.txt")
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `moveFile when disconnected exception is NotConnected`() = runTest {
+    fun `moveFile when disconnected exception is NotConnected`() = runBlocking {
         val result = service.moveFile("/source.txt", "/dest.txt")
         val exception = result.exceptionOrNull()
         assertIs<NetworkStorageException.ConnectionException.NotConnected>(exception)
@@ -421,13 +423,13 @@ class FtpServiceDeepTest {
     // ==================== GET FILE INFO (disconnected) ====================
 
     @Test
-    fun `getFileInfo when disconnected fails`() = runTest {
+    fun `getFileInfo when disconnected fails`() = runBlocking {
         val result = service.getFileInfo("/document.pdf")
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `getFileInfo when disconnected exception is NotConnected`() = runTest {
+    fun `getFileInfo when disconnected exception is NotConnected`() = runBlocking {
         val result = service.getFileInfo("/document.pdf")
         val exception = result.exceptionOrNull()
         assertIs<NetworkStorageException.ConnectionException.NotConnected>(exception)
@@ -436,14 +438,14 @@ class FtpServiceDeepTest {
     // ==================== EXISTS (disconnected) ====================
 
     @Test
-    fun `exists when disconnected returns false`() = runTest {
+    fun `exists when disconnected returns false`() = runBlocking {
         val result = service.exists("/file.txt")
         assertTrue(result.isSuccess)
         assertFalse(result.getOrNull() ?: true)
     }
 
     @Test
-    fun `exists with deep path when disconnected returns false`() = runTest {
+    fun `exists with deep path when disconnected returns false`() = runBlocking {
         val result = service.exists("/a/b/c/d/file.txt")
         assertTrue(result.isSuccess)
         assertFalse(result.getOrNull() ?: true)
@@ -521,25 +523,25 @@ class FtpServiceDeepTest {
     // ==================== CACHE OPERATIONS LIFECYCLE ====================
 
     @Test
-    fun `getCacheEntries initially returns empty list`() = runTest {
+    fun `getCacheEntries initially returns empty list`() = runBlocking {
         val entries = service.getCacheEntries("/").first()
         assertTrue(entries.isEmpty())
     }
 
     @Test
-    fun `getCacheEntries with null path initially returns empty list`() = runTest {
+    fun `getCacheEntries with null path initially returns empty list`() = runBlocking {
         val entries = service.getCacheEntries(null).first()
         assertTrue(entries.isEmpty())
     }
 
     @Test
-    fun `addToCache succeeds`() = runTest {
+    fun `addToCache succeeds`() = runBlocking {
         val result = service.addToCache("/file.txt", 1)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `addToCache then getCacheEntries returns the entry`() = runTest {
+    fun `addToCache then getCacheEntries returns the entry`() = runBlocking {
         service.addToCache("/file.txt", 1)
         val entries = service.getCacheEntries("/").first()
         assertEquals(1, entries.size)
@@ -547,7 +549,7 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `addToCache multiple entries all returned`() = runTest {
+    fun `addToCache multiple entries all returned`() = runBlocking {
         service.addToCache("/file1.txt", 1)
         service.addToCache("/file2.txt", 2)
         service.addToCache("/file3.txt", 3)
@@ -556,7 +558,7 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `getCacheEntries filters by path prefix`() = runTest {
+    fun `getCacheEntries filters by path prefix`() = runBlocking {
         service.addToCache("/docs/file1.txt", 1)
         service.addToCache("/photos/file2.jpg", 1)
         val docEntries = service.getCacheEntries("/docs").first()
@@ -565,7 +567,7 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `removeFromCache removes specific entry`() = runTest {
+    fun `removeFromCache removes specific entry`() = runBlocking {
         service.addToCache("/file.txt", 1)
         service.removeFromCache("/file.txt")
         val entries = service.getCacheEntries(null).first()
@@ -573,13 +575,13 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `removeFromCache returns success even for nonexistent entry`() = runTest {
+    fun `removeFromCache returns success even for nonexistent entry`() = runBlocking {
         val result = service.removeFromCache("/nonexistent.txt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `clearCache removes all entries`() = runTest {
+    fun `clearCache removes all entries`() = runBlocking {
         service.addToCache("/file1.txt", 1)
         service.addToCache("/file2.txt", 2)
         service.addToCache("/file3.txt", 3)
@@ -589,20 +591,20 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `clearCache returns success when already empty`() = runTest {
+    fun `clearCache returns success when already empty`() = runBlocking {
         val result = service.clearCache()
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `addToCache with different priorities succeeds`() = runTest {
+    fun `addToCache with different priorities succeeds`() = runBlocking {
         assertTrue(service.addToCache("/a.txt", 0).isSuccess)
         assertTrue(service.addToCache("/b.txt", 5).isSuccess)
         assertTrue(service.addToCache("/c.txt", 100).isSuccess)
     }
 
     @Test
-    fun `addToCache overwrites existing entry with same path`() = runTest {
+    fun `addToCache overwrites existing entry with same path`() = runBlocking {
         service.addToCache("/file.txt", 1)
         service.addToCache("/file.txt", 5)
         val entries = service.getCacheEntries(null).first()
@@ -612,19 +614,19 @@ class FtpServiceDeepTest {
     // ==================== SYNC STATUS OPERATIONS ====================
 
     @Test
-    fun `getSyncStatus initially returns empty map`() = runTest {
+    fun `getSyncStatus initially returns empty map`() = runBlocking {
         val status = service.getSyncStatus("/").first()
         assertTrue(status.isEmpty())
     }
 
     @Test
-    fun `getSyncStatus with null path initially returns empty map`() = runTest {
+    fun `getSyncStatus with null path initially returns empty map`() = runBlocking {
         val status = service.getSyncStatus(null).first()
         assertTrue(status.isEmpty())
     }
 
     @Test
-    fun `syncFile returns COMPLETED operation`() = runTest {
+    fun `syncFile returns COMPLETED operation`() = runBlocking {
         val results = service.syncFile("/test.txt", false).toList()
         assertTrue(results.isNotEmpty())
         val lastResult = results.last()
@@ -633,7 +635,7 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `syncFile updates sync status to SYNCED`() = runTest {
+    fun `syncFile updates sync status to SYNCED`() = runBlocking {
         service.syncFile("/test.txt", false).toList()
         val status = service.getSyncStatus("/test").first()
         assertTrue(status.containsKey("/test.txt"))
@@ -641,38 +643,38 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `syncFile with forceSync returns COMPLETED`() = runTest {
+    fun `syncFile with forceSync returns COMPLETED`() = runBlocking {
         val results = service.syncFile("/test.txt", true).toList()
         assertEquals(NetworkOperation.Status.COMPLETED, results.last().status)
     }
 
     @Test
-    fun `syncFile preserves remote path in operation`() = runTest {
+    fun `syncFile preserves remote path in operation`() = runBlocking {
         val results = service.syncFile("/documents/file.md", false).toList()
         assertEquals("/documents/file.md", results.last().remotePath)
     }
 
     @Test
-    fun `syncFile ends with progress 1 point 0`() = runTest {
+    fun `syncFile ends with progress 1 point 0`() = runBlocking {
         val results = service.syncFile("/file.txt", false).toList()
         assertEquals(1.0, results.last().progress)
     }
 
     @Test
-    fun `syncAll when disconnected returns COMPLETED operation`() = runTest {
+    fun `syncAll when disconnected returns COMPLETED operation`() = runBlocking {
         val results = service.syncAll(false).toList()
         assertTrue(results.isNotEmpty())
         assertEquals(NetworkOperation.Status.COMPLETED, results.last().status)
     }
 
     @Test
-    fun `syncAll returns SYNC type operation`() = runTest {
+    fun `syncAll returns SYNC type operation`() = runBlocking {
         val results = service.syncAll(false).toList()
         assertEquals(NetworkOperation.Type.SYNC, results.last().type)
     }
 
     @Test
-    fun `syncAll remote path is root`() = runTest {
+    fun `syncAll remote path is root`() = runBlocking {
         val results = service.syncAll(false).toList()
         assertEquals("/", results.last().remotePath)
     }
@@ -680,49 +682,49 @@ class FtpServiceDeepTest {
     // ==================== ACTIVE OPERATIONS MANAGEMENT ====================
 
     @Test
-    fun `getActiveOperations initially returns empty list`() = runTest {
+    fun `getActiveOperations initially returns empty list`() = runBlocking {
         val operations = service.getActiveOperations().first()
         assertTrue(operations.isEmpty())
     }
 
     @Test
-    fun `cancelOperation returns success`() = runTest {
+    fun `cancelOperation returns success`() = runBlocking {
         val result = service.cancelOperation(12345L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `cancelOperation with zero id returns success`() = runTest {
+    fun `cancelOperation with zero id returns success`() = runBlocking {
         val result = service.cancelOperation(0L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `cancelOperation with negative id returns success`() = runTest {
+    fun `cancelOperation with negative id returns success`() = runBlocking {
         val result = service.cancelOperation(-1L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `pauseOperation returns success`() = runTest {
+    fun `pauseOperation returns success`() = runBlocking {
         val result = service.pauseOperation(12345L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `pauseOperation with nonexistent id returns success`() = runTest {
+    fun `pauseOperation with nonexistent id returns success`() = runBlocking {
         val result = service.pauseOperation(999999L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `resumeOperation returns success`() = runTest {
+    fun `resumeOperation returns success`() = runBlocking {
         val result = service.resumeOperation(12345L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `resumeOperation with nonexistent id returns success`() = runTest {
+    fun `resumeOperation with nonexistent id returns success`() = runBlocking {
         val result = service.resumeOperation(999999L)
         assertTrue(result.isSuccess)
     }
@@ -730,26 +732,26 @@ class FtpServiceDeepTest {
     // ==================== SEARCH FILES ====================
 
     @Test
-    fun `searchFiles returns failure because FTP has no search`() = runTest {
+    fun `searchFiles returns failure because FTP has no search`() = runBlocking {
         val results = service.searchFiles("query", "/", false).toList()
         assertTrue(results.isNotEmpty())
         assertTrue(results[0].isFailure)
     }
 
     @Test
-    fun `searchFiles error message indicates FTP limitation`() = runTest {
+    fun `searchFiles error message indicates FTP limitation`() = runBlocking {
         val results = service.searchFiles("query", "/", false).toList()
         assertEquals("FTP does not support search operations", results[0].exceptionOrNull()?.message)
     }
 
     @Test
-    fun `searchFiles with includeContent returns failure`() = runTest {
+    fun `searchFiles with includeContent returns failure`() = runBlocking {
         val results = service.searchFiles("query", "/", true).toList()
         assertTrue(results[0].isFailure)
     }
 
     @Test
-    fun `searchFiles with null path returns failure`() = runTest {
+    fun `searchFiles with null path returns failure`() = runBlocking {
         val results = service.searchFiles("query", null, false).toList()
         assertTrue(results[0].isFailure)
     }
@@ -757,7 +759,7 @@ class FtpServiceDeepTest {
     // ==================== RECENT CHANGES ====================
 
     @Test
-    fun `getRecentChanges when disconnected returns empty list`() = runTest {
+    fun `getRecentChanges when disconnected returns empty list`() = runBlocking {
         val since = kotlinx.datetime.Clock.System.now()
         val results = service.getRecentChanges(since, "/").toList()
         assertTrue(results.isNotEmpty())
@@ -765,7 +767,7 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `getRecentChanges with null path when disconnected returns empty list`() = runTest {
+    fun `getRecentChanges with null path when disconnected returns empty list`() = runBlocking {
         val since = kotlinx.datetime.Clock.System.now()
         val results = service.getRecentChanges(since, null).toList()
         assertTrue(results.isNotEmpty())
@@ -775,62 +777,62 @@ class FtpServiceDeepTest {
     // ==================== QUOTA INFO ====================
 
     @Test
-    fun `getQuotaInfo returns success`() = runTest {
+    fun `getQuotaInfo returns success`() = runBlocking {
         val result = service.getQuotaInfo()
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `getQuotaInfo returns zero total space`() = runTest {
+    fun `getQuotaInfo returns zero total space`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertEquals(0L, quota.totalSpace)
     }
 
     @Test
-    fun `getQuotaInfo returns zero used space`() = runTest {
+    fun `getQuotaInfo returns zero used space`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertEquals(0L, quota.usedSpace)
     }
 
     @Test
-    fun `getQuotaInfo returns zero available space`() = runTest {
+    fun `getQuotaInfo returns zero available space`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertEquals(0L, quota.availableSpace)
     }
 
     @Test
-    fun `getQuotaInfo is not full`() = runTest {
+    fun `getQuotaInfo is not full`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertFalse(quota.isFull)
     }
 
     @Test
-    fun `getQuotaInfo is not low on space`() = runTest {
+    fun `getQuotaInfo is not low on space`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertFalse(quota.isLowOnSpace)
     }
 
     @Test
-    fun `getQuotaInfo metadata indicates FTP provider`() = runTest {
+    fun `getQuotaInfo metadata indicates FTP provider`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertEquals("FTP", quota.metadata["provider"])
     }
 
     @Test
-    fun `getQuotaInfo metadata indicates quota not supported`() = runTest {
+    fun `getQuotaInfo metadata indicates quota not supported`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertEquals("Quota not supported", quota.metadata["note"])
     }
 
     @Test
-    fun `getQuotaInfo usage percentage is zero`() = runTest {
+    fun `getQuotaInfo usage percentage is zero`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertEquals(0.0, quota.usagePercentage)
@@ -839,20 +841,20 @@ class FtpServiceDeepTest {
     // ==================== LIST FILES (disconnected) ====================
 
     @Test
-    fun `listFiles when disconnected fails with NotConnected`() = runTest {
+    fun `listFiles when disconnected fails with NotConnected`() = runBlocking {
         val result = service.listFiles("/").first()
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `listFiles when disconnected exception is NotConnected`() = runTest {
+    fun `listFiles when disconnected exception is NotConnected`() = runBlocking {
         val result = service.listFiles("/").first()
         val exception = result.exceptionOrNull()
         assertIs<NetworkStorageException.ConnectionException.NotConnected>(exception)
     }
 
     @Test
-    fun `listFiles when disconnected error message`() = runTest {
+    fun `listFiles when disconnected error message`() = runBlocking {
         val result = service.listFiles("/").first()
         assertEquals("FTP not connected", result.exceptionOrNull()?.message)
     }
@@ -860,7 +862,7 @@ class FtpServiceDeepTest {
     // ==================== CONFIGURATION VARIATIONS ====================
 
     @Test
-    fun `service with custom root path includes it in storage info`() = runTest {
+    fun `service with custom root path includes it in storage info`() = runBlocking {
         val customRootService = FtpService(config.copy(rootPath = "/web/data"))
         val info = customRootService.getStorageInfo()
         assertTrue(info.location.contains("/web/data"))
@@ -916,7 +918,7 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `reconnect after disconnect handles state correctly`() = runTest {
+    fun `reconnect after disconnect handles state correctly`() = runBlocking {
         service.connect() // will fail
         assertFalse(service.isOnline)
         service.disconnect()
@@ -926,7 +928,7 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `multiple sequential operations do not interfere`() = runTest {
+    fun `multiple sequential operations do not interfere`() = runBlocking {
         assertTrue(service.addToCache("/a.txt", 1).isSuccess)
         assertTrue(service.addToCache("/b.txt", 2).isSuccess)
         assertTrue(service.removeFromCache("/a.txt").isSuccess)
@@ -936,7 +938,7 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `cache add then sync then cache get consistency`() = runTest {
+    fun `cache add then sync then cache get consistency`() = runBlocking {
         service.addToCache("/file.txt", 1)
         service.syncFile("/file.txt", false).toList()
         val entries = service.getCacheEntries("/file").first()
@@ -944,7 +946,7 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `sync status updates after sync file`() = runTest {
+    fun `sync status updates after sync file`() = runBlocking {
         service.syncFile("/docs/readme.md", false).toList()
         val statuses = service.getSyncStatus("/docs").first()
         assertTrue(statuses.containsKey("/docs/readme.md"))
@@ -952,7 +954,7 @@ class FtpServiceDeepTest {
     }
 
     @Test
-    fun `getSyncStatus filters by path prefix correctly`() = runTest {
+    fun `getSyncStatus filters by path prefix correctly`() = runBlocking {
         service.syncFile("/docs/a.txt", false).toList()
         service.syncFile("/photos/b.jpg", false).toList()
         val docStatuses = service.getSyncStatus("/docs").first()

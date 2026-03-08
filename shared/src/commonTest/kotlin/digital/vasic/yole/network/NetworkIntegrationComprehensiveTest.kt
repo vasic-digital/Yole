@@ -19,6 +19,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.*
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Comprehensive integration tests covering:
@@ -39,7 +41,7 @@ class NetworkIntegrationComprehensiveTest {
     }
 
     @Test
-    fun testEndToEndWorkflow() = runTest {
+    fun testEndToEndWorkflow() = runBlocking {
         // Complete workflow: create document -> create operation -> simulate progress -> complete
 
         val testDocument = createTestDocument("integration_test.txt", "Integration test content")
@@ -73,7 +75,7 @@ class NetworkIntegrationComprehensiveTest {
     }
 
     @Test
-    fun testCrossServiceDocumentCreation() = runTest {
+    fun testCrossServiceDocumentCreation() = runBlocking {
         // Test creating documents across multiple service types
 
         val services = listOf("dropbox", "googledrive", "onedrive", "ftp", "sftp")
@@ -109,7 +111,7 @@ class NetworkIntegrationComprehensiveTest {
     }
 
     @Test
-    fun testAuthenticationFlowIntegration() = runTest {
+    fun testAuthenticationFlowIntegration() = runBlocking {
         // Test complete authentication flow with token management
 
         val testService = "test_network_service"
@@ -145,7 +147,7 @@ class NetworkIntegrationComprehensiveTest {
     }
 
     @Test
-    fun testNetworkDocumentOperations() = runTest {
+    fun testNetworkDocumentOperations() = runBlocking {
         // Test integration of network document operations
 
         val documents = (1..10).map { index ->
@@ -192,7 +194,7 @@ class NetworkIntegrationComprehensiveTest {
     }
 
     @Test
-    fun testErrorRecoveryAcrossServices() = runTest {
+    fun testErrorRecoveryAcrossServices() = runBlocking {
         // Test error recovery mechanisms across different network services
 
         val errorScenarios = listOf(
@@ -232,7 +234,7 @@ class NetworkIntegrationComprehensiveTest {
     }
 
     @Test
-    fun testPerformanceUnderLoad() = runTest {
+    fun testPerformanceUnderLoad() = runBlocking {
         // Test system performance under high load conditions
 
         val loadLevels = listOf(10, 50, 100)
@@ -282,7 +284,7 @@ class NetworkIntegrationComprehensiveTest {
     }
 
     @Test
-    fun testConcurrentOperationsAcrossProtocols() = runTest {
+    fun testConcurrentOperationsAcrossProtocols() = runBlocking {
         // Test concurrent operations across different network protocols
 
         val protocols = listOf("dropbox", "googledrive", "onedrive", "ftp", "sftp")

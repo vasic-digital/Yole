@@ -20,6 +20,7 @@ import digital.vasic.yole.format.plaintext.PlaintextParser
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 import kotlin.time.measureTime
+import kotlinx.coroutines.runBlocking
 
 /**
  * Validates lazy loading, caching, and non-blocking I/O patterns.

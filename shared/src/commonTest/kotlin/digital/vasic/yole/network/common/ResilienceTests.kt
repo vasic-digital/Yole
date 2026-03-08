@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 // ---------------------------------------------------------------------------
 // CircuitBreaker Tests
@@ -32,7 +33,7 @@ class CircuitBreakerStateTransitionTests {
     }
 
     @Test
-    fun successfulCallKeepsStateClosed() = runTest {
+    fun successfulCallKeepsStateClosed() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 3)
         val result = cb.execute { "ok" }
         assertTrue(result.isSuccess)
@@ -41,7 +42,7 @@ class CircuitBreakerStateTransitionTests {
     }
 
     @Test
-    fun singleFailureDoesNotOpenCircuit() = runTest {
+    fun singleFailureDoesNotOpenCircuit() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 3)
         val result = cb.execute { throw RuntimeException("boom") }
         assertTrue(result.isFailure)
@@ -50,7 +51,7 @@ class CircuitBreakerStateTransitionTests {
     }
 
     @Test
-    fun consecutiveFailuresOpenCircuit() = runTest {
+    fun consecutiveFailuresOpenCircuit() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 3, resetTimeout = 60.seconds)
         repeat(3) {
             cb.execute { throw RuntimeException("fail-$it") }
@@ -60,7 +61,7 @@ class CircuitBreakerStateTransitionTests {
     }
 
     @Test
-    fun openCircuitRejectsCallsImmediately() = runTest {
+    fun openCircuitRejectsCallsImmediately() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 1, resetTimeout = 60.seconds)
         cb.execute { throw RuntimeException("trigger") }
         assertEquals(CircuitBreaker.State.OPEN, cb.state)
@@ -71,7 +72,7 @@ class CircuitBreakerStateTransitionTests {
     }
 
     @Test
-    fun circuitBreakerOpenExceptionContainsName() = runTest {
+    fun circuitBreakerOpenExceptionContainsName() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 1, resetTimeout = 10.seconds, name = "webdav-breaker")
         cb.execute { throw RuntimeException("fail") }
 
@@ -82,7 +83,7 @@ class CircuitBreakerStateTransitionTests {
     }
 
     @Test
-    fun successAfterFailuresResetsCount() = runTest {
+    fun successAfterFailuresResetsCount() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 3)
         cb.execute { throw RuntimeException("f1") }
         cb.execute { throw RuntimeException("f2") }
@@ -94,7 +95,7 @@ class CircuitBreakerStateTransitionTests {
     }
 
     @Test
-    fun resetBringsCircuitToClosed() = runTest {
+    fun resetBringsCircuitToClosed() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 1, resetTimeout = 60.seconds)
         cb.execute { throw RuntimeException("open it") }
         assertEquals(CircuitBreaker.State.OPEN, cb.state)
@@ -105,7 +106,7 @@ class CircuitBreakerStateTransitionTests {
     }
 
     @Test
-    fun callCounterIncrements() = runTest {
+    fun callCounterIncrements() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 10)
         assertEquals(0, cb.calls)
         cb.execute { "a" }
@@ -115,7 +116,7 @@ class CircuitBreakerStateTransitionTests {
     }
 
     @Test
-    fun successCounterIncrements() = runTest {
+    fun successCounterIncrements() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 10)
         assertEquals(0, cb.successes)
         cb.execute { "a" }
@@ -136,14 +137,14 @@ class CircuitBreakerStateTransitionTests {
     }
 
     @Test
-    fun failureThresholdOfOneOpensImmediately() = runTest {
+    fun failureThresholdOfOneOpensImmediately() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 1, resetTimeout = 60.seconds)
         cb.execute { throw RuntimeException("single") }
         assertEquals(CircuitBreaker.State.OPEN, cb.state)
     }
 
     @Test
-    fun halfOpenSuccessTransitionsToClosed() = runTest {
+    fun halfOpenSuccessTransitionsToClosed() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 1, resetTimeout = 1.milliseconds)
         cb.execute { throw RuntimeException("open") }
         assertEquals(CircuitBreaker.State.OPEN, cb.state)
@@ -159,7 +160,7 @@ class CircuitBreakerStateTransitionTests {
     }
 
     @Test
-    fun halfOpenFailureTransitionsBackToOpen() = runTest {
+    fun halfOpenFailureTransitionsBackToOpen() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 1, resetTimeout = 1.milliseconds)
         cb.execute { throw RuntimeException("open") }
         assertEquals(CircuitBreaker.State.OPEN, cb.state)
@@ -173,7 +174,7 @@ class CircuitBreakerStateTransitionTests {
     }
 
     @Test
-    fun openCircuitCountsRejectedCalls() = runTest {
+    fun openCircuitCountsRejectedCalls() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 1, resetTimeout = 60.seconds)
         cb.execute { throw RuntimeException("open") }
         val callsBefore = cb.calls
@@ -182,7 +183,7 @@ class CircuitBreakerStateTransitionTests {
     }
 
     @Test
-    fun executeReturnsTypedResult() = runTest {
+    fun executeReturnsTypedResult() = runBlocking {
         val cb = CircuitBreaker()
         val intResult = cb.execute { 42 }
         assertEquals(42, intResult.getOrNull())
@@ -192,7 +193,7 @@ class CircuitBreakerStateTransitionTests {
     }
 
     @Test
-    fun resetFromHalfOpenNotNeeded() = runTest {
+    fun resetFromHalfOpenNotNeeded() = runBlocking {
         // Resetting from CLOSED is a no-op but should not crash
         val cb = CircuitBreaker()
         cb.reset()
@@ -203,7 +204,7 @@ class CircuitBreakerStateTransitionTests {
 class CircuitBreakerConcurrencyTests {
 
     @Test
-    fun multipleConcurrentSuccessfulCalls() = runTest {
+    fun multipleConcurrentSuccessfulCalls() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 100)
         val results = (1..20).map { i ->
             async { cb.execute { i * 2 } }
@@ -216,7 +217,7 @@ class CircuitBreakerConcurrencyTests {
     }
 
     @Test
-    fun mixedConcurrentCallsTrackCorrectly() = runTest {
+    fun mixedConcurrentCallsTrackCorrectly() = runBlocking {
         val cb = CircuitBreaker(failureThreshold = 100)
         val results = (1..10).map { i ->
             async {
@@ -240,7 +241,7 @@ class CircuitBreakerConcurrencyTests {
 class ConnectionLimiterBasicTests {
 
     @Test
-    fun singleOperationCompletesSuccessfully() = runTest {
+    fun singleOperationCompletesSuccessfully() = runBlocking {
         val limiter = ConnectionLimiter(maxConcurrent = 3)
         val result = limiter.withConnection { "hello" }
         assertEquals("hello", result)
@@ -266,7 +267,7 @@ class ConnectionLimiterBasicTests {
     }
 
     @Test
-    fun operationExceptionPropagates() = runTest {
+    fun operationExceptionPropagates() = runBlocking {
         val limiter = ConnectionLimiter(maxConcurrent = 3)
         assertFailsWith<IllegalStateException> {
             limiter.withConnection { throw IllegalStateException("inner error") }
@@ -274,7 +275,7 @@ class ConnectionLimiterBasicTests {
     }
 
     @Test
-    fun permitReleasedAfterSuccess() = runTest {
+    fun permitReleasedAfterSuccess() = runBlocking {
         val limiter = ConnectionLimiter(maxConcurrent = 1)
         limiter.withConnection { "first" }
         assertEquals(1, limiter.availablePermits)
@@ -283,7 +284,7 @@ class ConnectionLimiterBasicTests {
     }
 
     @Test
-    fun permitReleasedAfterException() = runTest {
+    fun permitReleasedAfterException() = runBlocking {
         val limiter = ConnectionLimiter(maxConcurrent = 1)
         try {
             limiter.withConnection { throw RuntimeException("fail") }
@@ -295,7 +296,7 @@ class ConnectionLimiterBasicTests {
     }
 
     @Test
-    fun multipleSequentialOperations() = runTest {
+    fun multipleSequentialOperations() = runBlocking {
         val limiter = ConnectionLimiter(maxConcurrent = 2)
         val results = mutableListOf<Int>()
         for (i in 1..10) {
@@ -305,7 +306,7 @@ class ConnectionLimiterBasicTests {
     }
 
     @Test
-    fun concurrentOperationsWithinLimit() = runTest {
+    fun concurrentOperationsWithinLimit() = runBlocking {
         val limiter = ConnectionLimiter(maxConcurrent = 5, acquireTimeout = 5.seconds)
         val results = (1..5).map { i ->
             async {
@@ -316,7 +317,7 @@ class ConnectionLimiterBasicTests {
     }
 
     @Test
-    fun maxConcurrentOneSerializesOperations() = runTest {
+    fun maxConcurrentOneSerializesOperations() = runBlocking {
         val limiter = ConnectionLimiter(maxConcurrent = 1, acquireTimeout = 5.seconds)
         val order = mutableListOf<Int>()
         val jobs = (1..5).map { i ->
@@ -360,7 +361,7 @@ class DocumentCacheBasicTests {
     }
 
     @Test
-    fun putAndGetSingleEntry() = runTest {
+    fun putAndGetSingleEntry() = runBlocking {
         val cache = DocumentCache()
         val document = doc("hello world")
         cache.put("key1", document)
@@ -370,13 +371,13 @@ class DocumentCacheBasicTests {
     }
 
     @Test
-    fun getMissingKeyReturnsNull() = runTest {
+    fun getMissingKeyReturnsNull() = runBlocking {
         val cache = DocumentCache()
         assertNull(cache.get("nonexistent"))
     }
 
     @Test
-    fun hitsAndMissesTracking() = runTest {
+    fun hitsAndMissesTracking() = runBlocking {
         val cache = DocumentCache()
         cache.put("a", doc("aaa"))
 
@@ -389,7 +390,7 @@ class DocumentCacheBasicTests {
     }
 
     @Test
-    fun hitRateCalculation() = runTest {
+    fun hitRateCalculation() = runBlocking {
         val cache = DocumentCache()
         cache.put("a", doc("aaa"))
 
@@ -408,7 +409,7 @@ class DocumentCacheBasicTests {
     }
 
     @Test
-    fun invalidateRemovesEntry() = runTest {
+    fun invalidateRemovesEntry() = runBlocking {
         val cache = DocumentCache()
         cache.put("key", doc("content"))
         assertTrue(cache.contains("key"))
@@ -419,14 +420,14 @@ class DocumentCacheBasicTests {
     }
 
     @Test
-    fun invalidateNonexistentKeyIsNoOp() = runTest {
+    fun invalidateNonexistentKeyIsNoOp() = runBlocking {
         val cache = DocumentCache()
         cache.invalidate("missing")
         assertEquals(0, cache.size)
     }
 
     @Test
-    fun clearRemovesAllEntries() = runTest {
+    fun clearRemovesAllEntries() = runBlocking {
         val cache = DocumentCache()
         cache.put("a", doc("aaa"))
         cache.put("b", doc("bbb"))
@@ -441,7 +442,7 @@ class DocumentCacheBasicTests {
     }
 
     @Test
-    fun clearResetsHitsAndMisses() = runTest {
+    fun clearResetsHitsAndMisses() = runBlocking {
         val cache = DocumentCache()
         cache.put("a", doc("aaa"))
         cache.get("a")
@@ -454,20 +455,20 @@ class DocumentCacheBasicTests {
     }
 
     @Test
-    fun containsReturnsTrueForExistingKey() = runTest {
+    fun containsReturnsTrueForExistingKey() = runBlocking {
         val cache = DocumentCache()
         cache.put("exists", doc("yes"))
         assertTrue(cache.contains("exists"))
     }
 
     @Test
-    fun containsReturnsFalseForMissingKey() = runTest {
+    fun containsReturnsFalseForMissingKey() = runBlocking {
         val cache = DocumentCache()
         assertFalse(cache.contains("nope"))
     }
 
     @Test
-    fun putOverwritesExistingEntry() = runTest {
+    fun putOverwritesExistingEntry() = runBlocking {
         val cache = DocumentCache()
         cache.put("key", doc("original"))
         cache.put("key", doc("updated"))
@@ -479,7 +480,7 @@ class DocumentCacheBasicTests {
     }
 
     @Test
-    fun sizeTracksEntries() = runTest {
+    fun sizeTracksEntries() = runBlocking {
         val cache = DocumentCache()
         assertEquals(0, cache.size)
         cache.put("a", doc("a"))
@@ -508,7 +509,7 @@ class DocumentCacheLRUEvictionTests {
     )
 
     @Test
-    fun evictsLeastRecentlyUsedWhenMaxSizeExceeded() = runTest {
+    fun evictsLeastRecentlyUsedWhenMaxSizeExceeded() = runBlocking {
         val cache = DocumentCache(maxSize = 3)
         cache.put("a", doc("aaa"))
         cache.put("b", doc("bbb"))
@@ -525,7 +526,7 @@ class DocumentCacheLRUEvictionTests {
     }
 
     @Test
-    fun accessReordersEvictionPriority() = runTest {
+    fun accessReordersEvictionPriority() = runBlocking {
         val cache = DocumentCache(maxSize = 3)
         cache.put("a", doc("aaa"))
         cache.put("b", doc("bbb"))
@@ -544,7 +545,7 @@ class DocumentCacheLRUEvictionTests {
     }
 
     @Test
-    fun maxSizeOneKeepsOnlyLatest() = runTest {
+    fun maxSizeOneKeepsOnlyLatest() = runBlocking {
         val cache = DocumentCache(maxSize = 1)
         cache.put("a", doc("aaa"))
         cache.put("b", doc("bbb"))
@@ -555,7 +556,7 @@ class DocumentCacheLRUEvictionTests {
     }
 
     @Test
-    fun evictionCascadesCorrectly() = runTest {
+    fun evictionCascadesCorrectly() = runBlocking {
         val cache = DocumentCache(maxSize = 2)
         cache.put("a", doc("aaa"))
         cache.put("b", doc("bbb"))
@@ -570,7 +571,7 @@ class DocumentCacheLRUEvictionTests {
     }
 
     @Test
-    fun fillToExactCapacityNoEviction() = runTest {
+    fun fillToExactCapacityNoEviction() = runBlocking {
         val cache = DocumentCache(maxSize = 5)
         for (i in 1..5) {
             cache.put("key-$i", doc("content-$i"))
@@ -599,7 +600,7 @@ class DocumentCacheConcurrencyTests {
     )
 
     @Test
-    fun concurrentPutsDoNotCorruptCache() = runTest {
+    fun concurrentPutsDoNotCorruptCache() = runBlocking {
         val cache = DocumentCache(maxSize = 50)
         val jobs = (1..20).map { i ->
             async {
@@ -611,7 +612,7 @@ class DocumentCacheConcurrencyTests {
     }
 
     @Test
-    fun concurrentGetsReturnCorrectValues() = runTest {
+    fun concurrentGetsReturnCorrectValues() = runBlocking {
         val cache = DocumentCache()
         cache.put("shared", doc("shared-content"))
 
@@ -624,7 +625,7 @@ class DocumentCacheConcurrencyTests {
     }
 
     @Test
-    fun concurrentMixedOperations() = runTest {
+    fun concurrentMixedOperations() = runBlocking {
         val cache = DocumentCache(maxSize = 10)
 
         // Pre-populate
@@ -660,7 +661,7 @@ class DocumentCacheMetadataTests {
     )
 
     @Test
-    fun cachePreservesDocumentMetadata() = runTest {
+    fun cachePreservesDocumentMetadata() = runBlocking {
         val cache = DocumentCache()
         val document = ParsedDocument(
             format = testFormat,
@@ -682,7 +683,7 @@ class DocumentCacheMetadataTests {
     }
 
     @Test
-    fun cachePreservesDocumentErrors() = runTest {
+    fun cachePreservesDocumentErrors() = runBlocking {
         val cache = DocumentCache()
         val document = ParsedDocument(
             format = testFormat,

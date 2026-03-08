@@ -22,6 +22,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 // ---------------------------------------------------------------------------
 // CircuitBreaker Integration Tests
@@ -30,7 +31,7 @@ import kotlin.time.Duration.Companion.seconds
 class CircuitBreakerIntegrationTests {
 
     @Test
-    fun circuitBreakerProtectsConnectMethod() = runTest {
+    fun circuitBreakerProtectsConnectMethod() = runBlocking {
         val cb = CircuitBreaker(name = "test-service", failureThreshold = 3)
 
         // Simulate 3 consecutive failures
@@ -46,7 +47,7 @@ class CircuitBreakerIntegrationTests {
     }
 
     @Test
-    fun circuitBreakerResetsAfterTimeout() = runTest {
+    fun circuitBreakerResetsAfterTimeout() = runBlocking {
         val cb = CircuitBreaker(
             name = "timeout-test",
             failureThreshold = 1,
@@ -68,7 +69,7 @@ class CircuitBreakerIntegrationTests {
     }
 
     @Test
-    fun circuitBreakerTracksCallCount() = runTest {
+    fun circuitBreakerTracksCallCount() = runBlocking {
         val cb = CircuitBreaker(name = "counter-test", failureThreshold = 10)
 
         repeat(5) { cb.execute { "ok" } }
@@ -78,7 +79,7 @@ class CircuitBreakerIntegrationTests {
     }
 
     @Test
-    fun circuitBreakerHalfOpenFailureReopensCircuit() = runTest {
+    fun circuitBreakerHalfOpenFailureReopensCircuit() = runBlocking {
         val cb = CircuitBreaker(
             name = "half-open-fail",
             failureThreshold = 1,
@@ -98,7 +99,7 @@ class CircuitBreakerIntegrationTests {
     }
 
     @Test
-    fun circuitBreakerResetClearsState() = runTest {
+    fun circuitBreakerResetClearsState() = runBlocking {
         val cb = CircuitBreaker(name = "reset-test", failureThreshold = 1)
         cb.execute { throw RuntimeException("fail") }
         assertEquals(CircuitBreaker.State.OPEN, cb.state)
@@ -109,7 +110,7 @@ class CircuitBreakerIntegrationTests {
     }
 
     @Test
-    fun circuitBreakerSuccessResetsFailureCount() = runTest {
+    fun circuitBreakerSuccessResetsFailureCount() = runBlocking {
         val cb = CircuitBreaker(name = "success-reset", failureThreshold = 3)
 
         // 2 failures, then a success
@@ -123,7 +124,7 @@ class CircuitBreakerIntegrationTests {
     }
 
     @Test
-    fun circuitBreakerWrapsResultFailureCorrectly() = runTest {
+    fun circuitBreakerWrapsResultFailureCorrectly() = runBlocking {
         val cb = CircuitBreaker(name = "result-wrap", failureThreshold = 3)
         val result = cb.execute<Result<Unit>> {
             Result.failure(Exception("inner failure"))
@@ -142,7 +143,7 @@ class CircuitBreakerIntegrationTests {
     }
 
     @Test
-    fun circuitBreakerForEachProtocol() = runTest {
+    fun circuitBreakerForEachProtocol() = runBlocking {
         val protocols = listOf("dropbox", "googledrive", "onedrive", "ftp", "sftp", "smb", "webdav", "git")
         for (protocol in protocols) {
             val cb = CircuitBreaker(name = protocol, failureThreshold = 5)
@@ -160,27 +161,27 @@ class CircuitBreakerIntegrationTests {
 class ConnectionLimiterIntegrationTests {
 
     @Test
-    fun connectionLimiterAllowsSingleConnection() = runTest {
+    fun connectionLimiterAllowsSingleConnection() = runBlocking {
         val limiter = ConnectionLimiter(name = "single", maxConcurrent = 1)
         val result = limiter.withConnection { "done" }
         assertEquals("done", result)
     }
 
     @Test
-    fun connectionLimiterTracksAvailablePermits() = runTest {
+    fun connectionLimiterTracksAvailablePermits() = runBlocking {
         val limiter = ConnectionLimiter(name = "permits", maxConcurrent = 5)
         assertEquals(5, limiter.availablePermits)
     }
 
     @Test
-    fun connectionLimiterReleasesPermitAfterCompletion() = runTest {
+    fun connectionLimiterReleasesPermitAfterCompletion() = runBlocking {
         val limiter = ConnectionLimiter(name = "release", maxConcurrent = 2)
         limiter.withConnection { "first" }
         assertEquals(2, limiter.availablePermits)
     }
 
     @Test
-    fun connectionLimiterReleasesPermitOnException() = runTest {
+    fun connectionLimiterReleasesPermitOnException() = runBlocking {
         val limiter = ConnectionLimiter(name = "exception-release", maxConcurrent = 2)
         try {
             limiter.withConnection { throw RuntimeException("oops") }
@@ -191,7 +192,7 @@ class ConnectionLimiterIntegrationTests {
     }
 
     @Test
-    fun connectionLimiterConcurrentAccessWithinLimit() = runTest {
+    fun connectionLimiterConcurrentAccessWithinLimit() = runBlocking {
         val limiter = ConnectionLimiter(name = "concurrent", maxConcurrent = 3)
         val results = (1..3).map { i ->
             async {
@@ -203,7 +204,7 @@ class ConnectionLimiterIntegrationTests {
     }
 
     @Test
-    fun connectionLimiterForEachProtocol() = runTest {
+    fun connectionLimiterForEachProtocol() = runBlocking {
         val protocols = listOf("dropbox", "googledrive", "onedrive", "ftp", "sftp", "smb", "webdav", "git")
         for (protocol in protocols) {
             val limiter = ConnectionLimiter(name = protocol, maxConcurrent = 5)
@@ -245,7 +246,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheStartsEmpty() = runTest {
+    fun documentCacheStartsEmpty() = runBlocking {
         val cache = DocumentCache()
         assertEquals(0, cache.size)
         assertEquals(0L, cache.hits)
@@ -253,7 +254,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCachePutAndGet() = runTest {
+    fun documentCachePutAndGet() = runBlocking {
         val cache = DocumentCache()
         val doc = ParsedDocument(
             format = plainTextFormat,
@@ -267,7 +268,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheHitIncrementsHitCount() = runTest {
+    fun documentCacheHitIncrementsHitCount() = runBlocking {
         val cache = DocumentCache()
         val doc = ParsedDocument(
             format = plainTextFormat,
@@ -280,14 +281,14 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheMissIncrementsMissCount() = runTest {
+    fun documentCacheMissIncrementsMissCount() = runBlocking {
         val cache = DocumentCache()
         cache.get("nonexistent")
         assertEquals(1L, cache.misses)
     }
 
     @Test
-    fun documentCacheHitRateCalculation() = runTest {
+    fun documentCacheHitRateCalculation() = runBlocking {
         val cache = DocumentCache()
         val doc = ParsedDocument(
             format = plainTextFormat,
@@ -301,7 +302,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheEvictsLeastRecentlyUsed() = runTest {
+    fun documentCacheEvictsLeastRecentlyUsed() = runBlocking {
         val cache = DocumentCache(maxSize = 2)
         val doc1 = ParsedDocument(format = plainTextFormat, rawContent = "1", parsedContent = "1")
         val doc2 = ParsedDocument(format = plainTextFormat, rawContent = "2", parsedContent = "2")
@@ -317,7 +318,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheClearRemovesAll() = runTest {
+    fun documentCacheClearRemovesAll() = runBlocking {
         val cache = DocumentCache()
         val doc = ParsedDocument(format = plainTextFormat, rawContent = "x", parsedContent = "x")
         cache.put("key", doc)
@@ -327,7 +328,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheInvalidateRemovesSingleKey() = runTest {
+    fun documentCacheInvalidateRemovesSingleKey() = runBlocking {
         val cache = DocumentCache()
         val doc1 = ParsedDocument(format = plainTextFormat, rawContent = "1", parsedContent = "1")
         val doc2 = ParsedDocument(format = plainTextFormat, rawContent = "2", parsedContent = "2")
@@ -339,7 +340,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheContainsKey() = runTest {
+    fun documentCacheContainsKey() = runBlocking {
         val cache = DocumentCache()
         val doc = ParsedDocument(format = plainTextFormat, rawContent = "x", parsedContent = "x")
         cache.put("present", doc)
@@ -348,7 +349,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheConcurrentAccess() = runTest {
+    fun documentCacheConcurrentAccess() = runBlocking {
         val cache = DocumentCache()
         val results = (1..10).map { i ->
             async {
@@ -372,7 +373,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
 class CombinedResiliencePatternTests {
 
     @Test
-    fun circuitBreakerAndConnectionLimiterTogether() = runTest {
+    fun circuitBreakerAndConnectionLimiterTogether() = runBlocking {
         val cb = CircuitBreaker(name = "combined", failureThreshold = 3)
         val limiter = ConnectionLimiter(name = "combined", maxConcurrent = 5)
 
@@ -389,7 +390,7 @@ class CombinedResiliencePatternTests {
     }
 
     @Test
-    fun circuitBreakerOpenBlocksConnectionLimiter() = runTest {
+    fun circuitBreakerOpenBlocksConnectionLimiter() = runBlocking {
         val cb = CircuitBreaker(name = "blocking", failureThreshold = 1, resetTimeout = 60.seconds)
         val limiter = ConnectionLimiter(name = "blocking", maxConcurrent = 5)
 
@@ -407,7 +408,7 @@ class CombinedResiliencePatternTests {
     }
 
     @Test
-    fun foldPatternExtractsInnerResult() = runTest {
+    fun foldPatternExtractsInnerResult() = runBlocking {
         val cb = CircuitBreaker(name = "fold-test", failureThreshold = 5)
         val limiter = ConnectionLimiter(name = "fold-test", maxConcurrent = 5)
 
@@ -423,7 +424,7 @@ class CombinedResiliencePatternTests {
     }
 
     @Test
-    fun foldPatternOnCircuitBreakerFailure() = runTest {
+    fun foldPatternOnCircuitBreakerFailure() = runBlocking {
         val cb = CircuitBreaker(name = "fold-fail", failureThreshold = 1, resetTimeout = 60.seconds)
         cb.execute { throw RuntimeException("initial fail") }
 

@@ -15,6 +15,8 @@ import kotlin.test.assertTrue
 import kotlin.test.assertFalse
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Unit tests for SecureStorage interface.
@@ -35,7 +37,7 @@ abstract class SecureStorageTest {
     // ==================== Basic Operations Tests ====================
 
     @Test
-    fun `should store and retrieve basic values`() = runTest {
+    fun `should store and retrieve basic values`() = runBlocking {
         val storage = createStorage()
         val key = "test_key"
         val value = "test_value_123"
@@ -49,7 +51,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should return null for non-existent keys`() = runTest {
+    fun `should return null for non-existent keys`() = runBlocking {
         val storage = createStorage()
         val key = "non_existent_key"
 
@@ -59,7 +61,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should update existing values`() = runTest {
+    fun `should update existing values`() = runBlocking {
         val storage = createStorage()
         val key = "update_test_key"
         val initialValue = "initial_value"
@@ -73,7 +75,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should delete existing values`() = runTest {
+    fun `should delete existing values`() = runBlocking {
         val storage = createStorage()
         val key = "delete_test_key"
         val value = "delete_test_value"
@@ -87,7 +89,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should handle delete of non-existent key gracefully`() = runTest {
+    fun `should handle delete of non-existent key gracefully`() = runBlocking {
         val storage = createStorage()
         val key = "non_existent_delete_key"
 
@@ -96,7 +98,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should check if key exists`() = runTest {
+    fun `should check if key exists`() = runBlocking {
         val storage = createStorage()
         val existingKey = "existing_key"
         val nonExistingKey = "non_existing_key"
@@ -114,7 +116,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should list all keys`() = runTest {
+    fun `should list all keys`() = runBlocking {
         val storage = createStorage()
         val keys = listOf("key1", "key2", "key3")
         val value = "test_value"
@@ -131,7 +133,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should clear all stored values`() = runTest {
+    fun `should clear all stored values`() = runBlocking {
         val storage = createStorage()
         val keys = listOf("key1", "key2", "key3")
         val value = "test_value"
@@ -150,7 +152,7 @@ abstract class SecureStorageTest {
     // ==================== Credential Management Tests ====================
 
     @Test
-    fun `should store and retrieve credentials`() = runTest {
+    fun `should store and retrieve credentials`() = runBlocking {
         val storage = createStorage()
         val service = "webdav"
         val username = "testuser"
@@ -168,7 +170,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should return null for non-existent credentials`() = runTest {
+    fun `should return null for non-existent credentials`() = runBlocking {
         val storage = createStorage()
         val service = "non_existent_service"
 
@@ -178,7 +180,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should delete credentials`() = runTest {
+    fun `should delete credentials`() = runBlocking {
         val storage = createStorage()
         val service = "sftp"
         val username = "testuser"
@@ -193,7 +195,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should handle credentials with special characters`() = runTest {
+    fun `should handle credentials with special characters`() = runBlocking {
         val storage = createStorage()
         val service = "ftp"
         val username = "user@domain.com"
@@ -209,7 +211,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should handle credentials with colons in username or password`() = runTest {
+    fun `should handle credentials with colons in username or password`() = runBlocking {
         val storage = createStorage()
         val service = "webdav"
         val username = "domain:user"
@@ -227,7 +229,7 @@ abstract class SecureStorageTest {
     // ==================== Token Management Tests ====================
 
     @Test
-    fun `should store and retrieve tokens`() = runTest {
+    fun `should store and retrieve tokens`() = runBlocking {
         val storage = createStorage()
         val service = "dropbox"
         val token = "sl.test_token_abc123xyz"
@@ -241,7 +243,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should return null for non-existent tokens`() = runTest {
+    fun `should return null for non-existent tokens`() = runBlocking {
         val storage = createStorage()
         val service = "non_existent_service"
 
@@ -251,7 +253,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should delete tokens`() = runTest {
+    fun `should delete tokens`() = runBlocking {
         val storage = createStorage()
         val service = "googledrive"
         val token = "test_token_123"
@@ -265,7 +267,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should handle long tokens`() = runTest {
+    fun `should handle long tokens`() = runBlocking {
         val storage = createStorage()
         val service = "onedrive"
         val token = "a".repeat(2048) // 2KB token
@@ -279,7 +281,7 @@ abstract class SecureStorageTest {
     // ==================== Private Key Management Tests ====================
 
     @Test
-    fun `should store and retrieve private keys`() = runTest {
+    fun `should store and retrieve private keys`() = runBlocking {
         val storage = createStorage()
         val service = "sftp"
         val privateKey = """
@@ -298,7 +300,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should return null for non-existent private keys`() = runTest {
+    fun `should return null for non-existent private keys`() = runBlocking {
         val storage = createStorage()
         val service = "non_existent_service"
 
@@ -308,7 +310,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should delete private keys`() = runTest {
+    fun `should delete private keys`() = runBlocking {
         val storage = createStorage()
         val service = "git"
         val privateKey = "-----BEGIN PRIVATE KEY-----\ntest key data\n-----END PRIVATE KEY-----"
@@ -324,7 +326,7 @@ abstract class SecureStorageTest {
     // ==================== Security Validation Tests ====================
 
     @Test
-    fun `should validate security status`() = runTest {
+    fun `should validate security status`() = runBlocking {
         val storage = createStorage()
 
         val result = storage.isSecure()
@@ -337,7 +339,7 @@ abstract class SecureStorageTest {
     // ==================== Error Handling Tests ====================
 
     @Test
-    fun `should handle empty keys gracefully`() = runTest {
+    fun `should handle empty keys gracefully`() = runBlocking {
         val storage = createStorage()
         val value = "test_value"
 
@@ -346,7 +348,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should handle empty values`() = runTest {
+    fun `should handle empty values`() = runBlocking {
         val storage = createStorage()
         val key = "empty_value_key"
 
@@ -358,7 +360,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should handle very large values`() = runTest {
+    fun `should handle very large values`() = runBlocking {
         val storage = createStorage()
         val key = "large_value_key"
         val largeValue = "x".repeat(1024 * 1024) // 1MB value
@@ -371,7 +373,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should handle special characters in keys`() = runTest {
+    fun `should handle special characters in keys`() = runBlocking {
         val storage = createStorage()
         val specialKeys = listOf(
             "key-with-dashes",
@@ -395,7 +397,7 @@ abstract class SecureStorageTest {
     }
 
     @Test
-    fun `should handle unicode content`() = runTest {
+    fun `should handle unicode content`() = runBlocking {
         val storage = createStorage()
         val key = "unicode_key"
         val unicodeValue = """

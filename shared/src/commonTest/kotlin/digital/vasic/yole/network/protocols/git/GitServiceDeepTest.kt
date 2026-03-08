@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 
 /**
  * Deep test suite for GitService.
@@ -186,31 +188,31 @@ class GitServiceDeepTest {
     // ==================== STORAGE INFO ====================
 
     @Test
-    fun `getStorageInfo returns correct id`() = runTest {
+    fun `getStorageInfo returns correct id`() = runBlocking {
         val info = service.getStorageInfo()
         assertEquals("git_test-git", info.id)
     }
 
     @Test
-    fun `getStorageInfo returns correct name`() = runTest {
+    fun `getStorageInfo returns correct name`() = runBlocking {
         val info = service.getStorageInfo()
         assertEquals("test-git", info.name)
     }
 
     @Test
-    fun `getStorageInfo returns GIT type`() = runTest {
+    fun `getStorageInfo returns GIT type`() = runBlocking {
         val info = service.getStorageInfo()
         assertEquals(StorageType.GIT, info.type)
     }
 
     @Test
-    fun `getStorageInfo shows offline when not connected`() = runTest {
+    fun `getStorageInfo shows offline when not connected`() = runBlocking {
         val info = service.getStorageInfo()
         assertFalse(info.isOnline)
     }
 
     @Test
-    fun `getStorageInfo has non-null lastSync`() = runTest {
+    fun `getStorageInfo has non-null lastSync`() = runBlocking {
         val info = service.getStorageInfo()
         assertNotNull(info.lastSync)
     }
@@ -223,21 +225,21 @@ class GitServiceDeepTest {
     }
 
     @Test
-    fun `disconnect returns success when not connected`() = runTest {
+    fun `disconnect returns success when not connected`() = runBlocking {
         val result = service.disconnect()
         assertTrue(result.isSuccess)
         assertFalse(service.isOnline)
     }
 
     @Test
-    fun `multiple disconnect calls succeed`() = runTest {
+    fun `multiple disconnect calls succeed`() = runBlocking {
         assertTrue(service.disconnect().isSuccess)
         assertTrue(service.disconnect().isSuccess)
         assertFalse(service.isOnline)
     }
 
     @Test
-    fun `service state consistent after disconnect`() = runTest {
+    fun `service state consistent after disconnect`() = runBlocking {
         service.disconnect()
         assertFalse(service.isOnline)
         val info = service.getStorageInfo()
@@ -247,25 +249,25 @@ class GitServiceDeepTest {
     // ==================== CACHE OPERATIONS LIFECYCLE ====================
 
     @Test
-    fun `getCacheEntries initially returns empty list`() = runTest {
+    fun `getCacheEntries initially returns empty list`() = runBlocking {
         val entries = service.getCacheEntries("/").first()
         assertTrue(entries.isEmpty())
     }
 
     @Test
-    fun `getCacheEntries with null path initially empty`() = runTest {
+    fun `getCacheEntries with null path initially empty`() = runBlocking {
         val entries = service.getCacheEntries(null).first()
         assertTrue(entries.isEmpty())
     }
 
     @Test
-    fun `addToCache succeeds`() = runTest {
+    fun `addToCache succeeds`() = runBlocking {
         val result = service.addToCache("/src/main.kt", 1)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `addToCache then getCacheEntries returns entry`() = runTest {
+    fun `addToCache then getCacheEntries returns entry`() = runBlocking {
         service.addToCache("/src/main.kt", 1)
         val entries = service.getCacheEntries("/src").first()
         assertEquals(1, entries.size)
@@ -273,7 +275,7 @@ class GitServiceDeepTest {
     }
 
     @Test
-    fun `addToCache multiple entries all returned`() = runTest {
+    fun `addToCache multiple entries all returned`() = runBlocking {
         service.addToCache("/file1.kt", 1)
         service.addToCache("/file2.kt", 2)
         service.addToCache("/file3.kt", 3)
@@ -282,7 +284,7 @@ class GitServiceDeepTest {
     }
 
     @Test
-    fun `getCacheEntries filters by path prefix`() = runTest {
+    fun `getCacheEntries filters by path prefix`() = runBlocking {
         service.addToCache("/src/file1.kt", 1)
         service.addToCache("/docs/file2.md", 1)
         val srcEntries = service.getCacheEntries("/src").first()
@@ -290,7 +292,7 @@ class GitServiceDeepTest {
     }
 
     @Test
-    fun `removeFromCache removes specific entry`() = runTest {
+    fun `removeFromCache removes specific entry`() = runBlocking {
         service.addToCache("/file.kt", 1)
         service.removeFromCache("/file.kt")
         val entries = service.getCacheEntries(null).first()
@@ -298,13 +300,13 @@ class GitServiceDeepTest {
     }
 
     @Test
-    fun `removeFromCache returns success for nonexistent entry`() = runTest {
+    fun `removeFromCache returns success for nonexistent entry`() = runBlocking {
         val result = service.removeFromCache("/nonexistent.kt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `clearCache removes all entries`() = runTest {
+    fun `clearCache removes all entries`() = runBlocking {
         service.addToCache("/file1.kt", 1)
         service.addToCache("/file2.kt", 2)
         service.clearCache()
@@ -313,20 +315,20 @@ class GitServiceDeepTest {
     }
 
     @Test
-    fun `clearCache returns success when already empty`() = runTest {
+    fun `clearCache returns success when already empty`() = runBlocking {
         val result = service.clearCache()
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `addToCache with different priorities succeeds`() = runTest {
+    fun `addToCache with different priorities succeeds`() = runBlocking {
         assertTrue(service.addToCache("/a.kt", 0).isSuccess)
         assertTrue(service.addToCache("/b.kt", 5).isSuccess)
         assertTrue(service.addToCache("/c.kt", 100).isSuccess)
     }
 
     @Test
-    fun `addToCache overwrites existing entry with same path`() = runTest {
+    fun `addToCache overwrites existing entry with same path`() = runBlocking {
         service.addToCache("/file.kt", 1)
         service.addToCache("/file.kt", 5)
         val entries = service.getCacheEntries(null).first()
@@ -334,7 +336,7 @@ class GitServiceDeepTest {
     }
 
     @Test
-    fun `cache entry local path uses config localCachePath`() = runTest {
+    fun `cache entry local path uses config localCachePath`() = runBlocking {
         service.addToCache("/src/main.kt", 1)
         val entries = service.getCacheEntries("/src").first()
         assertEquals(1, entries.size)
@@ -344,19 +346,19 @@ class GitServiceDeepTest {
     // ==================== SYNC STATUS OPERATIONS ====================
 
     @Test
-    fun `getSyncStatus initially returns empty map`() = runTest {
+    fun `getSyncStatus initially returns empty map`() = runBlocking {
         val status = service.getSyncStatus("/").first()
         assertTrue(status.isEmpty())
     }
 
     @Test
-    fun `getSyncStatus with null path initially empty`() = runTest {
+    fun `getSyncStatus with null path initially empty`() = runBlocking {
         val status = service.getSyncStatus(null).first()
         assertTrue(status.isEmpty())
     }
 
     @Test
-    fun `syncFile returns progress flow ending with COMPLETED`() = runTest {
+    fun `syncFile returns progress flow ending with COMPLETED`() = runBlocking {
         val results = service.syncFile("/src/main.kt", false).toList()
         assertTrue(results.isNotEmpty())
         assertEquals(NetworkOperation.Status.COMPLETED, results.last().status)
@@ -364,13 +366,13 @@ class GitServiceDeepTest {
     }
 
     @Test
-    fun `syncFile with forceSync returns COMPLETED`() = runTest {
+    fun `syncFile with forceSync returns COMPLETED`() = runBlocking {
         val results = service.syncFile("/src/main.kt", true).toList()
         assertEquals(NetworkOperation.Status.COMPLETED, results.last().status)
     }
 
     @Test
-    fun `syncFile updates sync status to SYNCED`() = runTest {
+    fun `syncFile updates sync status to SYNCED`() = runBlocking {
         service.syncFile("/src/main.kt", false).toList()
         val status = service.getSyncStatus("/src").first()
         assertTrue(status.containsKey("/src/main.kt"))
@@ -378,19 +380,19 @@ class GitServiceDeepTest {
     }
 
     @Test
-    fun `syncFile ends with progress 1 point 0`() = runTest {
+    fun `syncFile ends with progress 1 point 0`() = runBlocking {
         val results = service.syncFile("/file.kt", false).toList()
         assertEquals(1.0, results.last().progress)
     }
 
     @Test
-    fun `syncFile has multiple progress emissions`() = runTest {
+    fun `syncFile has multiple progress emissions`() = runBlocking {
         val results = service.syncFile("/file.kt", false).toList()
         assertTrue(results.size > 1, "syncFile should emit multiple progress updates")
     }
 
     @Test
-    fun `getSyncStatus filters by path prefix`() = runTest {
+    fun `getSyncStatus filters by path prefix`() = runBlocking {
         service.syncFile("/src/a.kt", false).toList()
         service.syncFile("/docs/b.md", false).toList()
         val srcStatuses = service.getSyncStatus("/src").first()
@@ -401,31 +403,31 @@ class GitServiceDeepTest {
     // ==================== OPERATION MANAGEMENT ====================
 
     @Test
-    fun `getActiveOperations initially returns empty list`() = runTest {
+    fun `getActiveOperations initially returns empty list`() = runBlocking {
         val operations = service.getActiveOperations().first()
         assertTrue(operations.isEmpty())
     }
 
     @Test
-    fun `cancelOperation returns success`() = runTest {
+    fun `cancelOperation returns success`() = runBlocking {
         val result = service.cancelOperation(12345L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `cancelOperation with zero id returns success`() = runTest {
+    fun `cancelOperation with zero id returns success`() = runBlocking {
         val result = service.cancelOperation(0L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `pauseOperation returns success`() = runTest {
+    fun `pauseOperation returns success`() = runBlocking {
         val result = service.pauseOperation(12345L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `resumeOperation returns success`() = runTest {
+    fun `resumeOperation returns success`() = runBlocking {
         val result = service.resumeOperation(12345L)
         assertTrue(result.isSuccess)
     }
@@ -433,48 +435,48 @@ class GitServiceDeepTest {
     // ==================== QUOTA INFO ====================
 
     @Test
-    fun `getQuotaInfo returns success`() = runTest {
+    fun `getQuotaInfo returns success`() = runBlocking {
         val result = service.getQuotaInfo()
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `getQuotaInfo returns MAX_VALUE for total space`() = runTest {
+    fun `getQuotaInfo returns MAX_VALUE for total space`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertEquals(Long.MAX_VALUE, quota.totalSpace)
     }
 
     @Test
-    fun `getQuotaInfo returns MAX_VALUE for available space`() = runTest {
+    fun `getQuotaInfo returns MAX_VALUE for available space`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertEquals(Long.MAX_VALUE, quota.availableSpace)
     }
 
     @Test
-    fun `getQuotaInfo returns zero used space`() = runTest {
+    fun `getQuotaInfo returns zero used space`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertEquals(0L, quota.usedSpace)
     }
 
     @Test
-    fun `getQuotaInfo usage percentage is zero`() = runTest {
+    fun `getQuotaInfo usage percentage is zero`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertEquals(0.0, quota.usagePercentage)
     }
 
     @Test
-    fun `getQuotaInfo is not full`() = runTest {
+    fun `getQuotaInfo is not full`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertFalse(quota.isFull)
     }
 
     @Test
-    fun `getQuotaInfo is not low on space`() = runTest {
+    fun `getQuotaInfo is not low on space`() = runBlocking {
         val quota = service.getQuotaInfo().getOrNull()
         assertNotNull(quota)
         assertFalse(quota.isLowOnSpace)
@@ -559,7 +561,7 @@ class GitServiceDeepTest {
     }
 
     @Test
-    fun `multiple sequential cache operations consistency`() = runTest {
+    fun `multiple sequential cache operations consistency`() = runBlocking {
         service.addToCache("/a.kt", 1)
         service.addToCache("/b.kt", 2)
         service.removeFromCache("/a.kt")
@@ -569,14 +571,14 @@ class GitServiceDeepTest {
     }
 
     @Test
-    fun `sync then check status consistency`() = runTest {
+    fun `sync then check status consistency`() = runBlocking {
         service.syncFile("/src/main.kt", false).toList()
         val statuses = service.getSyncStatus("/src").first()
         assertTrue(statuses.containsKey("/src/main.kt"))
     }
 
     @Test
-    fun `getFileInfo when disconnected returns default document`() = runTest {
+    fun `getFileInfo when disconnected returns default document`() = runBlocking {
         val result = service.getFileInfo("/README.md")
         assertTrue(result.isSuccess)
         val doc = result.getOrNull()
@@ -588,14 +590,14 @@ class GitServiceDeepTest {
     }
 
     @Test
-    fun `exists when disconnected returns false`() = runTest {
+    fun `exists when disconnected returns false`() = runBlocking {
         val result = service.exists("/README.md")
         assertTrue(result.isSuccess)
         assertFalse(result.getOrNull() ?: true)
     }
 
     @Test
-    fun `createFolder when disconnected succeeds with local tracking`() = runTest {
+    fun `createFolder when disconnected succeeds with local tracking`() = runBlocking {
         val result = service.createFolder("/new-folder")
         assertTrue(result.isSuccess)
         val doc = result.getOrNull()
@@ -607,25 +609,25 @@ class GitServiceDeepTest {
     }
 
     @Test
-    fun `deleteFile when disconnected succeeds with local tracking`() = runTest {
+    fun `deleteFile when disconnected succeeds with local tracking`() = runBlocking {
         val result = service.deleteFile("/old-file.txt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `copyFile when disconnected succeeds with local tracking`() = runTest {
+    fun `copyFile when disconnected succeeds with local tracking`() = runBlocking {
         val result = service.copyFile("/source.kt", "/dest.kt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `renameFile when disconnected succeeds with local tracking`() = runTest {
+    fun `renameFile when disconnected succeeds with local tracking`() = runBlocking {
         val result = service.renameFile("/old.kt", "new.kt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `moveFile when disconnected succeeds with local tracking`() = runTest {
+    fun `moveFile when disconnected succeeds with local tracking`() = runBlocking {
         val result = service.moveFile("/old/file.kt", "/new/file.kt")
         assertTrue(result.isSuccess)
         val doc = result.getOrNull()

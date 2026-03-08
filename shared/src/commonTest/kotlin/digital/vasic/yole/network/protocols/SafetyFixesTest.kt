@@ -21,6 +21,7 @@ import digital.vasic.yole.network.protocols.googledrive.GoogleDriveService
 import digital.vasic.yole.network.protocols.onedrive.OneDriveService
 import digital.vasic.yole.network.protocols.webdav.WebDavService
 import digital.vasic.yole.network.common.*
+import kotlin.time.Duration.Companion.seconds
 
 class SafetyFixesTest {
 
@@ -91,7 +92,7 @@ class SafetyFixesTest {
     // ==========================================================================
 
     @Test
-    fun testSftpConnectRespectsCancellation() = runTest {
+    fun testSftpConnectRespectsCancellation() = runBlocking {
         val service = SftpService(sftpConfig())
         val job = launch {
             service.connect()
@@ -102,7 +103,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpDisconnectRespectsCancellation() = runTest {
+    fun testSftpDisconnectRespectsCancellation() = runBlocking {
         val service = SftpService(sftpConfig())
         service.connect()
         val job = launch {
@@ -114,7 +115,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testFtpDisconnectRespectsCancellation() = runTest {
+    fun testFtpDisconnectRespectsCancellation() = runBlocking {
         val service = FtpService(ftpConfig())
         val job = launch {
             service.disconnect()
@@ -125,7 +126,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbConnectRespectsCancellation() = runTest {
+    fun testSmbConnectRespectsCancellation() = runBlocking {
         val service = SmbService(smbConfig())
         val job = launch {
             service.connect()
@@ -136,7 +137,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbDisconnectRespectsCancellation() = runTest {
+    fun testSmbDisconnectRespectsCancellation() = runBlocking {
         val service = SmbService(smbConfig())
         service.connect()
         val job = launch {
@@ -148,7 +149,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbTestConnectionRespectsCancellation() = runTest {
+    fun testSmbTestConnectionRespectsCancellation() = runBlocking {
         val service = SmbService(smbConfig())
         val job = launch {
             service.testConnection()
@@ -159,7 +160,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpGetFileInfoRespectsCancellation() = runTest {
+    fun testSftpGetFileInfoRespectsCancellation() = runBlocking {
         val service = SftpService(sftpConfig())
         service.connect()
         val job = launch {
@@ -171,7 +172,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpExistsRespectsCancellation() = runTest {
+    fun testSftpExistsRespectsCancellation() = runBlocking {
         val service = SftpService(sftpConfig())
         service.connect()
         val job = launch {
@@ -183,7 +184,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbGetFileInfoRespectsCancellation() = runTest {
+    fun testSmbGetFileInfoRespectsCancellation() = runBlocking {
         val service = SmbService(smbConfig())
         service.connect()
         val job = launch {
@@ -195,7 +196,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbExistsRespectsCancellation() = runTest {
+    fun testSmbExistsRespectsCancellation() = runBlocking {
         val service = SmbService(smbConfig())
         service.connect()
         val job = launch {
@@ -207,7 +208,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testCancellationNotSwallowedBySftpConnect() = runTest {
+    fun testCancellationNotSwallowedBySftpConnect() = runBlocking {
         val service = SftpService(sftpConfig())
         var cancellationPropagated = false
         val job = launch {
@@ -225,7 +226,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testCancellationNotSwallowedBySmbConnect() = runTest {
+    fun testCancellationNotSwallowedBySmbConnect() = runBlocking {
         val service = SmbService(smbConfig())
         var cancellationPropagated = false
         val job = launch {
@@ -242,7 +243,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpDeleteFileRespectsCancellation() = runTest {
+    fun testSftpDeleteFileRespectsCancellation() = runBlocking {
         val service = SftpService(sftpConfig())
         service.connect()
         val job = launch {
@@ -254,7 +255,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbDeleteFileRespectsCancellation() = runTest {
+    fun testSmbDeleteFileRespectsCancellation() = runBlocking {
         val service = SmbService(smbConfig())
         service.connect()
         val job = launch {
@@ -266,7 +267,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpCreateFolderRespectsCancellation() = runTest {
+    fun testSftpCreateFolderRespectsCancellation() = runBlocking {
         val service = SftpService(sftpConfig())
         service.connect()
         val job = launch {
@@ -278,7 +279,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbCreateFolderRespectsCancellation() = runTest {
+    fun testSmbCreateFolderRespectsCancellation() = runBlocking {
         val service = SmbService(smbConfig())
         service.connect()
         val job = launch {
@@ -296,7 +297,7 @@ class SafetyFixesTest {
     // ----- FTP normalizePath (indirectly tested via getFileInfo which calls normalizePath) -----
 
     @Test
-    fun testFtpPathTraversalParentEscapeAttempt() = runTest {
+    fun testFtpPathTraversalParentEscapeAttempt() = runBlocking {
         val service = FtpService(ftpConfig(rootPath = "/home/user"))
         // Without connect, service returns not-connected error, but we can verify
         // the service exists and has the right config
@@ -304,7 +305,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpPathTraversalEtcPasswd() = runTest {
+    fun testSftpPathTraversalEtcPasswd() = runBlocking {
         val service = SftpService(sftpConfig(rootPath = "/home/user"))
         service.connect()
         // ../../etc/passwd should be sanitized to stay within root
@@ -315,7 +316,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpPathTraversalMultipleParents() = runTest {
+    fun testSftpPathTraversalMultipleParents() = runBlocking {
         val service = SftpService(sftpConfig(rootPath = "/home/user"))
         service.connect()
         // ./../../../ should stay within root
@@ -324,7 +325,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpPathTraversalValidThenEscape() = runTest {
+    fun testSftpPathTraversalValidThenEscape() = runBlocking {
         val service = SftpService(sftpConfig(rootPath = "/home/user"))
         service.connect()
         // valid/../../escape should not escape root
@@ -333,7 +334,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpNormalPathNoRegression() = runTest {
+    fun testSftpNormalPathNoRegression() = runBlocking {
         val service = SftpService(sftpConfig(rootPath = "/home/user"))
         service.connect()
         // Normal path should work correctly
@@ -342,7 +343,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpCurrentDirectoryPath() = runTest {
+    fun testSftpCurrentDirectoryPath() = runBlocking {
         val service = SftpService(sftpConfig(rootPath = "/home/user"))
         service.connect()
         // ./file.txt should resolve correctly
@@ -351,7 +352,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpEmptyPathReturnsRoot() = runTest {
+    fun testSftpEmptyPathReturnsRoot() = runBlocking {
         val service = SftpService(sftpConfig(rootPath = "/home/user"))
         service.connect()
         val result = service.getFileInfo("")
@@ -359,7 +360,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpSlashPathReturnsRoot() = runTest {
+    fun testSftpSlashPathReturnsRoot() = runBlocking {
         val service = SftpService(sftpConfig(rootPath = "/home/user"))
         service.connect()
         val result = service.getFileInfo("/")
@@ -367,7 +368,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbPathTraversalEtcPasswd() = runTest {
+    fun testSmbPathTraversalEtcPasswd() = runBlocking {
         val service = SmbService(smbConfig(path = "/data/share"))
         service.connect()
         val result = service.getFileInfo("../../etc/passwd")
@@ -375,7 +376,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbPathTraversalMultipleParents() = runTest {
+    fun testSmbPathTraversalMultipleParents() = runBlocking {
         val service = SmbService(smbConfig(path = "/data/share"))
         service.connect()
         val result = service.getFileInfo("./../../../")
@@ -383,7 +384,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbPathTraversalValidThenEscape() = runTest {
+    fun testSmbPathTraversalValidThenEscape() = runBlocking {
         val service = SmbService(smbConfig(path = "/data/share"))
         service.connect()
         val result = service.getFileInfo("valid/../../escape")
@@ -391,7 +392,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbNormalPathNoRegression() = runTest {
+    fun testSmbNormalPathNoRegression() = runBlocking {
         val service = SmbService(smbConfig(path = "/data/share"))
         service.connect()
         val result = service.getFileInfo("documents/readme.txt")
@@ -399,7 +400,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbCurrentDirectoryPath() = runTest {
+    fun testSmbCurrentDirectoryPath() = runBlocking {
         val service = SmbService(smbConfig(path = "/data/share"))
         service.connect()
         val result = service.getFileInfo("./file.txt")
@@ -407,7 +408,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbEmptyPathReturnsRoot() = runTest {
+    fun testSmbEmptyPathReturnsRoot() = runBlocking {
         val service = SmbService(smbConfig(path = "/data/share"))
         service.connect()
         val result = service.getFileInfo("")
@@ -415,7 +416,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbSlashPathReturnsRoot() = runTest {
+    fun testSmbSlashPathReturnsRoot() = runBlocking {
         val service = SmbService(smbConfig(path = "/data/share"))
         service.connect()
         val result = service.getFileInfo("/")
@@ -423,7 +424,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpPathTraversalWithCustomRootDoesNotEscapeRoot() = runTest {
+    fun testSftpPathTraversalWithCustomRootDoesNotEscapeRoot() = runBlocking {
         val service = SftpService(sftpConfig(rootPath = "/var/data"))
         service.connect()
         // Attempting deep traversal that would go above /var/data
@@ -433,7 +434,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbPathTraversalWithCustomRootDoesNotEscapeRoot() = runTest {
+    fun testSmbPathTraversalWithCustomRootDoesNotEscapeRoot() = runBlocking {
         val service = SmbService(smbConfig(path = "/var/data"))
         service.connect()
         val result = service.exists("../../../etc/shadow")
@@ -441,7 +442,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testFtpPathTraversalDefaultRootSlash() = runTest {
+    fun testFtpPathTraversalDefaultRootSlash() = runBlocking {
         val service = FtpService(ftpConfig(rootPath = "/"))
         // With root = "/", normalizePath should handle all ".." by clamping to "/"
         // We can't directly call normalizePath (it's private), but config is correct
@@ -449,7 +450,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpDeeplyNestedTraversal() = runTest {
+    fun testSftpDeeplyNestedTraversal() = runBlocking {
         val service = SftpService(sftpConfig(rootPath = "/a/b/c/d/e"))
         service.connect()
         // 10 levels of ".." from a 5-deep root should clamp at root
@@ -458,7 +459,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbDeeplyNestedTraversal() = runTest {
+    fun testSmbDeeplyNestedTraversal() = runBlocking {
         val service = SmbService(smbConfig(path = "/a/b/c/d/e"))
         service.connect()
         val result = service.getFileInfo("../../../../../../../../../../secret")
@@ -466,7 +467,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testDropboxPathTraversalAttack() = runTest {
+    fun testDropboxPathTraversalAttack() = runBlocking {
         // Dropbox uses normalizePath with empty rootPath by default
         val service = DropboxService(dropboxConfig(rootPath = "/Apps/MyApp"))
         // Cannot call normalizePath directly, but verify config is set correctly
@@ -474,13 +475,13 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testDropboxEmptyRootPath() = runTest {
+    fun testDropboxEmptyRootPath() = runBlocking {
         val service = DropboxService(dropboxConfig(rootPath = ""))
         assertEquals("", service.config.rootPath)
     }
 
     @Test
-    fun testSftpPathWithBackslashTraversal() = runTest {
+    fun testSftpPathWithBackslashTraversal() = runBlocking {
         val service = SftpService(sftpConfig(rootPath = "/home/user"))
         service.connect()
         // Backslash-based traversal attempt (should be treated as filename, not path separator)
@@ -489,7 +490,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbPathWithBackslashTraversal() = runTest {
+    fun testSmbPathWithBackslashTraversal() = runBlocking {
         val service = SmbService(smbConfig(path = "/data/share"))
         service.connect()
         val result = service.getFileInfo("..\\..\\etc\\passwd")
@@ -501,7 +502,7 @@ class SafetyFixesTest {
     // ==========================================================================
 
     @Test
-    fun testDropboxSearchWithSingleQuotes() = runTest {
+    fun testDropboxSearchWithSingleQuotes() = runBlocking {
         val service = DropboxService(dropboxConfig())
         // searchFiles should handle quotes safely (jsonEscape handles this)
         val flow = service.searchFiles("file's name", "/", false)
@@ -510,105 +511,105 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testDropboxSearchWithDoubleQuotes() = runTest {
+    fun testDropboxSearchWithDoubleQuotes() = runBlocking {
         val service = DropboxService(dropboxConfig())
         val flow = service.searchFiles("file \"quoted\" name", "/", false)
         assertNotNull(flow, "Flow should be created without error for double-quoted query")
     }
 
     @Test
-    fun testDropboxSearchWithBackslashes() = runTest {
+    fun testDropboxSearchWithBackslashes() = runBlocking {
         val service = DropboxService(dropboxConfig())
         val flow = service.searchFiles("path\\to\\file", "/", false)
         assertNotNull(flow, "Flow should be created without error for backslash query")
     }
 
     @Test
-    fun testDropboxSearchWithNewlines() = runTest {
+    fun testDropboxSearchWithNewlines() = runBlocking {
         val service = DropboxService(dropboxConfig())
         val flow = service.searchFiles("line1\nline2\rline3", "/", false)
         assertNotNull(flow, "Flow should be created without error for newline query")
     }
 
     @Test
-    fun testDropboxSearchWithUnicode() = runTest {
+    fun testDropboxSearchWithUnicode() = runBlocking {
         val service = DropboxService(dropboxConfig())
         val flow = service.searchFiles("archivo_espanol.txt", "/", false)
         assertNotNull(flow, "Flow should be created without error for unicode query")
     }
 
     @Test
-    fun testGoogleDriveSearchWithSingleQuotes() = runTest {
+    fun testGoogleDriveSearchWithSingleQuotes() = runBlocking {
         val service = GoogleDriveService(googleDriveConfig())
         val flow = service.searchFiles("file's name", "/", false)
         assertNotNull(flow, "GoogleDrive flow should handle single quotes in query")
     }
 
     @Test
-    fun testGoogleDriveSearchWithDoubleQuotes() = runTest {
+    fun testGoogleDriveSearchWithDoubleQuotes() = runBlocking {
         val service = GoogleDriveService(googleDriveConfig())
         val flow = service.searchFiles("file \"quoted\" name", "/", false)
         assertNotNull(flow, "GoogleDrive flow should handle double quotes in query")
     }
 
     @Test
-    fun testOneDriveSearchWithSingleQuotes() = runTest {
+    fun testOneDriveSearchWithSingleQuotes() = runBlocking {
         val service = OneDriveService(oneDriveConfig())
         val flow = service.searchFiles("file's name", "/", false)
         assertNotNull(flow, "OneDrive flow should handle single quotes in query")
     }
 
     @Test
-    fun testOneDriveSearchWithDoubleQuotes() = runTest {
+    fun testOneDriveSearchWithDoubleQuotes() = runBlocking {
         val service = OneDriveService(oneDriveConfig())
         val flow = service.searchFiles("file \"quoted\" name", "/", false)
         assertNotNull(flow, "OneDrive flow should handle double quotes in query")
     }
 
     @Test
-    fun testSftpSearchWithSpecialChars() = runTest {
+    fun testSftpSearchWithSpecialChars() = runBlocking {
         val service = SftpService(sftpConfig())
         val flow = service.searchFiles("test'file\"name\\path", "/", false)
         assertNotNull(flow, "SFTP flow should handle special characters in query")
     }
 
     @Test
-    fun testSmbSearchWithSpecialChars() = runTest {
+    fun testSmbSearchWithSpecialChars() = runBlocking {
         val service = SmbService(smbConfig())
         val flow = service.searchFiles("test'file\"name\\path", "/", false)
         assertNotNull(flow, "SMB flow should handle special characters in query")
     }
 
     @Test
-    fun testWebDavSearchWithSpecialChars() = runTest {
+    fun testWebDavSearchWithSpecialChars() = runBlocking {
         val service = WebDavService(webDavConfig())
         val flow = service.searchFiles("test'file\"name\\path", "/", false)
         assertNotNull(flow, "WebDAV flow should handle special characters in query")
     }
 
     @Test
-    fun testGitSearchWithSpecialChars() = runTest {
+    fun testGitSearchWithSpecialChars() = runBlocking {
         val service = GitService(gitConfig())
         val flow = service.searchFiles("test'file\"name\\path", "/", false)
         assertNotNull(flow, "Git flow should handle special characters in query")
     }
 
     @Test
-    fun testDropboxSearchWithTabCharacter() = runTest {
+    fun testDropboxSearchWithTabCharacter() = runBlocking {
         val service = DropboxService(dropboxConfig())
         val flow = service.searchFiles("before\tafter", "/", false)
         assertNotNull(flow, "Flow should handle tab character in query")
     }
 
     @Test
-    fun testDropboxSearchWithNullBytes() = runTest {
+    fun testDropboxSearchWithNullBytes() = runBlocking {
         val service = DropboxService(dropboxConfig())
         val flow = service.searchFiles("file\u0000name", "/", false)
         assertNotNull(flow, "Flow should handle null byte in query")
     }
 
     @Test
-    fun testDropboxSearchWithJsonInjection() = runTest {
+    fun testDropboxSearchWithJsonInjection() = runBlocking {
         val service = DropboxService(dropboxConfig())
         // Attempt JSON injection via query parameter
         val flow = service.searchFiles("\"}, \"malicious\": {\"key\": \"value", "/", false)
@@ -616,7 +617,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testFtpSearchWithSpecialChars() = runTest {
+    fun testFtpSearchWithSpecialChars() = runBlocking {
         val service = FtpService(ftpConfig())
         val flow = service.searchFiles("file's \"quoted\" name\nwith newline", "/", false)
         assertNotNull(flow, "FTP flow should handle special characters in query")
@@ -627,7 +628,7 @@ class SafetyFixesTest {
     // ==========================================================================
 
     @Test
-    fun testDropboxMultipleConnectDisconnectCycles() = runTest {
+    fun testDropboxMultipleConnectDisconnectCycles() = runBlocking {
         val service = DropboxService(dropboxConfig())
         // Multiple connect/disconnect should not leak scopes or crash
         // connect will fail (no real token) but should not throw unhandled exceptions
@@ -641,7 +642,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testGoogleDriveMultipleConnectDisconnectCycles() = runTest {
+    fun testGoogleDriveMultipleConnectDisconnectCycles() = runBlocking {
         val service = GoogleDriveService(googleDriveConfig())
         repeat(3) {
             val connectResult = service.connect()
@@ -652,7 +653,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testOneDriveMultipleConnectDisconnectCycles() = runTest {
+    fun testOneDriveMultipleConnectDisconnectCycles() = runBlocking {
         val service = OneDriveService(oneDriveConfig())
         repeat(3) {
             val connectResult = service.connect()
@@ -663,7 +664,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpMultipleConnectDisconnectCycles() = runTest {
+    fun testSftpMultipleConnectDisconnectCycles() = runBlocking {
         val service = SftpService(sftpConfig())
         repeat(3) {
             val connectResult = service.connect()
@@ -675,7 +676,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbMultipleConnectDisconnectCycles() = runTest {
+    fun testSmbMultipleConnectDisconnectCycles() = runBlocking {
         val service = SmbService(smbConfig())
         repeat(3) {
             val connectResult = service.connect()
@@ -686,42 +687,42 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testDropboxDisconnectWithoutConnect() = runTest {
+    fun testDropboxDisconnectWithoutConnect() = runBlocking {
         val service = DropboxService(dropboxConfig())
         val result = service.disconnect()
         assertTrue(result.isSuccess, "Dropbox disconnect without prior connect should succeed")
     }
 
     @Test
-    fun testGoogleDriveDisconnectWithoutConnect() = runTest {
+    fun testGoogleDriveDisconnectWithoutConnect() = runBlocking {
         val service = GoogleDriveService(googleDriveConfig())
         val result = service.disconnect()
         assertTrue(result.isSuccess, "GoogleDrive disconnect without prior connect should succeed")
     }
 
     @Test
-    fun testOneDriveDisconnectWithoutConnect() = runTest {
+    fun testOneDriveDisconnectWithoutConnect() = runBlocking {
         val service = OneDriveService(oneDriveConfig())
         val result = service.disconnect()
         assertTrue(result.isSuccess, "OneDrive disconnect without prior connect should succeed")
     }
 
     @Test
-    fun testSftpDisconnectWithoutConnect() = runTest {
+    fun testSftpDisconnectWithoutConnect() = runBlocking {
         val service = SftpService(sftpConfig())
         val result = service.disconnect()
         assertTrue(result.isSuccess, "SFTP disconnect without prior connect should succeed")
     }
 
     @Test
-    fun testSmbDisconnectWithoutConnect() = runTest {
+    fun testSmbDisconnectWithoutConnect() = runBlocking {
         val service = SmbService(smbConfig())
         val result = service.disconnect()
         assertTrue(result.isSuccess, "SMB disconnect without prior connect should succeed")
     }
 
     @Test
-    fun testDropboxIsOfflineAfterDisconnect() = runTest {
+    fun testDropboxIsOfflineAfterDisconnect() = runBlocking {
         val service = DropboxService(dropboxConfig())
         // Disconnect even when not connected should leave service offline
         service.disconnect()
@@ -729,21 +730,21 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testGoogleDriveIsOfflineAfterDisconnect() = runTest {
+    fun testGoogleDriveIsOfflineAfterDisconnect() = runBlocking {
         val service = GoogleDriveService(googleDriveConfig())
         service.disconnect()
         assertFalse(service.isOnline, "GoogleDrive should be offline after disconnect")
     }
 
     @Test
-    fun testOneDriveIsOfflineAfterDisconnect() = runTest {
+    fun testOneDriveIsOfflineAfterDisconnect() = runBlocking {
         val service = OneDriveService(oneDriveConfig())
         service.disconnect()
         assertFalse(service.isOnline, "OneDrive should be offline after disconnect")
     }
 
     @Test
-    fun testSftpOnlineStateAfterConnectDisconnect() = runTest {
+    fun testSftpOnlineStateAfterConnectDisconnect() = runBlocking {
         val service = SftpService(sftpConfig())
         assertFalse(service.isOnline, "SFTP should be offline initially")
         service.connect()
@@ -753,7 +754,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbOnlineStateAfterConnectDisconnect() = runTest {
+    fun testSmbOnlineStateAfterConnectDisconnect() = runBlocking {
         val service = SmbService(smbConfig())
         assertFalse(service.isOnline, "SMB should be offline initially")
         service.connect()
@@ -763,7 +764,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testDropboxRapidConnectDisconnect() = runTest {
+    fun testDropboxRapidConnectDisconnect() = runBlocking {
         val service = DropboxService(dropboxConfig())
         // Rapid cycles should not cause scope leaks or race conditions
         repeat(10) {
@@ -774,7 +775,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpRapidConnectDisconnect() = runTest {
+    fun testSftpRapidConnectDisconnect() = runBlocking {
         val service = SftpService(sftpConfig())
         repeat(10) {
             service.connect()
@@ -784,7 +785,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbRapidConnectDisconnect() = runTest {
+    fun testSmbRapidConnectDisconnect() = runBlocking {
         val service = SmbService(smbConfig())
         repeat(10) {
             service.connect()
@@ -798,7 +799,7 @@ class SafetyFixesTest {
     // ==========================================================================
 
     @Test
-    fun testSftpOperationsWhileDisconnectedReturnError() = runTest {
+    fun testSftpOperationsWhileDisconnectedReturnError() = runBlocking {
         val service = SftpService(sftpConfig())
         // Not connected - operations should return failure, not throw
         val result = service.getFileInfo("/any/path")
@@ -806,7 +807,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbOperationsWhileDisconnectedReturnError() = runTest {
+    fun testSmbOperationsWhileDisconnectedReturnError() = runBlocking {
         val service = SmbService(smbConfig())
         // Not connected
         val result = service.getFileInfo("/any/path")
@@ -814,21 +815,21 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpDeleteWhileDisconnected() = runTest {
+    fun testSftpDeleteWhileDisconnected() = runBlocking {
         val service = SftpService(sftpConfig())
         val result = service.deleteFile("/any/path")
         assertTrue(result.isFailure, "SFTP deleteFile while disconnected should fail gracefully")
     }
 
     @Test
-    fun testSmbDeleteWhileDisconnected() = runTest {
+    fun testSmbDeleteWhileDisconnected() = runBlocking {
         val service = SmbService(smbConfig())
         val result = service.deleteFile("/any/path")
         assertTrue(result.isFailure, "SMB deleteFile while disconnected should fail gracefully")
     }
 
     @Test
-    fun testSftpPathWithEncodedCharacters() = runTest {
+    fun testSftpPathWithEncodedCharacters() = runBlocking {
         val service = SftpService(sftpConfig())
         service.connect()
         // URL-encoded path traversal attempt
@@ -837,7 +838,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbPathWithEncodedCharacters() = runTest {
+    fun testSmbPathWithEncodedCharacters() = runBlocking {
         val service = SmbService(smbConfig())
         service.connect()
         val result = service.getFileInfo("%2e%2e/%2e%2e/etc/passwd")
@@ -845,7 +846,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpPathWithUnicodeChars() = runTest {
+    fun testSftpPathWithUnicodeChars() = runBlocking {
         val service = SftpService(sftpConfig())
         service.connect()
         val result = service.getFileInfo("/documents/archive_2024.txt")
@@ -853,7 +854,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbPathWithUnicodeChars() = runTest {
+    fun testSmbPathWithUnicodeChars() = runBlocking {
         val service = SmbService(smbConfig())
         service.connect()
         val result = service.getFileInfo("/documents/archive_2024.txt")
@@ -861,7 +862,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpPathWithSpaces() = runTest {
+    fun testSftpPathWithSpaces() = runBlocking {
         val service = SftpService(sftpConfig())
         service.connect()
         val result = service.getFileInfo("/my documents/my file.txt")
@@ -869,7 +870,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbPathWithSpaces() = runTest {
+    fun testSmbPathWithSpaces() = runBlocking {
         val service = SmbService(smbConfig())
         service.connect()
         val result = service.getFileInfo("/my documents/my file.txt")
@@ -877,7 +878,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSftpVeryLongPath() = runTest {
+    fun testSftpVeryLongPath() = runBlocking {
         val service = SftpService(sftpConfig())
         service.connect()
         val longPath = "/" + (1..100).joinToString("/") { "segment_$it" }
@@ -886,7 +887,7 @@ class SafetyFixesTest {
     }
 
     @Test
-    fun testSmbVeryLongPath() = runTest {
+    fun testSmbVeryLongPath() = runBlocking {
         val service = SmbService(smbConfig())
         service.connect()
         val longPath = "/" + (1..100).joinToString("/") { "segment_$it" }
