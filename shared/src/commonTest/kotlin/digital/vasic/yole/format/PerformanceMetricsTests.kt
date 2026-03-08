@@ -46,6 +46,17 @@ import kotlin.time.measureTime
  */
 class PerformanceMetricsTests {
 
+    @BeforeTest
+    fun setUp() {
+        ParserRegistry.clear()
+        ParserInitializer.registerAllParsers()
+    }
+
+    @AfterTest
+    fun tearDown() {
+        ParserRegistry.clear()
+    }
+
     // ====================================================================
     // Test data generators
     // ====================================================================

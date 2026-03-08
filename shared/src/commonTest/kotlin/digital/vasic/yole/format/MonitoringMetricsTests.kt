@@ -39,6 +39,17 @@ import kotlin.time.measureTime
  */
 class MonitoringMetricsTests {
 
+    @BeforeTest
+    fun setUp() {
+        ParserRegistry.clear()
+        ParserInitializer.registerAllParsers()
+    }
+
+    @AfterTest
+    fun tearDown() {
+        ParserRegistry.clear()
+    }
+
     // ========================== helpers ==========================
 
     /** All 17 parsers in a stable order. */

@@ -906,12 +906,20 @@ class ChallengeValidationTests {
             "{",
             "{\"challenges\": [}",
             "not json at all",
-            "{\"challenges\": \"not an array\"}",
         )
         for (input in malformedInputs) {
             val result = runCatching { Json.parseToJsonElement(input) }
             assertTrue(result.isFailure, "Malformed JSON should fail to parse: '$input'")
         }
+
+        // Structurally invalid: "challenges" is not an array (valid JSON but invalid bank)
+        val structurallyInvalid = "{\"challenges\": \"not an array\"}"
+        val parsed = Json.parseToJsonElement(structurallyInvalid)
+        val challengesField = parsed.jsonObject["challenges"]
+        assertFalse(
+            challengesField is kotlinx.serialization.json.JsonArray,
+            "challenges field should not be a JsonArray in structurally invalid input"
+        )
     }
 
     // ====================================================================

@@ -27,6 +27,17 @@ import kotlin.test.*
 
 class FormatCoverageTest {
 
+    @BeforeTest
+    fun setUp() {
+        ParserRegistry.clear()
+        ParserInitializer.registerAllParsers()
+    }
+
+    @AfterTest
+    fun tearDown() {
+        ParserRegistry.clear()
+    }
+
     // ===== ParsedDocument edge cases =====
 
     @Test
@@ -129,7 +140,7 @@ class FormatCoverageTest {
 
     @Test
     fun testParsedDocumentDifferentMetadata() {
-        val format = FormatRegistry.detectByExtension("test.md")!!
+        val format = FormatRegistry.detectByFilename("test.md")
         val doc1 = ParsedDocument(format, "a", "b", mapOf("k" to "v1"))
         val doc2 = ParsedDocument(format, "a", "b", mapOf("k" to "v2"))
         assertNotEquals(doc1, doc2)
@@ -137,7 +148,7 @@ class FormatCoverageTest {
 
     @Test
     fun testParsedDocumentDifferentErrors() {
-        val format = FormatRegistry.detectByExtension("test.md")!!
+        val format = FormatRegistry.detectByFilename("test.md")
         val doc1 = ParsedDocument(format, "a", "b", errors = listOf("err1"))
         val doc2 = ParsedDocument(format, "a", "b", errors = listOf("err2"))
         assertNotEquals(doc1, doc2)
@@ -145,8 +156,8 @@ class FormatCoverageTest {
 
     @Test
     fun testParsedDocumentDifferentFormat() {
-        val md = FormatRegistry.detectByExtension("test.md")!!
-        val txt = FormatRegistry.detectByExtension("test.txt")!!
+        val md = FormatRegistry.detectByFilename("test.md")
+        val txt = FormatRegistry.detectByFilename("test.txt")
         val doc1 = ParsedDocument(md, "a", "b")
         val doc2 = ParsedDocument(txt, "a", "b")
         assertNotEquals(doc1, doc2)
@@ -154,7 +165,7 @@ class FormatCoverageTest {
 
     @Test
     fun testParsedDocumentDifferentParsedContent() {
-        val format = FormatRegistry.detectByExtension("test.md")!!
+        val format = FormatRegistry.detectByFilename("test.md")
         val doc1 = ParsedDocument(format, "a", "parsed1")
         val doc2 = ParsedDocument(format, "a", "parsed2")
         assertNotEquals(doc1, doc2)
@@ -637,8 +648,7 @@ class FormatCoverageTest {
 
     @Test
     fun testParserRegistryGetParserByFormat() {
-        val format = FormatRegistry.detectByExtension("test.md")
-        assertNotNull(format)
+        val format = FormatRegistry.detectByFilename("test.md")
         val parser = ParserRegistry.getParser(format)
         assertNotNull(parser)
     }

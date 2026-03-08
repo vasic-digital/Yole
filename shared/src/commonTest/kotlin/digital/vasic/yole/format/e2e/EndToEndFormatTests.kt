@@ -49,6 +49,17 @@ import kotlin.test.*
  */
 class EndToEndFormatTests {
 
+    @BeforeTest
+    fun setUp() {
+        ParserRegistry.clear()
+        ParserInitializer.registerAllParsers()
+    }
+
+    @AfterTest
+    fun tearDown() {
+        ParserRegistry.clear()
+    }
+
     // ====================================================================
     // All parsers and their representative content samples
     // ====================================================================
