@@ -305,6 +305,52 @@ tasks.register<JavaExec>("runSimpleBenchmarks") {
     mainClass.set("digital.vasic.yole.format.benchmark.SimpleBenchmarkRunner")
 }
 
+// Task to run Go-based Challenge framework tests
+tasks.register<Exec>("runChallenges") {
+    group = "verification"
+    description = "Build and test the Challenges Go submodule (requires Go 1.24+)"
+
+    val challengesDir = file("${rootDir}/Challenges")
+    val containersDir = file("${rootDir}/Containers")
+
+    doFirst {
+        // Check Go is available
+        val goCheck = try {
+            val proc = ProcessBuilder("go", "version")
+                .redirectErrorStream(true)
+                .start()
+            val output = proc.inputStream.bufferedReader().readText().trim()
+            proc.waitFor()
+            if (proc.exitValue() != 0) {
+                throw GradleException("Go returned non-zero exit code")
+            }
+            logger.lifecycle("Found: $output")
+            true
+        } catch (e: Exception) {
+            throw GradleException(
+                "Go is not available on PATH. Install Go 1.24+ to run challenges. " +
+                "See https://go.dev/doc/install"
+            )
+        }
+
+        if (!challengesDir.exists()) {
+            throw GradleException(
+                "Challenges/ directory not found. " +
+                "Run 'git submodule update --init --recursive' first."
+            )
+        }
+        if (!containersDir.exists()) {
+            throw GradleException(
+                "Containers/ directory not found. " +
+                "Run 'git submodule update --init --recursive' first."
+            )
+        }
+    }
+
+    workingDir = challengesDir
+    commandLine("go", "test", "./...", "-race", "-count=1")
+}
+
 android {
     namespace = "digital.vasic.yole.shared"
     compileSdk = 35
