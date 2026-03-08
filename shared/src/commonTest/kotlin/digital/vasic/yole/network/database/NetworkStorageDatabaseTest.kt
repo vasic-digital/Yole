@@ -50,7 +50,7 @@ class NetworkStorageDatabaseTest {
     // ==================== Storage Tests ====================
 
     @Test
-    fun testInsertAndGetStorage() = runBlocking {
+    fun testInsertAndGetStorage() = runBlocking<Unit> {
         val storage = NetworkStorage(
             id = "storage-1",
             name = "Test Storage",
@@ -67,14 +67,14 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testGetStorageNotFound() = runBlocking {
+    fun testGetStorageNotFound() = runBlocking<Unit> {
         val result = database.getStorage("nonexistent")
         assertTrue(result.isSuccess)
         assertNull(result.getOrNull())
     }
 
     @Test
-    fun testGetAllStorage() = runBlocking {
+    fun testGetAllStorage() = runBlocking<Unit> {
         database.insertStorage(NetworkStorage(id = "s1", name = "S1", type = StorageType.WEBDAV, location = "url1"))
         database.insertStorage(NetworkStorage(id = "s2", name = "S2", type = StorageType.FTP, location = "url2"))
 
@@ -84,7 +84,7 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testUpdateStorage() = runBlocking {
+    fun testUpdateStorage() = runBlocking<Unit> {
         val storage = NetworkStorage(id = "s1", name = "Original", type = StorageType.WEBDAV, location = "url1")
         database.insertStorage(storage)
 
@@ -96,7 +96,7 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testDeleteStorage() = runBlocking {
+    fun testDeleteStorage() = runBlocking<Unit> {
         database.insertStorage(NetworkStorage(id = "s1", name = "S1", type = StorageType.WEBDAV, location = "url1"))
 
         val deleteResult = database.deleteStorage("s1")
@@ -109,7 +109,7 @@ class NetworkStorageDatabaseTest {
     // ==================== Document Tests ====================
 
     @Test
-    fun testInsertAndGetDocument() = runBlocking {
+    fun testInsertAndGetDocument() = runBlocking<Unit> {
         val doc = NetworkDocument(
             id = testDocumentId,
             name = "document.txt",
@@ -132,7 +132,7 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testGetDocumentsByStorage() = runBlocking {
+    fun testGetDocumentsByStorage() = runBlocking<Unit> {
         val doc1 = NetworkDocument(id = "d1", name = "file1.txt", path = "/file1.txt", storageId = "storage-1")
         val doc2 = NetworkDocument(id = "d2", name = "file2.txt", path = "/file2.txt", storageId = "storage-1")
         val doc3 = NetworkDocument(id = "d3", name = "file3.txt", path = "/file3.txt", storageId = "storage-2")
@@ -147,7 +147,7 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testGetDocumentsByPath() = runBlocking {
+    fun testGetDocumentsByPath() = runBlocking<Unit> {
         val doc1 = NetworkDocument(id = "d1", name = "file1.txt", path = "/folder/file1.txt", storageId = "s1")
         val doc2 = NetworkDocument(id = "d2", name = "file2.txt", path = "/folder/file2.txt", storageId = "s1")
         val doc3 = NetworkDocument(id = "d3", name = "file3.txt", path = "/other/file3.txt", storageId = "s1")
@@ -162,7 +162,7 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testUpdateDocument() = runBlocking {
+    fun testUpdateDocument() = runBlocking<Unit> {
         val doc = NetworkDocument(id = "d1", name = "original.txt", path = "/original.txt", storageId = "s1")
         database.insertDocument(doc)
 
@@ -174,7 +174,7 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testDeleteDocument() = runBlocking {
+    fun testDeleteDocument() = runBlocking<Unit> {
         val doc = NetworkDocument(id = "d1", name = "file.txt", path = "/file.txt", storageId = "s1")
         database.insertDocument(doc)
 
@@ -183,7 +183,7 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testDocumentWithPermissions() = runBlocking {
+    fun testDocumentWithPermissions() = runBlocking<Unit> {
         val doc = NetworkDocument(
             id = "d1",
             name = "file.txt",
@@ -202,7 +202,7 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testDocumentWithSyncStatus() = runBlocking {
+    fun testDocumentWithSyncStatus() = runBlocking<Unit> {
         val doc = NetworkDocument(
             id = "d1",
             name = "file.txt",
@@ -219,7 +219,7 @@ class NetworkStorageDatabaseTest {
     // ==================== Sync Status Tests ====================
 
     @Test
-    fun testUpdateAndGetSyncStatus() = runBlocking {
+    fun testUpdateAndGetSyncStatus() = runBlocking<Unit> {
         database.updateSyncStatus(testRemotePath, SyncStatus.SYNCING)
 
         val result = database.getSyncStatus(testRemotePath)
@@ -228,7 +228,7 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testGetAllSyncStatus() = runBlocking {
+    fun testGetAllSyncStatus() = runBlocking<Unit> {
         database.updateSyncStatus("/path1", SyncStatus.SYNCED)
         database.updateSyncStatus("/path2", SyncStatus.PENDING_UPLOAD)
         database.updateSyncStatus("/path3", SyncStatus.SYNC_ERROR)
@@ -239,7 +239,7 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testDeleteSyncStatus() = runBlocking {
+    fun testDeleteSyncStatus() = runBlocking<Unit> {
         database.updateSyncStatus(testRemotePath, SyncStatus.SYNCED)
         database.deleteSyncStatus(testRemotePath)
 
@@ -248,7 +248,7 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testAllSyncStatusValues() = runBlocking {
+    fun testAllSyncStatusValues() = runBlocking<Unit> {
         SyncStatus.entries.forEach { status ->
             val path = "/test/${status.name}"
             database.updateSyncStatus(path, status)
@@ -259,7 +259,7 @@ class NetworkStorageDatabaseTest {
     // ==================== Operation Tests ====================
 
     @Test
-    fun testInsertAndGetOperation() = runBlocking {
+    fun testInsertAndGetOperation() = runBlocking<Unit> {
         val op = NetworkOperation(
             id = 1L,
             type = NetworkOperation.Type.UPLOAD,
@@ -276,7 +276,7 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testGetActiveOperations() = runBlocking {
+    fun testGetActiveOperations() = runBlocking<Unit> {
         val now = Clock.System.now()
         database.insertOperation(NetworkOperation(id = 1L, type = NetworkOperation.Type.UPLOAD, remotePath = "/f1", status = NetworkOperation.Status.IN_PROGRESS, createdAt = now))
         database.insertOperation(NetworkOperation(id = 2L, type = NetworkOperation.Type.DOWNLOAD, remotePath = "/f2", status = NetworkOperation.Status.COMPLETED, createdAt = now))
@@ -291,7 +291,7 @@ class NetworkStorageDatabaseTest {
     // ==================== Cleanup Tests ====================
 
     @Test
-    fun testClearAll() = runBlocking {
+    fun testClearAll() = runBlocking<Unit> {
         database.insertStorage(NetworkStorage(id = "s1", name = "S1", type = StorageType.WEBDAV, location = "url"))
         database.insertDocument(NetworkDocument(id = "d1", name = "f.txt", path = "/f.txt", storageId = "s1"))
         database.updateSyncStatus("/path", SyncStatus.SYNCED)
@@ -305,7 +305,7 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testVacuum() = runBlocking {
+    fun testVacuum() = runBlocking<Unit> {
         val result = database.vacuum()
         assertTrue(result.isSuccess)
     }
@@ -313,7 +313,7 @@ class NetworkStorageDatabaseTest {
     // ==================== Edge Cases ====================
 
     @Test
-    fun testEmptyDatabase() = runBlocking {
+    fun testEmptyDatabase() = runBlocking<Unit> {
         val storages = database.getAllStorage()
         assertTrue(storages.isSuccess)
         assertTrue(storages.getOrNull()?.isEmpty() ?: false)
@@ -324,7 +324,7 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testDuplicateInsert() = runBlocking {
+    fun testDuplicateInsert() = runBlocking<Unit> {
         val doc = NetworkDocument(id = "d1", name = "file.txt", path = "/file.txt", storageId = "s1")
         database.insertDocument(doc)
 
@@ -337,7 +337,7 @@ class NetworkStorageDatabaseTest {
     }
 
     @Test
-    fun testMultipleSyncStatusUpdates() = runBlocking {
+    fun testMultipleSyncStatusUpdates() = runBlocking<Unit> {
         val path = "/test/file.txt"
 
         database.updateSyncStatus(path, SyncStatus.UNKNOWN)

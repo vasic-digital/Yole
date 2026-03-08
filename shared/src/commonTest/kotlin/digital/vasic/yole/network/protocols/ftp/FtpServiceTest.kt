@@ -48,7 +48,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testConnectSuccess() = runBlocking {
+    fun testConnectSuccess() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.connect()
 
@@ -58,7 +58,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testDisconnectSuccess() = runBlocking {
+    fun testDisconnectSuccess() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         ftpService.connect() // Will fail but that's OK
         val result = ftpService.disconnect()
@@ -68,7 +68,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testStorageInfo() = runBlocking {
+    fun testStorageInfo() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val storageInfo = ftpService.getStorageInfo()
         
@@ -79,7 +79,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testListFilesWhenNotConnected() = runBlocking {
+    fun testListFilesWhenNotConnected() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.listFiles("/").first()
         
@@ -88,7 +88,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testDownloadFileWhenNotConnected() = runBlocking {
+    fun testDownloadFileWhenNotConnected() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val operations = ftpService.downloadFile("/test.md", "/tmp/test.md")
         
@@ -99,7 +99,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testUploadFileWhenNotConnected() = runBlocking {
+    fun testUploadFileWhenNotConnected() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val operations = ftpService.uploadFile("/tmp/test.md", "/test.md")
         
@@ -110,7 +110,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testDeleteFileWhenNotConnected() = runBlocking {
+    fun testDeleteFileWhenNotConnected() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.deleteFile("/test.md")
         
@@ -118,7 +118,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testCreateFolderWhenNotConnected() = runBlocking {
+    fun testCreateFolderWhenNotConnected() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.createFolder("/test-folder")
         
@@ -126,7 +126,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testRenameFileWhenNotConnected() = runBlocking {
+    fun testRenameFileWhenNotConnected() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.renameFile("/test.md", "renamed.md")
         
@@ -134,7 +134,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testMoveFileWhenNotConnected() = runBlocking {
+    fun testMoveFileWhenNotConnected() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.moveFile("/test.md", "/moved/test.md")
         
@@ -142,7 +142,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testCopyFileWhenNotConnected() = runBlocking {
+    fun testCopyFileWhenNotConnected() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.copyFile("/test.md", "/copy/test.md")
         
@@ -150,7 +150,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testGetFileInfoWhenNotConnected() = runBlocking {
+    fun testGetFileInfoWhenNotConnected() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.getFileInfo("/test.md")
         
@@ -158,7 +158,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testGetQuotaInfoWhenNotConnected() = runBlocking {
+    fun testGetQuotaInfoWhenNotConnected() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.getQuotaInfo()
         
@@ -169,7 +169,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testExistsWhenNotConnected() = runBlocking {
+    fun testExistsWhenNotConnected() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.exists("/test.md")
         
@@ -230,7 +230,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testSearchFilesWhenNotConnected() = runBlocking {
+    fun testSearchFilesWhenNotConnected() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.searchFiles("test", "/", false).first()
         
@@ -238,7 +238,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testGetRecentChangesWhenNotConnected() = runBlocking {
+    fun testGetRecentChangesWhenNotConnected() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val since = Clock.System.now()
         val changes = ftpService.getRecentChanges(since, "/").first()
@@ -247,7 +247,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testSyncFileWhenNotConnected() = runBlocking {
+    fun testSyncFileWhenNotConnected() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val operations = ftpService.syncFile("/test.md", false)
         
@@ -257,7 +257,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testSyncAllWhenNotConnected() = runBlocking {
+    fun testSyncAllWhenNotConnected() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val operations = ftpService.syncAll(false)
         
@@ -271,7 +271,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testActiveOperationsFlow() = runBlocking {
+    fun testActiveOperationsFlow() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val activeOps = ftpService.getActiveOperations().first()
         
@@ -279,7 +279,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testCacheOperations() = runBlocking {
+    fun testCacheOperations() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         
         val cacheEntries = ftpService.getCacheEntries("/").first()
@@ -296,7 +296,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testSyncStatusFlow() = runBlocking {
+    fun testSyncStatusFlow() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val syncStatus = ftpService.getSyncStatus("/").first()
         
@@ -304,7 +304,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testTestConnection() = runBlocking {
+    fun testTestConnection() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val result = ftpService.testConnection()
 
@@ -313,7 +313,7 @@ class FtpServiceTest {
     }
     
     @Test
-    fun testFtpUriGeneration() = runBlocking {
+    fun testFtpUriGeneration() = runBlocking<Unit> {
         ftpService = FtpService(ftpConfig)
         val storageInfo = ftpService.getStorageInfo()
         

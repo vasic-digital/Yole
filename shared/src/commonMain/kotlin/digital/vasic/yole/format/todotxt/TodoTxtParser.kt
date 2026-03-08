@@ -308,6 +308,18 @@ class TodoTxtParser : TextParser {
      * @return Map of key-value pairs
      */
     private fun extractKeyValues(line: String): Map<String, String> {
+        // Guard against catastrophic regex backtracking on very long lines
+        if (line.length > 10_000) {
+            return line.split(' ')
+                .filter { ':' in it && !it.startsWith(':') && !it.endsWith(':') }
+                .mapNotNull { token ->
+                    val idx = token.indexOf(':')
+                    val key = token.substring(0, idx)
+                    val value = token.substring(idx + 1)
+                    if (key.all { it.isLetterOrDigit() || it == '_' } && value.isNotEmpty()) key to value else null
+                }
+                .toMap()
+        }
         return Regex("(\\w+):(\\S+)").findAll(line)
             .associate { it.groupValues[1] to it.groupValues[2] }
     }

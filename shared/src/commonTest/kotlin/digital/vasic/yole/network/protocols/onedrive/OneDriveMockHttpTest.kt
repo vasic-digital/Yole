@@ -119,7 +119,7 @@ class OneDriveMockHttpTest {
     // ==================== Connect / Disconnect ====================
 
     @Test
-    fun testConnectWithValidTokenSucceeds() = runBlocking {
+    fun testConnectWithValidTokenSucceeds() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = driveInfoResponse,
@@ -134,7 +134,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testConnectSendsAuthorizationHeader() = runBlocking {
+    fun testConnectSendsAuthorizationHeader() = runBlocking<Unit> {
         var capturedAuth: String? = null
         val service = createServiceWithMock { request ->
             capturedAuth = request.headers["Authorization"]
@@ -150,7 +150,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testConnectCallsDriveEndpoint() = runBlocking {
+    fun testConnectCallsDriveEndpoint() = runBlocking<Unit> {
         var capturedUrl: String? = null
         val service = createServiceWithMock { request ->
             capturedUrl = request.url.toString()
@@ -168,7 +168,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testConnectFailsOnServerError() = runBlocking {
+    fun testConnectFailsOnServerError() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = "Internal Server Error",
@@ -183,7 +183,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testDisconnectSucceeds() = runBlocking {
+    fun testDisconnectSucceeds() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = driveInfoResponse,
@@ -203,7 +203,7 @@ class OneDriveMockHttpTest {
     // ==================== List Files ====================
 
     @Test
-    fun testListFilesReturnsDocuments() = runBlocking {
+    fun testListFilesReturnsDocuments() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -238,7 +238,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testListFilesSetsCorrectPath() = runBlocking {
+    fun testListFilesSetsCorrectPath() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -264,7 +264,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testListFilesWhenNotConnectedFails() = runBlocking {
+    fun testListFilesWhenNotConnectedFails() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = "Unauthorized",
@@ -277,7 +277,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testListFilesHandlesEmptyResponse() = runBlocking {
+    fun testListFilesHandlesEmptyResponse() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -301,7 +301,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testListFilesHandlesApiError() = runBlocking {
+    fun testListFilesHandlesApiError() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -326,7 +326,7 @@ class OneDriveMockHttpTest {
     // ==================== Download File ====================
 
     @Test
-    fun testDownloadFileEmitsProgressUpdates() = runBlocking {
+    fun testDownloadFileEmitsProgressUpdates() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -361,7 +361,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testDownloadFileWhenNotConnectedReturnsFailed() = runBlocking {
+    fun testDownloadFileWhenNotConnectedReturnsFailed() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -375,7 +375,7 @@ class OneDriveMockHttpTest {
     // ==================== Upload File ====================
 
     @Test
-    fun testUploadFileWhenNotConnectedReturnsFailed() = runBlocking {
+    fun testUploadFileWhenNotConnectedReturnsFailed() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -387,7 +387,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testUploadFileEmitsProgressWhenConnected() = runBlocking {
+    fun testUploadFileEmitsProgressWhenConnected() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -419,7 +419,7 @@ class OneDriveMockHttpTest {
     // ==================== Delete File ====================
 
     @Test
-    fun testDeleteFileWhenNotConnectedSucceedsSilently() = runBlocking {
+    fun testDeleteFileWhenNotConnectedSucceedsSilently() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -429,7 +429,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testDeleteFileSuccess() = runBlocking {
+    fun testDeleteFileSuccess() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -458,7 +458,7 @@ class OneDriveMockHttpTest {
     // ==================== Create Folder ====================
 
     @Test
-    fun testCreateFolderSuccess() = runBlocking {
+    fun testCreateFolderSuccess() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -489,7 +489,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testCreateFolderWhenNotConnectedReturnsOfflineDoc() = runBlocking {
+    fun testCreateFolderWhenNotConnectedReturnsOfflineDoc() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -504,7 +504,7 @@ class OneDriveMockHttpTest {
     // ==================== Search Files ====================
 
     @Test
-    fun testSearchFilesReturnsResults() = runBlocking {
+    fun testSearchFilesReturnsResults() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -535,7 +535,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testSearchFilesWhenNotConnectedReturnsEmpty() = runBlocking {
+    fun testSearchFilesWhenNotConnectedReturnsEmpty() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -546,7 +546,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testSearchFilesIncludesQueryInUrl() = runBlocking {
+    fun testSearchFilesIncludesQueryInUrl() = runBlocking<Unit> {
         var capturedUrl: String? = null
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
@@ -577,7 +577,7 @@ class OneDriveMockHttpTest {
     // ==================== Get Quota Info ====================
 
     @Test
-    fun testGetQuotaInfoReturnsValidQuota() = runBlocking {
+    fun testGetQuotaInfoReturnsValidQuota() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = driveInfoResponse,
@@ -597,7 +597,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testGetQuotaInfoWhenNotConnectedFails() = runBlocking {
+    fun testGetQuotaInfoWhenNotConnectedFails() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -607,7 +607,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testGetQuotaInfoUsagePercentage() = runBlocking {
+    fun testGetQuotaInfoUsagePercentage() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = driveInfoResponse,
@@ -625,7 +625,7 @@ class OneDriveMockHttpTest {
     // ==================== Get File Info ====================
 
     @Test
-    fun testGetFileInfoWhenNotConnectedReturnsOfflineDoc() = runBlocking {
+    fun testGetFileInfoWhenNotConnectedReturnsOfflineDoc() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -639,7 +639,7 @@ class OneDriveMockHttpTest {
     // ==================== Storage Info ====================
 
     @Test
-    fun testGetStorageInfoReturnsCorrectMetadata() = runBlocking {
+    fun testGetStorageInfoReturnsCorrectMetadata() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = driveInfoResponse,
@@ -659,7 +659,7 @@ class OneDriveMockHttpTest {
     // ==================== Rename / Move / Copy ====================
 
     @Test
-    fun testRenameFileWhenNotConnectedSucceeds() = runBlocking {
+    fun testRenameFileWhenNotConnectedSucceeds() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -669,7 +669,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testMoveFileWhenNotConnectedReturnsOfflineDoc() = runBlocking {
+    fun testMoveFileWhenNotConnectedReturnsOfflineDoc() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -681,7 +681,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testCopyFileWhenNotConnectedSucceeds() = runBlocking {
+    fun testCopyFileWhenNotConnectedSucceeds() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -693,7 +693,7 @@ class OneDriveMockHttpTest {
     // ==================== Exists ====================
 
     @Test
-    fun testExistsWhenNotConnectedReturnsTrue() = runBlocking {
+    fun testExistsWhenNotConnectedReturnsTrue() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -742,7 +742,7 @@ class OneDriveMockHttpTest {
     // ==================== Test Connection ====================
 
     @Test
-    fun testTestConnectionSuccess() = runBlocking {
+    fun testTestConnectionSuccess() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = driveInfoResponse,
@@ -757,7 +757,7 @@ class OneDriveMockHttpTest {
     }
 
     @Test
-    fun testTestConnectionFailsOnError() = runBlocking {
+    fun testTestConnectionFailsOnError() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = "Service Unavailable",

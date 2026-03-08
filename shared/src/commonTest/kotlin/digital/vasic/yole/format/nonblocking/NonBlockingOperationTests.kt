@@ -56,7 +56,7 @@ class NonBlockingOperationTests {
     // ====================================================================
 
     @Test
-    fun `DocumentCache get suspends via mutex not blocks`() = runBlocking {
+    fun `DocumentCache get suspends via mutex not blocks`() = runBlocking<Unit> {
         val cache = DocumentCache()
         val testFormat = TextFormat(
             id = "plaintext", name = "Plain Text",
@@ -76,7 +76,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `DocumentCache put suspends via mutex not blocks`() = runBlocking {
+    fun `DocumentCache put suspends via mutex not blocks`() = runBlocking<Unit> {
         val cache = DocumentCache()
         val testFormat = TextFormat(
             id = "plaintext", name = "Plain Text",
@@ -99,7 +99,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `DocumentCache concurrent read-write does not deadlock`() = runBlocking {
+    fun `DocumentCache concurrent read-write does not deadlock`() = runBlocking<Unit> {
         val cache = DocumentCache(maxSize = 20)
         val testFormat = TextFormat(
             id = "plaintext", name = "Plain Text",
@@ -130,7 +130,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `DocumentCache clear does not block concurrent reads`() = runBlocking {
+    fun `DocumentCache clear does not block concurrent reads`() = runBlocking<Unit> {
         val cache = DocumentCache()
         val testFormat = TextFormat(
             id = "plaintext", name = "Plain Text",
@@ -165,7 +165,7 @@ class NonBlockingOperationTests {
     // ====================================================================
 
     @Test
-    fun `ConnectionLimiter suspends when all permits taken`() = runBlocking {
+    fun `ConnectionLimiter suspends when all permits taken`() = runBlocking<Unit> {
         val limiter = ConnectionLimiter(maxConcurrent = 1, acquireTimeout = 5.seconds)
         val order = mutableListOf<String>()
 
@@ -198,7 +198,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `ConnectionLimiter does not block when permits available`() = runBlocking {
+    fun `ConnectionLimiter does not block when permits available`() = runBlocking<Unit> {
         val limiter = ConnectionLimiter(maxConcurrent = 10)
         val completed = mutableListOf<Int>()
 
@@ -217,7 +217,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `ConnectionLimiter releases permit on exception`() = runBlocking {
+    fun `ConnectionLimiter releases permit on exception`() = runBlocking<Unit> {
         val limiter = ConnectionLimiter(maxConcurrent = 1, acquireTimeout = 5.seconds)
 
         // First call throws
@@ -232,7 +232,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `ConnectionLimiter concurrent beyond limit does not deadlock`() = runBlocking {
+    fun `ConnectionLimiter concurrent beyond limit does not deadlock`() = runBlocking<Unit> {
         val limiter = ConnectionLimiter(maxConcurrent = 2, acquireTimeout = 10.seconds)
         val results = mutableListOf<Int>()
 
@@ -252,7 +252,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `ConnectionLimiter available permits restored after use`() = runBlocking {
+    fun `ConnectionLimiter available permits restored after use`() = runBlocking<Unit> {
         val limiter = ConnectionLimiter(maxConcurrent = 3)
         assertEquals(3, limiter.availablePermits)
 
@@ -268,7 +268,7 @@ class NonBlockingOperationTests {
     // ====================================================================
 
     @Test
-    fun `CircuitBreaker execute suspends not blocks`() = runBlocking {
+    fun `CircuitBreaker execute suspends not blocks`() = runBlocking<Unit> {
         val cb = CircuitBreaker(failureThreshold = 100)
 
         // Many concurrent calls through the circuit breaker
@@ -282,7 +282,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `CircuitBreaker OPEN state returns immediately without blocking`() = runBlocking {
+    fun `CircuitBreaker OPEN state returns immediately without blocking`() = runBlocking<Unit> {
         val cb = CircuitBreaker(failureThreshold = 1, resetTimeout = 60.seconds)
         cb.execute { throw RuntimeException("open it") }
         assertEquals(CircuitBreaker.State.OPEN, cb.state)
@@ -300,7 +300,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `CircuitBreaker concurrent calls do not deadlock`() = runBlocking {
+    fun `CircuitBreaker concurrent calls do not deadlock`() = runBlocking<Unit> {
         val cb = CircuitBreaker(failureThreshold = 50)
 
         val results = (1..50).map { i ->
@@ -318,7 +318,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `CircuitBreaker half-open transition does not deadlock`() = runBlocking {
+    fun `CircuitBreaker half-open transition does not deadlock`() = runBlocking<Unit> {
         val cb = CircuitBreaker(failureThreshold = 1, resetTimeout = 1.milliseconds)
         cb.execute { throw RuntimeException("open") }
         assertEquals(CircuitBreaker.State.OPEN, cb.state)
@@ -337,7 +337,7 @@ class NonBlockingOperationTests {
     // ====================================================================
 
     @Test
-    fun `concurrent parsing across formats does not block`() = runBlocking {
+    fun `concurrent parsing across formats does not block`() = runBlocking<Unit> {
         val parsers = listOf(
             MarkdownParser(),
             CsvParser(),
@@ -365,7 +365,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `parsing does not starve other coroutines`() = runBlocking {
+    fun `parsing does not starve other coroutines`() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val content = "# Test\n\n" + "Paragraph text. ".repeat(100)
         var counterRan = false
@@ -385,7 +385,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `multiple concurrent parse operations do not deadlock`() = runBlocking {
+    fun `multiple concurrent parse operations do not deadlock`() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val documents = (1..50).map { i ->
             "# Document $i\n\nContent for document $i with **bold** text."
@@ -404,7 +404,7 @@ class NonBlockingOperationTests {
     // ====================================================================
 
     @Test
-    fun `DocumentCache respects cancellation during get`() = runBlocking {
+    fun `DocumentCache respects cancellation during get`() = runBlocking<Unit> {
         val cache = DocumentCache()
         val testFormat = TextFormat(
             id = "plaintext", name = "Plain Text",
@@ -429,7 +429,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `ConnectionLimiter respects cancellation while waiting`() = runBlocking {
+    fun `ConnectionLimiter respects cancellation while waiting`() = runBlocking<Unit> {
         val limiter = ConnectionLimiter(maxConcurrent = 1, acquireTimeout = 60.seconds)
 
         // First job holds the permit for a while
@@ -458,7 +458,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `CircuitBreaker respects CancellationException`() = runBlocking {
+    fun `CircuitBreaker respects CancellationException`() = runBlocking<Unit> {
         val cb = CircuitBreaker(failureThreshold = 100)
 
         val job = launch {
@@ -474,7 +474,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `CircuitBreaker does not count CancellationException as failure`() = runBlocking {
+    fun `CircuitBreaker does not count CancellationException as failure`() = runBlocking<Unit> {
         val cb = CircuitBreaker(failureThreshold = 1, resetTimeout = 60.seconds)
 
         val job = launch {
@@ -493,7 +493,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `DocumentCache operations complete under single-threaded dispatcher`() = runBlocking {
+    fun `DocumentCache operations complete under single-threaded dispatcher`() = runBlocking<Unit> {
         // runTest uses a single-threaded test dispatcher.
         // If any cache operation is blocking (not suspending), this will deadlock.
         val cache = DocumentCache(maxSize = 5)
@@ -518,7 +518,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `concurrent parse and toHtml do not deadlock`() = runBlocking {
+    fun `concurrent parse and toHtml do not deadlock`() = runBlocking<Unit> {
         val parser = TodoTxtParser()
         val content = "(A) Important task @work +project1\n(B) Another @home +project2"
 
@@ -535,7 +535,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `DocumentCache invalidation during concurrent reads completes`() = runBlocking {
+    fun `DocumentCache invalidation during concurrent reads completes`() = runBlocking<Unit> {
         val cache = DocumentCache()
         val testFormat = TextFormat(
             id = "plaintext", name = "Plain Text",
@@ -565,7 +565,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `ConnectionLimiter withConnection completes normally for all callers`() = runBlocking {
+    fun `ConnectionLimiter withConnection completes normally for all callers`() = runBlocking<Unit> {
         val limiter = ConnectionLimiter(maxConcurrent = 3, acquireTimeout = 10.seconds)
         val completed = mutableListOf<Int>()
 
@@ -585,7 +585,7 @@ class NonBlockingOperationTests {
     }
 
     @Test
-    fun `CircuitBreaker reset does not block concurrent execute calls`() = runBlocking {
+    fun `CircuitBreaker reset does not block concurrent execute calls`() = runBlocking<Unit> {
         val cb = CircuitBreaker(failureThreshold = 100)
 
         // Mix of execute calls and resets

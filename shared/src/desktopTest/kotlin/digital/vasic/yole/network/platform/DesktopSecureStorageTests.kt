@@ -65,7 +65,7 @@ class DesktopSecureStorageTests {
     // ==================== Encryption Roundtrip Tests ====================
 
     @Test
-    fun `encryption roundtrip preserves plain text value`() = runBlocking {
+    fun `encryption roundtrip preserves plain text value`() = runBlocking<Unit> {
         val key = "roundtrip_plain"
         val value = "Hello, World!"
         storage.store(key, value)
@@ -75,7 +75,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `encryption roundtrip preserves numeric string`() = runBlocking {
+    fun `encryption roundtrip preserves numeric string`() = runBlocking<Unit> {
         val key = "roundtrip_numeric"
         val value = "1234567890.0987654321"
         storage.store(key, value)
@@ -84,7 +84,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `encryption roundtrip preserves JSON content`() = runBlocking {
+    fun `encryption roundtrip preserves JSON content`() = runBlocking<Unit> {
         val key = "roundtrip_json"
         val value = """{"token":"abc123","expires":1700000000,"refresh":"xyz789"}"""
         storage.store(key, value)
@@ -93,7 +93,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `encryption roundtrip preserves multi-line content`() = runBlocking {
+    fun `encryption roundtrip preserves multi-line content`() = runBlocking<Unit> {
         val key = "roundtrip_multiline"
         val value = "Line 1\nLine 2\nLine 3\r\nLine 4 with CR-LF"
         storage.store(key, value)
@@ -102,7 +102,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `encryption roundtrip preserves base64-encoded content`() = runBlocking {
+    fun `encryption roundtrip preserves base64-encoded content`() = runBlocking<Unit> {
         val key = "roundtrip_base64"
         val value = "SGVsbG8sIFdvcmxkIQ==\naGVsbG8gYWdhaW4=\n"
         storage.store(key, value)
@@ -113,7 +113,7 @@ class DesktopSecureStorageTests {
     // ==================== Empty Value Tests ====================
 
     @Test
-    fun `store and retrieve empty string value`() = runBlocking {
+    fun `store and retrieve empty string value`() = runBlocking<Unit> {
         val key = "empty_value"
         val value = ""
         val storeResult = storage.store(key, value)
@@ -124,7 +124,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `store empty value then overwrite with non-empty`() = runBlocking {
+    fun `store empty value then overwrite with non-empty`() = runBlocking<Unit> {
         val key = "empty_then_filled"
         storage.store(key, "")
         assertEquals("", storage.retrieve(key).getOrNull())
@@ -133,7 +133,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `store non-empty value then overwrite with empty`() = runBlocking {
+    fun `store non-empty value then overwrite with empty`() = runBlocking<Unit> {
         val key = "filled_then_empty"
         storage.store(key, "has content")
         assertEquals("has content", storage.retrieve(key).getOrNull())
@@ -144,7 +144,7 @@ class DesktopSecureStorageTests {
     // ==================== Special Characters Tests ====================
 
     @Test
-    fun `store and retrieve value with pipe characters`() = runBlocking {
+    fun `store and retrieve value with pipe characters`() = runBlocking<Unit> {
         val key = "special_pipe"
         val value = "data|with|pipe|characters"
         storage.store(key, value)
@@ -152,7 +152,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `store and retrieve value with newlines and tabs`() = runBlocking {
+    fun `store and retrieve value with newlines and tabs`() = runBlocking<Unit> {
         val key = "special_whitespace"
         val value = "tab\there\nnewline\there\r\nwindows\tnewline"
         storage.store(key, value)
@@ -160,7 +160,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `store and retrieve value with unicode characters`() = runBlocking {
+    fun `store and retrieve value with unicode characters`() = runBlocking<Unit> {
         val key = "special_unicode"
         val value = "Chinese: \u4F60\u597D Japanese: \u3053\u3093\u306B\u3061\u306F Arabic: \u0645\u0631\u062D\u0628\u0627"
         storage.store(key, value)
@@ -168,7 +168,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `store and retrieve value with null bytes`() = runBlocking {
+    fun `store and retrieve value with null bytes`() = runBlocking<Unit> {
         val key = "special_null_byte"
         val value = "before\u0000after"
         storage.store(key, value)
@@ -176,7 +176,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `store and retrieve key with special characters`() = runBlocking {
+    fun `store and retrieve key with special characters`() = runBlocking<Unit> {
         val specialKeys = listOf(
             "key-with-dashes",
             "key_underscores",
@@ -196,7 +196,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `store and retrieve value with SQL injection attempt`() = runBlocking {
+    fun `store and retrieve value with SQL injection attempt`() = runBlocking<Unit> {
         val key = "special_sql"
         val value = "'; DROP TABLE users; --"
         storage.store(key, value)
@@ -204,7 +204,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `store and retrieve value with HTML entities`() = runBlocking {
+    fun `store and retrieve value with HTML entities`() = runBlocking<Unit> {
         val key = "special_html"
         val value = "<script>alert('xss')</script>&amp;&lt;&gt;"
         storage.store(key, value)
@@ -214,27 +214,27 @@ class DesktopSecureStorageTests {
     // ==================== Key Not Found Tests ====================
 
     @Test
-    fun `retrieve non-existent key returns null success`() = runBlocking {
+    fun `retrieve non-existent key returns null success`() = runBlocking<Unit> {
         val result = storage.retrieve("nonexistent_key_abc123")
         assertTrue(result.isSuccess)
         assertNull(result.getOrNull())
     }
 
     @Test
-    fun `contains returns false for non-existent key`() = runBlocking {
+    fun `contains returns false for non-existent key`() = runBlocking<Unit> {
         val result = storage.contains("nonexistent_key_xyz789")
         assertTrue(result.isSuccess)
         assertFalse(result.getOrNull()!!)
     }
 
     @Test
-    fun `delete non-existent key succeeds gracefully`() = runBlocking {
+    fun `delete non-existent key succeeds gracefully`() = runBlocking<Unit> {
         val result = storage.delete("nonexistent_key_to_delete")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `retrieve after delete returns null`() = runBlocking {
+    fun `retrieve after delete returns null`() = runBlocking<Unit> {
         storage.store("delete_me", "temporary_value")
         assertEquals("temporary_value", storage.retrieve("delete_me").getOrNull())
         storage.delete("delete_me")
@@ -244,7 +244,7 @@ class DesktopSecureStorageTests {
     // ==================== Concurrent Access Tests ====================
 
     @Test
-    fun `concurrent store operations preserve all data`() = runBlocking {
+    fun `concurrent store operations preserve all data`() = runBlocking<Unit> {
         val count = 30
         val keys = (1..count).map { "concurrent_store_$it" }
         val values = (1..count).map { "concurrent_value_$it" }
@@ -261,7 +261,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `concurrent store and retrieve interleaved`() = runBlocking {
+    fun `concurrent store and retrieve interleaved`() = runBlocking<Unit> {
         val iterations = 20
         for (i in 1..iterations) {
             val key = "interleaved_$i"
@@ -274,7 +274,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `concurrent delete does not affect other keys`() = runBlocking {
+    fun `concurrent delete does not affect other keys`() = runBlocking<Unit> {
         storage.store("keep_1", "value_1")
         storage.store("keep_2", "value_2")
         storage.store("delete_this", "to_be_deleted")
@@ -287,7 +287,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `rapid store-delete cycles do not corrupt storage`() = runBlocking {
+    fun `rapid store-delete cycles do not corrupt storage`() = runBlocking<Unit> {
         for (i in 1..25) {
             storage.store("rapid_key_$i", "rapid_value_$i")
             if (i % 3 == 0) {
@@ -307,7 +307,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `concurrent listKeys returns consistent snapshot`() = runBlocking {
+    fun `concurrent listKeys returns consistent snapshot`() = runBlocking<Unit> {
         val keys = (1..10).map { "list_key_$it" }
         keys.forEach { key -> storage.store(key, "value") }
 
@@ -320,7 +320,7 @@ class DesktopSecureStorageTests {
     // ==================== Credential Management Tests ====================
 
     @Test
-    fun `store and retrieve credentials with complex password`() = runBlocking {
+    fun `store and retrieve credentials with complex password`() = runBlocking<Unit> {
         val service = "test_service"
         val username = "admin@domain.com"
         val password = "P@\$\$w0rd!#%^&*()_+-={}[]|\\:\";<>?,./~`"
@@ -334,7 +334,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `delete credentials removes them`() = runBlocking {
+    fun `delete credentials removes them`() = runBlocking<Unit> {
         storage.storeCredentials("del_service", "user", "pass")
         storage.deleteCredentials("del_service")
         assertNull(storage.retrieveCredentials("del_service").getOrNull())
@@ -343,7 +343,7 @@ class DesktopSecureStorageTests {
     // ==================== Token Management Tests ====================
 
     @Test
-    fun `store and retrieve long OAuth token`() = runBlocking {
+    fun `store and retrieve long OAuth token`() = runBlocking<Unit> {
         val service = "oauth_service"
         val token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9." + "a".repeat(500) + ".signature"
         storage.storeToken(service, token)
@@ -351,7 +351,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `delete token removes it`() = runBlocking {
+    fun `delete token removes it`() = runBlocking<Unit> {
         storage.storeToken("del_token_service", "my_token")
         storage.deleteToken("del_token_service")
         assertNull(storage.retrieveToken("del_token_service").getOrNull())
@@ -360,7 +360,7 @@ class DesktopSecureStorageTests {
     // ==================== Data Integrity After Restart ====================
 
     @Test
-    fun `data persists after creating new storage instance`() = runBlocking {
+    fun `data persists after creating new storage instance`() = runBlocking<Unit> {
         storage.store("persist_key", "persist_value")
         val newStorage = DesktopSecureStorage(storageDir)
         val result = newStorage.retrieve("persist_key")
@@ -368,7 +368,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `multiple keys persist across restart`() = runBlocking {
+    fun `multiple keys persist across restart`() = runBlocking<Unit> {
         val data = mapOf(
             "persist_1" to "value_1",
             "persist_2" to "value_2",
@@ -384,7 +384,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `clear followed by restart results in empty storage`() = runBlocking {
+    fun `clear followed by restart results in empty storage`() = runBlocking<Unit> {
         storage.store("clear_test", "some_value")
         storage.clear()
         val newStorage = DesktopSecureStorage(storageDir)
@@ -397,14 +397,14 @@ class DesktopSecureStorageTests {
     // ==================== Edge Cases ====================
 
     @Test
-    fun `store very long key`() = runBlocking {
+    fun `store very long key`() = runBlocking<Unit> {
         val longKey = "k".repeat(1000)
         storage.store(longKey, "long_key_value")
         assertEquals("long_key_value", storage.retrieve(longKey).getOrNull())
     }
 
     @Test
-    fun `store and retrieve binary-like string`() = runBlocking {
+    fun `store and retrieve binary-like string`() = runBlocking<Unit> {
         val key = "binary_like"
         val value = String(ByteArray(256) { it.toByte() }.filter { it != 0.toByte() }.toByteArray())
         storage.store(key, value)
@@ -412,7 +412,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `overwrite value preserves only latest`() = runBlocking {
+    fun `overwrite value preserves only latest`() = runBlocking<Unit> {
         val key = "overwrite_key"
         storage.store(key, "first")
         storage.store(key, "second")
@@ -421,7 +421,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `listKeys after multiple operations is accurate`() = runBlocking {
+    fun `listKeys after multiple operations is accurate`() = runBlocking<Unit> {
         storage.store("lk_1", "v1")
         storage.store("lk_2", "v2")
         storage.store("lk_3", "v3")
@@ -435,7 +435,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `contains returns true for existing key`() = runBlocking {
+    fun `contains returns true for existing key`() = runBlocking<Unit> {
         storage.store("exists_key", "exists_value")
         val result = storage.contains("exists_key")
         assertTrue(result.isSuccess)
@@ -443,14 +443,14 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `isSecure returns true for desktop storage`() = runBlocking {
+    fun `isSecure returns true for desktop storage`() = runBlocking<Unit> {
         val result = storage.isSecure()
         assertTrue(result.isSuccess)
         assertTrue(result.getOrNull()!!)
     }
 
     @Test
-    fun `encrypted file does not contain plaintext values`() = runBlocking {
+    fun `encrypted file does not contain plaintext values`() = runBlocking<Unit> {
         val key = "encrypted_check_key"
         val value = "super_secret_plaintext_value_12345"
         storage.store(key, value)
@@ -465,7 +465,7 @@ class DesktopSecureStorageTests {
     }
 
     @Test
-    fun `private key store and retrieve roundtrip`() = runBlocking {
+    fun `private key store and retrieve roundtrip`() = runBlocking<Unit> {
         val service = "ssh_test"
         val privateKey = """-----BEGIN OPENSSH PRIVATE KEY-----
 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtz

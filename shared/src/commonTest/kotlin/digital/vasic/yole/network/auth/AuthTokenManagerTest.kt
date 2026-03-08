@@ -40,14 +40,14 @@ class AuthTokenManagerTest {
     }
 
     @AfterTest
-    fun tearDown() = runBlocking {
+    fun tearDown() = runBlocking<Unit> {
         secureStorage.clear()
     }
 
     // ==================== Token Storage Tests ====================
 
     @Test
-    fun `storeAccessToken should save token to secure storage`() = runBlocking {
+    fun `storeAccessToken should save token to secure storage`() = runBlocking<Unit> {
         // When
         val result = authTokenManager.storeAccessToken(testToken)
 
@@ -56,7 +56,7 @@ class AuthTokenManagerTest {
     }
 
     @Test
-    fun `storeAccessToken should handle storage failure`() = runBlocking {
+    fun `storeAccessToken should handle storage failure`() = runBlocking<Unit> {
         // Given
         secureStorage.shouldFail = true
 
@@ -68,7 +68,7 @@ class AuthTokenManagerTest {
     }
 
     @Test
-    fun `getAccessToken should retrieve token from secure storage`() = runBlocking {
+    fun `getAccessToken should retrieve token from secure storage`() = runBlocking<Unit> {
         // Given
         authTokenManager.storeAccessToken(testToken)
 
@@ -81,7 +81,7 @@ class AuthTokenManagerTest {
     }
 
     @Test
-    fun `getAccessToken should handle missing token`() = runBlocking {
+    fun `getAccessToken should handle missing token`() = runBlocking<Unit> {
         // When - no token stored
         val result = authTokenManager.getAccessToken()
 
@@ -93,7 +93,7 @@ class AuthTokenManagerTest {
     // ==================== Refresh Token Tests ====================
 
     @Test
-    fun `storeRefreshToken should save refresh token`() = runBlocking {
+    fun `storeRefreshToken should save refresh token`() = runBlocking<Unit> {
         // When
         val result = authTokenManager.storeRefreshToken(testRefreshToken)
 
@@ -102,7 +102,7 @@ class AuthTokenManagerTest {
     }
 
     @Test
-    fun `getRefreshToken should retrieve refresh token`() = runBlocking {
+    fun `getRefreshToken should retrieve refresh token`() = runBlocking<Unit> {
         // Given
         authTokenManager.storeRefreshToken(testRefreshToken)
 
@@ -117,7 +117,7 @@ class AuthTokenManagerTest {
     // ==================== Token Expiration Tests ====================
 
     @Test
-    fun `storeTokenExpiration should save expiration time`() = runBlocking {
+    fun `storeTokenExpiration should save expiration time`() = runBlocking<Unit> {
         // Given
         val expiresAt = Clock.System.now().plus(1.hours)
 
@@ -129,7 +129,7 @@ class AuthTokenManagerTest {
     }
 
     @Test
-    fun `isTokenExpired should return true for expired token`() = runBlocking {
+    fun `isTokenExpired should return true for expired token`() = runBlocking<Unit> {
         // Given
         val expiredTime = Clock.System.now().minus(1.hours)
         authTokenManager.storeTokenExpiration(expiredTime)
@@ -143,7 +143,7 @@ class AuthTokenManagerTest {
     }
 
     @Test
-    fun `isTokenExpired should return false for valid token`() = runBlocking {
+    fun `isTokenExpired should return false for valid token`() = runBlocking<Unit> {
         // Given
         val validTime = Clock.System.now().plus(1.hours)
         authTokenManager.storeTokenExpiration(validTime)
@@ -157,7 +157,7 @@ class AuthTokenManagerTest {
     }
 
     @Test
-    fun `isTokenExpired should return true when no expiration stored`() = runBlocking {
+    fun `isTokenExpired should return true when no expiration stored`() = runBlocking<Unit> {
         // When - no expiration stored
         val result = authTokenManager.isTokenExpired()
 
@@ -169,7 +169,7 @@ class AuthTokenManagerTest {
     // ==================== Token Validation Tests ====================
 
     @Test
-    fun `hasValidToken should return true for valid token`() = runBlocking {
+    fun `hasValidToken should return true for valid token`() = runBlocking<Unit> {
         // Given
         authTokenManager.storeAccessToken(testToken)
         val validTime = Clock.System.now().plus(1.hours)
@@ -184,7 +184,7 @@ class AuthTokenManagerTest {
     }
 
     @Test
-    fun `hasValidToken should return false for expired token`() = runBlocking {
+    fun `hasValidToken should return false for expired token`() = runBlocking<Unit> {
         // Given
         authTokenManager.storeAccessToken(testToken)
         val expiredTime = Clock.System.now().minus(1.hours)
@@ -199,7 +199,7 @@ class AuthTokenManagerTest {
     }
 
     @Test
-    fun `hasValidToken should return false when no token exists`() = runBlocking {
+    fun `hasValidToken should return false when no token exists`() = runBlocking<Unit> {
         // When - no token stored
         val result = authTokenManager.hasValidToken()
 
@@ -211,7 +211,7 @@ class AuthTokenManagerTest {
     // ==================== Clear Token Tests ====================
 
     @Test
-    fun `clearTokens should remove all tokens for service`() = runBlocking {
+    fun `clearTokens should remove all tokens for service`() = runBlocking<Unit> {
         // Given
         authTokenManager.storeAccessToken(testToken)
         authTokenManager.storeRefreshToken(testRefreshToken)
@@ -232,7 +232,7 @@ class AuthTokenManagerTest {
     // ==================== Token Info Tests ====================
 
     @Test
-    fun `storeTokenInfo should store complete token information`() = runBlocking {
+    fun `storeTokenInfo should store complete token information`() = runBlocking<Unit> {
         // When
         val result = authTokenManager.storeTokenInfo(
             accessToken = testToken,
@@ -253,7 +253,7 @@ class AuthTokenManagerTest {
     }
 
     @Test
-    fun `getTokenInfo should return token info`() = runBlocking {
+    fun `getTokenInfo should return token info`() = runBlocking<Unit> {
         // Given
         authTokenManager.storeTokenInfo(
             accessToken = testToken,
@@ -276,7 +276,7 @@ class AuthTokenManagerTest {
     // ==================== Edge Cases ====================
 
     @Test
-    fun `should handle special characters in tokens`() = runBlocking {
+    fun `should handle special characters in tokens`() = runBlocking<Unit> {
         // Given
         val specialToken = "token_with_special_chars_+-=[]{}|;':,./<>?"
 
@@ -290,7 +290,7 @@ class AuthTokenManagerTest {
     // ==================== Concurrent Access Tests ====================
 
     @Test
-    fun `should handle sequential token operations`() = runBlocking {
+    fun `should handle sequential token operations`() = runBlocking<Unit> {
         // When
         val results = (1..100).map { i ->
             val manager = AuthTokenManager("${testService}$i", secureStorage)
@@ -304,7 +304,7 @@ class AuthTokenManagerTest {
     // ==================== Error Recovery Tests ====================
 
     @Test
-    fun `should recover from partial storage failures`() = runBlocking {
+    fun `should recover from partial storage failures`() = runBlocking<Unit> {
         // Given - make storage fail
         secureStorage.shouldFail = true
         val firstResult = authTokenManager.storeAccessToken(testToken)

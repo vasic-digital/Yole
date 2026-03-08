@@ -65,7 +65,7 @@ class OneDriveServiceEnhancedTest {
     private lateinit var mockSecureStorage: SecureStorage
     
     @BeforeTest
-    fun setup() = runBlocking {
+    fun setup() = runBlocking<Unit> {
         mockSecureStorage = MockSecureStorage()
         
         personalService = OneDriveService(personalConfig)
@@ -118,7 +118,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedStorageInfo() = runBlocking {
+    fun testEnhancedStorageInfo() = runBlocking<Unit> {
         val personalStorageInfo = personalService.getStorageInfo()
         
         assertEquals("onedrive_test-onedrive-personal", personalStorageInfo.id)
@@ -131,7 +131,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedConnectWithoutTokens() = runBlocking {
+    fun testEnhancedConnectWithoutTokens() = runBlocking<Unit> {
         // Test with cleared tokens
         try {
             val authTokenManager = AuthTokenManager("onedrive_test-onedrive-personal", mockSecureStorage)
@@ -150,7 +150,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedDisconnect() = runBlocking {
+    fun testEnhancedDisconnect() = runBlocking<Unit> {
         // First connect
         personalService.connect()
         
@@ -163,7 +163,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedTestConnection() = runBlocking {
+    fun testEnhancedTestConnection() = runBlocking<Unit> {
         val result = personalService.testConnection()
         
         // Test connection should complete (may succeed or fail depending on network)
@@ -171,7 +171,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedListFilesWhenNotConnected() = runBlocking {
+    fun testEnhancedListFilesWhenNotConnected() = runBlocking<Unit> {
         val result = personalService.listFiles("/").first()
         
         assertTrue(result.isFailure, "List files should fail when not connected")
@@ -181,7 +181,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedListFilesWhenConnected() = runBlocking {
+    fun testEnhancedListFilesWhenConnected() = runBlocking<Unit> {
         // Connect attempt (will fail without real tokens)
         personalService.connect()
 
@@ -197,7 +197,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedDownloadFileWhenNotConnected() = runBlocking {
+    fun testEnhancedDownloadFileWhenNotConnected() = runBlocking<Unit> {
         val operations = personalService.downloadFile("/document.pdf", "/tmp/document.pdf")
         
         val firstOperation = operations.first()
@@ -207,7 +207,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedUploadFileWhenNotConnected() = runBlocking {
+    fun testEnhancedUploadFileWhenNotConnected() = runBlocking<Unit> {
         val operations = personalService.uploadFile("/tmp/report.md", "/report.md")
         
         val firstOperation = operations.first()
@@ -217,7 +217,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedFileOperationsWhenNotConnected() = runBlocking {
+    fun testEnhancedFileOperationsWhenNotConnected() = runBlocking<Unit> {
         // Test delete file
         val deleteResult = personalService.deleteFile("/test.md")
         assertTrue(deleteResult.isSuccess, "Delete should succeed (mock implementation)")
@@ -257,7 +257,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedQuotaInfo() = runBlocking {
+    fun testEnhancedQuotaInfo() = runBlocking<Unit> {
         val result = personalService.getQuotaInfo()
 
         // getQuotaInfo now makes real Microsoft Graph API calls; fails when not connected
@@ -267,7 +267,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedExists() = runBlocking {
+    fun testEnhancedExists() = runBlocking<Unit> {
         val result = personalService.exists("/test.md")
 
         assertTrue(result.isSuccess, "Exists check should succeed")
@@ -275,7 +275,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedPathOperations() = runBlocking {
+    fun testEnhancedPathOperations() = runBlocking<Unit> {
         // Test getParentPath
         assertEquals("/", personalService.getParentPath("/test.md"))
         assertEquals("/folder", personalService.getParentPath("/folder/test.md"))
@@ -294,14 +294,14 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedActiveOperations() = runBlocking {
+    fun testEnhancedActiveOperations() = runBlocking<Unit> {
         val activeOps = personalService.getActiveOperations().first()
         
         assertTrue(activeOps.isEmpty(), "Active operations should be empty initially")
     }
     
     @Test
-    fun testEnhancedCacheOperations() = runBlocking {
+    fun testEnhancedCacheOperations() = runBlocking<Unit> {
         // Test get cache entries
         val cacheEntries = personalService.getCacheEntries("/").first()
         assertTrue(cacheEntries.isEmpty(), "Cache entries should be empty")
@@ -320,14 +320,14 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedSyncStatus() = runBlocking {
+    fun testEnhancedSyncStatus() = runBlocking<Unit> {
         val syncStatus = personalService.getSyncStatus("/").first()
         
         assertTrue(syncStatus.isEmpty(), "Sync status should be empty initially")
     }
     
     @Test
-    fun testEnhancedSyncOperations() = runBlocking {
+    fun testEnhancedSyncOperations() = runBlocking<Unit> {
         // Test sync file - syncFile emits progress and completion even when not connected
         val syncFileOperations = personalService.syncFile("/test.md", false)
         val syncFileOps = mutableListOf<NetworkOperation>()
@@ -347,7 +347,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedSearchFiles() = runBlocking {
+    fun testEnhancedSearchFiles() = runBlocking<Unit> {
         val result = personalService.searchFiles("test", "/", false).first()
         
         assertTrue(result.isSuccess, "Search should succeed")
@@ -357,7 +357,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedRecentChanges() = runBlocking {
+    fun testEnhancedRecentChanges() = runBlocking<Unit> {
         val since = Clock.System.now()
         val changes = personalService.getRecentChanges(since, "/").first()
         
@@ -365,7 +365,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedOperationManagement() = runBlocking {
+    fun testEnhancedOperationManagement() = runBlocking<Unit> {
         // Test cancel operation
         val cancelResult = personalService.cancelOperation(12345L)
         assertTrue(cancelResult.isSuccess, "Cancel operation should succeed")
@@ -380,7 +380,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedDifferentDriveTypes() = runBlocking {
+    fun testEnhancedDifferentDriveTypes() = runBlocking<Unit> {
         // Test personal OneDrive
         val personalStorageInfo = personalService.getStorageInfo()
         assertEquals(StorageType.ONEDRIVE, personalStorageInfo.type)
@@ -399,7 +399,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedDriveTypeSpecificQuota() = runBlocking {
+    fun testEnhancedDriveTypeSpecificQuota() = runBlocking<Unit> {
         // getQuotaInfo now makes real Microsoft Graph API calls; all fail when not connected
         val personalQuotaResult = personalService.getQuotaInfo()
         assertTrue(personalQuotaResult.isFailure, "Personal quota should fail when not connected")
@@ -431,7 +431,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedTokenRefreshScenario() = runBlocking {
+    fun testEnhancedTokenRefreshScenario() = runBlocking<Unit> {
         // Test with expired access token but valid refresh token
         try {
             val authTokenManager = AuthTokenManager("onedrive_test-onedrive-personal", mockSecureStorage)
@@ -458,7 +458,7 @@ class OneDriveServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedOneDriveApiEndpoints() = runBlocking {
+    fun testEnhancedOneDriveApiEndpoints() = runBlocking<Unit> {
         // Test that different drive types use different API endpoints
         
         // Personal OneDrive should use /me/drive

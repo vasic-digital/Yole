@@ -152,7 +152,7 @@ class WebDavMockHttpTest {
     // ==================== 1. connect + testConnection ====================
 
     @Test
-    fun `connect succeeds with 200 OPTIONS response`() = runBlocking {
+    fun `connect succeeds with 200 OPTIONS response`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             respond("", HttpStatusCode.OK, headersOf("DAV", "1, 2, 3"))
         }
@@ -165,7 +165,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `connect sends OPTIONS method`() = runBlocking {
+    fun `connect sends OPTIONS method`() = runBlocking<Unit> {
         var capturedMethod: HttpMethod? = null
         val client = createMockClient { request ->
             capturedMethod = request.method
@@ -179,7 +179,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `connect succeeds even with 401 response`() = runBlocking {
+    fun `connect succeeds even with 401 response`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             respond("Unauthorized", HttpStatusCode.Unauthorized)
         }
@@ -192,7 +192,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `connect succeeds even with 500 response`() = runBlocking {
+    fun `connect succeeds even with 500 response`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             respond("Server Error", HttpStatusCode.InternalServerError)
         }
@@ -205,7 +205,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `connect succeeds even with network error`() = runBlocking {
+    fun `connect succeeds even with network error`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             throw Exception("Network unreachable")
         }
@@ -218,7 +218,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `testConnection returns true when already connected`() = runBlocking {
+    fun `testConnection returns true when already connected`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -230,7 +230,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `testConnection performs connect-disconnect when not connected`() = runBlocking {
+    fun `testConnection performs connect-disconnect when not connected`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
 
@@ -243,7 +243,7 @@ class WebDavMockHttpTest {
     // ==================== 2. disconnect ====================
 
     @Test
-    fun `disconnect sets isOnline to false`() = runBlocking {
+    fun `disconnect sets isOnline to false`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -255,7 +255,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `disconnect returns success`() = runBlocking {
+    fun `disconnect returns success`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -268,7 +268,7 @@ class WebDavMockHttpTest {
     // ==================== 3. listFiles (PROPFIND) ====================
 
     @Test
-    fun `listFiles parses multistatus XML with files and folders`() = runBlocking {
+    fun `listFiles parses multistatus XML with files and folders`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             respond(
                 multistatusXml,
@@ -289,7 +289,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles parses file name correctly`() = runBlocking {
+    fun `listFiles parses file name correctly`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -301,7 +301,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles parses file size correctly`() = runBlocking {
+    fun `listFiles parses file size correctly`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -313,7 +313,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles parses content type correctly`() = runBlocking {
+    fun `listFiles parses content type correctly`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -325,7 +325,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles identifies folders correctly`() = runBlocking {
+    fun `listFiles identifies folders correctly`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -337,7 +337,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles identifies files as non-folders`() = runBlocking {
+    fun `listFiles identifies files as non-folders`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -350,7 +350,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles sends PROPFIND method`() = runBlocking {
+    fun `listFiles sends PROPFIND method`() = runBlocking<Unit> {
         var capturedMethod: HttpMethod? = null
 
         val client = createMockClient { request ->
@@ -366,7 +366,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles sends Depth 1 header`() = runBlocking {
+    fun `listFiles sends Depth 1 header`() = runBlocking<Unit> {
         var capturedDepth: String? = null
 
         val client = createMockClient { request ->
@@ -382,7 +382,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles sends Content-Type XML header`() = runBlocking {
+    fun `listFiles sends Content-Type XML header`() = runBlocking<Unit> {
         var capturedContentType: ContentType? = null
 
         val client = createMockClient { request ->
@@ -399,7 +399,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles sends authorization header`() = runBlocking {
+    fun `listFiles sends authorization header`() = runBlocking<Unit> {
         var capturedAuth: String? = null
 
         val client = createMockClient { request ->
@@ -417,7 +417,7 @@ class WebDavMockHttpTest {
 
     @OptIn(ExperimentalEncodingApi::class)
     @Test
-    fun `listFiles sends correct Basic auth credentials`() = runBlocking {
+    fun `listFiles sends correct Basic auth credentials`() = runBlocking<Unit> {
         var capturedAuth: String? = null
 
         val client = createMockClient { request ->
@@ -434,7 +434,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles with OAuth sends Bearer token`() = runBlocking {
+    fun `listFiles with OAuth sends Bearer token`() = runBlocking<Unit> {
         var capturedAuth: String? = null
 
         val client = createMockClient { request ->
@@ -454,7 +454,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles with NONE auth sends no authorization`() = runBlocking {
+    fun `listFiles with NONE auth sends no authorization`() = runBlocking<Unit> {
         var capturedAuth: String? = null
 
         val client = createMockClient { request ->
@@ -471,7 +471,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles skips parent directory entry`() = runBlocking {
+    fun `listFiles skips parent directory entry`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -482,7 +482,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles parses empty multistatus directory`() = runBlocking {
+    fun `listFiles parses empty multistatus directory`() = runBlocking<Unit> {
         val client = createMockClient { respond(emptyDirXml, HttpStatusCode.MultiStatus) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -495,7 +495,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles builds correct URL for subpath`() = runBlocking {
+    fun `listFiles builds correct URL for subpath`() = runBlocking<Unit> {
         var capturedUrl: String? = null
 
         val client = createMockClient { request ->
@@ -512,7 +512,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles builds correct URL from config base URL`() = runBlocking {
+    fun `listFiles builds correct URL from config base URL`() = runBlocking<Unit> {
         var capturedUrl: String? = null
 
         val client = createMockClient { request ->
@@ -530,7 +530,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles handles 200 OK response as success`() = runBlocking {
+    fun `listFiles handles 200 OK response as success`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -541,7 +541,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles handles multistatus with many files`() = runBlocking {
+    fun `listFiles handles multistatus with many files`() = runBlocking<Unit> {
         val manyFilesXml = buildString {
             append("""<?xml version="1.0" encoding="utf-8"?><d:multistatus xmlns:d="DAV:">""")
             append("""<d:response><d:href>/remote.php/dav/files/testuser/</d:href><d:propstat><d:prop><d:displayname>testuser</d:displayname><d:resourcetype><d:collection/></d:resourcetype></d:prop></d:propstat></d:response>""")
@@ -562,7 +562,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles sets storageId to webdav`() = runBlocking {
+    fun `listFiles sets storageId to webdav`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -574,7 +574,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles sets syncStatus to SYNCED`() = runBlocking {
+    fun `listFiles sets syncStatus to SYNCED`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -586,7 +586,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles sets permissions for files`() = runBlocking {
+    fun `listFiles sets permissions for files`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -599,7 +599,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles sets permissions for folders with EXECUTE`() = runBlocking {
+    fun `listFiles sets permissions for folders with EXECUTE`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -612,7 +612,7 @@ class WebDavMockHttpTest {
     // ==================== 4. listFiles error handling ====================
 
     @Test
-    fun `listFiles returns error on 403 response`() = runBlocking {
+    fun `listFiles returns error on 403 response`() = runBlocking<Unit> {
         val client = createMockClient { respond("Forbidden", HttpStatusCode.Forbidden) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -624,7 +624,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles returns error on 500 response`() = runBlocking {
+    fun `listFiles returns error on 500 response`() = runBlocking<Unit> {
         val client = createMockClient {
             respond("Internal Server Error", HttpStatusCode.InternalServerError)
         }
@@ -638,7 +638,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles returns error on 401 response`() = runBlocking {
+    fun `listFiles returns error on 401 response`() = runBlocking<Unit> {
         val client = createMockClient {
             respond("Unauthorized", HttpStatusCode.Unauthorized)
         }
@@ -652,7 +652,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles when not connected returns error`() = runBlocking {
+    fun `listFiles when not connected returns error`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         // Don't connect
@@ -665,7 +665,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `listFiles error on network exception`() = runBlocking {
+    fun `listFiles error on network exception`() = runBlocking<Unit> {
         var isFirst = true
         val client = createMockClient { _ ->
             if (isFirst) {
@@ -687,7 +687,7 @@ class WebDavMockHttpTest {
     // ==================== 5. downloadFile ====================
 
     @Test
-    fun `downloadFile emits progress and COMPLETED on success`() = runBlocking {
+    fun `downloadFile emits progress and COMPLETED on success`() = runBlocking<Unit> {
         val fileContent = "Hello, WebDAV world!".encodeToByteArray()
         var requestCount = 0
 
@@ -715,7 +715,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `downloadFile starts with IN_PROGRESS at 0`() = runBlocking {
+    fun `downloadFile starts with IN_PROGRESS at 0`() = runBlocking<Unit> {
         val fileContent = ByteArray(10240) { 42 }
         var requestCount = 0
 
@@ -742,7 +742,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `downloadFile has DOWNLOAD type`() = runBlocking {
+    fun `downloadFile has DOWNLOAD type`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -760,7 +760,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `downloadFile emits FAILED on HTTP error`() = runBlocking {
+    fun `downloadFile emits FAILED on HTTP error`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -781,7 +781,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `downloadFile emits FAILED on 500 error`() = runBlocking {
+    fun `downloadFile emits FAILED on 500 error`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -801,7 +801,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `downloadFile when not connected emits error`() = runBlocking {
+    fun `downloadFile when not connected emits error`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
 
@@ -813,7 +813,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `downloadFile sends GET request with auth`() = runBlocking {
+    fun `downloadFile sends GET request with auth`() = runBlocking<Unit> {
         var capturedMethod: HttpMethod? = null
         var capturedAuth: String? = null
         var requestCount = 0
@@ -839,7 +839,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `downloadFile builds correct URL for remote path`() = runBlocking {
+    fun `downloadFile builds correct URL for remote path`() = runBlocking<Unit> {
         var capturedUrl: String? = null
         var requestCount = 0
 
@@ -864,7 +864,7 @@ class WebDavMockHttpTest {
     // ==================== 6. uploadFile ====================
 
     @Test
-    fun `uploadFile emits COMPLETED on 201 Created`() = runBlocking {
+    fun `uploadFile emits COMPLETED on 201 Created`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -886,7 +886,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `uploadFile emits COMPLETED on 204 NoContent`() = runBlocking {
+    fun `uploadFile emits COMPLETED on 204 NoContent`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -906,7 +906,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `uploadFile emits COMPLETED on 200 OK`() = runBlocking {
+    fun `uploadFile emits COMPLETED on 200 OK`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -926,7 +926,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `uploadFile has UPLOAD type`() = runBlocking {
+    fun `uploadFile has UPLOAD type`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -944,7 +944,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `uploadFile emits progress steps`() = runBlocking {
+    fun `uploadFile emits progress steps`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -965,7 +965,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `uploadFile sends PUT with auth header`() = runBlocking {
+    fun `uploadFile sends PUT with auth header`() = runBlocking<Unit> {
         var capturedMethod: HttpMethod? = null
         var capturedAuth: String? = null
         var requestCount = 0
@@ -991,7 +991,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `uploadFile when not connected emits error`() = runBlocking {
+    fun `uploadFile when not connected emits error`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
 
@@ -1005,7 +1005,7 @@ class WebDavMockHttpTest {
     // ==================== 7. uploadFile error handling ====================
 
     @Test
-    fun `uploadFile emits FAILED on 507 Insufficient Storage`() = runBlocking {
+    fun `uploadFile emits FAILED on 507 Insufficient Storage`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1025,7 +1025,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `uploadFile emits FAILED on 413 Payload Too Large`() = runBlocking {
+    fun `uploadFile emits FAILED on 413 Payload Too Large`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1045,7 +1045,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `uploadFile emits FAILED on 403 Forbidden`() = runBlocking {
+    fun `uploadFile emits FAILED on 403 Forbidden`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1067,7 +1067,7 @@ class WebDavMockHttpTest {
     // ==================== 8. deleteFile ====================
 
     @Test
-    fun `deleteFile succeeds with 204 NoContent`() = runBlocking {
+    fun `deleteFile succeeds with 204 NoContent`() = runBlocking<Unit> {
         var capturedMethod: HttpMethod? = null
         var requestCount = 0
 
@@ -1090,7 +1090,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `deleteFile builds correct URL`() = runBlocking {
+    fun `deleteFile builds correct URL`() = runBlocking<Unit> {
         var capturedUrl: String? = null
         var requestCount = 0
 
@@ -1113,7 +1113,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `deleteFile sends auth header`() = runBlocking {
+    fun `deleteFile sends auth header`() = runBlocking<Unit> {
         var capturedAuth: String? = null
         var requestCount = 0
 
@@ -1136,7 +1136,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `deleteFile succeeds even on network error`() = runBlocking {
+    fun `deleteFile succeeds even on network error`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1155,7 +1155,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `deleteFile succeeds even on 500 error`() = runBlocking {
+    fun `deleteFile succeeds even on 500 error`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1175,7 +1175,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `deleteFile when not connected still succeeds`() = runBlocking {
+    fun `deleteFile when not connected still succeeds`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
 
@@ -1187,7 +1187,7 @@ class WebDavMockHttpTest {
     // ==================== 9. copyFile ====================
 
     @Test
-    fun `copyFile sends COPY with Destination header`() = runBlocking {
+    fun `copyFile sends COPY with Destination header`() = runBlocking<Unit> {
         var capturedMethod: HttpMethod? = null
         var capturedDest: String? = null
         var requestCount = 0
@@ -1214,7 +1214,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `copyFile sends Overwrite T header`() = runBlocking {
+    fun `copyFile sends Overwrite T header`() = runBlocking<Unit> {
         var capturedOverwrite: String? = null
         var requestCount = 0
 
@@ -1236,7 +1236,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `copyFile succeeds on 204 NoContent`() = runBlocking {
+    fun `copyFile succeeds on 204 NoContent`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1255,7 +1255,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `copyFile when not connected still succeeds`() = runBlocking {
+    fun `copyFile when not connected still succeeds`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
 
@@ -1267,7 +1267,7 @@ class WebDavMockHttpTest {
     // ==================== 10. moveFile ====================
 
     @Test
-    fun `moveFile sends MOVE with Destination header`() = runBlocking {
+    fun `moveFile sends MOVE with Destination header`() = runBlocking<Unit> {
         var capturedMethod: HttpMethod? = null
         var capturedDest: String? = null
         var requestCount = 0
@@ -1294,7 +1294,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `moveFile sends Overwrite T header`() = runBlocking {
+    fun `moveFile sends Overwrite T header`() = runBlocking<Unit> {
         var capturedOverwrite: String? = null
         var requestCount = 0
 
@@ -1316,7 +1316,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `moveFile returns NetworkDocument with correct name`() = runBlocking {
+    fun `moveFile returns NetworkDocument with correct name`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1338,7 +1338,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `moveFile when not connected still succeeds`() = runBlocking {
+    fun `moveFile when not connected still succeeds`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
 
@@ -1350,7 +1350,7 @@ class WebDavMockHttpTest {
     // ==================== 11. renameFile ====================
 
     @Test
-    fun `renameFile sends MOVE with correct destination`() = runBlocking {
+    fun `renameFile sends MOVE with correct destination`() = runBlocking<Unit> {
         var capturedMethod: HttpMethod? = null
         var capturedDest: String? = null
         var requestCount = 0
@@ -1377,7 +1377,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `renameFile sends Overwrite T header`() = runBlocking {
+    fun `renameFile sends Overwrite T header`() = runBlocking<Unit> {
         var capturedOverwrite: String? = null
         var requestCount = 0
 
@@ -1401,7 +1401,7 @@ class WebDavMockHttpTest {
     // ==================== 12. createFolder ====================
 
     @Test
-    fun `createFolder sends MKCOL request`() = runBlocking {
+    fun `createFolder sends MKCOL request`() = runBlocking<Unit> {
         var capturedMethod: HttpMethod? = null
         var requestCount = 0
 
@@ -1424,7 +1424,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `createFolder returns folder document`() = runBlocking {
+    fun `createFolder returns folder document`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1446,7 +1446,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `createFolder sets SYNCED status`() = runBlocking {
+    fun `createFolder sets SYNCED status`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1465,7 +1465,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `createFolder sets EXECUTE permission`() = runBlocking {
+    fun `createFolder sets EXECUTE permission`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1487,7 +1487,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `createFolder builds correct URL for nested path`() = runBlocking {
+    fun `createFolder builds correct URL for nested path`() = runBlocking<Unit> {
         var capturedUrl: String? = null
         var requestCount = 0
 
@@ -1510,7 +1510,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `createFolder succeeds even on network error`() = runBlocking {
+    fun `createFolder succeeds even on network error`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1530,7 +1530,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `createFolder when not connected still succeeds`() = runBlocking {
+    fun `createFolder when not connected still succeeds`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
 
@@ -1543,7 +1543,7 @@ class WebDavMockHttpTest {
     // ==================== 13. getFileInfo ====================
 
     @Test
-    fun `getFileInfo sends PROPFIND with Depth 0`() = runBlocking {
+    fun `getFileInfo sends PROPFIND with Depth 0`() = runBlocking<Unit> {
         var capturedDepth: String? = null
         var requestCount = 0
 
@@ -1565,7 +1565,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `getFileInfo parses file metadata from response`() = runBlocking {
+    fun `getFileInfo parses file metadata from response`() = runBlocking<Unit> {
         var requestCount = 0
 
         val client = createMockClient { request ->
@@ -1588,7 +1588,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `getFileInfo returns fallback on PROPFIND failure`() = runBlocking {
+    fun `getFileInfo returns fallback on PROPFIND failure`() = runBlocking<Unit> {
         var requestCount = 0
 
         val client = createMockClient { request ->
@@ -1612,7 +1612,7 @@ class WebDavMockHttpTest {
     // ==================== 14. exists ====================
 
     @Test
-    fun `exists returns true for 200 HEAD response`() = runBlocking {
+    fun `exists returns true for 200 HEAD response`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1632,7 +1632,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `exists returns false for 404 HEAD response`() = runBlocking {
+    fun `exists returns false for 404 HEAD response`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1652,7 +1652,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `exists uses HEAD method`() = runBlocking {
+    fun `exists uses HEAD method`() = runBlocking<Unit> {
         var capturedMethod: HttpMethod? = null
         var requestCount = 0
 
@@ -1674,7 +1674,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `exists returns false when not connected`() = runBlocking {
+    fun `exists returns false when not connected`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
 
@@ -1685,7 +1685,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `exists returns false on network error`() = runBlocking {
+    fun `exists returns false on network error`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1707,7 +1707,7 @@ class WebDavMockHttpTest {
     // ==================== 15. getQuotaInfo ====================
 
     @Test
-    fun `getQuotaInfo parses quota from PROPFIND response`() = runBlocking {
+    fun `getQuotaInfo parses quota from PROPFIND response`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1732,7 +1732,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `getQuotaInfo returns default on server error`() = runBlocking {
+    fun `getQuotaInfo returns default on server error`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1755,7 +1755,7 @@ class WebDavMockHttpTest {
     // ==================== 16. searchFiles ====================
 
     @Test
-    fun `searchFiles sends PROPFIND with Depth infinity`() = runBlocking {
+    fun `searchFiles sends PROPFIND with Depth infinity`() = runBlocking<Unit> {
         var capturedDepth: String? = null
 
         val client = createMockClient { request ->
@@ -1771,7 +1771,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `searchFiles filters results by query`() = runBlocking {
+    fun `searchFiles filters results by query`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -1784,7 +1784,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `searchFiles when not connected returns error`() = runBlocking {
+    fun `searchFiles when not connected returns error`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
 
@@ -1796,7 +1796,7 @@ class WebDavMockHttpTest {
     // ==================== 17. syncFile and syncAll ====================
 
     @Test
-    fun `syncFile emits COMPLETED operation`() = runBlocking {
+    fun `syncFile emits COMPLETED operation`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1818,7 +1818,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `syncAll emits COMPLETED with multistatus response`() = runBlocking {
+    fun `syncAll emits COMPLETED with multistatus response`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -1839,7 +1839,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `syncAll when not connected emits FAILED`() = runBlocking {
+    fun `syncAll when not connected emits FAILED`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
 
@@ -1852,7 +1852,7 @@ class WebDavMockHttpTest {
     // ==================== 18. Authentication variants ====================
 
     @Test
-    fun `Digest auth falls back to Basic auth`() = runBlocking {
+    fun `Digest auth falls back to Basic auth`() = runBlocking<Unit> {
         var capturedAuth: String? = null
 
         val client = createMockClient { request ->
@@ -1870,7 +1870,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `blank username sends no auth header for BASIC`() = runBlocking {
+    fun `blank username sends no auth header for BASIC`() = runBlocking<Unit> {
         var capturedAuth: String? = null
 
         val client = createMockClient { request ->
@@ -1889,7 +1889,7 @@ class WebDavMockHttpTest {
     // ==================== 19. getStorageInfo ====================
 
     @Test
-    fun `getStorageInfo returns correct storage type and name`() = runBlocking {
+    fun `getStorageInfo returns correct storage type and name`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
         service.connect()
@@ -1904,7 +1904,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `getStorageInfo reflects connection state`() = runBlocking {
+    fun `getStorageInfo reflects connection state`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
 
@@ -1972,7 +1972,7 @@ class WebDavMockHttpTest {
     // ==================== 21. Multiple sequential operations ====================
 
     @Test
-    fun `sequential create upload delete operations`() = runBlocking {
+    fun `sequential create upload delete operations`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++
@@ -2001,7 +2001,7 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `copy then delete operations`() = runBlocking {
+    fun `copy then delete operations`() = runBlocking<Unit> {
         var requestCount = 0
         val client = createMockClient { request ->
             requestCount++

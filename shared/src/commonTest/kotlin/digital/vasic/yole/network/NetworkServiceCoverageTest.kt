@@ -846,7 +846,7 @@ class NetworkServiceCoverageTest {
     // ==================== ConfigService refreshConnectionStatus ====================
 
     @Test
-    fun testRefreshConnectionStatusEmptyResult() = runBlocking {
+    fun testRefreshConnectionStatusEmptyResult() = runBlocking<Unit> {
         val service = NetworkStorageConfigService()
         val result = service.refreshConnectionStatus()
         assertTrue(result.isSuccess)
@@ -854,7 +854,7 @@ class NetworkServiceCoverageTest {
     }
 
     @Test
-    fun testRefreshConnectionStatusTwice() = runBlocking {
+    fun testRefreshConnectionStatusTwice() = runBlocking<Unit> {
         val service = NetworkStorageConfigService()
         val result1 = service.refreshConnectionStatus()
         assertTrue(result1.isSuccess)
@@ -866,7 +866,7 @@ class NetworkServiceCoverageTest {
     // ==================== ConfigService removeStorage and setActiveStorage on empty state ====================
 
     @Test
-    fun testRemoveStorageNonExistentReturnsGenericError() = runBlocking {
+    fun testRemoveStorageNonExistentReturnsGenericError() = runBlocking<Unit> {
         val service = NetworkStorageConfigService()
         val result = service.removeStorage("does-not-exist")
         assertTrue(result.isFailure)
@@ -877,7 +877,7 @@ class NetworkServiceCoverageTest {
     }
 
     @Test
-    fun testSetActiveStorageNonExistentReturnsGenericError() = runBlocking {
+    fun testSetActiveStorageNonExistentReturnsGenericError() = runBlocking<Unit> {
         val service = NetworkStorageConfigService()
         val result = service.setActiveStorage("does-not-exist")
         assertTrue(result.isFailure)

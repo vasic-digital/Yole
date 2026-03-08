@@ -44,14 +44,14 @@ class PlatformFileIOTest {
     // ==================== readFileBytes Tests ====================
 
     @Test
-    fun `readFileBytes returns failure for non-existent path`() = runBlocking {
+    fun `readFileBytes returns failure for non-existent path`() = runBlocking<Unit> {
         val fileIO = createFileIO()
         val result = fileIO.readFileBytes("/non/existent/path/that/does/not/exist.txt")
         assertTrue(result.isFailure, "readFileBytes should return failure for non-existent file")
     }
 
     @Test
-    fun `readFileBytes returns failure for empty path`() = runBlocking {
+    fun `readFileBytes returns failure for empty path`() = runBlocking<Unit> {
         val fileIO = createFileIO()
         val result = fileIO.readFileBytes("")
         assertTrue(result.isFailure, "readFileBytes should return failure for empty path")
@@ -60,7 +60,7 @@ class PlatformFileIOTest {
     // ==================== writeFileBytes + readFileBytes Round-Trip ====================
 
     @Test
-    fun `writeFileBytes followed by readFileBytes returns same content`() = runBlocking {
+    fun `writeFileBytes followed by readFileBytes returns same content`() = runBlocking<Unit> {
         val fileIO = createFileIO()
         val testPath = generateTestPath("roundtrip_test.bin")
         val testContent = "Hello, PlatformFileIO!".encodeToByteArray()
@@ -81,7 +81,7 @@ class PlatformFileIOTest {
     }
 
     @Test
-    fun `writeFileBytes with empty byte array succeeds`() = runBlocking {
+    fun `writeFileBytes with empty byte array succeeds`() = runBlocking<Unit> {
         val fileIO = createFileIO()
         val testPath = generateTestPath("empty_file.bin")
 
@@ -100,14 +100,14 @@ class PlatformFileIOTest {
     // ==================== fileExists Tests ====================
 
     @Test
-    fun `fileExists returns false for non-existent path`() = runBlocking {
+    fun `fileExists returns false for non-existent path`() = runBlocking<Unit> {
         val fileIO = createFileIO()
         val exists = fileIO.fileExists("/non/existent/path/file.txt")
         assertFalse(exists, "fileExists should return false for non-existent file")
     }
 
     @Test
-    fun `fileExists returns true after writing a file`() = runBlocking {
+    fun `fileExists returns true after writing a file`() = runBlocking<Unit> {
         val fileIO = createFileIO()
         val testPath = generateTestPath("exists_test.bin")
 
@@ -128,14 +128,14 @@ class PlatformFileIOTest {
     // ==================== fileSize Tests ====================
 
     @Test
-    fun `fileSize returns negative for non-existent path`() = runBlocking {
+    fun `fileSize returns negative for non-existent path`() = runBlocking<Unit> {
         val fileIO = createFileIO()
         val size = fileIO.fileSize("/non/existent/path/file.txt")
         assertTrue(size < 0, "fileSize should return -1 for non-existent file, got: $size")
     }
 
     @Test
-    fun `fileSize returns correct value after writing`() = runBlocking {
+    fun `fileSize returns correct value after writing`() = runBlocking<Unit> {
         val fileIO = createFileIO()
         val testPath = generateTestPath("size_test.bin")
         val testContent = "Hello, World! 1234567890".encodeToByteArray()
@@ -157,7 +157,7 @@ class PlatformFileIOTest {
     // ==================== ensureParentDirectories Tests ====================
 
     @Test
-    fun `ensureParentDirectories does not throw for valid path`() = runBlocking {
+    fun `ensureParentDirectories does not throw for valid path`() = runBlocking<Unit> {
         val fileIO = createFileIO()
         val testPath = generateTestPath("subdir/nested/file.txt")
 
@@ -166,7 +166,7 @@ class PlatformFileIOTest {
     }
 
     @Test
-    fun `ensureParentDirectories followed by write succeeds`() = runBlocking {
+    fun `ensureParentDirectories followed by write succeeds`() = runBlocking<Unit> {
         val fileIO = createFileIO()
         val testPath = generateTestPath("deep/nested/dir/file.txt")
 
@@ -184,7 +184,7 @@ class PlatformFileIOTest {
     // ==================== Overwrite Tests ====================
 
     @Test
-    fun `writeFileBytes overwrites existing file content`() = runBlocking {
+    fun `writeFileBytes overwrites existing file content`() = runBlocking<Unit> {
         val fileIO = createFileIO()
         val testPath = generateTestPath("overwrite_test.bin")
 

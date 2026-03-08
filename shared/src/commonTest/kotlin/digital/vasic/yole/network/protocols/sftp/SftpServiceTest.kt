@@ -50,7 +50,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testConnectSuccess() = runBlocking {
+    fun testConnectSuccess() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.connect()
         
@@ -58,7 +58,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testDisconnectSuccess() = runBlocking {
+    fun testDisconnectSuccess() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         sftpService.connect()
         val result = sftpService.disconnect()
@@ -67,7 +67,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testStorageInfo() = runBlocking {
+    fun testStorageInfo() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val storageInfo = sftpService.getStorageInfo()
         
@@ -78,7 +78,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testListFilesWhenNotConnected() = runBlocking {
+    fun testListFilesWhenNotConnected() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.listFiles("/").first()
         
@@ -87,7 +87,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testDownloadFileWhenNotConnected() = runBlocking {
+    fun testDownloadFileWhenNotConnected() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val operations = sftpService.downloadFile("/test.md", "/tmp/test.md")
         
@@ -98,7 +98,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testUploadFileWhenNotConnected() = runBlocking {
+    fun testUploadFileWhenNotConnected() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val operations = sftpService.uploadFile("/tmp/test.md", "/test.md")
         
@@ -109,7 +109,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testDeleteFileWhenNotConnected() = runBlocking {
+    fun testDeleteFileWhenNotConnected() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.deleteFile("/test.md")
         
@@ -117,7 +117,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testCreateFolderWhenNotConnected() = runBlocking {
+    fun testCreateFolderWhenNotConnected() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.createFolder("/test-folder")
         
@@ -125,7 +125,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testRenameFileWhenNotConnected() = runBlocking {
+    fun testRenameFileWhenNotConnected() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.renameFile("/test.md", "renamed.md")
         
@@ -133,7 +133,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testMoveFileWhenNotConnected() = runBlocking {
+    fun testMoveFileWhenNotConnected() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.moveFile("/test.md", "/moved/test.md")
         
@@ -141,7 +141,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testCopyFileWhenNotConnected() = runBlocking {
+    fun testCopyFileWhenNotConnected() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.copyFile("/test.md", "/copy/test.md")
         
@@ -149,7 +149,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testGetFileInfoWhenNotConnected() = runBlocking {
+    fun testGetFileInfoWhenNotConnected() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.getFileInfo("/test.md")
         
@@ -157,7 +157,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testGetQuotaInfoWhenNotConnected() = runBlocking {
+    fun testGetQuotaInfoWhenNotConnected() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.getQuotaInfo()
         
@@ -168,7 +168,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testExistsWhenNotConnected() = runBlocking {
+    fun testExistsWhenNotConnected() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.exists("/test.md")
         
@@ -239,7 +239,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testSearchFilesWhenNotConnected() = runBlocking {
+    fun testSearchFilesWhenNotConnected() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.searchFiles("test", "/", false).first()
         
@@ -247,7 +247,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testGetRecentChangesWhenNotConnected() = runBlocking {
+    fun testGetRecentChangesWhenNotConnected() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val since = Clock.System.now()
         val changes = sftpService.getRecentChanges(since, "/").first()
@@ -256,7 +256,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testSyncFileWhenNotConnected() = runBlocking {
+    fun testSyncFileWhenNotConnected() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val operations = sftpService.syncFile("/test.md", false)
         
@@ -266,7 +266,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testSyncAllWhenNotConnected() = runBlocking {
+    fun testSyncAllWhenNotConnected() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val operations = sftpService.syncAll(false)
         
@@ -280,7 +280,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testActiveOperationsFlow() = runBlocking {
+    fun testActiveOperationsFlow() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val activeOps = sftpService.getActiveOperations().first()
         
@@ -288,7 +288,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testCacheOperations() = runBlocking {
+    fun testCacheOperations() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         
         val cacheEntries = sftpService.getCacheEntries("/").first()
@@ -305,7 +305,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testSyncStatusFlow() = runBlocking {
+    fun testSyncStatusFlow() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val syncStatus = sftpService.getSyncStatus("/").first()
         
@@ -313,7 +313,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testTestConnection() = runBlocking {
+    fun testTestConnection() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val result = sftpService.testConnection()
         
@@ -322,7 +322,7 @@ class SftpServiceTest {
     }
     
     @Test
-    fun testSftpUriGeneration() = runBlocking {
+    fun testSftpUriGeneration() = runBlocking<Unit> {
         sftpService = SftpService(sftpConfig)
         val storageInfo = sftpService.getStorageInfo()
         

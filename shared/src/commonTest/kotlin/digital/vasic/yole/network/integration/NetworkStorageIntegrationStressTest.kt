@@ -38,7 +38,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== MULTI-SERVICE INITIALIZATION ====================
 
     @Test
-    fun `all services can be created concurrently`() = runBlocking {
+    fun `all services can be created concurrently`() = runBlocking<Unit> {
         val services = (1..10).map { i ->
             async {
                 listOf(
@@ -57,7 +57,7 @@ class NetworkStorageIntegrationStressTest {
     }
 
     @Test
-    fun `all service types can coexist`() = runBlocking {
+    fun `all service types can coexist`() = runBlocking<Unit> {
         val ftpService = createFtpService("ftp")
         val smbService = createSmbService("smb")
         val webdavService = createWebDavService("webdav")
@@ -89,7 +89,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== CONCURRENT OPERATIONS ACROSS SERVICES ====================
 
     @Test
-    fun `concurrent file info across multiple services`() = runBlocking {
+    fun `concurrent file info across multiple services`() = runBlocking<Unit> {
         val services = listOf(
             createFtpService("ftp"),
             createSmbService("smb"),
@@ -117,7 +117,7 @@ class NetworkStorageIntegrationStressTest {
     }
 
     @Test
-    fun `concurrent folder operations across services`() = runBlocking {
+    fun `concurrent folder operations across services`() = runBlocking<Unit> {
         val ftpService = createFtpService("ftp")
         val smbService = createSmbService("smb")
 
@@ -152,7 +152,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== SERVICE SWITCHING STRESS ====================
 
     @Test
-    fun `rapid service switching`() = runBlocking {
+    fun `rapid service switching`() = runBlocking<Unit> {
         val ftpService = createFtpService("ftp")
         val smbService = createSmbService("smb")
 
@@ -173,7 +173,7 @@ class NetworkStorageIntegrationStressTest {
     }
 
     @Test
-    fun `interleaved operations across services`() = runBlocking {
+    fun `interleaved operations across services`() = runBlocking<Unit> {
         val services = listOf(
             createFtpService("ftp"),
             createSmbService("smb"),
@@ -207,7 +207,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== QUOTA AND STORAGE INFO ====================
 
     @Test
-    fun `concurrent quota checks across services`() = runBlocking {
+    fun `concurrent quota checks across services`() = runBlocking<Unit> {
         val services = listOf(
             createFtpService("ftp"),
             createSmbService("smb"),
@@ -231,7 +231,7 @@ class NetworkStorageIntegrationStressTest {
     }
 
     @Test
-    fun `concurrent storage info across services`() = runBlocking {
+    fun `concurrent storage info across services`() = runBlocking<Unit> {
         val services = listOf(
             createFtpService("ftp"),
             createSmbService("smb"),
@@ -253,7 +253,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== CACHE OPERATIONS ACROSS SERVICES ====================
 
     @Test
-    fun `cache operations across multiple services`() = runBlocking {
+    fun `cache operations across multiple services`() = runBlocking<Unit> {
         val ftpService = createFtpService("ftp")
         val smbService = createSmbService("smb")
 
@@ -277,7 +277,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== SYNC OPERATIONS ====================
 
     @Test
-    fun `concurrent sync operations`() = runBlocking {
+    fun `concurrent sync operations`() = runBlocking<Unit> {
         val webdavService = createWebDavService("webdav")
 
         val syncJobs = (1..30).map { i ->
@@ -294,7 +294,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== ERROR HANDLING INTEGRATION ====================
 
     @Test
-    fun `services handle disconnected operations gracefully`() = runBlocking {
+    fun `services handle disconnected operations gracefully`() = runBlocking<Unit> {
         val ftpService = createFtpService("ftp")
         val smbService = createSmbService("smb")
         val webdavService = createWebDavService("webdav")
@@ -311,7 +311,7 @@ class NetworkStorageIntegrationStressTest {
     }
 
     @Test
-    fun `services recover after disconnect and reconnect`() = runBlocking {
+    fun `services recover after disconnect and reconnect`() = runBlocking<Unit> {
         // Use SMB service which always connects successfully in test environments.
         // FTP now makes real TCP socket connections that fail without a running server.
         val smbService = createSmbService("smb")
@@ -338,7 +338,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== PATH OPERATIONS ACROSS SERVICES ====================
 
     @Test
-    fun `path utilities work consistently across services`() = runBlocking {
+    fun `path utilities work consistently across services`() = runBlocking<Unit> {
         val services = listOf(
             createFtpService("ftp"),
             createSmbService("smb"),
@@ -366,7 +366,7 @@ class NetworkStorageIntegrationStressTest {
     // ==================== OPERATION TYPE VERIFICATION ====================
 
     @Test
-    fun `upload operations have correct type`() = runBlocking {
+    fun `upload operations have correct type`() = runBlocking<Unit> {
         val ftpService = createFtpService("ftp")
         ftpService.connect()
 
@@ -377,7 +377,7 @@ class NetworkStorageIntegrationStressTest {
     }
 
     @Test
-    fun `download operations have correct type`() = runBlocking {
+    fun `download operations have correct type`() = runBlocking<Unit> {
         val smbService = createSmbService("smb")
         smbService.connect()
 
@@ -388,7 +388,7 @@ class NetworkStorageIntegrationStressTest {
     }
 
     @Test
-    fun `sync operations have correct type`() = runBlocking {
+    fun `sync operations have correct type`() = runBlocking<Unit> {
         val webdavService = createWebDavService("webdav")
 
         val operations = webdavService.syncFile("/file.txt", false).toList()

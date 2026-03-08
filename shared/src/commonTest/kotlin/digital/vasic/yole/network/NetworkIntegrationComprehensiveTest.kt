@@ -41,7 +41,7 @@ class NetworkIntegrationComprehensiveTest {
     }
 
     @Test
-    fun testEndToEndWorkflow() = runBlocking {
+    fun testEndToEndWorkflow() = runBlocking<Unit> {
         // Complete workflow: create document -> create operation -> simulate progress -> complete
 
         val testDocument = createTestDocument("integration_test.txt", "Integration test content")
@@ -75,7 +75,7 @@ class NetworkIntegrationComprehensiveTest {
     }
 
     @Test
-    fun testCrossServiceDocumentCreation() = runBlocking {
+    fun testCrossServiceDocumentCreation() = runBlocking<Unit> {
         // Test creating documents across multiple service types
 
         val services = listOf("dropbox", "googledrive", "onedrive", "ftp", "sftp")
@@ -111,7 +111,7 @@ class NetworkIntegrationComprehensiveTest {
     }
 
     @Test
-    fun testAuthenticationFlowIntegration() = runBlocking {
+    fun testAuthenticationFlowIntegration() = runBlocking<Unit> {
         // Test complete authentication flow with token management
 
         val testService = "test_network_service"
@@ -147,7 +147,7 @@ class NetworkIntegrationComprehensiveTest {
     }
 
     @Test
-    fun testNetworkDocumentOperations() = runBlocking {
+    fun testNetworkDocumentOperations() = runBlocking<Unit> {
         // Test integration of network document operations
 
         val documents = (1..10).map { index ->
@@ -194,7 +194,7 @@ class NetworkIntegrationComprehensiveTest {
     }
 
     @Test
-    fun testErrorRecoveryAcrossServices() = runBlocking {
+    fun testErrorRecoveryAcrossServices() = runBlocking<Unit> {
         // Test error recovery mechanisms across different network services
 
         val errorScenarios = listOf(
@@ -234,7 +234,7 @@ class NetworkIntegrationComprehensiveTest {
     }
 
     @Test
-    fun testPerformanceUnderLoad() = runBlocking {
+    fun testPerformanceUnderLoad() = runBlocking<Unit> {
         // Test system performance under high load conditions
 
         val loadLevels = listOf(10, 50, 100)
@@ -284,7 +284,7 @@ class NetworkIntegrationComprehensiveTest {
     }
 
     @Test
-    fun testConcurrentOperationsAcrossProtocols() = runBlocking {
+    fun testConcurrentOperationsAcrossProtocols() = runBlocking<Unit> {
         // Test concurrent operations across different network protocols
 
         val protocols = listOf("dropbox", "googledrive", "onedrive", "ftp", "sftp")

@@ -40,7 +40,7 @@ class SmbServiceDeepCoverageTest {
             domain = "TESTDOMAIN",
             username = "admin",
             password = "secret",
-            path = "/root"
+            path = "/"
         )
         service = SmbService(config)
     }
@@ -50,14 +50,14 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `upload emits exactly 4 operations when connected`() = runBlocking {
+    fun `upload emits exactly 4 operations when connected`() = runBlocking<Unit> {
         service.connect()
         val ops = service.uploadFile("/local/a.txt", "/remote/a.txt").toList()
         assertEquals(4, ops.size)
     }
 
     @Test
-    fun `upload first emission is IN_PROGRESS with progress 0`() = runBlocking {
+    fun `upload first emission is IN_PROGRESS with progress 0`() = runBlocking<Unit> {
         service.connect()
         val ops = service.uploadFile("/local/a.txt", "/remote/a.txt").toList()
         assertEquals(NetworkOperation.Status.IN_PROGRESS, ops[0].status)
@@ -65,7 +65,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `upload second emission is IN_PROGRESS with progress 0_5`() = runBlocking {
+    fun `upload second emission is IN_PROGRESS with progress 0_5`() = runBlocking<Unit> {
         service.connect()
         val ops = service.uploadFile("/local/a.txt", "/remote/a.txt").toList()
         assertEquals(NetworkOperation.Status.IN_PROGRESS, ops[1].status)
@@ -73,7 +73,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `upload third emission is IN_PROGRESS with progress 1_0`() = runBlocking {
+    fun `upload third emission is IN_PROGRESS with progress 1_0`() = runBlocking<Unit> {
         service.connect()
         val ops = service.uploadFile("/local/a.txt", "/remote/a.txt").toList()
         assertEquals(NetworkOperation.Status.IN_PROGRESS, ops[2].status)
@@ -81,7 +81,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `upload fourth emission is COMPLETED`() = runBlocking {
+    fun `upload fourth emission is COMPLETED`() = runBlocking<Unit> {
         service.connect()
         val ops = service.uploadFile("/local/a.txt", "/remote/a.txt").toList()
         assertEquals(NetworkOperation.Status.COMPLETED, ops[3].status)
@@ -89,21 +89,21 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `upload startedAt is set on first emission`() = runBlocking {
+    fun `upload startedAt is set on first emission`() = runBlocking<Unit> {
         service.connect()
         val ops = service.uploadFile("/local/a.txt", "/remote/a.txt").toList()
         assertNotNull(ops[0].startedAt)
     }
 
     @Test
-    fun `upload completedAt is set on last emission`() = runBlocking {
+    fun `upload completedAt is set on last emission`() = runBlocking<Unit> {
         service.connect()
         val ops = service.uploadFile("/local/a.txt", "/remote/a.txt").toList()
         assertNotNull(ops[3].completedAt)
     }
 
     @Test
-    fun `uploaded file appears in file tree via getFileInfo`() = runBlocking {
+    fun `uploaded file appears in file tree via getFileInfo`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/a.txt", "/remote/a.txt").toList()
 
@@ -117,7 +117,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `uploaded file has SYNCED sync status`() = runBlocking {
+    fun `uploaded file has SYNCED sync status`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/a.txt", "/remote/a.txt").toList()
 
@@ -127,7 +127,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `uploaded file has default file permissions`() = runBlocking {
+    fun `uploaded file has default file permissions`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/a.txt", "/remote/a.txt").toList()
 
@@ -139,7 +139,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `upload while disconnected emits single FAILED operation`() = runBlocking {
+    fun `upload while disconnected emits single FAILED operation`() = runBlocking<Unit> {
         val ops = service.uploadFile("/local/a.txt", "/remote/a.txt").toList()
         assertEquals(1, ops.size)
         assertEquals(NetworkOperation.Status.FAILED, ops[0].status)
@@ -147,7 +147,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `upload all emissions have type UPLOAD`() = runBlocking {
+    fun `upload all emissions have type UPLOAD`() = runBlocking<Unit> {
         service.connect()
         val ops = service.uploadFile("/local/a.txt", "/remote/a.txt").toList()
         assertTrue(ops.all { it.type == NetworkOperation.Type.UPLOAD })
@@ -158,14 +158,14 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `download emits exactly 4 operations when connected`() = runBlocking {
+    fun `download emits exactly 4 operations when connected`() = runBlocking<Unit> {
         service.connect()
         val ops = service.downloadFile("/remote/b.txt", "/local/b.txt").toList()
         assertEquals(4, ops.size)
     }
 
     @Test
-    fun `download emissions have correct progress sequence`() = runBlocking {
+    fun `download emissions have correct progress sequence`() = runBlocking<Unit> {
         service.connect()
         val ops = service.downloadFile("/remote/b.txt", "/local/b.txt").toList()
         assertEquals(0.0, ops[0].progress)
@@ -175,14 +175,14 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `download final emission is COMPLETED`() = runBlocking {
+    fun `download final emission is COMPLETED`() = runBlocking<Unit> {
         service.connect()
         val ops = service.downloadFile("/remote/b.txt", "/local/b.txt").toList()
         assertEquals(NetworkOperation.Status.COMPLETED, ops[3].status)
     }
 
     @Test
-    fun `download updates sync status to SYNCED`() = runBlocking {
+    fun `download updates sync status to SYNCED`() = runBlocking<Unit> {
         service.connect()
         service.downloadFile("/remote/b.txt", "/local/b.txt").toList()
 
@@ -192,7 +192,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `download while disconnected emits FAILED`() = runBlocking {
+    fun `download while disconnected emits FAILED`() = runBlocking<Unit> {
         val ops = service.downloadFile("/remote/b.txt", "/local/b.txt").toList()
         assertEquals(1, ops.size)
         assertEquals(NetworkOperation.Status.FAILED, ops[0].status)
@@ -200,14 +200,14 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `download all emissions have type DOWNLOAD`() = runBlocking {
+    fun `download all emissions have type DOWNLOAD`() = runBlocking<Unit> {
         service.connect()
         val ops = service.downloadFile("/remote/b.txt", "/local/b.txt").toList()
         assertTrue(ops.all { it.type == NetworkOperation.Type.DOWNLOAD })
     }
 
     @Test
-    fun `download startedAt is set`() = runBlocking {
+    fun `download startedAt is set`() = runBlocking<Unit> {
         service.connect()
         val ops = service.downloadFile("/remote/b.txt", "/local/b.txt").toList()
         assertNotNull(ops[0].startedAt)
@@ -218,7 +218,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `copy existing file creates destination with correct properties`() = runBlocking {
+    fun `copy existing file creates destination with correct properties`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/src.txt", "/src.txt").toList()
 
@@ -233,7 +233,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `copy existing file leaves source intact`() = runBlocking {
+    fun `copy existing file leaves source intact`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/src.txt", "/src.txt").toList()
         service.copyFile("/src.txt", "/dest.txt")
@@ -243,7 +243,8 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `copy non-existing file creates placeholder at destination`() = runBlocking {
+    fun `copy non-existing file creates placeholder at destination`() = runBlocking<Unit> {
+        service.connect()
         val result = service.copyFile("/nonexistent.txt", "/placeholder.txt")
         assertTrue(result.isSuccess)
 
@@ -255,7 +256,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `copy sets sync status to SYNCED for destination`() = runBlocking {
+    fun `copy sets sync status to SYNCED for destination`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/f.txt", "/f.txt").toList()
         service.copyFile("/f.txt", "/f_copy.txt")
@@ -265,7 +266,8 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `copy auto-creates parent folders for deep destination`() = runBlocking {
+    fun `copy auto-creates parent folders for deep destination`() = runBlocking<Unit> {
+        service.connect()
         service.copyFile("/src.txt", "/deep/nested/copy.txt")
 
         val parentExists = service.exists("/deep/nested").getOrThrow()
@@ -279,7 +281,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `delete folder removes all children`() = runBlocking {
+    fun `delete folder removes all children`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/c.txt", "/a/b/c.txt").toList()
         service.uploadFile("/local/d.txt", "/a/b/d.txt").toList()
@@ -294,7 +296,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `delete folder keeps sibling files`() = runBlocking {
+    fun `delete folder keeps sibling files`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/c.txt", "/a/b/c.txt").toList()
         service.uploadFile("/local/e.txt", "/a/e.txt").toList()
@@ -305,7 +307,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `delete cleans up sync status for removed paths`() = runBlocking {
+    fun `delete cleans up sync status for removed paths`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/x.txt", "/dir/x.txt").toList()
         service.uploadFile("/local/y.txt", "/dir/y.txt").toList()
@@ -318,7 +320,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `delete cleans up cache for removed paths`() = runBlocking {
+    fun `delete cleans up cache for removed paths`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/x.txt", "/dir/x.txt").toList()
         service.addToCache("/dir/x.txt", 5)
@@ -330,7 +332,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `delete single file succeeds`() = runBlocking {
+    fun `delete single file succeeds`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/f.txt", "/single.txt").toList()
 
@@ -344,7 +346,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `createFolder auto-creates parent folders`() = runBlocking {
+    fun `createFolder auto-creates parent folders`() = runBlocking<Unit> {
         val result = service.createFolder("/deep/nested/folder")
         assertTrue(result.isSuccess)
 
@@ -354,13 +356,13 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `createFolder returns document with isFolder true`() = runBlocking {
+    fun `createFolder returns document with isFolder true`() = runBlocking<Unit> {
         val doc = service.createFolder("/myfolder").getOrThrow()
         assertTrue(doc.isFolder)
     }
 
     @Test
-    fun `createFolder returns document with EXECUTE permission`() = runBlocking {
+    fun `createFolder returns document with EXECUTE permission`() = runBlocking<Unit> {
         val doc = service.createFolder("/myfolder").getOrThrow()
         assertTrue(doc.permissions.contains(DocumentPermission.EXECUTE))
         assertTrue(doc.permissions.contains(DocumentPermission.READ))
@@ -369,14 +371,15 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `createFolder sets sync status to SYNCED`() = runBlocking {
+    fun `createFolder sets sync status to SYNCED`() = runBlocking<Unit> {
         service.createFolder("/syncfolder")
         val statusMap = service.getSyncStatus("/syncfolder").first()
         assertEquals(SyncStatus.SYNCED, statusMap["/syncfolder"])
     }
 
     @Test
-    fun `createFolder parent folders are also folders`() = runBlocking {
+    fun `createFolder parent folders are also folders`() = runBlocking<Unit> {
+        service.connect()
         service.createFolder("/p1/p2/target")
 
         val p1 = service.getFileInfo("/p1").getOrThrow()
@@ -386,7 +389,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `createFolder has correct name`() = runBlocking {
+    fun `createFolder has correct name`() = runBlocking<Unit> {
         val doc = service.createFolder("/path/to/newfolder").getOrThrow()
         assertEquals("newfolder", doc.name)
         assertEquals("/path/to/newfolder", doc.path)
@@ -397,7 +400,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `rename file changes path and name`() = runBlocking {
+    fun `rename file changes path and name`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/old.txt", "/docs/old.txt").toList()
 
@@ -413,7 +416,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `rename folder updates all children paths`() = runBlocking {
+    fun `rename folder updates all children paths`() = runBlocking<Unit> {
         service.connect()
         service.createFolder("/parent/oldfolder")
         service.uploadFile("/local/child.txt", "/parent/oldfolder/child.txt").toList()
@@ -427,7 +430,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `rename migrates sync status to new path`() = runBlocking {
+    fun `rename migrates sync status to new path`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/s.txt", "/s.txt").toList()
 
@@ -439,13 +442,13 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `rename non-existing file succeeds silently`() = runBlocking {
+    fun `rename non-existing file succeeds silently`() = runBlocking<Unit> {
         val result = service.renameFile("/no-such-file.txt", "whatever.txt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `rename file at root level`() = runBlocking {
+    fun `rename file at root level`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/root.txt", "/root.txt").toList()
 
@@ -460,7 +463,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `move file changes path`() = runBlocking {
+    fun `move file changes path`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/m.txt", "/a/file.txt").toList()
 
@@ -472,7 +475,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `move file source no longer exists`() = runBlocking {
+    fun `move file source no longer exists`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/m.txt", "/a/file.txt").toList()
 
@@ -483,7 +486,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `move folder with children updates all paths`() = runBlocking {
+    fun `move folder with children updates all paths`() = runBlocking<Unit> {
         service.connect()
         service.createFolder("/src/folder")
         service.uploadFile("/local/c1.txt", "/src/folder/c1.txt").toList()
@@ -502,7 +505,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `move migrates cache entries to new path`() = runBlocking {
+    fun `move migrates cache entries to new path`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/m.txt", "/cached.txt").toList()
         service.addToCache("/cached.txt", 3)
@@ -518,7 +521,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `move migrates sync status`() = runBlocking {
+    fun `move migrates sync status`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/m.txt", "/before.txt").toList()
 
@@ -530,7 +533,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `move non-existing source creates document at destination`() = runBlocking {
+    fun `move non-existing source creates document at destination`() = runBlocking<Unit> {
         val result = service.moveFile("/nonexist.txt", "/created.txt")
         assertTrue(result.isSuccess)
         val doc = result.getOrThrow()
@@ -541,7 +544,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `move auto-creates parent folders at destination`() = runBlocking {
+    fun `move auto-creates parent folders at destination`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/m.txt", "/file.txt").toList()
 
@@ -556,7 +559,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `getFileInfo for uploaded file returns actual document`() = runBlocking {
+    fun `getFileInfo for uploaded file returns actual document`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/x.txt", "/uploaded.txt").toList()
 
@@ -569,7 +572,8 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getFileInfo for non-existing path returns synthesized document`() = runBlocking {
+    fun `getFileInfo for non-existing path returns synthesized document`() = runBlocking<Unit> {
+        service.connect()
         val doc = service.getFileInfo("/nowhere/phantom.txt").getOrThrow()
         assertEquals("/nowhere/phantom.txt", doc.path)
         assertEquals("phantom.txt", doc.name)
@@ -583,7 +587,8 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getFileInfo for created folder returns folder document`() = runBlocking {
+    fun `getFileInfo for created folder returns folder document`() = runBlocking<Unit> {
+        service.connect()
         service.createFolder("/myfolder")
         val doc = service.getFileInfo("/myfolder").getOrThrow()
         assertTrue(doc.isFolder)
@@ -595,7 +600,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `exists returns true for uploaded file`() = runBlocking {
+    fun `exists returns true for uploaded file`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/e.txt", "/existing.txt").toList()
 
@@ -603,18 +608,18 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `exists returns false for non-existing file`() = runBlocking {
+    fun `exists returns false for non-existing file`() = runBlocking<Unit> {
         assertFalse(service.exists("/nonexisting.txt").getOrThrow())
     }
 
     @Test
-    fun `exists returns true for created folder`() = runBlocking {
+    fun `exists returns true for created folder`() = runBlocking<Unit> {
         service.createFolder("/folder")
         assertTrue(service.exists("/folder").getOrThrow())
     }
 
     @Test
-    fun `exists returns true for auto-created parent folder`() = runBlocking {
+    fun `exists returns true for auto-created parent folder`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/x.txt", "/auto/parent/file.txt").toList()
         assertTrue(service.exists("/auto/parent").getOrThrow())
@@ -626,7 +631,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `addToCache creates new entry`() = runBlocking {
+    fun `addToCache creates new entry`() = runBlocking<Unit> {
         service.addToCache("/file.txt", 5)
 
         val entries = service.getCacheEntries("/file.txt").first()
@@ -635,7 +640,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `addToCache for existing entry updates priority and access`() = runBlocking {
+    fun `addToCache for existing entry updates priority and access`() = runBlocking<Unit> {
         service.addToCache("/file.txt", 1)
         service.addToCache("/file.txt", 10)
 
@@ -646,7 +651,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getCacheEntries with path filter returns matching entries`() = runBlocking {
+    fun `getCacheEntries with path filter returns matching entries`() = runBlocking<Unit> {
         service.addToCache("/dir/a.txt", 1)
         service.addToCache("/dir/b.txt", 2)
         service.addToCache("/other/c.txt", 3)
@@ -657,7 +662,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getCacheEntries without path filter returns all entries`() = runBlocking {
+    fun `getCacheEntries without path filter returns all entries`() = runBlocking<Unit> {
         service.addToCache("/a.txt", 1)
         service.addToCache("/b.txt", 2)
         service.addToCache("/c.txt", 3)
@@ -667,7 +672,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `removeFromCache removes specific entry`() = runBlocking {
+    fun `removeFromCache removes specific entry`() = runBlocking<Unit> {
         service.addToCache("/keep.txt", 1)
         service.addToCache("/remove.txt", 2)
 
@@ -679,7 +684,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `clearCache removes all entries`() = runBlocking {
+    fun `clearCache removes all entries`() = runBlocking<Unit> {
         service.addToCache("/a.txt", 1)
         service.addToCache("/b.txt", 2)
         service.addToCache("/c.txt", 3)
@@ -691,7 +696,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `addToCache uses file size from tree when file is uploaded`() = runBlocking {
+    fun `addToCache uses file size from tree when file is uploaded`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/f.txt", "/sized.txt").toList()
         service.addToCache("/sized.txt", 1)
@@ -703,7 +708,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `removeFromCache for non-existing entry succeeds`() = runBlocking {
+    fun `removeFromCache for non-existing entry succeeds`() = runBlocking<Unit> {
         val result = service.removeFromCache("/doesnt/exist.txt")
         assertTrue(result.isSuccess)
     }
@@ -713,7 +718,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `syncFile transitions status from SYNCING to SYNCED`() = runBlocking {
+    fun `syncFile transitions status from SYNCING to SYNCED`() = runBlocking<Unit> {
         val ops = service.syncFile("/file.txt", false).toList()
 
         assertEquals(4, ops.size)
@@ -727,7 +732,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `syncFile updates sync status map to SYNCED`() = runBlocking {
+    fun `syncFile updates sync status map to SYNCED`() = runBlocking<Unit> {
         service.syncFile("/synced.txt", false).toList()
 
         val statusMap = service.getSyncStatus("/synced.txt").first()
@@ -735,19 +740,19 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `syncFile has correct operation type SYNC`() = runBlocking {
+    fun `syncFile has correct operation type SYNC`() = runBlocking<Unit> {
         val ops = service.syncFile("/file.txt", false).toList()
         assertTrue(ops.all { it.type == NetworkOperation.Type.SYNC })
     }
 
     @Test
-    fun `syncFile with forceSync flag succeeds`() = runBlocking {
+    fun `syncFile with forceSync flag succeeds`() = runBlocking<Unit> {
         val ops = service.syncFile("/file.txt", true).toList()
         assertEquals(NetworkOperation.Status.COMPLETED, ops.last().status)
     }
 
     @Test
-    fun `syncAll marks all tracked files as SYNCED`() = runBlocking {
+    fun `syncAll marks all tracked files as SYNCED`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/a.txt", "/a.txt").toList()
         service.uploadFile("/local/b.txt", "/b.txt").toList()
@@ -760,7 +765,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `syncAll returns empty flow`() = runBlocking {
+    fun `syncAll returns empty flow`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/a.txt", "/a.txt").toList()
 
@@ -769,13 +774,13 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `syncAll with forceSync returns empty flow`() = runBlocking {
+    fun `syncAll with forceSync returns empty flow`() = runBlocking<Unit> {
         val ops = service.syncAll(true).toList()
         assertTrue(ops.isEmpty())
     }
 
     @Test
-    fun `getSyncStatus with path filter returns matching entries`() = runBlocking {
+    fun `getSyncStatus with path filter returns matching entries`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/a.txt", "/dir/a.txt").toList()
         service.uploadFile("/local/b.txt", "/dir/b.txt").toList()
@@ -788,7 +793,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getSyncStatus without filter returns all entries`() = runBlocking {
+    fun `getSyncStatus without filter returns all entries`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/a.txt", "/dir/a.txt").toList()
         service.uploadFile("/local/c.txt", "/other/c.txt").toList()
@@ -804,7 +809,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `getRecentChanges returns uploaded files after since timestamp`() = runBlocking {
+    fun `getRecentChanges returns uploaded files after since timestamp`() = runBlocking<Unit> {
         val before = Clock.System.now()
 
         service.connect()
@@ -816,7 +821,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getRecentChanges filters by path prefix`() = runBlocking {
+    fun `getRecentChanges filters by path prefix`() = runBlocking<Unit> {
         val before = Clock.System.now()
         service.connect()
         service.uploadFile("/local/a.txt", "/dir1/a.txt").toList()
@@ -827,7 +832,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getRecentChanges with null path returns all changes`() = runBlocking {
+    fun `getRecentChanges with null path returns all changes`() = runBlocking<Unit> {
         val before = Clock.System.now()
         service.connect()
         service.uploadFile("/local/a.txt", "/x.txt").toList()
@@ -838,7 +843,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getRecentChanges excludes files modified before since`() = runBlocking {
+    fun `getRecentChanges excludes files modified before since`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/old.txt", "/old.txt").toList()
 
@@ -852,7 +857,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `getQuotaInfo with empty tree returns 100MB default used`() = runBlocking {
+    fun `getQuotaInfo with empty tree returns 100MB default used`() = runBlocking<Unit> {
         val quota = service.getQuotaInfo().getOrThrow()
         assertEquals(1000000000L, quota.totalSpace)
         assertEquals(100000000L, quota.usedSpace)
@@ -863,19 +868,19 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getQuotaInfo total space is 1GB`() = runBlocking {
+    fun `getQuotaInfo total space is 1GB`() = runBlocking<Unit> {
         val quota = service.getQuotaInfo().getOrThrow()
         assertEquals(1000000000L, quota.totalSpace)
     }
 
     @Test
-    fun `getQuotaInfo available plus used equals total`() = runBlocking {
+    fun `getQuotaInfo available plus used equals total`() = runBlocking<Unit> {
         val quota = service.getQuotaInfo().getOrThrow()
         assertEquals(quota.totalSpace, quota.usedSpace + quota.availableSpace)
     }
 
     @Test
-    fun `getQuotaInfo usagePercentage is consistent`() = runBlocking {
+    fun `getQuotaInfo usagePercentage is consistent`() = runBlocking<Unit> {
         val quota = service.getQuotaInfo().getOrThrow()
         val expected = quota.usedSpace.toDouble() / quota.totalSpace.toDouble()
         assertEquals(expected, quota.usagePercentage)
@@ -886,7 +891,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `listFiles returns failure when disconnected`() = runBlocking {
+    fun `listFiles returns failure when disconnected`() = runBlocking<Unit> {
         val results = service.listFiles("/").toList()
         assertEquals(1, results.size)
         assertTrue(results[0].isFailure)
@@ -896,7 +901,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `listFiles returns ListFailed when connected`() = runBlocking {
+    fun `listFiles returns ListFailed when connected`() = runBlocking<Unit> {
         service.connect()
         val results = service.listFiles("/test").toList()
         assertEquals(1, results.size)
@@ -911,7 +916,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `searchFiles always returns failure`() = runBlocking {
+    fun `searchFiles always returns failure`() = runBlocking<Unit> {
         val results = service.searchFiles("query", null, false).toList()
         assertEquals(1, results.size)
         assertTrue(results[0].isFailure)
@@ -919,7 +924,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `searchFiles with path and includeContent returns failure`() = runBlocking {
+    fun `searchFiles with path and includeContent returns failure`() = runBlocking<Unit> {
         val results = service.searchFiles("query", "/dir", true).toList()
         assertTrue(results[0].isFailure)
     }
@@ -929,7 +934,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `getActiveOperations returns empty list when no operations`() = runBlocking {
+    fun `getActiveOperations returns empty list when no operations`() = runBlocking<Unit> {
         val ops = service.getActiveOperations().first()
         assertTrue(ops.isEmpty())
     }
@@ -939,19 +944,19 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `cancelOperation returns success for nonexistent id`() = runBlocking {
+    fun `cancelOperation returns success for nonexistent id`() = runBlocking<Unit> {
         val result = service.cancelOperation(999L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `pauseOperation returns success for nonexistent id`() = runBlocking {
+    fun `pauseOperation returns success for nonexistent id`() = runBlocking<Unit> {
         val result = service.pauseOperation(999L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `resumeOperation returns success for nonexistent id`() = runBlocking {
+    fun `resumeOperation returns success for nonexistent id`() = runBlocking<Unit> {
         val result = service.resumeOperation(999L)
         assertTrue(result.isSuccess)
     }
@@ -961,7 +966,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `testConnection when connected returns true without disconnecting`() = runBlocking {
+    fun `testConnection when connected returns true without disconnecting`() = runBlocking<Unit> {
         service.connect()
         assertTrue(service.isOnline)
 
@@ -973,7 +978,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `testConnection when disconnected performs connect-disconnect cycle`() = runBlocking {
+    fun `testConnection when disconnected performs connect-disconnect cycle`() = runBlocking<Unit> {
         assertFalse(service.isOnline)
 
         val result = service.testConnection()
@@ -989,31 +994,31 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `getStorageInfo returns correct id`() = runBlocking {
+    fun `getStorageInfo returns correct id`() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertEquals("smb_deep-test", info.id)
     }
 
     @Test
-    fun `getStorageInfo returns correct name`() = runBlocking {
+    fun `getStorageInfo returns correct name`() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertEquals("deep-test", info.name)
     }
 
     @Test
-    fun `getStorageInfo returns SMB type`() = runBlocking {
+    fun `getStorageInfo returns SMB type`() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertEquals(StorageType.SMB, info.type)
     }
 
     @Test
-    fun `getStorageInfo location includes host share and path`() = runBlocking {
+    fun `getStorageInfo location includes host share and path`() = runBlocking<Unit> {
         val info = service.getStorageInfo()
-        assertEquals("smb://10.0.0.1/data/root", info.location)
+        assertEquals("smb://10.0.0.1/data/", info.location)
     }
 
     @Test
-    fun `getStorageInfo isOnline reflects connection state`() = runBlocking {
+    fun `getStorageInfo isOnline reflects connection state`() = runBlocking<Unit> {
         assertFalse(service.getStorageInfo().isOnline)
         service.connect()
         assertTrue(service.getStorageInfo().isOnline)
@@ -1022,7 +1027,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getStorageInfo lastSync is not null`() = runBlocking {
+    fun `getStorageInfo lastSync is not null`() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertNotNull(info.lastSync)
     }
@@ -1032,7 +1037,7 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `upload creates parent folders in file tree`() = runBlocking {
+    fun `upload creates parent folders in file tree`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/f.txt", "/p1/p2/p3/file.txt").toList()
 
@@ -1045,7 +1050,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `connect then disconnect then upload fails`() = runBlocking {
+    fun `connect then disconnect then upload fails`() = runBlocking<Unit> {
         service.connect()
         service.disconnect()
 
@@ -1055,7 +1060,7 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `multiple uploads to same path overwrites in tree`() = runBlocking {
+    fun `multiple uploads to same path overwrites in tree`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/v1.txt", "/overwrite.txt").toList()
         service.uploadFile("/local/v2.txt", "/overwrite.txt").toList()
@@ -1100,7 +1105,7 @@ class SmbServiceDeepCoverageTest {
 
     @Test
     fun `rootPath comes from config path`() {
-        assertEquals("/root", service.rootPath)
+        assertEquals("/", service.rootPath)
     }
 
     @Test
@@ -1109,20 +1114,20 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `connect sets isOnline to true`() = runBlocking {
+    fun `connect sets isOnline to true`() = runBlocking<Unit> {
         service.connect()
         assertTrue(service.isOnline)
     }
 
     @Test
-    fun `disconnect sets isOnline to false`() = runBlocking {
+    fun `disconnect sets isOnline to false`() = runBlocking<Unit> {
         service.connect()
         service.disconnect()
         assertFalse(service.isOnline)
     }
 
     @Test
-    fun `copy then delete source preserves destination`() = runBlocking {
+    fun `copy then delete source preserves destination`() = runBlocking<Unit> {
         service.connect()
         service.uploadFile("/local/s.txt", "/s.txt").toList()
         service.copyFile("/s.txt", "/d.txt")

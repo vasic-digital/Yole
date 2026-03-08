@@ -182,49 +182,49 @@ class DropboxServiceDeepTest {
     // ── 5. getStorageInfo() ─────────────────────────────────────────
 
     @Test
-    fun testStorageInfoId() = runBlocking {
+    fun testStorageInfoId() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertEquals("dropbox_test-dropbox", info.id)
     }
 
     @Test
-    fun testStorageInfoName() = runBlocking {
+    fun testStorageInfoName() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertEquals("test-dropbox", info.name)
     }
 
     @Test
-    fun testStorageInfoType() = runBlocking {
+    fun testStorageInfoType() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertEquals(StorageType.DROPBOX, info.type)
     }
 
     @Test
-    fun testStorageInfoLocation() = runBlocking {
+    fun testStorageInfoLocation() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertEquals("dropbox:///test", info.location)
     }
 
     @Test
-    fun testStorageInfoIsOfflineInitially() = runBlocking {
+    fun testStorageInfoIsOfflineInitially() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertFalse(info.isOnline)
     }
 
     @Test
-    fun testStorageInfoSupportsFolders() = runBlocking {
+    fun testStorageInfoSupportsFolders() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertTrue(info.supportsFolders)
     }
 
     @Test
-    fun testStorageInfoSupportsMetadata() = runBlocking {
+    fun testStorageInfoSupportsMetadata() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertTrue(info.supportsMetadata)
     }
 
     @Test
-    fun testStorageInfoLastSyncNotNull() = runBlocking {
+    fun testStorageInfoLastSyncNotNull() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertNotNull(info.lastSync, "lastSync must be populated")
     }
@@ -232,7 +232,7 @@ class DropboxServiceDeepTest {
     // ── 6. getActiveOperations() ────────────────────────────────────
 
     @Test
-    fun testActiveOperationsEmptyInitially() = runBlocking {
+    fun testActiveOperationsEmptyInitially() = runBlocking<Unit> {
         val ops = service.getActiveOperations().first()
         assertTrue(ops.isEmpty(), "No operations should be active on a fresh service")
     }
@@ -240,19 +240,19 @@ class DropboxServiceDeepTest {
     // ── 7. cancelOperation / pauseOperation / resumeOperation ──────
 
     @Test
-    fun testCancelNonExistentOperationSucceeds() = runBlocking {
+    fun testCancelNonExistentOperationSucceeds() = runBlocking<Unit> {
         val result = service.cancelOperation(99999L)
         assertTrue(result.isSuccess, "Cancelling a non-existent operation must succeed gracefully")
     }
 
     @Test
-    fun testPauseNonExistentOperationSucceeds() = runBlocking {
+    fun testPauseNonExistentOperationSucceeds() = runBlocking<Unit> {
         val result = service.pauseOperation(99999L)
         assertTrue(result.isSuccess, "Pausing a non-existent operation must succeed gracefully")
     }
 
     @Test
-    fun testResumeNonExistentOperationSucceeds() = runBlocking {
+    fun testResumeNonExistentOperationSucceeds() = runBlocking<Unit> {
         val result = service.resumeOperation(99999L)
         assertTrue(result.isSuccess, "Resuming a non-existent operation must succeed gracefully")
     }
@@ -260,13 +260,13 @@ class DropboxServiceDeepTest {
     // ── 8. getCacheEntries ──────────────────────────────────────────
 
     @Test
-    fun testCacheEntriesEmptyInitially() = runBlocking {
+    fun testCacheEntriesEmptyInitially() = runBlocking<Unit> {
         val entries = service.getCacheEntries().first()
         assertTrue(entries.isEmpty(), "Cache must be empty on a fresh service")
     }
 
     @Test
-    fun testCacheEntriesWithPathFilterEmptyInitially() = runBlocking {
+    fun testCacheEntriesWithPathFilterEmptyInitially() = runBlocking<Unit> {
         val entries = service.getCacheEntries("/some/path").first()
         assertTrue(entries.isEmpty())
     }
@@ -274,13 +274,13 @@ class DropboxServiceDeepTest {
     // ── 9. addToCache / removeFromCache / clearCache ────────────────
 
     @Test
-    fun testAddToCacheSucceeds() = runBlocking {
+    fun testAddToCacheSucceeds() = runBlocking<Unit> {
         val result = service.addToCache("/doc.txt", priority = 50)
         assertTrue(result.isSuccess, "Adding to cache must succeed")
     }
 
     @Test
-    fun testAddToCacheCreatesEntry() = runBlocking {
+    fun testAddToCacheCreatesEntry() = runBlocking<Unit> {
         service.addToCache("/doc.txt", priority = 50)
         val entries = service.getCacheEntries().first()
         assertEquals(1, entries.size)
@@ -288,28 +288,28 @@ class DropboxServiceDeepTest {
     }
 
     @Test
-    fun testAddToCacheSetsLocalPath() = runBlocking {
+    fun testAddToCacheSetsLocalPath() = runBlocking<Unit> {
         service.addToCache("/doc.txt")
         val entry = service.getCacheEntries().first().first()
         assertTrue(entry.localPath.contains("dropbox"), "Local path must contain service identifier")
     }
 
     @Test
-    fun testAddToCachePriority() = runBlocking {
+    fun testAddToCachePriority() = runBlocking<Unit> {
         service.addToCache("/doc.txt", priority = 42)
         val entry = service.getCacheEntries().first().first()
         assertEquals(42, entry.priority)
     }
 
     @Test
-    fun testRemoveFromCacheSucceeds() = runBlocking {
+    fun testRemoveFromCacheSucceeds() = runBlocking<Unit> {
         service.addToCache("/doc.txt")
         val result = service.removeFromCache("/doc.txt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun testRemoveFromCacheClearsEntry() = runBlocking {
+    fun testRemoveFromCacheClearsEntry() = runBlocking<Unit> {
         service.addToCache("/doc.txt")
         service.removeFromCache("/doc.txt")
         val entries = service.getCacheEntries().first()
@@ -317,13 +317,13 @@ class DropboxServiceDeepTest {
     }
 
     @Test
-    fun testRemoveNonExistentCacheEntrySucceeds() = runBlocking {
+    fun testRemoveNonExistentCacheEntrySucceeds() = runBlocking<Unit> {
         val result = service.removeFromCache("/nonexistent.txt")
         assertTrue(result.isSuccess, "Removing a non-existent cache entry must succeed")
     }
 
     @Test
-    fun testClearCacheSucceeds() = runBlocking {
+    fun testClearCacheSucceeds() = runBlocking<Unit> {
         service.addToCache("/a.txt")
         service.addToCache("/b.txt")
         val result = service.clearCache()
@@ -331,7 +331,7 @@ class DropboxServiceDeepTest {
     }
 
     @Test
-    fun testClearCacheRemovesAllEntries() = runBlocking {
+    fun testClearCacheRemovesAllEntries() = runBlocking<Unit> {
         service.addToCache("/a.txt")
         service.addToCache("/b.txt")
         service.clearCache()
@@ -340,13 +340,13 @@ class DropboxServiceDeepTest {
     }
 
     @Test
-    fun testClearEmptyCacheSucceeds() = runBlocking {
+    fun testClearEmptyCacheSucceeds() = runBlocking<Unit> {
         val result = service.clearCache()
         assertTrue(result.isSuccess, "Clearing an already-empty cache must succeed")
     }
 
     @Test
-    fun testCacheEntriesFilteredByPath() = runBlocking {
+    fun testCacheEntriesFilteredByPath() = runBlocking<Unit> {
         service.addToCache("/docs/a.txt")
         service.addToCache("/docs/b.txt")
         service.addToCache("/images/c.png")
@@ -357,13 +357,13 @@ class DropboxServiceDeepTest {
     // ── 10. getSyncStatus ───────────────────────────────────────────
 
     @Test
-    fun testSyncStatusEmptyInitially() = runBlocking {
+    fun testSyncStatusEmptyInitially() = runBlocking<Unit> {
         val statuses = service.getSyncStatus().first()
         assertTrue(statuses.isEmpty(), "Sync status map must be empty on a fresh service")
     }
 
     @Test
-    fun testSyncStatusWithPathFilterEmptyInitially() = runBlocking {
+    fun testSyncStatusWithPathFilterEmptyInitially() = runBlocking<Unit> {
         val statuses = service.getSyncStatus("/docs").first()
         assertTrue(statuses.isEmpty())
     }
@@ -371,7 +371,7 @@ class DropboxServiceDeepTest {
     // ── 11. exists() on disconnected service ────────────────────────
 
     @Test
-    fun testExistsOnDisconnectedServiceHandledGracefully() = runBlocking {
+    fun testExistsOnDisconnectedServiceHandledGracefully() = runBlocking<Unit> {
         val result = service.exists("/some/file.txt")
         // exists() delegates to getFileInfo().map{true}.recover{false}
         assertTrue(result.isSuccess || result.isFailure,
@@ -381,7 +381,7 @@ class DropboxServiceDeepTest {
     // ── 12. Multiple cache additions overwrite same key ─────────────
 
     @Test
-    fun testAddToCacheSamePathOverwrites() = runBlocking {
+    fun testAddToCacheSamePathOverwrites() = runBlocking<Unit> {
         service.addToCache("/doc.txt", priority = 10)
         service.addToCache("/doc.txt", priority = 90)
         val entries = service.getCacheEntries().first()
@@ -406,7 +406,7 @@ class DropboxServiceDeepTest {
     }
 
     @Test
-    fun testStorageInfoLocationWithBlankRoot() = runBlocking {
+    fun testStorageInfoLocationWithBlankRoot() = runBlocking<Unit> {
         val blankConfig = StorageConfig.DropboxConfig(
             name = "blank-root",
             accessToken = "token",

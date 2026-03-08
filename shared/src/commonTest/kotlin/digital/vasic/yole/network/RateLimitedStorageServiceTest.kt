@@ -439,7 +439,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun connectDelegatesAndForwardsSuccess() = runBlocking {
+    fun connectDelegatesAndForwardsSuccess() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.connect()
         assertTrue(result.isSuccess)
@@ -447,7 +447,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun connectForwardsFailure() = runBlocking {
+    fun connectForwardsFailure() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         mock.connectResult = Result.failure(RuntimeException("connection refused"))
         val result = service.connect()
@@ -456,7 +456,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun disconnectDelegatesAndForwardsSuccess() = runBlocking {
+    fun disconnectDelegatesAndForwardsSuccess() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.disconnect()
         assertTrue(result.isSuccess)
@@ -464,7 +464,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun disconnectForwardsFailure() = runBlocking {
+    fun disconnectForwardsFailure() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         mock.disconnectResult = Result.failure(IllegalStateException("not connected"))
         val result = service.disconnect()
@@ -477,7 +477,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun getStorageInfoDelegatesAndForwardsResult() = runBlocking {
+    fun getStorageInfoDelegatesAndForwardsResult() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val info = service.getStorageInfo()
         assertEquals("storage-1", info.id)
@@ -487,7 +487,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun testConnectionDelegatesAndForwardsTrue() = runBlocking {
+    fun testConnectionDelegatesAndForwardsTrue() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.testConnection()
         assertTrue(result.isSuccess)
@@ -496,7 +496,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun testConnectionForwardsFalse() = runBlocking {
+    fun testConnectionForwardsFalse() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         mock.testConnectionResult = Result.success(false)
         val result = service.testConnection()
@@ -508,7 +508,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun listFilesDelegatesAndForwardsResults() = runBlocking {
+    fun listFilesDelegatesAndForwardsResults() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val results = service.listFiles("/documents").toList()
         assertEquals(1, results.size)
@@ -520,7 +520,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun listFilesForwardsFailure() = runBlocking {
+    fun listFilesForwardsFailure() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         mock.listFilesResult = Result.failure(RuntimeException("access denied"))
         val results = service.listFiles("/secret").toList()
@@ -533,7 +533,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun downloadFileDelegatesWithCorrectArguments() = runBlocking {
+    fun downloadFileDelegatesWithCorrectArguments() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val flow = service.downloadFile("/remote/file.txt", "/local/file.txt")
         val ops = flow.toList()
@@ -545,7 +545,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun uploadFileDelegatesWithCorrectArguments() = runBlocking {
+    fun uploadFileDelegatesWithCorrectArguments() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val flow = service.uploadFile("/local/upload.txt", "/remote/upload.txt")
         val ops = flow.toList()
@@ -561,7 +561,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun deleteFileDelegatesAndForwardsSuccess() = runBlocking {
+    fun deleteFileDelegatesAndForwardsSuccess() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.deleteFile("/trash/old.txt")
         assertTrue(result.isSuccess)
@@ -570,7 +570,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun deleteFileForwardsFailure() = runBlocking {
+    fun deleteFileForwardsFailure() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         mock.deleteFileResult = Result.failure(RuntimeException("file not found"))
         val result = service.deleteFile("/missing.txt")
@@ -583,7 +583,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun createFolderDelegatesAndReturnsDocument() = runBlocking {
+    fun createFolderDelegatesAndReturnsDocument() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.createFolder("/new/folder")
         assertTrue(result.isSuccess)
@@ -598,7 +598,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun renameFileDelegatesWithCorrectArguments() = runBlocking {
+    fun renameFileDelegatesWithCorrectArguments() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.renameFile("/old-name.txt", "new-name.txt")
         assertTrue(result.isSuccess)
@@ -612,7 +612,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun moveFileDelegatesAndForwardsDocument() = runBlocking {
+    fun moveFileDelegatesAndForwardsDocument() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.moveFile("/source/file.txt", "/dest/file.txt")
         assertTrue(result.isSuccess)
@@ -627,7 +627,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun copyFileDelegatesWithCorrectArguments() = runBlocking {
+    fun copyFileDelegatesWithCorrectArguments() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.copyFile("/original.txt", "/copy.txt")
         assertTrue(result.isSuccess)
@@ -641,7 +641,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun getFileInfoDelegatesAndReturnsDocument() = runBlocking {
+    fun getFileInfoDelegatesAndReturnsDocument() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.getFileInfo("/data/file.txt")
         assertTrue(result.isSuccess)
@@ -656,7 +656,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun getActiveOperationsDelegatesToUnderlyingService() = runBlocking {
+    fun getActiveOperationsDelegatesToUnderlyingService() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val ops = service.getActiveOperations().toList()
         assertEquals(1, ops.size)
@@ -669,7 +669,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun cancelOperationDelegatesToUnderlyingService() = runBlocking {
+    fun cancelOperationDelegatesToUnderlyingService() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.cancelOperation(42L)
         assertTrue(result.isSuccess)
@@ -682,7 +682,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun pauseOperationDelegatesToUnderlyingService() = runBlocking {
+    fun pauseOperationDelegatesToUnderlyingService() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.pauseOperation(77L)
         assertTrue(result.isSuccess)
@@ -695,7 +695,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun resumeOperationDelegatesToUnderlyingService() = runBlocking {
+    fun resumeOperationDelegatesToUnderlyingService() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.resumeOperation(99L)
         assertTrue(result.isSuccess)
@@ -708,7 +708,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun getCacheEntriesDelegatesToUnderlyingService() = runBlocking {
+    fun getCacheEntriesDelegatesToUnderlyingService() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val entries = service.getCacheEntries("/cache/path").toList()
         assertEquals(1, entries.size)
@@ -718,7 +718,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun getCacheEntriesPassesNullPath() = runBlocking {
+    fun getCacheEntriesPassesNullPath() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         service.getCacheEntries(null).toList()
         assertNull(mock.lastGetCacheEntriesPath)
@@ -729,7 +729,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun addToCacheDelegatesWithCorrectArguments() = runBlocking {
+    fun addToCacheDelegatesWithCorrectArguments() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.addToCache("/important.txt", 200)
         assertTrue(result.isSuccess)
@@ -743,7 +743,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun removeFromCacheDelegatesWithCorrectPath() = runBlocking {
+    fun removeFromCacheDelegatesWithCorrectPath() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.removeFromCache("/expired.txt")
         assertTrue(result.isSuccess)
@@ -756,7 +756,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun clearCacheDelegatesAndForwardsResult() = runBlocking {
+    fun clearCacheDelegatesAndForwardsResult() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.clearCache()
         assertTrue(result.isSuccess)
@@ -764,7 +764,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun clearCacheForwardsFailure() = runBlocking {
+    fun clearCacheForwardsFailure() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         mock.clearCacheResult = Result.failure(RuntimeException("cache locked"))
         val result = service.clearCache()
@@ -777,7 +777,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun getSyncStatusDelegatesToUnderlyingService() = runBlocking {
+    fun getSyncStatusDelegatesToUnderlyingService() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val statuses = service.getSyncStatus("/sync/path").toList()
         assertEquals(1, statuses.size)
@@ -791,7 +791,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun syncFileDelegatesWithCorrectArguments() = runBlocking {
+    fun syncFileDelegatesWithCorrectArguments() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val flow = service.syncFile("/data/file.txt", forceSync = true)
         val ops = flow.toList()
@@ -803,7 +803,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun syncFileWithForceSyncFalse() = runBlocking {
+    fun syncFileWithForceSyncFalse() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         service.syncFile("/data/file.txt", forceSync = false).toList()
         assertEquals(false, mock.lastSyncFileForceSync)
@@ -814,7 +814,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun syncAllDelegatesWithCorrectArguments() = runBlocking {
+    fun syncAllDelegatesWithCorrectArguments() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val flow = service.syncAll(forceSync = true)
         val ops = flow.toList()
@@ -829,7 +829,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun searchFilesDelegatesWithAllArguments() = runBlocking {
+    fun searchFilesDelegatesWithAllArguments() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val results = service.searchFiles("*.md", "/docs", includeContent = true).toList()
         assertEquals(1, results.size)
@@ -842,7 +842,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun searchFilesForwardsFailure() = runBlocking {
+    fun searchFilesForwardsFailure() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         mock.searchFilesResult = Result.failure(RuntimeException("search timeout"))
         val results = service.searchFiles("query").toList()
@@ -855,7 +855,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun getRecentChangesDelegatesToUnderlyingService() = runBlocking {
+    fun getRecentChangesDelegatesToUnderlyingService() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val since = Clock.System.now()
         val changes = service.getRecentChanges(since, "/watched").toList()
@@ -871,7 +871,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun getQuotaInfoDelegatesAndForwardsResult() = runBlocking {
+    fun getQuotaInfoDelegatesAndForwardsResult() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.getQuotaInfo()
         assertTrue(result.isSuccess)
@@ -889,7 +889,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun existsDelegatesAndForwardsTrue() = runBlocking {
+    fun existsDelegatesAndForwardsTrue() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         val result = service.exists("/check/exists.txt")
         assertTrue(result.isSuccess)
@@ -899,7 +899,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun existsForwardsFalse() = runBlocking {
+    fun existsForwardsFalse() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         mock.existsResult = Result.success(false)
         val result = service.exists("/missing.txt")
@@ -955,7 +955,7 @@ class RateLimitedStorageServiceTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun rateLimitedServiceWithMaxConcurrentOneStillCompletes() = runBlocking {
+    fun rateLimitedServiceWithMaxConcurrentOneStillCompletes() = runBlocking<Unit> {
         val (mock, service) = createServicePair(maxConcurrent = 1)
         // Even with concurrency of 1, all calls should complete
         val r1 = service.connect()
@@ -968,7 +968,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun multipleMethodsAllDelegateCorrectly() = runBlocking {
+    fun multipleMethodsAllDelegateCorrectly() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
 
         service.connect()
@@ -1029,7 +1029,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun getStorageInfoPreservesAllFields() = runBlocking {
+    fun getStorageInfoPreservesAllFields() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         mock.storageInfoValue = NetworkStorage(
             id = "detail-test",
@@ -1056,7 +1056,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun createFolderForwardsFailureResult() = runBlocking {
+    fun createFolderForwardsFailureResult() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         mock.createFolderResult = Result.failure(RuntimeException("already exists"))
         val result = service.createFolder("/existing")
@@ -1065,7 +1065,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun moveFileForwardsFailureResult() = runBlocking {
+    fun moveFileForwardsFailureResult() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         mock.moveFileResult = Result.failure(RuntimeException("permission denied"))
         val result = service.moveFile("/a", "/b")
@@ -1073,7 +1073,7 @@ class RateLimitedStorageServiceTest {
     }
 
     @Test
-    fun getQuotaInfoForwardsFailure() = runBlocking {
+    fun getQuotaInfoForwardsFailure() = runBlocking<Unit> {
         val (mock, service) = createServicePair()
         mock.quotaInfoResult = Result.failure<StorageQuota>(RuntimeException("quota service unavailable"))
         val result = service.getQuotaInfo()

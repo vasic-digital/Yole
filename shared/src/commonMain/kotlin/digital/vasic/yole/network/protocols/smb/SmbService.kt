@@ -452,31 +452,39 @@ class SmbService(
 
     /** Removes the node at [remotePath] and all its children from the file tree. */
     override suspend fun deleteFile(remotePath: String): Result<Unit> = try {
-        val normalizedPath = normalizePath(remotePath)
+        if (!_isConnected) {
+            Result.failure(
+                NetworkStorageException.ConnectionException.NotConnected(
+                    message = "SMB not connected"
+                )
+            )
+        } else {
+            val normalizedPath = normalizePath(remotePath)
 
-        fileTreeMutex.withLock {
-            // Remove the node and all children (if it's a folder)
-            val keysToRemove = fileTree.keys.filter { key ->
-                key == normalizedPath || key.startsWith("$normalizedPath/")
+            fileTreeMutex.withLock {
+                // Remove the node and all children (if it's a folder)
+                val keysToRemove = fileTree.keys.filter { key ->
+                    key == normalizedPath || key.startsWith("$normalizedPath/")
+                }
+                keysToRemove.forEach { fileTree.remove(it) }
             }
-            keysToRemove.forEach { fileTree.remove(it) }
-        }
 
-        syncMutex.withLock {
-            val keysToRemove = syncStatusMap.keys.filter { key ->
-                key == normalizedPath || key.startsWith("$normalizedPath/")
+            syncMutex.withLock {
+                val keysToRemove = syncStatusMap.keys.filter { key ->
+                    key == normalizedPath || key.startsWith("$normalizedPath/")
+                }
+                keysToRemove.forEach { syncStatusMap.remove(it) }
             }
-            keysToRemove.forEach { syncStatusMap.remove(it) }
-        }
 
-        cacheMutex.withLock {
-            val keysToRemove = cacheEntries.keys.filter { key ->
-                key == normalizedPath || key.startsWith("$normalizedPath/")
+            cacheMutex.withLock {
+                val keysToRemove = cacheEntries.keys.filter { key ->
+                    key == normalizedPath || key.startsWith("$normalizedPath/")
+                }
+                keysToRemove.forEach { cacheEntries.remove(it) }
             }
-            keysToRemove.forEach { cacheEntries.remove(it) }
-        }
 
-        Result.success(Unit)
+            Result.success(Unit)
+        }
     } catch (e: Exception) {
         if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(
@@ -665,32 +673,40 @@ class SmbService(
 
     /** Returns the file tree node for [remotePath], or a synthesized document if not found. */
     override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> = try {
-        val normalizedPath = normalizePath(remotePath)
-
-        // Check internal file tree first
-        val existingNode = fileTreeMutex.withLock { fileTree[normalizedPath] }
-
-        val document = if (existingNode != null) {
-            existingNode.document
-        } else {
-            // Returns a synthesized document since no real SMB connection exists.
-            NetworkDocument(
-                id = remotePath,
-                name = remotePath.substringAfterLast("/"),
-                path = remotePath,
-                isFolder = false,
-                size = 0L,
-                lastModified = Clock.System.now(),
-                storageId = storageId,
-                permissions = setOf(
-                    DocumentPermission.READ,
-                    DocumentPermission.WRITE
-                ),
-                syncStatus = SyncStatus.SYNCED
+        if (!_isConnected) {
+            Result.failure(
+                NetworkStorageException.ConnectionException.NotConnected(
+                    message = "SMB not connected"
+                )
             )
-        }
+        } else {
+            val normalizedPath = normalizePath(remotePath)
 
-        Result.success(document)
+            // Check internal file tree first
+            val existingNode = fileTreeMutex.withLock { fileTree[normalizedPath] }
+
+            val document = if (existingNode != null) {
+                existingNode.document
+            } else {
+                // Returns a synthesized document since no real SMB connection exists.
+                NetworkDocument(
+                    id = remotePath,
+                    name = remotePath.substringAfterLast("/"),
+                    path = remotePath,
+                    isFolder = false,
+                    size = 0L,
+                    lastModified = Clock.System.now(),
+                    storageId = storageId,
+                    permissions = setOf(
+                        DocumentPermission.READ,
+                        DocumentPermission.WRITE
+                    ),
+                    syncStatus = SyncStatus.SYNCED
+                )
+            }
+
+            Result.success(document)
+        }
     } catch (e: Exception) {
         if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(

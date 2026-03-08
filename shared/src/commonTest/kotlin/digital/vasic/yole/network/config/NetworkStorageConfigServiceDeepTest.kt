@@ -617,7 +617,7 @@ class NetworkStorageConfigServiceDeepTest {
     // ==================== STATE MANAGEMENT ====================
 
     @Test
-    fun `removeStorage on non-existent storage returns failure`() = runBlocking {
+    fun `removeStorage on non-existent storage returns failure`() = runBlocking<Unit> {
         val service = createService()
         val result = service.removeStorage("non-existent-id")
         assertTrue(result.isFailure)
@@ -627,7 +627,7 @@ class NetworkStorageConfigServiceDeepTest {
     }
 
     @Test
-    fun `setActiveStorage on non-existent storage returns failure`() = runBlocking {
+    fun `setActiveStorage on non-existent storage returns failure`() = runBlocking<Unit> {
         val service = createService()
         val result = service.setActiveStorage("non-existent-id")
         assertTrue(result.isFailure)
@@ -639,14 +639,14 @@ class NetworkStorageConfigServiceDeepTest {
     // ==================== refreshConnectionStatus ====================
 
     @Test
-    fun `refreshConnectionStatus succeeds with empty storages`() = runBlocking {
+    fun `refreshConnectionStatus succeeds with empty storages`() = runBlocking<Unit> {
         val service = createService()
         val result = service.refreshConnectionStatus()
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `refreshConnectionStatus returns empty map when no storages configured`() = runBlocking {
+    fun `refreshConnectionStatus returns empty map when no storages configured`() = runBlocking<Unit> {
         val service = createService()
         service.refreshConnectionStatus()
         assertTrue(service.connectionStatus.value.isEmpty())

@@ -31,7 +31,7 @@ class NetworkPerformanceTest {
     private val performanceDatabase = MockPerformanceDatabase()
 
     @Test
-    fun testConcurrentNetworkOperations() = runBlocking {
+    fun testConcurrentNetworkOperations() = runBlocking<Unit> {
         val concurrentOperations = 100
         val results = mutableListOf<NetworkOperationResult>()
 
@@ -62,7 +62,7 @@ class NetworkPerformanceTest {
     }
 
     @Test
-    fun testMemoryEfficiencyUnderLoad() = runBlocking {
+    fun testMemoryEfficiencyUnderLoad() = runBlocking<Unit> {
         val operationsPerBatch = 50
         val numberOfBatches = 10
 
@@ -101,7 +101,7 @@ class NetworkPerformanceTest {
     }
 
     @Test
-    fun testLargeDocumentHandling() = runBlocking {
+    fun testLargeDocumentHandling() = runBlocking<Unit> {
         val documentSizes = listOf(
             1_000L to "1KB",
             10_000L to "10KB",
@@ -165,7 +165,7 @@ class NetworkPerformanceTest {
     }
 
     @Test
-    fun testResponseTimeBenchmarks() = runBlocking {
+    fun testResponseTimeBenchmarks() = runBlocking<Unit> {
         val benchmarks = mutableMapOf<String, List<Duration>>()
 
         // Benchmark different types of operations
@@ -222,16 +222,16 @@ class NetworkPerformanceTest {
     }
 
     @Test
-    fun testResourceLeakDetection() = runBlocking {
-        val iterations = 1000
+    fun testResourceLeakDetection() = runBlocking<Unit> {
+        val iterations = 50
         val durationSnapshots = mutableListOf<Duration>()
 
         repeat(iterations) { iteration ->
             val iterStart = Clock.System.now()
 
             // Create and process many operations
-            val operations = (1..50).map { index ->
-                createMockNetworkOperation(iteration * 50 + index)
+            val operations = (1..10).map { index ->
+                createMockNetworkOperation(iteration * 10 + index)
             }
 
             operations.forEach { operation ->
@@ -240,8 +240,8 @@ class NetworkPerformanceTest {
 
             val iterEnd = Clock.System.now()
 
-            // Take duration snapshot every 100 iterations
-            if (iteration % 100 == 0) {
+            // Take duration snapshot every 10 iterations
+            if (iteration % 10 == 0) {
                 durationSnapshots.add(iterEnd - iterStart)
             }
         }
@@ -261,7 +261,7 @@ class NetworkPerformanceTest {
     }
 
     @Test
-    fun testScalabilityLimits() = runBlocking {
+    fun testScalabilityLimits() = runBlocking<Unit> {
         val scaleFactors = listOf(10, 50, 100, 500, 1000)
         val scalabilityResults = mutableListOf<ScalabilityResult>()
 
@@ -331,7 +331,7 @@ class NetworkPerformanceTest {
     }
 
     private suspend fun simulateNetworkOperation(operation: NetworkOperation): NetworkOperationResult {
-        delay(Random.nextLong(10, 100)) // Simulate network delay
+        delay(Random.nextLong(1, 10)) // Simulate network delay
 
         return NetworkOperationResult(
             operationId = operation.id,

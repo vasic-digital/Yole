@@ -77,7 +77,7 @@ class DropboxStorageTest {
     // ==================== Storage Info Tests ====================
 
     @Test
-    fun testGetStorageInfo() = runBlocking {
+    fun testGetStorageInfo() = runBlocking<Unit> {
         val storageInfo = service.getStorageInfo()
         assertNotNull(storageInfo)
         assertNotNull(storageInfo.id)
@@ -86,7 +86,7 @@ class DropboxStorageTest {
     }
 
     @Test
-    fun testDropboxSupportsFolders() = runBlocking {
+    fun testDropboxSupportsFolders() = runBlocking<Unit> {
         val storageInfo = service.getStorageInfo()
         assertTrue(storageInfo.supportsFolders, "Dropbox should support folders")
     }
@@ -94,14 +94,14 @@ class DropboxStorageTest {
     // ==================== Connection Tests ====================
 
     @Test
-    fun testDisconnect() = runBlocking {
+    fun testDisconnect() = runBlocking<Unit> {
         // Disconnect should succeed even when not connected
         val result = service.disconnect()
         assertTrue(result.isSuccess, "Disconnect should succeed")
     }
 
     @Test
-    fun testConnectWithoutNetworkReturnsFailure() = runBlocking {
+    fun testConnectWithoutNetworkReturnsFailure() = runBlocking<Unit> {
         // Without a real network, connect should fail gracefully
         val result = service.connect()
         // Should complete (either success or failure depending on implementation)
@@ -109,7 +109,7 @@ class DropboxStorageTest {
     }
 
     @Test
-    fun testTestConnectionWithoutNetwork() = runBlocking {
+    fun testTestConnectionWithoutNetwork() = runBlocking<Unit> {
         val result = service.testConnection()
         assertTrue(result.isSuccess || result.isFailure, "testConnection should complete")
     }
@@ -117,7 +117,7 @@ class DropboxStorageTest {
     // ==================== Quota Tests ====================
 
     @Test
-    fun testGetQuotaInfo() = runBlocking {
+    fun testGetQuotaInfo() = runBlocking<Unit> {
         val result = service.getQuotaInfo()
         // getQuotaInfo now makes real API calls; without auth it fails when not connected
         assertTrue(result.isFailure, "getQuotaInfo should fail when not connected")
@@ -126,7 +126,7 @@ class DropboxStorageTest {
     // ==================== Exists Tests ====================
 
     @Test
-    fun testExistsCheck() = runBlocking {
+    fun testExistsCheck() = runBlocking<Unit> {
         val result = service.exists("/test.txt")
         assertTrue(result.isSuccess, "exists should succeed")
     }
@@ -212,7 +212,7 @@ class DropboxStorageTest {
     }
 
     @Test
-    fun testMultipleServiceInstances() = runBlocking {
+    fun testMultipleServiceInstances() = runBlocking<Unit> {
         val configs = (1..10).map { i ->
             StorageConfig.DropboxConfig(
                 name = "dropbox-$i",
@@ -232,7 +232,7 @@ class DropboxStorageTest {
     }
 
     @Test
-    fun testOperationManagement() = runBlocking {
+    fun testOperationManagement() = runBlocking<Unit> {
         // These should complete without throwing, even when not connected
         val cancelResult = service.cancelOperation(12345L)
         assertTrue(cancelResult.isSuccess, "cancelOperation should succeed")
@@ -245,7 +245,7 @@ class DropboxStorageTest {
     }
 
     @Test
-    fun testCacheOperations() = runBlocking {
+    fun testCacheOperations() = runBlocking<Unit> {
         val addResult = service.addToCache("/test.txt", 100)
         assertTrue(addResult.isSuccess, "addToCache should succeed")
 

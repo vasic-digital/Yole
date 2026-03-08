@@ -43,7 +43,7 @@ class AuthTokenManagerStressTest {
     // ==================== CONCURRENT TOKEN OPERATIONS ====================
 
     @Test
-    fun `concurrent token storage operations`() = runBlocking {
+    fun `concurrent token storage operations`() = runBlocking<Unit> {
         val results = (1..100).map { i ->
             async {
                 tokenManager.storeTokenInfo(
@@ -58,7 +58,7 @@ class AuthTokenManagerStressTest {
     }
 
     @Test
-    fun `concurrent token retrieval operations`() = runBlocking {
+    fun `concurrent token retrieval operations`() = runBlocking<Unit> {
         // Store tokens first
         (1..50).forEach { i ->
             tokenManager.storeTokenInfo(
@@ -79,7 +79,7 @@ class AuthTokenManagerStressTest {
     }
 
     @Test
-    fun `concurrent hasValidToken checks`() = runBlocking {
+    fun `concurrent hasValidToken checks`() = runBlocking<Unit> {
         // Store a mix of valid and expired tokens
         (1..50).forEach { i ->
             val tokenInfo = if (i % 2 == 0) {
@@ -102,7 +102,7 @@ class AuthTokenManagerStressTest {
     }
 
     @Test
-    fun `concurrent token clear operations`() = runBlocking {
+    fun `concurrent token clear operations`() = runBlocking<Unit> {
         // Store tokens
         (1..30).forEach { i ->
             tokenManager.storeTokenInfo(
@@ -125,7 +125,7 @@ class AuthTokenManagerStressTest {
     // ==================== TOKEN LIFECYCLE STRESS ====================
 
     @Test
-    fun `rapid store-retrieve-clear cycles`() = runBlocking {
+    fun `rapid store-retrieve-clear cycles`() = runBlocking<Unit> {
         repeat(100) { i ->
             val serviceId = "cycle-service"
             val tokenInfo = createTokenInfo("access-$i", "refresh-$i")
@@ -150,7 +150,7 @@ class AuthTokenManagerStressTest {
     }
 
     @Test
-    fun `token update overwrites previous value`() = runBlocking {
+    fun `token update overwrites previous value`() = runBlocking<Unit> {
         val serviceId = "update-test"
 
         repeat(50) { i ->
@@ -165,7 +165,7 @@ class AuthTokenManagerStressTest {
     // ==================== TOKEN EXPIRATION STRESS ====================
 
     @Test
-    fun `expired tokens are detected correctly`() = runBlocking {
+    fun `expired tokens are detected correctly`() = runBlocking<Unit> {
         val expiredToken = createExpiredTokenInfo("expired-access", "refresh")
         val validToken = createTokenInfo("valid-access", "refresh")
 
@@ -183,7 +183,7 @@ class AuthTokenManagerStressTest {
     }
 
     @Test
-    fun `tokens near expiration boundary`() = runBlocking {
+    fun `tokens near expiration boundary`() = runBlocking<Unit> {
         val now = Clock.System.now()
 
         // Token that expires in 1 minute (near boundary)
@@ -215,7 +215,7 @@ class AuthTokenManagerStressTest {
     // ==================== EDGE CASES ====================
 
     @Test
-    fun `handle empty service ID`() = runBlocking {
+    fun `handle empty service ID`() = runBlocking<Unit> {
         val result = tokenManager.getTokenInfo("")
 
         // Should handle gracefully
@@ -223,7 +223,7 @@ class AuthTokenManagerStressTest {
     }
 
     @Test
-    fun `handle very long service ID`() = runBlocking {
+    fun `handle very long service ID`() = runBlocking<Unit> {
         val longId = "a".repeat(10000)
         val tokenInfo = createTokenInfo("access", "refresh")
 
@@ -235,7 +235,7 @@ class AuthTokenManagerStressTest {
     }
 
     @Test
-    fun `handle special characters in service ID`() = runBlocking {
+    fun `handle special characters in service ID`() = runBlocking<Unit> {
         val specialIds = listOf(
             "service:with:colons",
             "service/with/slashes",
@@ -255,7 +255,7 @@ class AuthTokenManagerStressTest {
     }
 
     @Test
-    fun `handle null refresh token`() = runBlocking {
+    fun `handle null refresh token`() = runBlocking<Unit> {
         val tokenInfo = TestTokenInfo(
             accessToken = "access",
             refreshToken = null,
@@ -271,7 +271,7 @@ class AuthTokenManagerStressTest {
     }
 
     @Test
-    fun `handle null expiration`() = runBlocking {
+    fun `handle null expiration`() = runBlocking<Unit> {
         val tokenInfo = TestTokenInfo(
             accessToken = "access",
             refreshToken = "refresh",
@@ -290,7 +290,7 @@ class AuthTokenManagerStressTest {
     // ==================== CONCURRENT MIXED OPERATIONS ====================
 
     @Test
-    fun `concurrent mixed operations on same service`() = runBlocking {
+    fun `concurrent mixed operations on same service`() = runBlocking<Unit> {
         val serviceId = "shared-service"
         tokenManager.storeTokenInfo(serviceId, createTokenInfo("initial", "refresh"))
 
@@ -311,7 +311,7 @@ class AuthTokenManagerStressTest {
     }
 
     @Test
-    fun `concurrent operations on many services`() = runBlocking {
+    fun `concurrent operations on many services`() = runBlocking<Unit> {
         val operations = (1..500).map { i ->
             async {
                 val serviceId = "service-${i % 50}"

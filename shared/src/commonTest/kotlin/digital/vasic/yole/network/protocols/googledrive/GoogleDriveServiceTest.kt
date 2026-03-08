@@ -44,7 +44,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testConnectSuccess() = runBlocking {
+    fun testConnectSuccess() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val result = googleDriveService.connect()
         
@@ -54,7 +54,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testDisconnectSuccess() = runBlocking {
+    fun testDisconnectSuccess() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         googleDriveService.connect()
         val result = googleDriveService.disconnect()
@@ -63,7 +63,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testStorageInfo() = runBlocking {
+    fun testStorageInfo() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val storageInfo = googleDriveService.getStorageInfo()
         
@@ -74,7 +74,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testListFilesWhenNotConnected() = runBlocking {
+    fun testListFilesWhenNotConnected() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val result = googleDriveService.listFiles("/").first()
         
@@ -83,7 +83,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testDownloadFileWhenNotConnected() = runBlocking {
+    fun testDownloadFileWhenNotConnected() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val operations = googleDriveService.downloadFile("/test.md", "/tmp/test.md")
         
@@ -94,7 +94,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testUploadFileWhenNotConnected() = runBlocking {
+    fun testUploadFileWhenNotConnected() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val operations = googleDriveService.uploadFile("/tmp/test.md", "/test.md")
         
@@ -105,7 +105,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testDeleteFileWhenNotConnected() = runBlocking {
+    fun testDeleteFileWhenNotConnected() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val result = googleDriveService.deleteFile("/test.md")
         
@@ -113,7 +113,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testCreateFolderWhenNotConnected() = runBlocking {
+    fun testCreateFolderWhenNotConnected() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val result = googleDriveService.createFolder("/test-folder")
         
@@ -124,7 +124,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testRenameFileWhenNotConnected() = runBlocking {
+    fun testRenameFileWhenNotConnected() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val result = googleDriveService.renameFile("/test.md", "renamed.md")
         
@@ -132,7 +132,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testMoveFileWhenNotConnected() = runBlocking {
+    fun testMoveFileWhenNotConnected() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val result = googleDriveService.moveFile("/test.md", "/moved/test.md")
         
@@ -143,7 +143,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testCopyFileWhenNotConnected() = runBlocking {
+    fun testCopyFileWhenNotConnected() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val result = googleDriveService.copyFile("/test.md", "/copy/test.md")
         
@@ -151,7 +151,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testGetFileInfoWhenNotConnected() = runBlocking {
+    fun testGetFileInfoWhenNotConnected() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val result = googleDriveService.getFileInfo("/test.md")
         
@@ -162,7 +162,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testGetQuotaInfoWhenNotConnected() = runBlocking {
+    fun testGetQuotaInfoWhenNotConnected() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val result = googleDriveService.getQuotaInfo()
         
@@ -170,7 +170,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testExistsWhenNotConnected() = runBlocking {
+    fun testExistsWhenNotConnected() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val result = googleDriveService.exists("/test.md")
         
@@ -213,7 +213,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testSearchFilesWhenNotConnected() = runBlocking {
+    fun testSearchFilesWhenNotConnected() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val result = googleDriveService.searchFiles("test", "/", false).first()
         
@@ -222,7 +222,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testGetRecentChangesWhenNotConnected() = runBlocking {
+    fun testGetRecentChangesWhenNotConnected() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val since = Clock.System.now()
         val changes = googleDriveService.getRecentChanges(since, "/").first()
@@ -231,7 +231,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testSyncFileWhenNotConnected() = runBlocking {
+    fun testSyncFileWhenNotConnected() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val operations = googleDriveService.syncFile("/test.md", false)
         
@@ -248,7 +248,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testSyncAllWhenNotConnected() = runBlocking {
+    fun testSyncAllWhenNotConnected() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val operations = googleDriveService.syncAll(false)
 
@@ -264,7 +264,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testActiveOperationsFlow() = runBlocking {
+    fun testActiveOperationsFlow() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val activeOps = googleDriveService.getActiveOperations().first()
         
@@ -272,7 +272,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testCacheOperations() = runBlocking {
+    fun testCacheOperations() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         
         val cacheEntries = googleDriveService.getCacheEntries("/").first()
@@ -289,7 +289,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testSyncStatusFlow() = runBlocking {
+    fun testSyncStatusFlow() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val syncStatus = googleDriveService.getSyncStatus("/").first()
         
@@ -297,7 +297,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testTestConnection() = runBlocking {
+    fun testTestConnection() = runBlocking<Unit> {
         googleDriveService = GoogleDriveService(googleDriveConfig)
         val result = googleDriveService.testConnection()
         
@@ -307,7 +307,7 @@ class GoogleDriveServiceTest {
     }
     
     @Test
-    fun testTokenRefreshScenario() = runBlocking {
+    fun testTokenRefreshScenario() = runBlocking<Unit> {
         // Test with expired access token scenario
         val configWithExpiredToken = googleDriveConfig.copy(accessToken = "expired-token")
         googleDriveService = GoogleDriveService(configWithExpiredToken)

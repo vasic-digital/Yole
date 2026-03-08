@@ -31,7 +31,7 @@ import kotlinx.coroutines.runBlocking
 class CircuitBreakerIntegrationTests {
 
     @Test
-    fun circuitBreakerProtectsConnectMethod() = runBlocking {
+    fun circuitBreakerProtectsConnectMethod() = runBlocking<Unit> {
         val cb = CircuitBreaker(name = "test-service", failureThreshold = 3)
 
         // Simulate 3 consecutive failures
@@ -47,7 +47,7 @@ class CircuitBreakerIntegrationTests {
     }
 
     @Test
-    fun circuitBreakerResetsAfterTimeout() = runBlocking {
+    fun circuitBreakerResetsAfterTimeout() = runBlocking<Unit> {
         val cb = CircuitBreaker(
             name = "timeout-test",
             failureThreshold = 1,
@@ -69,7 +69,7 @@ class CircuitBreakerIntegrationTests {
     }
 
     @Test
-    fun circuitBreakerTracksCallCount() = runBlocking {
+    fun circuitBreakerTracksCallCount() = runBlocking<Unit> {
         val cb = CircuitBreaker(name = "counter-test", failureThreshold = 10)
 
         repeat(5) { cb.execute { "ok" } }
@@ -79,7 +79,7 @@ class CircuitBreakerIntegrationTests {
     }
 
     @Test
-    fun circuitBreakerHalfOpenFailureReopensCircuit() = runBlocking {
+    fun circuitBreakerHalfOpenFailureReopensCircuit() = runBlocking<Unit> {
         val cb = CircuitBreaker(
             name = "half-open-fail",
             failureThreshold = 1,
@@ -99,7 +99,7 @@ class CircuitBreakerIntegrationTests {
     }
 
     @Test
-    fun circuitBreakerResetClearsState() = runBlocking {
+    fun circuitBreakerResetClearsState() = runBlocking<Unit> {
         val cb = CircuitBreaker(name = "reset-test", failureThreshold = 1)
         cb.execute { throw RuntimeException("fail") }
         assertEquals(CircuitBreaker.State.OPEN, cb.state)
@@ -110,7 +110,7 @@ class CircuitBreakerIntegrationTests {
     }
 
     @Test
-    fun circuitBreakerSuccessResetsFailureCount() = runBlocking {
+    fun circuitBreakerSuccessResetsFailureCount() = runBlocking<Unit> {
         val cb = CircuitBreaker(name = "success-reset", failureThreshold = 3)
 
         // 2 failures, then a success
@@ -124,7 +124,7 @@ class CircuitBreakerIntegrationTests {
     }
 
     @Test
-    fun circuitBreakerWrapsResultFailureCorrectly() = runBlocking {
+    fun circuitBreakerWrapsResultFailureCorrectly() = runBlocking<Unit> {
         val cb = CircuitBreaker(name = "result-wrap", failureThreshold = 3)
         val result = cb.execute<Result<Unit>> {
             Result.failure(Exception("inner failure"))
@@ -143,7 +143,7 @@ class CircuitBreakerIntegrationTests {
     }
 
     @Test
-    fun circuitBreakerForEachProtocol() = runBlocking {
+    fun circuitBreakerForEachProtocol() = runBlocking<Unit> {
         val protocols = listOf("dropbox", "googledrive", "onedrive", "ftp", "sftp", "smb", "webdav", "git")
         for (protocol in protocols) {
             val cb = CircuitBreaker(name = protocol, failureThreshold = 5)
@@ -161,27 +161,27 @@ class CircuitBreakerIntegrationTests {
 class ConnectionLimiterIntegrationTests {
 
     @Test
-    fun connectionLimiterAllowsSingleConnection() = runBlocking {
+    fun connectionLimiterAllowsSingleConnection() = runBlocking<Unit> {
         val limiter = ConnectionLimiter(name = "single", maxConcurrent = 1)
         val result = limiter.withConnection { "done" }
         assertEquals("done", result)
     }
 
     @Test
-    fun connectionLimiterTracksAvailablePermits() = runBlocking {
+    fun connectionLimiterTracksAvailablePermits() = runBlocking<Unit> {
         val limiter = ConnectionLimiter(name = "permits", maxConcurrent = 5)
         assertEquals(5, limiter.availablePermits)
     }
 
     @Test
-    fun connectionLimiterReleasesPermitAfterCompletion() = runBlocking {
+    fun connectionLimiterReleasesPermitAfterCompletion() = runBlocking<Unit> {
         val limiter = ConnectionLimiter(name = "release", maxConcurrent = 2)
         limiter.withConnection { "first" }
         assertEquals(2, limiter.availablePermits)
     }
 
     @Test
-    fun connectionLimiterReleasesPermitOnException() = runBlocking {
+    fun connectionLimiterReleasesPermitOnException() = runBlocking<Unit> {
         val limiter = ConnectionLimiter(name = "exception-release", maxConcurrent = 2)
         try {
             limiter.withConnection { throw RuntimeException("oops") }
@@ -192,7 +192,7 @@ class ConnectionLimiterIntegrationTests {
     }
 
     @Test
-    fun connectionLimiterConcurrentAccessWithinLimit() = runBlocking {
+    fun connectionLimiterConcurrentAccessWithinLimit() = runBlocking<Unit> {
         val limiter = ConnectionLimiter(name = "concurrent", maxConcurrent = 3)
         val results = (1..3).map { i ->
             async {
@@ -204,7 +204,7 @@ class ConnectionLimiterIntegrationTests {
     }
 
     @Test
-    fun connectionLimiterForEachProtocol() = runBlocking {
+    fun connectionLimiterForEachProtocol() = runBlocking<Unit> {
         val protocols = listOf("dropbox", "googledrive", "onedrive", "ftp", "sftp", "smb", "webdav", "git")
         for (protocol in protocols) {
             val limiter = ConnectionLimiter(name = protocol, maxConcurrent = 5)
@@ -246,7 +246,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheStartsEmpty() = runBlocking {
+    fun documentCacheStartsEmpty() = runBlocking<Unit> {
         val cache = DocumentCache()
         assertEquals(0, cache.size)
         assertEquals(0L, cache.hits)
@@ -254,7 +254,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCachePutAndGet() = runBlocking {
+    fun documentCachePutAndGet() = runBlocking<Unit> {
         val cache = DocumentCache()
         val doc = ParsedDocument(
             format = plainTextFormat,
@@ -268,7 +268,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheHitIncrementsHitCount() = runBlocking {
+    fun documentCacheHitIncrementsHitCount() = runBlocking<Unit> {
         val cache = DocumentCache()
         val doc = ParsedDocument(
             format = plainTextFormat,
@@ -281,14 +281,14 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheMissIncrementsMissCount() = runBlocking {
+    fun documentCacheMissIncrementsMissCount() = runBlocking<Unit> {
         val cache = DocumentCache()
         cache.get("nonexistent")
         assertEquals(1L, cache.misses)
     }
 
     @Test
-    fun documentCacheHitRateCalculation() = runBlocking {
+    fun documentCacheHitRateCalculation() = runBlocking<Unit> {
         val cache = DocumentCache()
         val doc = ParsedDocument(
             format = plainTextFormat,
@@ -302,7 +302,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheEvictsLeastRecentlyUsed() = runBlocking {
+    fun documentCacheEvictsLeastRecentlyUsed() = runBlocking<Unit> {
         val cache = DocumentCache(maxSize = 2)
         val doc1 = ParsedDocument(format = plainTextFormat, rawContent = "1", parsedContent = "1")
         val doc2 = ParsedDocument(format = plainTextFormat, rawContent = "2", parsedContent = "2")
@@ -318,7 +318,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheClearRemovesAll() = runBlocking {
+    fun documentCacheClearRemovesAll() = runBlocking<Unit> {
         val cache = DocumentCache()
         val doc = ParsedDocument(format = plainTextFormat, rawContent = "x", parsedContent = "x")
         cache.put("key", doc)
@@ -328,7 +328,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheInvalidateRemovesSingleKey() = runBlocking {
+    fun documentCacheInvalidateRemovesSingleKey() = runBlocking<Unit> {
         val cache = DocumentCache()
         val doc1 = ParsedDocument(format = plainTextFormat, rawContent = "1", parsedContent = "1")
         val doc2 = ParsedDocument(format = plainTextFormat, rawContent = "2", parsedContent = "2")
@@ -340,7 +340,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheContainsKey() = runBlocking {
+    fun documentCacheContainsKey() = runBlocking<Unit> {
         val cache = DocumentCache()
         val doc = ParsedDocument(format = plainTextFormat, rawContent = "x", parsedContent = "x")
         cache.put("present", doc)
@@ -349,7 +349,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
     }
 
     @Test
-    fun documentCacheConcurrentAccess() = runBlocking {
+    fun documentCacheConcurrentAccess() = runBlocking<Unit> {
         val cache = DocumentCache()
         val results = (1..10).map { i ->
             async {
@@ -373,7 +373,7 @@ class DocumentCacheFormatRegistryIntegrationTests {
 class CombinedResiliencePatternTests {
 
     @Test
-    fun circuitBreakerAndConnectionLimiterTogether() = runBlocking {
+    fun circuitBreakerAndConnectionLimiterTogether() = runBlocking<Unit> {
         val cb = CircuitBreaker(name = "combined", failureThreshold = 3)
         val limiter = ConnectionLimiter(name = "combined", maxConcurrent = 5)
 
@@ -390,7 +390,7 @@ class CombinedResiliencePatternTests {
     }
 
     @Test
-    fun circuitBreakerOpenBlocksConnectionLimiter() = runBlocking {
+    fun circuitBreakerOpenBlocksConnectionLimiter() = runBlocking<Unit> {
         val cb = CircuitBreaker(name = "blocking", failureThreshold = 1, resetTimeout = 60.seconds)
         val limiter = ConnectionLimiter(name = "blocking", maxConcurrent = 5)
 
@@ -408,7 +408,7 @@ class CombinedResiliencePatternTests {
     }
 
     @Test
-    fun foldPatternExtractsInnerResult() = runBlocking {
+    fun foldPatternExtractsInnerResult() = runBlocking<Unit> {
         val cb = CircuitBreaker(name = "fold-test", failureThreshold = 5)
         val limiter = ConnectionLimiter(name = "fold-test", maxConcurrent = 5)
 
@@ -424,7 +424,7 @@ class CombinedResiliencePatternTests {
     }
 
     @Test
-    fun foldPatternOnCircuitBreakerFailure() = runBlocking {
+    fun foldPatternOnCircuitBreakerFailure() = runBlocking<Unit> {
         val cb = CircuitBreaker(name = "fold-fail", failureThreshold = 1, resetTimeout = 60.seconds)
         cb.execute { throw RuntimeException("initial fail") }
 

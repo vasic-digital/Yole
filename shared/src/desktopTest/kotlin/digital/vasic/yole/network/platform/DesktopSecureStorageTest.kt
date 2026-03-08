@@ -81,7 +81,7 @@ class DesktopSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should create key file with restricted permissions`() = runBlocking {
+    fun `should create key file with restricted permissions`() = runBlocking<Unit> {
         val keyFile = File(storageDir, ".storage_key")
         
         // Store something to trigger key file creation
@@ -100,7 +100,7 @@ class DesktopSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should create data file with restricted permissions`() = runBlocking {
+    fun `should create data file with restricted permissions`() = runBlocking<Unit> {
         val dataFile = File(storageDir, ".secure_storage")
         
         // Store something to trigger data file creation
@@ -117,7 +117,7 @@ class DesktopSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should use AES GCM encryption for data`() = runBlocking {
+    fun `should use AES GCM encryption for data`() = runBlocking<Unit> {
         val key = "encryption_test_key"
         val value = "sensitive_data_123"
 
@@ -138,7 +138,7 @@ class DesktopSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should persist encryption key across restarts`() = runBlocking {
+    fun `should persist encryption key across restarts`() = runBlocking<Unit> {
         val key = "persistence_test_key"
         val value = "persistence_test_value"
 
@@ -154,7 +154,7 @@ class DesktopSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should handle corrupted key file gracefully`() = runBlocking {
+    fun `should handle corrupted key file gracefully`() = runBlocking<Unit> {
         val keyFile = File(storageDir, ".storage_key")
         
         // Store initial value
@@ -178,7 +178,7 @@ class DesktopSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should handle corrupted data file gracefully`() = runBlocking {
+    fun `should handle corrupted data file gracefully`() = runBlocking<Unit> {
         val dataFile = File(storageDir, ".secure_storage")
         
         // Store initial value
@@ -199,7 +199,7 @@ class DesktopSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should handle read-only directory`() = runBlocking {
+    fun `should handle read-only directory`() = runBlocking<Unit> {
         // Make directory read-only (if supported on platform)
         if (storageDir.setReadOnly()) {
             try {
@@ -223,7 +223,7 @@ class DesktopSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should handle missing directory parent`() = runBlocking {
+    fun `should handle missing directory parent`() = runBlocking<Unit> {
         val deepPath = File(tempFolder.root, "deep/nested/path/secure")
         val storage = DesktopSecureStorage(deepPath)
         
@@ -234,7 +234,7 @@ class DesktopSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should validate security with encryption and file permissions`() = runBlocking {
+    fun `should validate security with encryption and file permissions`() = runBlocking<Unit> {
         val isSecureResult = desktopSecureStorage.isSecure()
         assertTrue(isSecureResult.isSuccess, "Security validation should succeed")
         
@@ -244,7 +244,7 @@ class DesktopSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should handle concurrent file access safely`() = runBlocking {
+    fun `should handle concurrent file access safely`() = runBlocking<Unit> {
         val iterations = 50
         val keys = (1..iterations).map { "concurrent_key_$it" }
         val values = (1..iterations).map { "concurrent_value_$it" }
@@ -262,7 +262,7 @@ class DesktopSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should handle file system full scenarios`() = runBlocking {
+    fun `should handle file system full scenarios`() = runBlocking<Unit> {
         // This is difficult to test reliably, but we can simulate large data
         val key = "large_data_key"
         val largeValue = ByteArray(1024 * 1024).joinToString("") { "a" } // 1MB of data
@@ -278,7 +278,7 @@ class DesktopSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should encrypt data with unique IV for each operation`() = runBlocking {
+    fun `should encrypt data with unique IV for each operation`() = runBlocking<Unit> {
         val key = "iv_test_key"
         val value = "same_value"
 
@@ -297,7 +297,7 @@ class DesktopSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should handle cross-platform file encoding`() = runBlocking {
+    fun `should handle cross-platform file encoding`() = runBlocking<Unit> {
         val key = "encoding_test_key"
         val unicodeValue = """
             Cross-platform test:
@@ -315,7 +315,7 @@ class DesktopSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should handle temporary file cleanup`() = runBlocking {
+    fun `should handle temporary file cleanup`() = runBlocking<Unit> {
         // Store and retrieve to ensure files are created
         desktopSecureStorage.store("test_key", "test_value")
         desktopSecureStorage.retrieve("test_key")
@@ -341,7 +341,7 @@ class DesktopSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should test AES encryption parameters`() = runBlocking {
+    fun `should test AES encryption parameters`() = runBlocking<Unit> {
         // Test that we're using proper AES encryption parameters
         val keyGenerator = KeyGenerator.getInstance("AES")
         keyGenerator.init(256) // Should use 256-bit keys

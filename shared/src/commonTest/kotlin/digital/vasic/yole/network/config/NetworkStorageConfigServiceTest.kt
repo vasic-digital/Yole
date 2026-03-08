@@ -290,7 +290,7 @@ class NetworkStorageConfigServiceTest {
     }
 
     @Test
-    fun testRefreshConnectionStatus() = runBlocking {
+    fun testRefreshConnectionStatus() = runBlocking<Unit> {
         configService = NetworkStorageConfigService()
 
         val result = configService.refreshConnectionStatus()

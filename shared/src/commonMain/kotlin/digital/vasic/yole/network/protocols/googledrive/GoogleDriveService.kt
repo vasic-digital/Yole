@@ -1409,7 +1409,8 @@ class GoogleDriveService(
             } else {
                 emit(emptyList())
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(emptyList())
         }
     }

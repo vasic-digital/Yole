@@ -1344,7 +1344,8 @@ class DropboxService(
             } else {
                 emit(emptyList())
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(emptyList())
         }
     }
@@ -1387,7 +1388,7 @@ class DropboxService(
                     availableSpace = availableSpace,
                     usagePercentage = usagePercentage,
                     isFull = availableSpace <= 0,
-                    isLowOnSpace = usagePercentage > 0.9,
+                    isLowOnSpace = usagePercentage >= 0.9,
                     metadata = mapOf("provider" to "Dropbox")
                 ))
             } else {

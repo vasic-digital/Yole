@@ -51,7 +51,7 @@ class LazyLoadingValidationTests {
     // ====================================================================
 
     @Test
-    fun `LazyDocumentLoader does not load chunks until accessed`() = runBlocking {
+    fun `LazyDocumentLoader does not load chunks until accessed`() = runBlocking<Unit> {
         var loadCount = 0
         val loader = object : LazyDocumentLoader<String>(chunkSize = 10) {
             override suspend fun loadChunk(index: Int): String {
@@ -71,7 +71,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `LazyDocumentLoader getChunk returns null for out-of-range`() = runBlocking {
+    fun `LazyDocumentLoader getChunk returns null for out-of-range`() = runBlocking<Unit> {
         val loader = object : LazyDocumentLoader<String>(chunkSize = 10) {
             override suspend fun loadChunk(index: Int): String = "data"
         }
@@ -82,7 +82,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `LazyDocumentLoader caches loaded chunks`() = runBlocking {
+    fun `LazyDocumentLoader caches loaded chunks`() = runBlocking<Unit> {
         var loadCount = 0
         val loader = object : LazyDocumentLoader<String>(chunkSize = 10) {
             override suspend fun loadChunk(index: Int): String {
@@ -103,7 +103,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `LazyDocumentLoader clear removes cached chunks`() = runBlocking {
+    fun `LazyDocumentLoader clear removes cached chunks`() = runBlocking<Unit> {
         var loadCount = 0
         val loader = object : LazyDocumentLoader<String>(chunkSize = 10) {
             override suspend fun loadChunk(index: Int): String {
@@ -125,7 +125,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `LazyDocumentLoader preloadAround loads adjacent chunks`() = runBlocking {
+    fun `LazyDocumentLoader preloadAround loads adjacent chunks`() = runBlocking<Unit> {
         val loadedIndices = mutableSetOf<Int>()
         val loader = object : LazyDocumentLoader<String>(chunkSize = 10) {
             override suspend fun loadChunk(index: Int): String {
@@ -143,7 +143,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `LazyDocumentLoader getMemoryUsage reflects loaded chunks`() = runBlocking {
+    fun `LazyDocumentLoader getMemoryUsage reflects loaded chunks`() = runBlocking<Unit> {
         val loader = object : LazyDocumentLoader<String>(chunkSize = 100) {
             override suspend fun loadChunk(index: Int): String = "data"
         }
@@ -160,7 +160,7 @@ class LazyLoadingValidationTests {
     // ====================================================================
 
     @Test
-    fun `LazyStringLoader defers string computation`() = runBlocking {
+    fun `LazyStringLoader defers string computation`() = runBlocking<Unit> {
         val content = (1..200).joinToString("\n") { "Line $it" }
         val loader = LazyStringLoader(content, chunkSize = 50)
 
@@ -169,7 +169,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `LazyStringLoader getChunk returns correct content`() = runBlocking {
+    fun `LazyStringLoader getChunk returns correct content`() = runBlocking<Unit> {
         val content = (1..100).joinToString("\n") { "Line $it" }
         val loader = LazyStringLoader(content, chunkSize = 10)
 
@@ -180,7 +180,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `LazyStringLoader getLines returns exact range`() = runBlocking {
+    fun `LazyStringLoader getLines returns exact range`() = runBlocking<Unit> {
         val content = (1..50).joinToString("\n") { "Line $it" }
         val loader = LazyStringLoader(content, chunkSize = 10)
 
@@ -191,7 +191,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `LazyStringLoader getLines spanning chunks`() = runBlocking {
+    fun `LazyStringLoader getLines spanning chunks`() = runBlocking<Unit> {
         val content = (1..50).joinToString("\n") { "Line $it" }
         val loader = LazyStringLoader(content, chunkSize = 10)
 
@@ -203,7 +203,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `LazyStringLoader caches chunks on repeated access`() = runBlocking {
+    fun `LazyStringLoader caches chunks on repeated access`() = runBlocking<Unit> {
         val content = (1..100).joinToString("\n") { "Line $it" }
         val loader = LazyStringLoader(content, chunkSize = 10)
 
@@ -213,7 +213,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `LazyStringLoader clear releases memory`() = runBlocking {
+    fun `LazyStringLoader clear releases memory`() = runBlocking<Unit> {
         val content = (1..100).joinToString("\n") { "Line $it" }
         val loader = LazyStringLoader(content, chunkSize = 10)
 
@@ -230,14 +230,14 @@ class LazyLoadingValidationTests {
     // ====================================================================
 
     @Test
-    fun `FlowLazyLoader starts empty`() = runBlocking {
+    fun `FlowLazyLoader starts empty`() = runBlocking<Unit> {
         val loader = FlowLazyLoader<String>()
         assertTrue(loader.content.value.isEmpty(), "FlowLazyLoader should start with empty content")
         loader.cleanup()
     }
 
     @Test
-    fun `FlowLazyLoader loadMore adds items lazily`() = runBlocking {
+    fun `FlowLazyLoader loadMore adds items lazily`() = runBlocking<Unit> {
         val loader = FlowLazyLoader<String>()
         assertEquals(0, loader.content.value.size)
 
@@ -249,7 +249,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `FlowLazyLoader multiple loadMore accumulates`() = runBlocking {
+    fun `FlowLazyLoader multiple loadMore accumulates`() = runBlocking<Unit> {
         val loader = FlowLazyLoader<String>()
         loader.loadMore(listOf("a", "b"))
         loader.loadMore(listOf("c", "d"))
@@ -261,7 +261,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `FlowLazyLoader cleanup clears content`() = runBlocking {
+    fun `FlowLazyLoader cleanup clears content`() = runBlocking<Unit> {
         val loader = FlowLazyLoader<String>()
         loader.loadMore(listOf("data1", "data2"))
         assertEquals(2, loader.content.value.size)
@@ -271,7 +271,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `FlowLazyLoader getVisibleRange returns correct range`() = runBlocking {
+    fun `FlowLazyLoader getVisibleRange returns correct range`() = runBlocking<Unit> {
         val loader = FlowLazyLoader<Int>()
         loader.loadMore((1..100).toList())
 
@@ -281,7 +281,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `FlowLazyLoader getVisibleRange clamps to bounds`() = runBlocking {
+    fun `FlowLazyLoader getVisibleRange clamps to bounds`() = runBlocking<Unit> {
         val loader = FlowLazyLoader<Int>()
         loader.loadMore((1..10).toList())
 
@@ -296,7 +296,7 @@ class LazyLoadingValidationTests {
     // ====================================================================
 
     @Test
-    fun `LazyDocumentLoader concurrent access is safe`() = runBlocking {
+    fun `LazyDocumentLoader concurrent access is safe`() = runBlocking<Unit> {
         var loadCount = 0
         val loader = object : LazyDocumentLoader<String>(chunkSize = 10) {
             override suspend fun loadChunk(index: Int): String {
@@ -318,7 +318,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `LazyStringLoader concurrent getChunk is safe`() = runBlocking {
+    fun `LazyStringLoader concurrent getChunk is safe`() = runBlocking<Unit> {
         val content = (1..500).joinToString("\n") { "Line $it" }
         val loader = LazyStringLoader(content, chunkSize = 50)
 
@@ -333,7 +333,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `FlowLazyLoader concurrent loadMore is safe`() = runBlocking {
+    fun `FlowLazyLoader concurrent loadMore is safe`() = runBlocking<Unit> {
         val loader = FlowLazyLoader<Int>()
 
         val jobs = (1..10).map { batch ->
@@ -350,7 +350,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `LazyDocumentLoader concurrent access to same chunk returns cached`() = runBlocking {
+    fun `LazyDocumentLoader concurrent access to same chunk returns cached`() = runBlocking<Unit> {
         var loadCount = 0
         val loader = object : LazyDocumentLoader<String>(chunkSize = 10) {
             override suspend fun loadChunk(index: Int): String {
@@ -376,7 +376,7 @@ class LazyLoadingValidationTests {
     // ====================================================================
 
     @Test
-    fun `LazyDocumentLoader loadChunk exception propagates`() = runBlocking {
+    fun `LazyDocumentLoader loadChunk exception propagates`() = runBlocking<Unit> {
         val loader = object : LazyDocumentLoader<String>(chunkSize = 10) {
             override suspend fun loadChunk(index: Int): String {
                 throw IllegalStateException("Load failed for chunk $index")
@@ -390,7 +390,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `FlowLazyLoader loadMore with empty list is safe`() = runBlocking {
+    fun `FlowLazyLoader loadMore with empty list is safe`() = runBlocking<Unit> {
         val loader = FlowLazyLoader<String>()
         loader.loadMore(emptyList())
         assertTrue(loader.content.value.isEmpty())
@@ -398,7 +398,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `LazyStringLoader with empty content`() = runBlocking {
+    fun `LazyStringLoader with empty content`() = runBlocking<Unit> {
         val loader = LazyStringLoader("", chunkSize = 10)
         // Should handle empty content gracefully
         val chunk = loader.getChunk(0)
@@ -407,7 +407,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `LazyStringLoader with single line`() = runBlocking {
+    fun `LazyStringLoader with single line`() = runBlocking<Unit> {
         val loader = LazyStringLoader("single line", chunkSize = 100)
         val chunk = loader.getChunk(0)
         assertNotNull(chunk)
@@ -489,7 +489,7 @@ class LazyLoadingValidationTests {
     // ====================================================================
 
     @Test
-    fun `LazyStringLoader first access is slower than subsequent`() = runBlocking {
+    fun `LazyStringLoader first access is slower than subsequent`() = runBlocking<Unit> {
         val content = (1..1000).joinToString("\n") { "Line $it with some content to fill space." }
         val loader = LazyStringLoader(content, chunkSize = 100)
 
@@ -506,7 +506,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `FlowLazyLoader 1000 items loaded in under 100ms`() = runBlocking {
+    fun `FlowLazyLoader 1000 items loaded in under 100ms`() = runBlocking<Unit> {
         val loader = FlowLazyLoader<Int>()
         val elapsed = measureTime {
             loader.loadMore((1..1000).toList())

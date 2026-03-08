@@ -129,7 +129,7 @@ class GitMockHttpTest {
     // ==================== 1. CONNECT WITH GIT REFS ====================
 
     @Test
-    fun `connect with valid git refs sets connected`() = runBlocking {
+    fun `connect with valid git refs sets connected`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             respond(
                 content = ByteReadChannel(gitInfoRefsResponse),
@@ -146,7 +146,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `connect sends GET to info refs endpoint`() = runBlocking {
+    fun `connect sends GET to info refs endpoint`() = runBlocking<Unit> {
         var capturedUrl = ""
         var capturedMethod: HttpMethod? = null
         val client = createMockClient { request ->
@@ -164,7 +164,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `connect sends authorization token header`() = runBlocking {
+    fun `connect sends authorization token header`() = runBlocking<Unit> {
         var capturedAuth = ""
         val client = createMockClient { request ->
             capturedAuth = request.headers["Authorization"] ?: ""
@@ -178,7 +178,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `connect with basic auth sends Basic header`() = runBlocking {
+    fun `connect with basic auth sends Basic header`() = runBlocking<Unit> {
         var capturedAuth = ""
         val client = createMockClient { request ->
             capturedAuth = request.headers["Authorization"] ?: ""
@@ -192,7 +192,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `connect without credentials sends no auth header`() = runBlocking {
+    fun `connect without credentials sends no auth header`() = runBlocking<Unit> {
         var capturedAuth: String? = null
         val client = createMockClient { request ->
             capturedAuth = request.headers["Authorization"]
@@ -206,7 +206,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `connect with multi-branch refs succeeds`() = runBlocking {
+    fun `connect with multi-branch refs succeeds`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             respond(
                 content = ByteReadChannel(gitInfoRefsMultiBranch),
@@ -223,7 +223,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `connect URL uses repository URL from config`() = runBlocking {
+    fun `connect URL uses repository URL from config`() = runBlocking<Unit> {
         var capturedUrl = ""
         val client = createMockClient { request ->
             capturedUrl = request.url.toString()
@@ -239,7 +239,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `connect with empty response body still succeeds`() = runBlocking {
+    fun `connect with empty response body still succeeds`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -252,7 +252,7 @@ class GitMockHttpTest {
     // ==================== 2. LIST FILES GITHUB ====================
 
     @Test
-    fun `listFiles GitHub returns parsed documents`() = runBlocking {
+    fun `listFiles GitHub returns parsed documents`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -279,7 +279,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitHub returns correct file names`() = runBlocking {
+    fun `listFiles GitHub returns correct file names`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -304,7 +304,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitHub distinguishes files from directories`() = runBlocking {
+    fun `listFiles GitHub distinguishes files from directories`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -332,7 +332,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitHub reports correct file size`() = runBlocking {
+    fun `listFiles GitHub reports correct file size`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -357,7 +357,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitHub sends correct API URL`() = runBlocking {
+    fun `listFiles GitHub sends correct API URL`() = runBlocking<Unit> {
         var apiUrl = ""
         val client = createMockClient { request ->
             val url = request.url.toString()
@@ -383,7 +383,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitHub with subpath includes path in URL`() = runBlocking {
+    fun `listFiles GitHub with subpath includes path in URL`() = runBlocking<Unit> {
         var apiUrl = ""
         val client = createMockClient { request ->
             val url = request.url.toString()
@@ -405,7 +405,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitHub documents have git storageId`() = runBlocking {
+    fun `listFiles GitHub documents have git storageId`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -430,7 +430,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitHub documents have SYNCED status`() = runBlocking {
+    fun `listFiles GitHub documents have SYNCED status`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -455,7 +455,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitHub documents have correct paths`() = runBlocking {
+    fun `listFiles GitHub documents have correct paths`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -480,7 +480,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitHub documents have READ WRITE DELETE permissions`() = runBlocking {
+    fun `listFiles GitHub documents have READ WRITE DELETE permissions`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -507,7 +507,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitHub sends Accept application json header`() = runBlocking {
+    fun `listFiles GitHub sends Accept application json header`() = runBlocking<Unit> {
         var acceptHeader = ""
         val client = createMockClient { request ->
             val url = request.url.toString()
@@ -532,7 +532,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitHub with many files returns all documents`() = runBlocking {
+    fun `listFiles GitHub with many files returns all documents`() = runBlocking<Unit> {
         val manyFilesJson = buildString {
             append("[")
             for (i in 1..10) {
@@ -565,7 +565,7 @@ class GitMockHttpTest {
     // ==================== 3. LIST FILES GITLAB ====================
 
     @Test
-    fun `listFiles GitLab returns parsed documents`() = runBlocking {
+    fun `listFiles GitLab returns parsed documents`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -590,7 +590,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitLab distinguishes blobs from trees`() = runBlocking {
+    fun `listFiles GitLab distinguishes blobs from trees`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -618,7 +618,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitLab sends correct API URL with encoded project`() = runBlocking {
+    fun `listFiles GitLab sends correct API URL with encoded project`() = runBlocking<Unit> {
         var apiUrl = ""
         val client = createMockClient { request ->
             val url = request.url.toString()
@@ -645,7 +645,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitLab documents have correct names`() = runBlocking {
+    fun `listFiles GitLab documents have correct names`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -672,7 +672,7 @@ class GitMockHttpTest {
     // ==================== 4. DOWNLOAD FILE GITHUB ====================
 
     @Test
-    fun `downloadFile GitHub completes successfully`() = runBlocking {
+    fun `downloadFile GitHub completes successfully`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -699,7 +699,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `downloadFile GitHub emits progress updates`() = runBlocking {
+    fun `downloadFile GitHub emits progress updates`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -723,7 +723,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `downloadFile GitHub operation type is DOWNLOAD`() = runBlocking {
+    fun `downloadFile GitHub operation type is DOWNLOAD`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -747,7 +747,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `downloadFile GitHub sends request to raw URL`() = runBlocking {
+    fun `downloadFile GitHub sends request to raw URL`() = runBlocking<Unit> {
         var rawUrl = ""
         val client = createMockClient { request ->
             val url = request.url.toString()
@@ -776,7 +776,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `downloadFile GitHub final operation has progress 1 point 0`() = runBlocking {
+    fun `downloadFile GitHub final operation has progress 1 point 0`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -800,7 +800,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `downloadFile GitHub with 404 still completes via fallback`() = runBlocking {
+    fun `downloadFile GitHub with 404 still completes via fallback`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -822,7 +822,7 @@ class GitMockHttpTest {
     // ==================== 5. UPLOAD FILE GITHUB ====================
 
     @Test
-    fun `uploadFile GitHub completes with COMPLETED status`() = runBlocking {
+    fun `uploadFile GitHub completes with COMPLETED status`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -850,7 +850,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `uploadFile GitHub first GETs existing SHA then PUTs`() = runBlocking {
+    fun `uploadFile GitHub first GETs existing SHA then PUTs`() = runBlocking<Unit> {
         val requestLog = mutableListOf<Pair<HttpMethod, String>>()
         val client = createMockClient { request ->
             val url = request.url.toString()
@@ -882,7 +882,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `uploadFile GitHub updates knownFiles after success`() = runBlocking {
+    fun `uploadFile GitHub updates knownFiles after success`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -908,7 +908,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `uploadFile GitHub operation type is UPLOAD`() = runBlocking {
+    fun `uploadFile GitHub operation type is UPLOAD`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -932,7 +932,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `uploadFile GitHub emits progress updates`() = runBlocking {
+    fun `uploadFile GitHub emits progress updates`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -956,7 +956,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `uploadFile GitHub final operation has progress 1 point 0`() = runBlocking {
+    fun `uploadFile GitHub final operation has progress 1 point 0`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -980,7 +980,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `uploadFile GitHub sends PUT to contents API`() = runBlocking {
+    fun `uploadFile GitHub sends PUT to contents API`() = runBlocking<Unit> {
         val capturedMethods = mutableListOf<HttpMethod>()
         val client = createMockClient { request ->
             capturedMethods.add(request.method)
@@ -1005,7 +1005,7 @@ class GitMockHttpTest {
     // ==================== 6. UPLOAD FILE GITLAB ====================
 
     @Test
-    fun `uploadFile GitLab completes successfully via PUT`() = runBlocking {
+    fun `uploadFile GitLab completes successfully via PUT`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -1030,7 +1030,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `uploadFile GitLab falls back to POST when PUT fails`() = runBlocking {
+    fun `uploadFile GitLab falls back to POST when PUT fails`() = runBlocking<Unit> {
         val requestLog = mutableListOf<Pair<HttpMethod, String>>()
         val client = createMockClient { request ->
             val url = request.url.toString()
@@ -1059,7 +1059,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `uploadFile GitLab updates knownFiles after success`() = runBlocking {
+    fun `uploadFile GitLab updates knownFiles after success`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -1085,7 +1085,7 @@ class GitMockHttpTest {
     // ==================== 7. DELETE FILE GITHUB ====================
 
     @Test
-    fun `deleteFile GitHub succeeds with SHA fetch and DELETE`() = runBlocking {
+    fun `deleteFile GitHub succeeds with SHA fetch and DELETE`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -1112,7 +1112,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `deleteFile GitHub gets SHA before deleting`() = runBlocking {
+    fun `deleteFile GitHub gets SHA before deleting`() = runBlocking<Unit> {
         val requestLog = mutableListOf<Pair<HttpMethod, String>>()
         val client = createMockClient { request ->
             val url = request.url.toString()
@@ -1144,7 +1144,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `deleteFile GitHub removes file from knownFiles`() = runBlocking {
+    fun `deleteFile GitHub removes file from knownFiles`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -1175,7 +1175,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `deleteFile GitHub with local tracking when API unavailable`() = runBlocking {
+    fun `deleteFile GitHub with local tracking when API unavailable`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -1194,7 +1194,7 @@ class GitMockHttpTest {
     // ==================== 8. CONNECT ERROR CODES ====================
 
     @Test
-    fun `connect with 404 response still sets connected`() = runBlocking {
+    fun `connect with 404 response still sets connected`() = runBlocking<Unit> {
         val client = createMockClient { respond("Not Found", HttpStatusCode.NotFound) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1205,7 +1205,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `connect with 500 response still sets connected`() = runBlocking {
+    fun `connect with 500 response still sets connected`() = runBlocking<Unit> {
         val client = createMockClient { respond("Internal Server Error", HttpStatusCode.InternalServerError) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1216,7 +1216,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `connect with 403 forbidden still sets connected`() = runBlocking {
+    fun `connect with 403 forbidden still sets connected`() = runBlocking<Unit> {
         val client = createMockClient { respond("Forbidden", HttpStatusCode.Forbidden) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1227,7 +1227,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `connect with 401 unauthorized still sets connected`() = runBlocking {
+    fun `connect with 401 unauthorized still sets connected`() = runBlocking<Unit> {
         val client = createMockClient { respond("Unauthorized", HttpStatusCode.Unauthorized) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1240,7 +1240,7 @@ class GitMockHttpTest {
     // ==================== 9. LIST FILES EMPTY REPO ====================
 
     @Test
-    fun `listFiles empty GitHub repo returns failure`() = runBlocking {
+    fun `listFiles empty GitHub repo returns failure`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -1263,7 +1263,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles empty GitLab repo returns failure`() = runBlocking {
+    fun `listFiles empty GitLab repo returns failure`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -1286,7 +1286,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles with empty repo URL returns error`() = runBlocking {
+    fun `listFiles with empty repo URL returns error`() = runBlocking<Unit> {
         val client = createMockClient { respond(gitInfoRefsResponse, HttpStatusCode.OK) }
         val config = createGitHubConfig(repoUrl = "")
         val service = GitService(config, _injectedHttpClient = client)
@@ -1301,7 +1301,7 @@ class GitMockHttpTest {
     // ==================== 10. UPLOAD FILE AUTH FAILURE ====================
 
     @Test
-    fun `uploadFile GitHub with 401 falls back to local tracking`() = runBlocking {
+    fun `uploadFile GitHub with 401 falls back to local tracking`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -1323,7 +1323,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `uploadFile GitHub 401 still tracks file locally`() = runBlocking {
+    fun `uploadFile GitHub 401 still tracks file locally`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -1345,7 +1345,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `uploadFile GitLab with 401 falls back to local tracking`() = runBlocking {
+    fun `uploadFile GitLab with 401 falls back to local tracking`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -1369,7 +1369,7 @@ class GitMockHttpTest {
     // ==================== ADDITIONAL COVERAGE ====================
 
     @Test
-    fun `listFiles when not connected emits failure`() = runBlocking {
+    fun `listFiles when not connected emits failure`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1380,7 +1380,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `uploadFile when not connected emits FAILED status`() = runBlocking {
+    fun `uploadFile when not connected emits FAILED status`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1391,7 +1391,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `uploadFile when not connected has UPLOAD type`() = runBlocking {
+    fun `uploadFile when not connected has UPLOAD type`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1403,7 +1403,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `downloadFile when not connected emits FAILED status`() = runBlocking {
+    fun `downloadFile when not connected emits FAILED status`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1414,7 +1414,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `downloadFile when not connected has DOWNLOAD type`() = runBlocking {
+    fun `downloadFile when not connected has DOWNLOAD type`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1426,7 +1426,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `connect then disconnect then listFiles fails`() = runBlocking {
+    fun `connect then disconnect then listFiles fails`() = runBlocking<Unit> {
         val client = createMockClient { respond(gitInfoRefsResponse, HttpStatusCode.OK) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1440,7 +1440,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitHub with server error falls through to failure`() = runBlocking {
+    fun `listFiles GitHub with server error falls through to failure`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -1460,7 +1460,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `multiple sequential operations maintain state correctly`() = runBlocking {
+    fun `multiple sequential operations maintain state correctly`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -1499,7 +1499,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `getStorageInfo after connect shows online`() = runBlocking {
+    fun `getStorageInfo after connect shows online`() = runBlocking<Unit> {
         val client = createMockClient { respond(gitInfoRefsResponse, HttpStatusCode.OK) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1512,7 +1512,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `exists after listFiles returns true for known files`() = runBlocking {
+    fun `exists after listFiles returns true for known files`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -1533,7 +1533,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `disconnect sets isOnline to false`() = runBlocking {
+    fun `disconnect sets isOnline to false`() = runBlocking<Unit> {
         val client = createMockClient { respond(gitInfoRefsResponse, HttpStatusCode.OK) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
         service.connect()
@@ -1545,7 +1545,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `getQuotaInfo returns MAX_VALUE for git`() = runBlocking {
+    fun `getQuotaInfo returns MAX_VALUE for git`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1559,7 +1559,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `getActiveOperations returns empty initially`() = runBlocking {
+    fun `getActiveOperations returns empty initially`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1569,7 +1569,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `listFiles GitHub falls back to known files on API 404`() = runBlocking {
+    fun `listFiles GitHub falls back to known files on API 404`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -1588,7 +1588,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `addToCache and getCacheEntries work with mock client`() = runBlocking {
+    fun `addToCache and getCacheEntries work with mock client`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1599,7 +1599,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `clearCache removes all entries with mock client`() = runBlocking {
+    fun `clearCache removes all entries with mock client`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1612,7 +1612,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `getSyncStatus returns empty initially with mock client`() = runBlocking {
+    fun `getSyncStatus returns empty initially with mock client`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
         val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
 
@@ -1622,7 +1622,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `syncFile emits COMPLETED operation`() = runBlocking {
+    fun `syncFile emits COMPLETED operation`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {

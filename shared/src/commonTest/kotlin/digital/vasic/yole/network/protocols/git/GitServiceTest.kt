@@ -44,7 +44,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testConnectSuccess() = runBlocking {
+    fun testConnectSuccess() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val result = gitService.connect()
         
@@ -54,7 +54,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testDisconnectSuccess() = runBlocking {
+    fun testDisconnectSuccess() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         gitService.connect()
         val result = gitService.disconnect()
@@ -63,7 +63,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testStorageInfo() = runBlocking {
+    fun testStorageInfo() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val storageInfo = gitService.getStorageInfo()
         
@@ -74,7 +74,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testListFilesWhenNotConnected() = runBlocking {
+    fun testListFilesWhenNotConnected() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val result = gitService.listFiles("/").first()
         
@@ -83,7 +83,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testDownloadFileWhenNotConnected() = runBlocking {
+    fun testDownloadFileWhenNotConnected() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val operations = gitService.downloadFile("/test.md", "/tmp/test.md")
         
@@ -94,7 +94,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testUploadFileWhenNotConnected() = runBlocking {
+    fun testUploadFileWhenNotConnected() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val operations = gitService.uploadFile("/tmp/test.md", "/test.md")
         
@@ -105,7 +105,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testDeleteFileWhenNotConnected() = runBlocking {
+    fun testDeleteFileWhenNotConnected() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val result = gitService.deleteFile("/test.md")
         
@@ -113,7 +113,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testCreateFolderWhenNotConnected() = runBlocking {
+    fun testCreateFolderWhenNotConnected() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val result = gitService.createFolder("/test-folder")
         
@@ -124,7 +124,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testRenameFileWhenNotConnected() = runBlocking {
+    fun testRenameFileWhenNotConnected() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val result = gitService.renameFile("/test.md", "renamed.md")
         
@@ -132,7 +132,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testMoveFileWhenNotConnected() = runBlocking {
+    fun testMoveFileWhenNotConnected() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val result = gitService.moveFile("/test.md", "/moved/test.md")
         
@@ -143,7 +143,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testCopyFileWhenNotConnected() = runBlocking {
+    fun testCopyFileWhenNotConnected() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val result = gitService.copyFile("/test.md", "/copy/test.md")
         
@@ -151,7 +151,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testGetFileInfoWhenNotConnected() = runBlocking {
+    fun testGetFileInfoWhenNotConnected() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val result = gitService.getFileInfo("/test.md")
         
@@ -162,7 +162,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testGetQuotaInfoWhenNotConnected() = runBlocking {
+    fun testGetQuotaInfoWhenNotConnected() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val result = gitService.getQuotaInfo()
         
@@ -177,7 +177,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testExistsWhenNotConnected() = runBlocking {
+    fun testExistsWhenNotConnected() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val result = gitService.exists("/test.md")
         
@@ -186,7 +186,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testCancelOperation() = runBlocking {
+    fun testCancelOperation() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val result = gitService.cancelOperation(12345)
         
@@ -194,7 +194,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testPauseOperation() = runBlocking {
+    fun testPauseOperation() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val result = gitService.pauseOperation(12345)
         
@@ -202,7 +202,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testResumeOperation() = runBlocking {
+    fun testResumeOperation() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val result = gitService.resumeOperation(12345)
         
@@ -233,7 +233,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testSearchFilesWhenNotConnected() = runBlocking {
+    fun testSearchFilesWhenNotConnected() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val result = gitService.searchFiles("test", "/", false).first()
         
@@ -242,7 +242,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testGetRecentChangesWhenNotConnected() = runBlocking {
+    fun testGetRecentChangesWhenNotConnected() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val since = Clock.System.now()
         val changes = gitService.getRecentChanges(since, "/").first()
@@ -251,7 +251,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testSyncFileWhenNotConnected() = runBlocking {
+    fun testSyncFileWhenNotConnected() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val operations = gitService.syncFile("/test.md", false)
         
@@ -268,7 +268,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testSyncAllWhenNotConnected() = runBlocking {
+    fun testSyncAllWhenNotConnected() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val operations = gitService.syncAll(false)
 
@@ -284,7 +284,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testActiveOperationsFlow() = runBlocking {
+    fun testActiveOperationsFlow() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val activeOps = gitService.getActiveOperations().first()
         
@@ -292,7 +292,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testCacheOperations() = runBlocking {
+    fun testCacheOperations() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         
         val cacheEntries = gitService.getCacheEntries("/").first()
@@ -309,7 +309,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testSyncStatusFlow() = runBlocking {
+    fun testSyncStatusFlow() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val syncStatus = gitService.getSyncStatus("/").first()
         
@@ -317,7 +317,7 @@ class GitServiceTest {
     }
     
     @Test
-    fun testTestConnection() = runBlocking {
+    fun testTestConnection() = runBlocking<Unit> {
         gitService = GitService(gitConfig)
         val result = gitService.testConnection()
         

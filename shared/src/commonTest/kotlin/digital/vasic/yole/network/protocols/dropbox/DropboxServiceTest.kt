@@ -71,7 +71,7 @@ class DropboxServiceTest {
     // ==================== Storage Info Tests ====================
 
     @Test
-    fun `getStorageInfo should return valid storage info`() = runBlocking {
+    fun `getStorageInfo should return valid storage info`() = runBlocking<Unit> {
         val storageInfo = dropboxService.getStorageInfo()
         assertNotNull(storageInfo)
         assertNotNull(storageInfo.id)
@@ -80,7 +80,7 @@ class DropboxServiceTest {
     }
 
     @Test
-    fun `getStorageInfo should support folders`() = runBlocking {
+    fun `getStorageInfo should support folders`() = runBlocking<Unit> {
         val storageInfo = dropboxService.getStorageInfo()
         assertTrue(storageInfo.supportsFolders, "Dropbox should support folders")
     }
@@ -88,20 +88,20 @@ class DropboxServiceTest {
     // ==================== Connection Tests ====================
 
     @Test
-    fun `disconnect should succeed`() = runBlocking {
+    fun `disconnect should succeed`() = runBlocking<Unit> {
         val result = dropboxService.disconnect()
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `connect should complete (success or failure)`() = runBlocking {
+    fun `connect should complete (success or failure)`() = runBlocking<Unit> {
         // Without real network, connect will likely fail but should not throw
         val result = dropboxService.connect()
         assertTrue(result.isSuccess || result.isFailure, "Connect should complete")
     }
 
     @Test
-    fun `testConnection should complete (success or failure)`() = runBlocking {
+    fun `testConnection should complete (success or failure)`() = runBlocking<Unit> {
         val result = dropboxService.testConnection()
         assertTrue(result.isSuccess || result.isFailure, "testConnection should complete")
     }
@@ -109,7 +109,7 @@ class DropboxServiceTest {
     // ==================== File Operation Tests (Offline) ====================
 
     @Test
-    fun `uploadFile should emit operations`() = runBlocking {
+    fun `uploadFile should emit operations`() = runBlocking<Unit> {
         val uploadOps = dropboxService.uploadFile("/local-file.txt", "/remote-file.txt")
         val ops = mutableListOf<NetworkOperation>()
         uploadOps.collect { ops.add(it) }
@@ -120,7 +120,7 @@ class DropboxServiceTest {
     }
 
     @Test
-    fun `downloadFile should emit operations`() = runBlocking {
+    fun `downloadFile should emit operations`() = runBlocking<Unit> {
         val downloadOps = dropboxService.downloadFile("/remote-file.txt", "/local-file.txt")
         val ops = mutableListOf<NetworkOperation>()
         downloadOps.collect { ops.add(it) }
@@ -131,19 +131,19 @@ class DropboxServiceTest {
     }
 
     @Test
-    fun `deleteFile should complete`() = runBlocking {
+    fun `deleteFile should complete`() = runBlocking<Unit> {
         val result = dropboxService.deleteFile("/test-file.txt")
         assertTrue(result.isSuccess || result.isFailure, "deleteFile should complete")
     }
 
     @Test
-    fun `getFileInfo should complete`() = runBlocking {
+    fun `getFileInfo should complete`() = runBlocking<Unit> {
         val result = dropboxService.getFileInfo("/test-file.txt")
         assertTrue(result.isSuccess || result.isFailure, "getFileInfo should complete")
     }
 
     @Test
-    fun `exists should succeed`() = runBlocking {
+    fun `exists should succeed`() = runBlocking<Unit> {
         val result = dropboxService.exists("/test-file.txt")
         assertTrue(result.isSuccess, "exists should succeed")
     }
@@ -151,13 +151,13 @@ class DropboxServiceTest {
     // ==================== Directory Operations Tests ====================
 
     @Test
-    fun `listFiles should emit results`() = runBlocking {
+    fun `listFiles should emit results`() = runBlocking<Unit> {
         val listResult = dropboxService.listFiles("/").first()
         assertTrue(listResult.isSuccess || listResult.isFailure, "listFiles should complete")
     }
 
     @Test
-    fun `createFolder should complete`() = runBlocking {
+    fun `createFolder should complete`() = runBlocking<Unit> {
         val result = dropboxService.createFolder("/test-folder")
         assertTrue(result.isSuccess || result.isFailure, "createFolder should complete")
 
@@ -169,19 +169,19 @@ class DropboxServiceTest {
     }
 
     @Test
-    fun `renameFile should complete`() = runBlocking {
+    fun `renameFile should complete`() = runBlocking<Unit> {
         val result = dropboxService.renameFile("/old-name.txt", "new-name.txt")
         assertTrue(result.isSuccess || result.isFailure, "renameFile should complete")
     }
 
     @Test
-    fun `moveFile should complete`() = runBlocking {
+    fun `moveFile should complete`() = runBlocking<Unit> {
         val result = dropboxService.moveFile("/source.txt", "/destination.txt")
         assertTrue(result.isSuccess || result.isFailure, "moveFile should complete")
     }
 
     @Test
-    fun `copyFile should complete`() = runBlocking {
+    fun `copyFile should complete`() = runBlocking<Unit> {
         val result = dropboxService.copyFile("/source.txt", "/copy.txt")
         assertTrue(result.isSuccess || result.isFailure, "copyFile should complete")
     }
@@ -189,7 +189,7 @@ class DropboxServiceTest {
     // ==================== Quota Tests ====================
 
     @Test
-    fun `getQuotaInfo should fail when not connected`() = runBlocking {
+    fun `getQuotaInfo should fail when not connected`() = runBlocking<Unit> {
         val result = dropboxService.getQuotaInfo()
         // getQuotaInfo now makes real API calls; without auth it fails when not connected
         assertTrue(result.isFailure, "getQuotaInfo should fail when not connected")
@@ -198,25 +198,25 @@ class DropboxServiceTest {
     // ==================== Operation Management Tests ====================
 
     @Test
-    fun `cancelOperation should succeed`() = runBlocking {
+    fun `cancelOperation should succeed`() = runBlocking<Unit> {
         val result = dropboxService.cancelOperation(12345L)
         assertTrue(result.isSuccess, "cancelOperation should succeed")
     }
 
     @Test
-    fun `pauseOperation should succeed`() = runBlocking {
+    fun `pauseOperation should succeed`() = runBlocking<Unit> {
         val result = dropboxService.pauseOperation(12345L)
         assertTrue(result.isSuccess, "pauseOperation should succeed")
     }
 
     @Test
-    fun `resumeOperation should succeed`() = runBlocking {
+    fun `resumeOperation should succeed`() = runBlocking<Unit> {
         val result = dropboxService.resumeOperation(12345L)
         assertTrue(result.isSuccess, "resumeOperation should succeed")
     }
 
     @Test
-    fun `getActiveOperations should return flow`() = runBlocking {
+    fun `getActiveOperations should return flow`() = runBlocking<Unit> {
         val activeOps = dropboxService.getActiveOperations().first()
         assertNotNull(activeOps, "Should return active operations")
     }
@@ -224,19 +224,19 @@ class DropboxServiceTest {
     // ==================== Cache Operations Tests ====================
 
     @Test
-    fun `addToCache should succeed`() = runBlocking {
+    fun `addToCache should succeed`() = runBlocking<Unit> {
         val result = dropboxService.addToCache("/test.txt", 100)
         assertTrue(result.isSuccess, "addToCache should succeed")
     }
 
     @Test
-    fun `removeFromCache should succeed`() = runBlocking {
+    fun `removeFromCache should succeed`() = runBlocking<Unit> {
         val result = dropboxService.removeFromCache("/test.txt")
         assertTrue(result.isSuccess, "removeFromCache should succeed")
     }
 
     @Test
-    fun `clearCache should succeed`() = runBlocking {
+    fun `clearCache should succeed`() = runBlocking<Unit> {
         val result = dropboxService.clearCache()
         assertTrue(result.isSuccess, "clearCache should succeed")
     }
@@ -244,7 +244,7 @@ class DropboxServiceTest {
     // ==================== Sync Tests ====================
 
     @Test
-    fun `syncFile should emit operations`() = runBlocking {
+    fun `syncFile should emit operations`() = runBlocking<Unit> {
         val syncOps = dropboxService.syncFile("/test.txt", false)
         val ops = mutableListOf<NetworkOperation>()
         syncOps.collect { ops.add(it) }
@@ -254,13 +254,13 @@ class DropboxServiceTest {
     // ==================== Path Tests ====================
 
     @Test
-    fun `getParentPath should return parent`() = runBlocking {
+    fun `getParentPath should return parent`() = runBlocking<Unit> {
         val parentPath = dropboxService.getParentPath("/folder/file.txt")
         assertNotNull(parentPath, "Should return parent path")
     }
 
     @Test
-    fun `validatePath should complete`() = runBlocking {
+    fun `validatePath should complete`() = runBlocking<Unit> {
         val result = dropboxService.validatePath("/test.txt")
         assertTrue(result.isSuccess || result.isFailure, "validatePath should complete")
     }
@@ -268,7 +268,7 @@ class DropboxServiceTest {
     // ==================== Edge Cases ====================
 
     @Test
-    fun `should handle very long file paths`() = runBlocking {
+    fun `should handle very long file paths`() = runBlocking<Unit> {
         val longPath = "/remote/test/" + "a".repeat(1000) + "/file.txt"
         val result = dropboxService.getFileInfo(longPath)
         // Should complete without crashing
@@ -276,7 +276,7 @@ class DropboxServiceTest {
     }
 
     @Test
-    fun `should handle special characters in file names`() = runBlocking {
+    fun `should handle special characters in file names`() = runBlocking<Unit> {
         val specialPath = "/remote/test/file with spaces.txt"
         val result = dropboxService.getFileInfo(specialPath)
         // Should complete without crashing
@@ -284,13 +284,13 @@ class DropboxServiceTest {
     }
 
     @Test
-    fun `should handle empty path`() = runBlocking {
+    fun `should handle empty path`() = runBlocking<Unit> {
         val result = dropboxService.exists("")
         assertTrue(result.isSuccess || result.isFailure, "Should handle empty path")
     }
 
     @Test
-    fun `should handle root path`() = runBlocking {
+    fun `should handle root path`() = runBlocking<Unit> {
         val result = dropboxService.exists("/")
         assertTrue(result.isSuccess, "Should handle root path")
     }
@@ -310,7 +310,7 @@ class DropboxServiceTest {
     }
 
     @Test
-    fun `multiple service instances should be independent`() = runBlocking {
+    fun `multiple service instances should be independent`() = runBlocking<Unit> {
         val config1 = StorageConfig.DropboxConfig(
             name = "dropbox-1",
             accessToken = "token-1",

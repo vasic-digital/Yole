@@ -33,7 +33,7 @@ class NetworkProtocolStressTest {
     // ==================== FTP STRESS TESTS ====================
 
     @Test
-    fun `FTP concurrent connect disconnect cycles`() = runBlocking {
+    fun `FTP concurrent connect disconnect cycles`() = runBlocking<Unit> {
         val config = StorageConfig.FtpConfig(
             name = "stress-ftp",
             host = "ftp.example.com",
@@ -62,7 +62,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `FTP rapid file info requests`() = runBlocking {
+    fun `FTP rapid file info requests`() = runBlocking<Unit> {
         val config = StorageConfig.FtpConfig(
             name = "stress-ftp",
             host = "ftp.example.com",
@@ -91,7 +91,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `FTP concurrent cache operations`() = runBlocking {
+    fun `FTP concurrent cache operations`() = runBlocking<Unit> {
         val config = StorageConfig.FtpConfig(
             name = "stress-ftp",
             host = "ftp.example.com",
@@ -119,7 +119,7 @@ class NetworkProtocolStressTest {
     // ==================== SMB STRESS TESTS ====================
 
     @Test
-    fun `SMB concurrent connect disconnect cycles`() = runBlocking {
+    fun `SMB concurrent connect disconnect cycles`() = runBlocking<Unit> {
         val config = StorageConfig.SmbConfig(
             name = "stress-smb",
             host = "192.168.1.100",
@@ -148,7 +148,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `SMB rapid folder operations`() = runBlocking {
+    fun `SMB rapid folder operations`() = runBlocking<Unit> {
         val config = StorageConfig.SmbConfig(
             name = "stress-smb",
             host = "192.168.1.100",
@@ -173,7 +173,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `SMB concurrent file move operations`() = runBlocking {
+    fun `SMB concurrent file move operations`() = runBlocking<Unit> {
         val config = StorageConfig.SmbConfig(
             name = "stress-smb",
             host = "192.168.1.100",
@@ -200,7 +200,7 @@ class NetworkProtocolStressTest {
     // ==================== WEBDAV STRESS TESTS ====================
 
     @Test
-    fun `WebDAV concurrent connect disconnect cycles`() = runBlocking {
+    fun `WebDAV concurrent connect disconnect cycles`() = runBlocking<Unit> {
         val config = StorageConfig.WebDavConfig(
             name = "stress-webdav",
             url = "https://webdav.example.com/dav",
@@ -225,7 +225,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `WebDAV rapid sync operations`() = runBlocking {
+    fun `WebDAV rapid sync operations`() = runBlocking<Unit> {
         val config = StorageConfig.WebDavConfig(
             name = "stress-webdav",
             url = "https://webdav.example.com/dav",
@@ -246,7 +246,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `WebDAV concurrent quota checks`() = runBlocking {
+    fun `WebDAV concurrent quota checks`() = runBlocking<Unit> {
         val config = StorageConfig.WebDavConfig(
             name = "stress-webdav",
             url = "https://webdav.example.com/dav",
@@ -268,7 +268,7 @@ class NetworkProtocolStressTest {
     // ==================== GIT STRESS TESTS ====================
 
     @Test
-    fun `Git rapid file operations`() = runBlocking {
+    fun `Git rapid file operations`() = runBlocking<Unit> {
         val config = StorageConfig.GitConfig(
             name = "stress-git",
             repositoryUrl = "https://github.com/example/repo.git",
@@ -290,7 +290,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `Git concurrent folder creation`() = runBlocking {
+    fun `Git concurrent folder creation`() = runBlocking<Unit> {
         val config = StorageConfig.GitConfig(
             name = "stress-git",
             repositoryUrl = "https://github.com/example/repo.git",
@@ -312,7 +312,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `Git path validation stress`() = runBlocking {
+    fun `Git path validation stress`() = runBlocking<Unit> {
         val config = StorageConfig.GitConfig(
             name = "stress-git",
             repositoryUrl = "https://github.com/example/repo.git",
@@ -337,7 +337,7 @@ class NetworkProtocolStressTest {
     // ==================== CROSS-PROTOCOL STRESS TESTS ====================
 
     @Test
-    fun `Multiple protocols concurrent operations`() = runBlocking {
+    fun `Multiple protocols concurrent operations`() = runBlocking<Unit> {
         val ftpConfig = StorageConfig.FtpConfig(
             name = "ftp", host = "ftp.example.com", port = 21,
             username = "user", password = "pass", rootPath = "/"
@@ -380,7 +380,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `Rapid protocol switching`() = runBlocking {
+    fun `Rapid protocol switching`() = runBlocking<Unit> {
         val ftpConfig = StorageConfig.FtpConfig(
             name = "ftp", host = "ftp.example.com", port = 21,
             username = "user", password = "pass", rootPath = "/"
@@ -414,7 +414,7 @@ class NetworkProtocolStressTest {
     // ==================== EDGE CASE STRESS TESTS ====================
 
     @Test
-    fun `Stress test with empty paths`() = runBlocking {
+    fun `Stress test with empty paths`() = runBlocking<Unit> {
         val config = StorageConfig.FtpConfig(
             name = "ftp", host = "ftp.example.com", port = 21,
             username = "user", password = "pass", rootPath = "/"
@@ -436,7 +436,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `Stress test with special characters in paths`() = runBlocking {
+    fun `Stress test with special characters in paths`() = runBlocking<Unit> {
         val config = StorageConfig.WebDavConfig(
             name = "webdav", url = "https://webdav.example.com",
             username = "user", password = "pass"
@@ -465,7 +465,7 @@ class NetworkProtocolStressTest {
     }
 
     @Test
-    fun `Stress test connection state consistency`() = runBlocking {
+    fun `Stress test connection state consistency`() = runBlocking<Unit> {
         val config = StorageConfig.SmbConfig(
             name = "smb", host = "192.168.1.100", share = "docs",
             domain = "WORKGROUP", username = "user", password = "pass", path = "/"

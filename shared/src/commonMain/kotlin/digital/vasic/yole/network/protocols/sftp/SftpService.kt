@@ -1017,8 +1017,9 @@ class SftpService(
             }
 
             // If not in VFS, send SSH_FXP_STAT to get file attributes
-            val fileName = fullPath.substringAfterLast("/")
-            val isDirectory = fullPath.endsWith("/") // Simplified check
+            val rawFileName = fullPath.substringAfterLast("/")
+            val isDirectory = remotePath.endsWith("/") || rawFileName.isEmpty() // Check original path for trailing slash hint
+            val fileName = if (rawFileName.isEmpty()) fullPath.trimEnd('/').substringAfterLast("/") else rawFileName
             val fileSize = if (isDirectory) 0L else 8192L
             val lastModified = Clock.System.now().minus(2.hours)
 

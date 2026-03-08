@@ -114,7 +114,7 @@ class GoogleDriveMockHttpTest {
     // ==================== Connect / Disconnect ====================
 
     @Test
-    fun testConnectWithValidTokenSucceeds() = runBlocking {
+    fun testConnectWithValidTokenSucceeds() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = aboutResponse,
@@ -129,7 +129,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testConnectSendsAuthorizationHeader() = runBlocking {
+    fun testConnectSendsAuthorizationHeader() = runBlocking<Unit> {
         var capturedAuth: String? = null
         val service = createServiceWithMock { request ->
             capturedAuth = request.headers["Authorization"]
@@ -145,7 +145,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testConnectCallsAboutEndpoint() = runBlocking {
+    fun testConnectCallsAboutEndpoint() = runBlocking<Unit> {
         var capturedUrl: String? = null
         val service = createServiceWithMock { request ->
             capturedUrl = request.url.toString()
@@ -163,7 +163,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testConnectFailsOnServerError() = runBlocking {
+    fun testConnectFailsOnServerError() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = "Internal Server Error",
@@ -178,7 +178,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testDisconnectSucceeds() = runBlocking {
+    fun testDisconnectSucceeds() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = aboutResponse,
@@ -198,7 +198,7 @@ class GoogleDriveMockHttpTest {
     // ==================== List Files ====================
 
     @Test
-    fun testListFilesReturnsDocuments() = runBlocking {
+    fun testListFilesReturnsDocuments() = runBlocking<Unit> {
         var requestCount = 0
         val service = createServiceWithMock { request ->
             requestCount++
@@ -234,7 +234,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testListFilesSetsCorrectPath() = runBlocking {
+    fun testListFilesSetsCorrectPath() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -260,7 +260,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testListFilesIncludesParentQueryParam() = runBlocking {
+    fun testListFilesIncludesParentQueryParam() = runBlocking<Unit> {
         var capturedUrl: String? = null
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
@@ -293,7 +293,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testListFilesWhenNotConnectedFails() = runBlocking {
+    fun testListFilesWhenNotConnectedFails() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = "Unauthorized",
@@ -306,7 +306,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testListFilesHandlesEmptyResponse() = runBlocking {
+    fun testListFilesHandlesEmptyResponse() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -330,7 +330,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testListFilesHandlesApiError() = runBlocking {
+    fun testListFilesHandlesApiError() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -355,7 +355,7 @@ class GoogleDriveMockHttpTest {
     // ==================== Download File ====================
 
     @Test
-    fun testDownloadFileEmitsProgressUpdates() = runBlocking {
+    fun testDownloadFileEmitsProgressUpdates() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -385,7 +385,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testDownloadFileWhenNotConnectedReturnsFailed() = runBlocking {
+    fun testDownloadFileWhenNotConnectedReturnsFailed() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -399,7 +399,7 @@ class GoogleDriveMockHttpTest {
     // ==================== Upload File ====================
 
     @Test
-    fun testUploadFileWhenNotConnectedReturnsFailed() = runBlocking {
+    fun testUploadFileWhenNotConnectedReturnsFailed() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -411,7 +411,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testUploadFileEmitsProgressWhenConnected() = runBlocking {
+    fun testUploadFileEmitsProgressWhenConnected() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -443,7 +443,7 @@ class GoogleDriveMockHttpTest {
     // ==================== Delete File ====================
 
     @Test
-    fun testDeleteFileSuccess() = runBlocking {
+    fun testDeleteFileSuccess() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -468,7 +468,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testDeleteFileWhenNotConnectedSucceedsSilently() = runBlocking {
+    fun testDeleteFileWhenNotConnectedSucceedsSilently() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -480,7 +480,7 @@ class GoogleDriveMockHttpTest {
     // ==================== Create Folder ====================
 
     @Test
-    fun testCreateFolderSuccess() = runBlocking {
+    fun testCreateFolderSuccess() = runBlocking<Unit> {
         var capturedMethod: HttpMethod? = null
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
@@ -515,7 +515,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testCreateFolderWhenNotConnectedReturnsOfflineDoc() = runBlocking {
+    fun testCreateFolderWhenNotConnectedReturnsOfflineDoc() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -530,7 +530,7 @@ class GoogleDriveMockHttpTest {
     // ==================== Search Files ====================
 
     @Test
-    fun testSearchFilesReturnsResults() = runBlocking {
+    fun testSearchFilesReturnsResults() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
             when {
@@ -556,7 +556,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testSearchFilesWhenNotConnectedReturnsEmpty() = runBlocking {
+    fun testSearchFilesWhenNotConnectedReturnsEmpty() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -567,7 +567,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testSearchFilesIncludesQueryParameter() = runBlocking {
+    fun testSearchFilesIncludesQueryParameter() = runBlocking<Unit> {
         var capturedUrl: String? = null
         val service = createServiceWithMock { request ->
             val url = request.url.toString()
@@ -603,7 +603,7 @@ class GoogleDriveMockHttpTest {
     // ==================== Get Quota Info ====================
 
     @Test
-    fun testGetQuotaInfoReturnsValidQuota() = runBlocking {
+    fun testGetQuotaInfoReturnsValidQuota() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = aboutResponse,
@@ -623,7 +623,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testGetQuotaInfoWhenNotConnectedFails() = runBlocking {
+    fun testGetQuotaInfoWhenNotConnectedFails() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -633,7 +633,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testGetQuotaInfoUsagePercentage() = runBlocking {
+    fun testGetQuotaInfoUsagePercentage() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = aboutResponse,
@@ -651,7 +651,7 @@ class GoogleDriveMockHttpTest {
     // ==================== Get File Info ====================
 
     @Test
-    fun testGetFileInfoWhenNotConnectedReturnsOfflineDoc() = runBlocking {
+    fun testGetFileInfoWhenNotConnectedReturnsOfflineDoc() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -665,7 +665,7 @@ class GoogleDriveMockHttpTest {
     // ==================== Storage Info ====================
 
     @Test
-    fun testGetStorageInfoReturnsCorrectMetadata() = runBlocking {
+    fun testGetStorageInfoReturnsCorrectMetadata() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = aboutResponse,
@@ -685,7 +685,7 @@ class GoogleDriveMockHttpTest {
     // ==================== Rename / Move / Copy ====================
 
     @Test
-    fun testRenameFileWhenNotConnectedSucceeds() = runBlocking {
+    fun testRenameFileWhenNotConnectedSucceeds() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -695,7 +695,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testMoveFileWhenNotConnectedReturnsOfflineDoc() = runBlocking {
+    fun testMoveFileWhenNotConnectedReturnsOfflineDoc() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -707,7 +707,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testCopyFileWhenNotConnectedSucceeds() = runBlocking {
+    fun testCopyFileWhenNotConnectedSucceeds() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -719,7 +719,7 @@ class GoogleDriveMockHttpTest {
     // ==================== Exists ====================
 
     @Test
-    fun testExistsWhenNotConnectedReturnsTrue() = runBlocking {
+    fun testExistsWhenNotConnectedReturnsTrue() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -768,7 +768,7 @@ class GoogleDriveMockHttpTest {
     // ==================== Test Connection ====================
 
     @Test
-    fun testTestConnectionSuccess() = runBlocking {
+    fun testTestConnectionSuccess() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = aboutResponse,
@@ -783,7 +783,7 @@ class GoogleDriveMockHttpTest {
     }
 
     @Test
-    fun testTestConnectionFailsOnError() = runBlocking {
+    fun testTestConnectionFailsOnError() = runBlocking<Unit> {
         val service = createServiceWithMock { request ->
             respond(
                 content = "Service Unavailable",

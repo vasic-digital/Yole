@@ -33,7 +33,7 @@ class SecureStorageFactoryDesktopTest {
     val tempFolder = TemporaryFolder()
 
     @Test
-    fun `should create DesktopSecureStorage instance`() = runBlocking {
+    fun `should create DesktopSecureStorage instance`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         
         assertTrue(result.isSuccess, "Factory creation should succeed")
@@ -45,7 +45,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should report secure storage as available on desktop`() = runBlocking {
+    fun `should report secure storage as available on desktop`() = runBlocking<Unit> {
         val isAvailable = SecureStorageFactory.isAvailable()
         
         // Desktop should support secure storage via file system and crypto
@@ -53,7 +53,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should create storage in user home directory`() = runBlocking {
+    fun `should create storage in user home directory`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -74,7 +74,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should create storage directory structure`() = runBlocking {
+    fun `should create storage directory structure`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -92,7 +92,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should handle unavailable home directory`() = runBlocking {
+    fun `should handle unavailable home directory`() = runBlocking<Unit> {
         // Test with custom home directory that might not exist
         val originalHome = System.getProperty("user.home")
         val originalHomeEnv = System.getenv("HOME")
@@ -117,7 +117,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should create functional storage instances`() = runBlocking {
+    fun `should create functional storage instances`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -140,7 +140,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should handle permission issues gracefully`() = runBlocking {
+    fun `should handle permission issues gracefully`() = runBlocking<Unit> {
         // Test with a read-only directory
         val readOnlyDir = tempFolder.newFolder("readonly_test")
         readOnlyDir.setReadOnly()
@@ -168,7 +168,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should validate security status of created storage`() = runBlocking {
+    fun `should validate security status of created storage`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -185,7 +185,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should handle rapid successive creation calls`() = runBlocking {
+    fun `should handle rapid successive creation calls`() = runBlocking<Unit> {
         // Test factory under load
         val creationResults = (1..10).map {
             SecureStorageFactory.create()
@@ -199,7 +199,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should maintain consistency across factory calls`() = runBlocking {
+    fun `should maintain consistency across factory calls`() = runBlocking<Unit> {
         val result1 = SecureStorageFactory.isAvailable()
         val result2 = SecureStorageFactory.isAvailable()
         
@@ -208,7 +208,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should handle cross-platform home directory detection`() = runBlocking {
+    fun `should handle cross-platform home directory detection`() = runBlocking<Unit> {
         // Test that factory works with different environment setups
         val originalHome = System.getProperty("user.home")
         val originalHomeEnv = System.getenv("HOME")
@@ -237,7 +237,7 @@ class SecureStorageFactoryDesktopTest {
     }
 
     @Test
-    fun `should create storage with proper encryption setup`() = runBlocking {
+    fun `should create storage with proper encryption setup`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         

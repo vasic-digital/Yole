@@ -158,7 +158,7 @@ class DropboxMockHttpTest {
     // ==================== 1-5: Connect ====================
 
     @Test
-    fun `01 connect succeeds with valid token and account info`() = runBlocking {
+    fun `01 connect succeeds with valid token and account info`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount {
             respond(accountInfoJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
         })
@@ -168,7 +168,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `02 connect sends POST to get_current_account`() = runBlocking {
+    fun `02 connect sends POST to get_current_account`() = runBlocking<Unit> {
         var capturedUrl: String? = null
         var capturedMethod: HttpMethod? = null
 
@@ -186,7 +186,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `03 connect sends Bearer authorization header`() = runBlocking {
+    fun `03 connect sends Bearer authorization header`() = runBlocking<Unit> {
         var capturedAuth: String? = null
         val service = connectedService { request ->
             capturedAuth = request.headers["Authorization"]
@@ -198,7 +198,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `04 connect fails without valid token`() = runBlocking {
+    fun `04 connect fails without valid token`() = runBlocking<Unit> {
         val service = offlineService()
         val result = service.connect()
         assertTrue(result.isFailure)
@@ -206,7 +206,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `05 connect handles server error on account info`() = runBlocking {
+    fun `05 connect handles server error on account info`() = runBlocking<Unit> {
         val service = connectedService { request ->
             when {
                 request.url.encodedPath.contains("get_current_account") ->
@@ -221,7 +221,7 @@ class DropboxMockHttpTest {
     // ==================== 6-14: List Files ====================
 
     @Test
-    fun `06 listFiles returns files and folders`() = runBlocking {
+    fun `06 listFiles returns files and folders`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("list_folder"))
                 respond(listFolderJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
@@ -241,7 +241,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `07 listFiles returns empty list for empty folder`() = runBlocking {
+    fun `07 listFiles returns empty list for empty folder`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("list_folder"))
                 respond(listFolderEmptyJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
@@ -255,7 +255,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `08 listFiles returns multiple files and folders`() = runBlocking {
+    fun `08 listFiles returns multiple files and folders`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("list_folder"))
                 respond(listFolderMultiJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
@@ -274,14 +274,14 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `09 listFiles fails when not connected`() = runBlocking {
+    fun `09 listFiles fails when not connected`() = runBlocking<Unit> {
         val service = offlineService()
         val result = service.listFiles("/").first()
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `10 listFiles sends correct content type`() = runBlocking {
+    fun `10 listFiles sends correct content type`() = runBlocking<Unit> {
         var capturedContentType: ContentType? = null
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("list_folder")) {
@@ -298,7 +298,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `11 listFiles sends POST to list_folder endpoint`() = runBlocking {
+    fun `11 listFiles sends POST to list_folder endpoint`() = runBlocking<Unit> {
         var capturedUrl: String? = null
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("list_folder")) {
@@ -315,7 +315,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `12 listFiles sends authorization header`() = runBlocking {
+    fun `12 listFiles sends authorization header`() = runBlocking<Unit> {
         var capturedAuth: String? = null
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("list_folder")) {
@@ -332,7 +332,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `13 listFiles handles API error response`() = runBlocking {
+    fun `13 listFiles handles API error response`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("list_folder"))
                 respond("""{"error":"path/not_found"}""", HttpStatusCode.Conflict)
@@ -345,7 +345,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `14 listFiles sends path in request body`() = runBlocking {
+    fun `14 listFiles sends path in request body`() = runBlocking<Unit> {
         var capturedBody: String? = null
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("list_folder")) {
@@ -364,7 +364,7 @@ class DropboxMockHttpTest {
     // ==================== 15-19: Download File ====================
 
     @Test
-    fun `15 downloadFile emits progress and COMPLETED`() = runBlocking {
+    fun `15 downloadFile emits progress and COMPLETED`() = runBlocking<Unit> {
         val fileBytes = "Hello Dropbox!".encodeToByteArray()
         val service = connectedService(routeWithAccount { request ->
             when {
@@ -385,7 +385,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `16 downloadFile emits FAILED when not connected`() = runBlocking {
+    fun `16 downloadFile emits FAILED when not connected`() = runBlocking<Unit> {
         val service = offlineService()
         val ops = service.downloadFile("/doc.txt", "/local/doc.txt").toList()
         assertTrue(ops.isNotEmpty())
@@ -393,7 +393,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `17 downloadFile uses content endpoint`() = runBlocking {
+    fun `17 downloadFile uses content endpoint`() = runBlocking<Unit> {
         var capturedHost: String? = null
         val service = connectedService(routeWithAccount { request ->
             when {
@@ -413,7 +413,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `18 downloadFile sends Dropbox-API-Arg header`() = runBlocking {
+    fun `18 downloadFile sends Dropbox-API-Arg header`() = runBlocking<Unit> {
         var capturedApiArg: String? = null
         val service = connectedService(routeWithAccount { request ->
             when {
@@ -433,7 +433,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `19 downloadFile handles server error`() = runBlocking {
+    fun `19 downloadFile handles server error`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             when {
                 request.url.encodedPath.contains("get_metadata") ->
@@ -451,7 +451,7 @@ class DropboxMockHttpTest {
     // ==================== 20-24: Upload File ====================
 
     @Test
-    fun `20 uploadFile emits progress and COMPLETED`() = runBlocking {
+    fun `20 uploadFile emits progress and COMPLETED`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("2/files/upload"))
                 respond(uploadJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
@@ -467,7 +467,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `21 uploadFile emits FAILED when not connected`() = runBlocking {
+    fun `21 uploadFile emits FAILED when not connected`() = runBlocking<Unit> {
         val service = offlineService()
         val ops = service.uploadFile("/local/file.txt", "/file.txt").toList()
         assertTrue(ops.isNotEmpty())
@@ -475,7 +475,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `22 uploadFile uses content endpoint`() = runBlocking {
+    fun `22 uploadFile uses content endpoint`() = runBlocking<Unit> {
         var capturedHost: String? = null
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("2/files/upload")) {
@@ -492,7 +492,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `23 uploadFile sends Dropbox-API-Arg header with mode`() = runBlocking {
+    fun `23 uploadFile sends Dropbox-API-Arg header with mode`() = runBlocking<Unit> {
         var capturedApiArg: String? = null
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("2/files/upload")) {
@@ -510,7 +510,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `24 uploadFile handles server error`() = runBlocking {
+    fun `24 uploadFile handles server error`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("2/files/upload"))
                 respond("", HttpStatusCode.InsufficientStorage)
@@ -525,7 +525,7 @@ class DropboxMockHttpTest {
     // ==================== 25-28: Delete File ====================
 
     @Test
-    fun `25 deleteFile succeeds with OK response`() = runBlocking {
+    fun `25 deleteFile succeeds with OK response`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("delete_v2"))
                 respond("""{"metadata":{".tag":"file","name":"file.txt"}}""", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
@@ -537,13 +537,13 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `26 deleteFile succeeds silently when offline`() = runBlocking {
+    fun `26 deleteFile succeeds silently when offline`() = runBlocking<Unit> {
         val service = offlineService()
         assertTrue(service.deleteFile("/file.txt").isSuccess)
     }
 
     @Test
-    fun `27 deleteFile posts to delete_v2 endpoint`() = runBlocking {
+    fun `27 deleteFile posts to delete_v2 endpoint`() = runBlocking<Unit> {
         var capturedUrl: String? = null
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("delete_v2")) {
@@ -560,7 +560,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `28 deleteFile handles server error`() = runBlocking {
+    fun `28 deleteFile handles server error`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("delete_v2"))
                 respond("", HttpStatusCode.InternalServerError)
@@ -574,7 +574,7 @@ class DropboxMockHttpTest {
     // ==================== 29-31: Create Folder ====================
 
     @Test
-    fun `29 createFolder succeeds and returns folder doc`() = runBlocking {
+    fun `29 createFolder succeeds and returns folder doc`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("create_folder_v2"))
                 respond(createFolderJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
@@ -591,7 +591,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `30 createFolder returns offline stub when not connected`() = runBlocking {
+    fun `30 createFolder returns offline stub when not connected`() = runBlocking<Unit> {
         val service = offlineService()
         val result = service.createFolder("/offline-folder")
         assertTrue(result.isSuccess)
@@ -599,7 +599,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `31 createFolder handles conflict error`() = runBlocking {
+    fun `31 createFolder handles conflict error`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("create_folder_v2"))
                 respond("""{"error":"path/conflict"}""", HttpStatusCode.Conflict)
@@ -613,7 +613,7 @@ class DropboxMockHttpTest {
     // ==================== 32-34: Move File ====================
 
     @Test
-    fun `32 moveFile succeeds and returns doc`() = runBlocking {
+    fun `32 moveFile succeeds and returns doc`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("move_v2"))
                 respond(moveJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
@@ -627,7 +627,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `33 moveFile returns offline stub when not connected`() = runBlocking {
+    fun `33 moveFile returns offline stub when not connected`() = runBlocking<Unit> {
         val service = offlineService()
         val result = service.moveFile("/src.txt", "/dst.txt")
         assertTrue(result.isSuccess)
@@ -635,7 +635,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `34 moveFile handles server error`() = runBlocking {
+    fun `34 moveFile handles server error`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("move_v2"))
                 respond("", HttpStatusCode.InternalServerError)
@@ -649,7 +649,7 @@ class DropboxMockHttpTest {
     // ==================== 35-37: Copy File ====================
 
     @Test
-    fun `35 copyFile succeeds with OK response`() = runBlocking {
+    fun `35 copyFile succeeds with OK response`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("copy_v2"))
                 respond("""{"metadata":{".tag":"file","name":"copy.txt"}}""", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
@@ -661,13 +661,13 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `36 copyFile succeeds silently when offline`() = runBlocking {
+    fun `36 copyFile succeeds silently when offline`() = runBlocking<Unit> {
         val service = offlineService()
         assertTrue(service.copyFile("/src.txt", "/copy.txt").isSuccess)
     }
 
     @Test
-    fun `37 copyFile handles forbidden error`() = runBlocking {
+    fun `37 copyFile handles forbidden error`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("copy_v2"))
                 respond("", HttpStatusCode.Forbidden)
@@ -681,7 +681,7 @@ class DropboxMockHttpTest {
     // ==================== 38-40: Rename File ====================
 
     @Test
-    fun `38 renameFile sends POST to move_v2`() = runBlocking {
+    fun `38 renameFile sends POST to move_v2`() = runBlocking<Unit> {
         var capturedUrl: String? = null
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("move_v2")) {
@@ -698,13 +698,13 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `39 renameFile succeeds silently when offline`() = runBlocking {
+    fun `39 renameFile succeeds silently when offline`() = runBlocking<Unit> {
         val service = offlineService()
         assertTrue(service.renameFile("/old.txt", "new.txt").isSuccess)
     }
 
     @Test
-    fun `40 renameFile sends from_path and to_path`() = runBlocking {
+    fun `40 renameFile sends from_path and to_path`() = runBlocking<Unit> {
         var capturedBody: String? = null
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("move_v2")) {
@@ -724,7 +724,7 @@ class DropboxMockHttpTest {
     // ==================== 41-43: Get File Info ====================
 
     @Test
-    fun `41 getFileInfo returns file metadata`() = runBlocking {
+    fun `41 getFileInfo returns file metadata`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount {
             respond(metadataFileJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
         })
@@ -738,7 +738,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `42 getFileInfo returns folder metadata`() = runBlocking {
+    fun `42 getFileInfo returns folder metadata`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount {
             respond(metadataFolderJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
         })
@@ -749,7 +749,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `43 getFileInfo handles not found`() = runBlocking {
+    fun `43 getFileInfo handles not found`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount {
             respond("""{"error":"path/not_found"}""", HttpStatusCode.Conflict)
         })
@@ -760,7 +760,7 @@ class DropboxMockHttpTest {
     // ==================== 44-46: Search Files ====================
 
     @Test
-    fun `44 searchFiles returns matching results`() = runBlocking {
+    fun `44 searchFiles returns matching results`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("search_v2"))
                 respond(searchJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
@@ -775,14 +775,14 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `45 searchFiles returns empty list when not connected`() = runBlocking {
+    fun `45 searchFiles returns empty list when not connected`() = runBlocking<Unit> {
         val service = offlineService()
         val docs = service.searchFiles("anything").first().getOrThrow()
         assertEquals(0, docs.size)
     }
 
     @Test
-    fun `46 searchFiles handles rate limit error`() = runBlocking {
+    fun `46 searchFiles handles rate limit error`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("search_v2"))
                 respond("", HttpStatusCode.TooManyRequests)
@@ -796,7 +796,7 @@ class DropboxMockHttpTest {
     // ==================== 47-49: Quota Info ====================
 
     @Test
-    fun `47 getQuotaInfo returns storage quota`() = runBlocking {
+    fun `47 getQuotaInfo returns storage quota`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("get_space_usage"))
                 respond(spaceUsageJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
@@ -814,13 +814,13 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `48 getQuotaInfo fails when not connected`() = runBlocking {
+    fun `48 getQuotaInfo fails when not connected`() = runBlocking<Unit> {
         val service = offlineService()
         assertTrue(service.getQuotaInfo().isFailure)
     }
 
     @Test
-    fun `49 getQuotaInfo handles server error`() = runBlocking {
+    fun `49 getQuotaInfo handles server error`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount { request ->
             if (request.url.encodedPath.contains("get_space_usage"))
                 respond("", HttpStatusCode.InternalServerError)
@@ -834,7 +834,7 @@ class DropboxMockHttpTest {
     // ==================== 50-51: Exists ====================
 
     @Test
-    fun `50 exists returns true when file found`() = runBlocking {
+    fun `50 exists returns true when file found`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount {
             respond(metadataFileJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
         })
@@ -843,7 +843,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `51 exists returns false when file not found`() = runBlocking {
+    fun `51 exists returns false when file not found`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount {
             respond("", HttpStatusCode.Conflict)
         })
@@ -854,7 +854,7 @@ class DropboxMockHttpTest {
     // ==================== 52-53: Disconnect ====================
 
     @Test
-    fun `52 disconnect sets service offline`() = runBlocking {
+    fun `52 disconnect sets service offline`() = runBlocking<Unit> {
         val service = connectedService(routeWithAccount {
             respond(metadataFileJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
         })
@@ -865,7 +865,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `53 disconnect succeeds even when already offline`() = runBlocking {
+    fun `53 disconnect succeeds even when already offline`() = runBlocking<Unit> {
         val service = offlineService()
         assertFalse(service.isOnline)
         assertTrue(service.disconnect().isSuccess)
@@ -874,7 +874,7 @@ class DropboxMockHttpTest {
     // ==================== 54-55: Test Connection ====================
 
     @Test
-    fun `54 testConnection returns true on success`() = runBlocking {
+    fun `54 testConnection returns true on success`() = runBlocking<Unit> {
         val service = connectedService { request ->
             respond(accountInfoJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
         }
@@ -882,7 +882,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `55 testConnection returns false on server error`() = runBlocking {
+    fun `55 testConnection returns false on server error`() = runBlocking<Unit> {
         val service = connectedService { request ->
             respond("", HttpStatusCode.InternalServerError)
         }
@@ -892,7 +892,7 @@ class DropboxMockHttpTest {
     // ==================== 56-58: All Calls Use POST ====================
 
     @Test
-    fun `56 all API calls use POST method`() = runBlocking {
+    fun `56 all API calls use POST method`() = runBlocking<Unit> {
         val capturedMethods = mutableListOf<HttpMethod>()
         val service = connectedService(routeWithAccount { request ->
             capturedMethods.add(request.method)
@@ -919,7 +919,7 @@ class DropboxMockHttpTest {
     // ==================== 57-58: Helpers ====================
 
     @Test
-    fun `57 validatePath accepts any path`() = runBlocking {
+    fun `57 validatePath accepts any path`() = runBlocking<Unit> {
         val service = offlineService()
         assertTrue(service.validatePath("/any/path").isSuccess)
         assertTrue(service.validatePath("").isSuccess)
@@ -927,7 +927,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `58 getParentPath returns correct parent`() = runBlocking {
+    fun `58 getParentPath returns correct parent`() = runBlocking<Unit> {
         val service = offlineService()
         assertEquals("/parent", service.getParentPath("/parent/child"))
         assertEquals("/", service.getParentPath("/file.txt"))
@@ -937,7 +937,7 @@ class DropboxMockHttpTest {
     // ==================== 59-60: Storage Info ====================
 
     @Test
-    fun `59 getStorageInfo returns DROPBOX type`() = runBlocking {
+    fun `59 getStorageInfo returns DROPBOX type`() = runBlocking<Unit> {
         val service = offlineService()
         val info = service.getStorageInfo()
         assertEquals(StorageType.DROPBOX, info.type)
@@ -947,7 +947,7 @@ class DropboxMockHttpTest {
     }
 
     @Test
-    fun `60 rootPath is always slash`() = runBlocking {
+    fun `60 rootPath is always slash`() = runBlocking<Unit> {
         val service = offlineService()
         assertEquals("/", service.rootPath)
     }

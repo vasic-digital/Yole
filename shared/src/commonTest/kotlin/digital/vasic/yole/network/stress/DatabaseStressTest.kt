@@ -33,7 +33,7 @@ class DatabaseStressTest {
     // ==================== STORAGE OPERATIONS STRESS ====================
 
     @Test
-    fun `concurrent storage insertions`() = runBlocking {
+    fun `concurrent storage insertions`() = runBlocking<Unit> {
         val results = (1..100).map { i ->
             async {
                 testDatabase.insertStorage(createTestStorage("storage-$i"))
@@ -45,7 +45,7 @@ class DatabaseStressTest {
     }
 
     @Test
-    fun `concurrent storage reads`() = runBlocking {
+    fun `concurrent storage reads`() = runBlocking<Unit> {
         // Insert some data first
         (1..50).forEach { i ->
             testDatabase.insertStorage(createTestStorage("storage-$i"))
@@ -63,7 +63,7 @@ class DatabaseStressTest {
     }
 
     @Test
-    fun `concurrent storage updates`() = runBlocking {
+    fun `concurrent storage updates`() = runBlocking<Unit> {
         // Insert initial data
         testDatabase.insertStorage(createTestStorage("storage-1"))
 
@@ -83,7 +83,7 @@ class DatabaseStressTest {
     }
 
     @Test
-    fun `concurrent storage deletions`() = runBlocking {
+    fun `concurrent storage deletions`() = runBlocking<Unit> {
         // Insert data
         (1..50).forEach { i ->
             testDatabase.insertStorage(createTestStorage("storage-$i"))
@@ -103,7 +103,7 @@ class DatabaseStressTest {
     // ==================== DOCUMENT OPERATIONS STRESS ====================
 
     @Test
-    fun `concurrent document insertions`() = runBlocking {
+    fun `concurrent document insertions`() = runBlocking<Unit> {
         val results = (1..200).map { i ->
             async {
                 testDatabase.insertDocument(createTestDocument("doc-$i", "storage-1"))
@@ -115,7 +115,7 @@ class DatabaseStressTest {
     }
 
     @Test
-    fun `concurrent document queries by storage`() = runBlocking {
+    fun `concurrent document queries by storage`() = runBlocking<Unit> {
         // Insert documents for different storages
         (1..100).forEach { i ->
             testDatabase.insertDocument(createTestDocument("doc-$i", "storage-${i % 5}"))
@@ -133,7 +133,7 @@ class DatabaseStressTest {
     }
 
     @Test
-    fun `concurrent document queries by path`() = runBlocking {
+    fun `concurrent document queries by path`() = runBlocking<Unit> {
         // Insert documents with various paths
         (1..50).forEach { i ->
             testDatabase.insertDocument(
@@ -156,7 +156,7 @@ class DatabaseStressTest {
     // ==================== CACHE OPERATIONS STRESS ====================
 
     @Test
-    fun `concurrent cache entry insertions`() = runBlocking {
+    fun `concurrent cache entry insertions`() = runBlocking<Unit> {
         val results = (1..300).map { i ->
             async {
                 testDatabase.insertCacheEntry(createTestCacheEntry("cache-$i"))
@@ -168,7 +168,7 @@ class DatabaseStressTest {
     }
 
     @Test
-    fun `concurrent cache entry deletions`() = runBlocking {
+    fun `concurrent cache entry deletions`() = runBlocking<Unit> {
         // Insert cache entries
         (1..100).forEach { i ->
             testDatabase.insertCacheEntry(createTestCacheEntry("cache-$i"))
@@ -186,7 +186,7 @@ class DatabaseStressTest {
     }
 
     @Test
-    fun `expired cache cleanup under load`() = runBlocking {
+    fun `expired cache cleanup under load`() = runBlocking<Unit> {
         // Insert mix of expired and valid entries
         (1..100).forEach { i ->
             testDatabase.insertCacheEntry(
@@ -206,7 +206,7 @@ class DatabaseStressTest {
     }
 
     @Test
-    fun `cache usage calculation under load`() = runBlocking {
+    fun `cache usage calculation under load`() = runBlocking<Unit> {
         // Insert many cache entries
         (1..200).forEach { i ->
             testDatabase.insertCacheEntry(
@@ -228,7 +228,7 @@ class DatabaseStressTest {
     // ==================== OPERATION TRACKING STRESS ====================
 
     @Test
-    fun `concurrent operation insertions`() = runBlocking {
+    fun `concurrent operation insertions`() = runBlocking<Unit> {
         val results = (1..150).map { i ->
             async {
                 testDatabase.insertOperation(createTestOperation(i.toLong()))
@@ -240,7 +240,7 @@ class DatabaseStressTest {
     }
 
     @Test
-    fun `concurrent active operation queries`() = runBlocking {
+    fun `concurrent active operation queries`() = runBlocking<Unit> {
         // Insert operations
         (1..50).forEach { i ->
             testDatabase.insertOperation(createTestOperation(i.toLong()))
@@ -258,7 +258,7 @@ class DatabaseStressTest {
     }
 
     @Test
-    fun `clear completed operations under load`() = runBlocking {
+    fun `clear completed operations under load`() = runBlocking<Unit> {
         // Insert many completed operations
         (1..100).forEach { i ->
             testDatabase.insertOperation(
@@ -280,7 +280,7 @@ class DatabaseStressTest {
     // ==================== SYNC STATUS STRESS ====================
 
     @Test
-    fun `concurrent sync status updates`() = runBlocking {
+    fun `concurrent sync status updates`() = runBlocking<Unit> {
         val results = (1..100).map { i ->
             async {
                 testDatabase.updateSyncStatus("/path/$i", SyncStatus.SYNCED)
@@ -292,7 +292,7 @@ class DatabaseStressTest {
     }
 
     @Test
-    fun `concurrent sync status queries`() = runBlocking {
+    fun `concurrent sync status queries`() = runBlocking<Unit> {
         // Set sync statuses
         (1..50).forEach { i ->
             testDatabase.updateSyncStatus("/path/$i", SyncStatus.SYNCED)
@@ -310,7 +310,7 @@ class DatabaseStressTest {
     }
 
     @Test
-    fun `all sync status retrieval under load`() = runBlocking {
+    fun `all sync status retrieval under load`() = runBlocking<Unit> {
         // Set many sync statuses
         (1..100).forEach { i ->
             testDatabase.updateSyncStatus("/path/$i", SyncStatus.SYNCED)
@@ -330,7 +330,7 @@ class DatabaseStressTest {
     // ==================== CLEANUP OPERATIONS STRESS ====================
 
     @Test
-    fun `concurrent clear all operations`() = runBlocking {
+    fun `concurrent clear all operations`() = runBlocking<Unit> {
         // Insert data
         (1..50).forEach { i ->
             testDatabase.insertStorage(createTestStorage("storage-$i"))
@@ -350,7 +350,7 @@ class DatabaseStressTest {
     }
 
     @Test
-    fun `concurrent vacuum operations`() = runBlocking {
+    fun `concurrent vacuum operations`() = runBlocking<Unit> {
         // Insert and delete data to create fragmentation
         (1..100).forEach { i ->
             testDatabase.insertStorage(createTestStorage("storage-$i"))
@@ -373,7 +373,7 @@ class DatabaseStressTest {
     // ==================== MIXED OPERATIONS STRESS ====================
 
     @Test
-    fun `mixed concurrent operations`() = runBlocking {
+    fun `mixed concurrent operations`() = runBlocking<Unit> {
         val jobs = (1..200).map { i ->
             async {
                 when (i % 8) {
@@ -396,7 +396,7 @@ class DatabaseStressTest {
     // ==================== EDGE CASES ====================
 
     @Test
-    fun `very long storage names`() = runBlocking {
+    fun `very long storage names`() = runBlocking<Unit> {
         val longName = "a".repeat(1000)
         val result = testDatabase.insertStorage(
             createTestStorage("long-name").copy(name = longName)
@@ -405,7 +405,7 @@ class DatabaseStressTest {
     }
 
     @Test
-    fun `unicode storage names`() = runBlocking {
+    fun `unicode storage names`() = runBlocking<Unit> {
         val unicodeNames = listOf(
             "хранилище",
             "存储",
@@ -422,14 +422,14 @@ class DatabaseStressTest {
     }
 
     @Test
-    fun `empty path handling`() = runBlocking {
+    fun `empty path handling`() = runBlocking<Unit> {
         val result = testDatabase.getDocumentsByPath("")
         assertTrue(result.isSuccess)
         assertTrue(result.getOrNull()?.isEmpty() ?: true)
     }
 
     @Test
-    fun `null-safe operations`() = runBlocking {
+    fun `null-safe operations`() = runBlocking<Unit> {
         // Get non-existent storage
         val result = testDatabase.getStorage("non-existent")
         assertTrue(result.isSuccess)

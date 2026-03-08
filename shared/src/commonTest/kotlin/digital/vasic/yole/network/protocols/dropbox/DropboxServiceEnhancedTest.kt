@@ -31,7 +31,7 @@ class DropboxServiceEnhancedTest {
     private lateinit var mockSecureStorage: SecureStorage
     
     @BeforeTest
-    fun setup() = runBlocking {
+    fun setup() = runBlocking<Unit> {
         mockSecureStorage = MockSecureStorage()
         dropboxService = DropboxService(dropboxConfig)
         
@@ -57,7 +57,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedStorageInfo() = runBlocking {
+    fun testEnhancedStorageInfo() = runBlocking<Unit> {
         val storageInfo = dropboxService.getStorageInfo()
         
         assertEquals("dropbox_test-dropbox-enhanced", storageInfo.id)
@@ -70,7 +70,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedConnectWithoutTokens() = runBlocking {
+    fun testEnhancedConnectWithoutTokens() = runBlocking<Unit> {
         // Test with cleared tokens
         val authTokenManager = AuthTokenManager("dropbox", mockSecureStorage)
         authTokenManager.clearTokens()
@@ -85,7 +85,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedDisconnect() = runBlocking {
+    fun testEnhancedDisconnect() = runBlocking<Unit> {
         // First connect
         dropboxService.connect()
         
@@ -98,7 +98,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedTestConnection() = runBlocking {
+    fun testEnhancedTestConnection() = runBlocking<Unit> {
         val result = dropboxService.testConnection()
         
         // Test connection should complete (may succeed or fail depending on network)
@@ -106,7 +106,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedListFilesWhenNotConnected() = runBlocking {
+    fun testEnhancedListFilesWhenNotConnected() = runBlocking<Unit> {
         val result = dropboxService.listFiles("/").first()
         
         assertTrue(result.isFailure, "List files should fail when not connected")
@@ -116,7 +116,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedDownloadFileWhenNotConnected() = runBlocking {
+    fun testEnhancedDownloadFileWhenNotConnected() = runBlocking<Unit> {
         val operations = dropboxService.downloadFile("/test.md", "/tmp/test.md")
         
         val firstOperation = operations.first()
@@ -126,7 +126,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedUploadFileWhenNotConnected() = runBlocking {
+    fun testEnhancedUploadFileWhenNotConnected() = runBlocking<Unit> {
         val operations = dropboxService.uploadFile("/tmp/test.md", "/test.md")
         
         val firstOperation = operations.first()
@@ -136,7 +136,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedFileOperationsWhenNotConnected() = runBlocking {
+    fun testEnhancedFileOperationsWhenNotConnected() = runBlocking<Unit> {
         // Test delete file
         val deleteResult = dropboxService.deleteFile("/test.md")
         assertTrue(deleteResult.isSuccess, "Delete should succeed (mock implementation)")
@@ -176,7 +176,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedQuotaInfo() = runBlocking {
+    fun testEnhancedQuotaInfo() = runBlocking<Unit> {
         val result = dropboxService.getQuotaInfo()
 
         // getQuotaInfo now makes real Dropbox API calls; without auth it fails when not connected
@@ -186,7 +186,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedExists() = runBlocking {
+    fun testEnhancedExists() = runBlocking<Unit> {
         val result = dropboxService.exists("/test.md")
         
         assertTrue(result.isSuccess, "Exists check should succeed")
@@ -194,7 +194,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedPathOperations() = runBlocking {
+    fun testEnhancedPathOperations() = runBlocking<Unit> {
         // Test getParentPath
         assertEquals("/", dropboxService.getParentPath("/test.md"))
         assertEquals("/folder", dropboxService.getParentPath("/folder/test.md"))
@@ -209,14 +209,14 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedActiveOperations() = runBlocking {
+    fun testEnhancedActiveOperations() = runBlocking<Unit> {
         val activeOps = dropboxService.getActiveOperations().first()
         
         assertTrue(activeOps.isEmpty(), "Active operations should be empty initially")
     }
     
     @Test
-    fun testEnhancedCacheOperations() = runBlocking {
+    fun testEnhancedCacheOperations() = runBlocking<Unit> {
         // Test get cache entries
         val cacheEntries = dropboxService.getCacheEntries("/").first()
         assertTrue(cacheEntries.isEmpty(), "Cache entries should be empty")
@@ -235,14 +235,14 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedSyncStatus() = runBlocking {
+    fun testEnhancedSyncStatus() = runBlocking<Unit> {
         val syncStatus = dropboxService.getSyncStatus("/").first()
         
         assertTrue(syncStatus.isEmpty(), "Sync status should be empty initially")
     }
     
     @Test
-    fun testEnhancedSyncOperations() = runBlocking {
+    fun testEnhancedSyncOperations() = runBlocking<Unit> {
         // Test sync file - syncFile emits COMPLETED even when not connected (offline sync)
         val syncFileOperations = dropboxService.syncFile("/test.md", false)
         val syncFileOps = mutableListOf<NetworkOperation>()
@@ -262,7 +262,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedSearchFiles() = runBlocking {
+    fun testEnhancedSearchFiles() = runBlocking<Unit> {
         val result = dropboxService.searchFiles("test", "/", false).first()
         
         assertTrue(result.isSuccess, "Search should succeed")
@@ -272,7 +272,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedRecentChanges() = runBlocking {
+    fun testEnhancedRecentChanges() = runBlocking<Unit> {
         val since = Clock.System.now()
         val changes = dropboxService.getRecentChanges(since, "/").first()
         
@@ -280,7 +280,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedOperationManagement() = runBlocking {
+    fun testEnhancedOperationManagement() = runBlocking<Unit> {
         // Test cancel operation
         val cancelResult = dropboxService.cancelOperation(12345L)
         assertTrue(cancelResult.isSuccess, "Cancel operation should succeed")
@@ -295,7 +295,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedPathNormalization() = runBlocking {
+    fun testEnhancedPathNormalization() = runBlocking<Unit> {
         // Test with custom root path
         val configWithRoot = dropboxConfig.copy(rootPath = "/Apps/Test")
         val serviceWithRoot = DropboxService(configWithRoot)
@@ -306,7 +306,7 @@ class DropboxServiceEnhancedTest {
     }
     
     @Test
-    fun testEnhancedTokenRefreshScenario() = runBlocking {
+    fun testEnhancedTokenRefreshScenario() = runBlocking<Unit> {
         // Test with expired access token but valid refresh token
         val authTokenManager = AuthTokenManager("dropbox", mockSecureStorage)
         

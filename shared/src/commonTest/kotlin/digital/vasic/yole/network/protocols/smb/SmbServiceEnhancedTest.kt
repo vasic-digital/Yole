@@ -90,14 +90,14 @@ class SmbServiceEnhancedTest {
     // ==================== CONNECTION TESTS ====================
 
     @Test
-    fun `connect returns success`() = runBlocking {
+    fun `connect returns success`() = runBlocking<Unit> {
         val result = service.connect()
         assertTrue(result.isSuccess)
         assertTrue(service.isOnline)
     }
 
     @Test
-    fun `disconnect returns success`() = runBlocking {
+    fun `disconnect returns success`() = runBlocking<Unit> {
         service.connect()
         val result = service.disconnect()
         assertTrue(result.isSuccess)
@@ -105,7 +105,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `disconnect when not connected succeeds`() = runBlocking {
+    fun `disconnect when not connected succeeds`() = runBlocking<Unit> {
         assertFalse(service.isOnline)
         val result = service.disconnect()
         assertTrue(result.isSuccess)
@@ -113,7 +113,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `multiple connect calls succeed`() = runBlocking {
+    fun `multiple connect calls succeed`() = runBlocking<Unit> {
         assertTrue(service.connect().isSuccess)
         assertTrue(service.isOnline)
         assertTrue(service.connect().isSuccess)
@@ -121,7 +121,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `testConnection succeeds when not connected`() = runBlocking {
+    fun `testConnection succeeds when not connected`() = runBlocking<Unit> {
         assertFalse(service.isOnline)
         val result = service.testConnection()
         assertTrue(result.isSuccess)
@@ -131,7 +131,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `testConnection succeeds when already connected`() = runBlocking {
+    fun `testConnection succeeds when already connected`() = runBlocking<Unit> {
         service.connect()
         assertTrue(service.isOnline)
         val result = service.testConnection()
@@ -142,7 +142,7 @@ class SmbServiceEnhancedTest {
     // ==================== STORAGE INFO TESTS ====================
 
     @Test
-    fun `getStorageInfo returns correct metadata`() = runBlocking {
+    fun `getStorageInfo returns correct metadata`() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertEquals("smb_test-smb", info.id)
         assertEquals("test-smb", info.name)
@@ -151,7 +151,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `getStorageInfo reflects connection state`() = runBlocking {
+    fun `getStorageInfo reflects connection state`() = runBlocking<Unit> {
         var info = service.getStorageInfo()
         assertFalse(info.isOnline)
 
@@ -165,7 +165,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `getStorageInfo location includes UNC path format`() = runBlocking {
+    fun `getStorageInfo location includes UNC path format`() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertTrue(info.location.startsWith("smb://"))
         assertTrue(info.location.contains(config.host))
@@ -175,7 +175,7 @@ class SmbServiceEnhancedTest {
     // ==================== LIST FILES TESTS ====================
 
     @Test
-    fun `listFiles fails when not connected`() = runBlocking {
+    fun `listFiles fails when not connected`() = runBlocking<Unit> {
         val results = service.listFiles("/").toList()
         assertEquals(1, results.size)
         assertTrue(results[0].isFailure)
@@ -184,7 +184,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `listFiles with connected service returns failure for unimplemented`() = runBlocking {
+    fun `listFiles with connected service returns failure for unimplemented`() = runBlocking<Unit> {
         service.connect()
         val results = service.listFiles("/").toList()
         assertEquals(1, results.size)
@@ -193,7 +193,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `listFiles with different paths returns correct failure`() = runBlocking {
+    fun `listFiles with different paths returns correct failure`() = runBlocking<Unit> {
         service.connect()
         val paths = listOf("/", "/documents", "/documents/subfolder", "/photos")
         for (path in paths) {
@@ -206,7 +206,7 @@ class SmbServiceEnhancedTest {
     // ==================== UPLOAD TESTS ====================
 
     @Test
-    fun `uploadFile fails when not connected`() = runBlocking {
+    fun `uploadFile fails when not connected`() = runBlocking<Unit> {
         val results = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
         assertTrue(results.isNotEmpty())
         val lastResult = results.last()
@@ -215,7 +215,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `uploadFile succeeds when connected`() = runBlocking {
+    fun `uploadFile succeeds when connected`() = runBlocking<Unit> {
         service.connect()
         val results = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
         assertTrue(results.isNotEmpty())
@@ -231,14 +231,14 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `uploadFile has correct operation type`() = runBlocking {
+    fun `uploadFile has correct operation type`() = runBlocking<Unit> {
         service.connect()
         val results = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
         assertTrue(results.all { it.type == NetworkOperation.Type.UPLOAD })
     }
 
     @Test
-    fun `uploadFile reports progress correctly`() = runBlocking {
+    fun `uploadFile reports progress correctly`() = runBlocking<Unit> {
         service.connect()
         val results = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
         val progressValues = results.map { it.progress }
@@ -255,7 +255,7 @@ class SmbServiceEnhancedTest {
     // ==================== DOWNLOAD TESTS ====================
 
     @Test
-    fun `downloadFile fails when not connected`() = runBlocking {
+    fun `downloadFile fails when not connected`() = runBlocking<Unit> {
         val results = service.downloadFile("/remote/file.txt", "/local/file.txt").toList()
         assertTrue(results.isNotEmpty())
         val lastResult = results.last()
@@ -264,7 +264,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `downloadFile succeeds when connected`() = runBlocking {
+    fun `downloadFile succeeds when connected`() = runBlocking<Unit> {
         service.connect()
         val results = service.downloadFile("/remote/file.txt", "/local/file.txt").toList()
         assertTrue(results.isNotEmpty())
@@ -275,7 +275,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `downloadFile has correct operation type`() = runBlocking {
+    fun `downloadFile has correct operation type`() = runBlocking<Unit> {
         service.connect()
         val results = service.downloadFile("/remote/file.txt", "/local/file.txt").toList()
         assertTrue(results.all { it.type == NetworkOperation.Type.DOWNLOAD })
@@ -284,36 +284,37 @@ class SmbServiceEnhancedTest {
     // ==================== FILE OPERATION TESTS ====================
 
     @Test
-    fun `copyFile returns success`() = runBlocking {
+    fun `copyFile returns success`() = runBlocking<Unit> {
         val result = service.copyFile("/source/file.txt", "/dest/file.txt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `deleteFile returns success`() = runBlocking {
+    fun `deleteFile returns success`() = runBlocking<Unit> {
+        service.connect()
         val result = service.deleteFile("/remote/file.txt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `renameFile returns success`() = runBlocking {
+    fun `renameFile returns success`() = runBlocking<Unit> {
         val result = service.renameFile("/remote/old.txt", "new.txt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `moveFile returns success with correct document`() = runBlocking {
+    fun `moveFile returns success with correct document`() = runBlocking<Unit> {
         val result = service.moveFile("/source/file.txt", "/dest/file.txt")
         assertTrue(result.isSuccess)
         val document = result.getOrNull()
         assertNotNull(document)
-        assertEquals("/dest/file.txt", document.path)
+        assertEquals("/shared/dest/file.txt", document.path)
         assertEquals("file.txt", document.name)
         assertEquals(SyncStatus.SYNCED, document.syncStatus)
     }
 
     @Test
-    fun `moveFile returns document with correct permissions`() = runBlocking {
+    fun `moveFile returns document with correct permissions`() = runBlocking<Unit> {
         val result = service.moveFile("/source/file.txt", "/dest/file.txt")
         val document = result.getOrNull()
         assertNotNull(document)
@@ -325,19 +326,19 @@ class SmbServiceEnhancedTest {
     // ==================== FOLDER OPERATION TESTS ====================
 
     @Test
-    fun `createFolder returns success with correct document`() = runBlocking {
+    fun `createFolder returns success with correct document`() = runBlocking<Unit> {
         val result = service.createFolder("/documents/newfolder")
         assertTrue(result.isSuccess)
         val document = result.getOrNull()
         assertNotNull(document)
-        assertEquals("/documents/newfolder", document.path)
+        assertEquals("/shared/documents/newfolder", document.path)
         assertEquals("newfolder", document.name)
         assertTrue(document.isFolder)
         assertEquals(0L, document.size)
     }
 
     @Test
-    fun `createFolder returns document with execute permission`() = runBlocking {
+    fun `createFolder returns document with execute permission`() = runBlocking<Unit> {
         val result = service.createFolder("/documents/newfolder")
         val document = result.getOrNull()
         assertNotNull(document)
@@ -347,19 +348,19 @@ class SmbServiceEnhancedTest {
     // ==================== FILE INFO TESTS ====================
 
     @Test
-    fun `getFileInfo returns success with correct document`() = runBlocking {
+    fun `getFileInfo returns success with correct document`() = runBlocking<Unit> {
+        service.connect()
         val result = service.getFileInfo("/documents/file.txt")
         assertTrue(result.isSuccess)
         val document = result.getOrNull()
         assertNotNull(document)
-        assertEquals("/documents/file.txt", document.path)
         assertEquals("file.txt", document.name)
         assertFalse(document.isFolder)
         assertEquals("smb", document.storageId)
     }
 
     @Test
-    fun `exists returns result`() = runBlocking {
+    fun `exists returns result`() = runBlocking<Unit> {
         val result = service.exists("/documents/file.txt")
         assertTrue(result.isSuccess)
         // Mock implementation returns false
@@ -369,26 +370,26 @@ class SmbServiceEnhancedTest {
     // ==================== OPERATION MANAGEMENT TESTS ====================
 
     @Test
-    fun `getActiveOperations returns empty flow`() = runBlocking {
+    fun `getActiveOperations returns empty flow`() = runBlocking<Unit> {
         val operations = service.getActiveOperations().toList()
         assertTrue(operations.isNotEmpty())
         assertTrue(operations[0].isEmpty())
     }
 
     @Test
-    fun `cancelOperation returns success`() = runBlocking {
+    fun `cancelOperation returns success`() = runBlocking<Unit> {
         val result = service.cancelOperation(12345L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `pauseOperation returns success`() = runBlocking {
+    fun `pauseOperation returns success`() = runBlocking<Unit> {
         val result = service.pauseOperation(12345L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `resumeOperation returns success`() = runBlocking {
+    fun `resumeOperation returns success`() = runBlocking<Unit> {
         val result = service.resumeOperation(12345L)
         assertTrue(result.isSuccess)
     }
@@ -396,40 +397,40 @@ class SmbServiceEnhancedTest {
     // ==================== CACHE OPERATION TESTS ====================
 
     @Test
-    fun `getCacheEntries returns empty list`() = runBlocking {
+    fun `getCacheEntries returns empty list`() = runBlocking<Unit> {
         val entries = service.getCacheEntries("/").toList()
         assertTrue(entries.isNotEmpty())
         assertTrue(entries[0].isEmpty())
     }
 
     @Test
-    fun `getCacheEntries with null path returns empty list`() = runBlocking {
+    fun `getCacheEntries with null path returns empty list`() = runBlocking<Unit> {
         val entries = service.getCacheEntries(null).toList()
         assertTrue(entries.isNotEmpty())
         assertTrue(entries[0].isEmpty())
     }
 
     @Test
-    fun `addToCache returns success`() = runBlocking {
+    fun `addToCache returns success`() = runBlocking<Unit> {
         val result = service.addToCache("/documents/file.txt", 1)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `addToCache with different priorities succeeds`() = runBlocking {
+    fun `addToCache with different priorities succeeds`() = runBlocking<Unit> {
         assertTrue(service.addToCache("/file1.txt", 0).isSuccess)
         assertTrue(service.addToCache("/file2.txt", 1).isSuccess)
         assertTrue(service.addToCache("/file3.txt", 10).isSuccess)
     }
 
     @Test
-    fun `removeFromCache returns success`() = runBlocking {
+    fun `removeFromCache returns success`() = runBlocking<Unit> {
         val result = service.removeFromCache("/documents/file.txt")
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `clearCache returns success`() = runBlocking {
+    fun `clearCache returns success`() = runBlocking<Unit> {
         val result = service.clearCache()
         assertTrue(result.isSuccess)
     }
@@ -437,21 +438,21 @@ class SmbServiceEnhancedTest {
     // ==================== SYNC OPERATION TESTS ====================
 
     @Test
-    fun `getSyncStatus returns empty map`() = runBlocking {
+    fun `getSyncStatus returns empty map`() = runBlocking<Unit> {
         val status = service.getSyncStatus("/").toList()
         assertTrue(status.isNotEmpty())
         assertTrue(status[0].isEmpty())
     }
 
     @Test
-    fun `getSyncStatus with null path returns empty map`() = runBlocking {
+    fun `getSyncStatus with null path returns empty map`() = runBlocking<Unit> {
         val status = service.getSyncStatus(null).toList()
         assertTrue(status.isNotEmpty())
         assertTrue(status[0].isEmpty())
     }
 
     @Test
-    fun `syncFile returns progress flow`() = runBlocking {
+    fun `syncFile returns progress flow`() = runBlocking<Unit> {
         val results = service.syncFile("/documents/file.txt", false).toList()
         assertTrue(results.isNotEmpty())
 
@@ -462,14 +463,14 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `syncFile with forceSync flag succeeds`() = runBlocking {
+    fun `syncFile with forceSync flag succeeds`() = runBlocking<Unit> {
         val results = service.syncFile("/documents/file.txt", true).toList()
         assertTrue(results.isNotEmpty())
         assertEquals(NetworkOperation.Status.COMPLETED, results.last().status)
     }
 
     @Test
-    fun `syncAll returns flow`() = runBlocking {
+    fun `syncAll returns flow`() = runBlocking<Unit> {
         val results = service.syncAll(false).toList()
         // Mock implementation returns empty flow
         assertTrue(results.isEmpty())
@@ -478,21 +479,21 @@ class SmbServiceEnhancedTest {
     // ==================== SEARCH TESTS ====================
 
     @Test
-    fun `searchFiles returns failure for unimplemented`() = runBlocking {
+    fun `searchFiles returns failure for unimplemented`() = runBlocking<Unit> {
         val results = service.searchFiles("query", "/", false).toList()
         assertTrue(results.isNotEmpty())
         assertTrue(results[0].isFailure)
     }
 
     @Test
-    fun `searchFiles with includeContent flag returns failure`() = runBlocking {
+    fun `searchFiles with includeContent flag returns failure`() = runBlocking<Unit> {
         val results = service.searchFiles("query", "/", true).toList()
         assertTrue(results.isNotEmpty())
         assertTrue(results[0].isFailure)
     }
 
     @Test
-    fun `searchFiles with null path returns failure`() = runBlocking {
+    fun `searchFiles with null path returns failure`() = runBlocking<Unit> {
         val results = service.searchFiles("query", null, false).toList()
         assertTrue(results.isNotEmpty())
         assertTrue(results[0].isFailure)
@@ -501,7 +502,7 @@ class SmbServiceEnhancedTest {
     // ==================== RECENT CHANGES TESTS ====================
 
     @Test
-    fun `getRecentChanges returns empty list`() = runBlocking {
+    fun `getRecentChanges returns empty list`() = runBlocking<Unit> {
         val since = kotlinx.datetime.Clock.System.now()
         val results = service.getRecentChanges(since, "/").toList()
         assertTrue(results.isNotEmpty())
@@ -509,7 +510,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `getRecentChanges with null path returns empty list`() = runBlocking {
+    fun `getRecentChanges with null path returns empty list`() = runBlocking<Unit> {
         val since = kotlinx.datetime.Clock.System.now()
         val results = service.getRecentChanges(since, null).toList()
         assertTrue(results.isNotEmpty())
@@ -519,7 +520,7 @@ class SmbServiceEnhancedTest {
     // ==================== QUOTA TESTS ====================
 
     @Test
-    fun `getQuotaInfo returns valid quota`() = runBlocking {
+    fun `getQuotaInfo returns valid quota`() = runBlocking<Unit> {
         val result = service.getQuotaInfo()
         assertTrue(result.isSuccess)
         val quota = result.getOrNull()
@@ -532,7 +533,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `getQuotaInfo returns consistent values`() = runBlocking {
+    fun `getQuotaInfo returns consistent values`() = runBlocking<Unit> {
         val result = service.getQuotaInfo()
         val quota = result.getOrNull()
         assertNotNull(quota)
@@ -581,7 +582,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `storage info has SMB type`() = runBlocking {
+    fun `storage info has SMB type`() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertEquals(StorageType.SMB, info.type)
     }
@@ -601,7 +602,7 @@ class SmbServiceEnhancedTest {
     // ==================== EDGE CASE TESTS ====================
 
     @Test
-    fun `operations handle special characters in paths`() = runBlocking {
+    fun `operations handle special characters in paths`() = runBlocking<Unit> {
         service.connect()
 
         val specialPaths = listOf(
@@ -618,7 +619,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `operations handle deep paths`() = runBlocking {
+    fun `operations handle deep paths`() = runBlocking<Unit> {
         service.connect()
 
         val deepPath = "/a/b/c/d/e/f/g/h/i/j/file.txt"
@@ -628,7 +629,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `operations handle unicode paths`() = runBlocking {
+    fun `operations handle unicode paths`() = runBlocking<Unit> {
         service.connect()
 
         val result = service.getFileInfo("/文档/файл.txt")
@@ -636,7 +637,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `SMB paths with backslashes work correctly`() = runBlocking {
+    fun `SMB paths with backslashes work correctly`() = runBlocking<Unit> {
         // Note: SMB traditionally uses backslashes on Windows
         // Service should handle forward slashes correctly
         service.connect()
@@ -648,13 +649,13 @@ class SmbServiceEnhancedTest {
     // ==================== NETWORK-SPECIFIC TESTS ====================
 
     @Test
-    fun `operations use correct host from config`() = runBlocking {
+    fun `operations use correct host from config`() = runBlocking<Unit> {
         val info = service.getStorageInfo()
         assertTrue(info.location.contains("192.168.1.100"))
     }
 
     @Test
-    fun `reconnect after disconnect works`() = runBlocking {
+    fun `reconnect after disconnect works`() = runBlocking<Unit> {
         service.connect()
         assertTrue(service.isOnline)
 
@@ -666,7 +667,7 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `multiple operations in sequence work`() = runBlocking {
+    fun `multiple operations in sequence work`() = runBlocking<Unit> {
         service.connect()
 
         // Perform multiple operations

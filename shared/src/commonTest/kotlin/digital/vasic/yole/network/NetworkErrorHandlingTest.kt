@@ -32,7 +32,7 @@ import kotlinx.coroutines.runBlocking
 class NetworkErrorHandlingTest {
 
     @Test
-    fun testNetworkTimeoutScenarios() = runBlocking {
+    fun testNetworkTimeoutScenarios() = runBlocking<Unit> {
         val timeoutScenarios = listOf(
             1 to "1 second",
             5 to "5 seconds",
@@ -62,7 +62,7 @@ class NetworkErrorHandlingTest {
     }
 
     @Test
-    fun testAuthenticationFailureScenarios() = runBlocking {
+    fun testAuthenticationFailureScenarios() = runBlocking<Unit> {
         val authFailureScenarios = listOf(
             "invalid_token" to "Invalid access token",
             "expired_token" to "Token has expired",
@@ -96,7 +96,7 @@ class NetworkErrorHandlingTest {
     }
 
     @Test
-    fun testCorruptDataHandling() = runBlocking {
+    fun testCorruptDataHandling() = runBlocking<Unit> {
         val corruptDataScenarios = listOf(
             "null_bytes" to "\u0000\u0000\u0000",
             "invalid_json" to "{invalid json",
@@ -125,7 +125,7 @@ class NetworkErrorHandlingTest {
     }
 
     @Test
-    fun testInvalidPathHandling() = runBlocking {
+    fun testInvalidPathHandling() = runBlocking<Unit> {
         val invalidPaths = listOf(
             "" to "Empty path",
             "/" to "Root only",
@@ -170,7 +170,7 @@ class NetworkErrorHandlingTest {
     }
 
     @Test
-    fun testConcurrentErrorScenarios() = runBlocking {
+    fun testConcurrentErrorScenarios() = runBlocking<Unit> {
         val concurrentErrors = 50
         val results = mutableListOf<ErrorScenarioResult>()
 
@@ -226,7 +226,7 @@ class NetworkErrorHandlingTest {
     }
 
     @Test
-    fun testGracefulDegradation() = runBlocking {
+    fun testGracefulDegradation() = runBlocking<Unit> {
         // 1. Simulate slow network
         val slowNetworkResult = testUnderSlowNetwork()
         assertTrue(slowNetworkResult.operationsCompleted, "Should complete operations under slow network")
@@ -249,7 +249,7 @@ class NetworkErrorHandlingTest {
     }
 
     @Test
-    fun testBoundaryConditions() = runBlocking {
+    fun testBoundaryConditions() = runBlocking<Unit> {
         val boundaryTests = listOf<Pair<() -> Unit, String>>(
             // Size boundaries
             Pair({ testSizeBoundary(0L) }, "Zero size"),
@@ -293,7 +293,7 @@ class NetworkErrorHandlingTest {
     }
 
     @Test
-    fun testRecoveryMechanisms() = runBlocking {
+    fun testRecoveryMechanisms() = runBlocking<Unit> {
         // 1. Token refresh recovery
         val tokenRefreshRecovery = testTokenRefreshRecovery()
         assertTrue(tokenRefreshRecovery.successful, "Token refresh recovery should work")

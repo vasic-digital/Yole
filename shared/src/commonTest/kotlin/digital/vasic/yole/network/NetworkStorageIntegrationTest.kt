@@ -78,7 +78,7 @@ class NetworkStorageIntegrationTest {
     )
     
     @BeforeTest
-    fun setup() = runBlocking {
+    fun setup() = runBlocking<Unit> {
         mockSecureStorage = MockSecureStorage()
         
         // Initialize auth token managers for cloud services
@@ -124,7 +124,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testAllServicesImplementSameInterface() = runBlocking {
+    fun testAllServicesImplementSameInterface() = runBlocking<Unit> {
         // Create instances of all services
         val dropboxService = DropboxService(dropboxConfig)
         val googleDriveService = GoogleDriveService(googleDriveConfig)
@@ -167,7 +167,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testUnifiedFileOperations() = runBlocking {
+    fun testUnifiedFileOperations() = runBlocking<Unit> {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -203,7 +203,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testUnifiedUploadDownloadOperations() = runBlocking {
+    fun testUnifiedUploadDownloadOperations() = runBlocking<Unit> {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -238,7 +238,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testUnifiedFolderOperations() = runBlocking {
+    fun testUnifiedFolderOperations() = runBlocking<Unit> {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -278,7 +278,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testProtocolSpecificFeatures() = runBlocking {
+    fun testProtocolSpecificFeatures() = runBlocking<Unit> {
         val dropboxService = DropboxService(dropboxConfig)
         val googleDriveService = GoogleDriveService(googleDriveConfig)
         val ftpService = FtpService(ftpConfig)
@@ -314,7 +314,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testErrorHandlingConsistency() = runBlocking {
+    fun testErrorHandlingConsistency() = runBlocking<Unit> {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -349,7 +349,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testSyncAndCacheOperations() = runBlocking {
+    fun testSyncAndCacheOperations() = runBlocking<Unit> {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -390,7 +390,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testQuotaAndSpaceInformation() = runBlocking {
+    fun testQuotaAndSpaceInformation() = runBlocking<Unit> {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -429,7 +429,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testSearchAndRecentChanges() = runBlocking {
+    fun testSearchAndRecentChanges() = runBlocking<Unit> {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -451,7 +451,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testOperationManagement() = runBlocking {
+    fun testOperationManagement() = runBlocking<Unit> {
         val services = listOf(
             DropboxService(dropboxConfig) to "Dropbox",
             GoogleDriveService(googleDriveConfig) to "Google Drive",
@@ -474,7 +474,7 @@ class NetworkStorageIntegrationTest {
     }
     
     @Test
-    fun testCrossProtocolCompatibility() = runBlocking {
+    fun testCrossProtocolCompatibility() = runBlocking<Unit> {
         // Create all services
         val services = listOf(
             DropboxService(dropboxConfig),

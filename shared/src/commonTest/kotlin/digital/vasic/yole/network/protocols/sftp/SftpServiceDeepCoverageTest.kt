@@ -98,7 +98,7 @@ class SftpServiceDeepCoverageTest {
     // ==================== CONNECTION ====================
 
     @Test
-    fun `connect succeeds with valid password config`() = runBlocking {
+    fun `connect succeeds with valid password config`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.connect()
         assertTrue(result.isSuccess)
@@ -106,7 +106,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `connect succeeds with valid key config`() = runBlocking {
+    fun `connect succeeds with valid key config`() = runBlocking<Unit> {
         val service = SftpService(createKeyConfig())
         val result = service.connect()
         assertTrue(result.isSuccess)
@@ -114,7 +114,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `connect fails with no auth credentials`() = runBlocking {
+    fun `connect fails with no auth credentials`() = runBlocking<Unit> {
         val config = StorageConfig.SftpConfig(
             name = "no-auth",
             host = "host",
@@ -129,7 +129,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `connect fails with blank host`() = runBlocking {
+    fun `connect fails with blank host`() = runBlocking<Unit> {
         val config = StorageConfig.SftpConfig(
             name = "blank-host",
             host = "",
@@ -144,7 +144,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `connect fails with invalid port zero`() = runBlocking {
+    fun `connect fails with invalid port zero`() = runBlocking<Unit> {
         val config = StorageConfig.SftpConfig(
             name = "bad-port",
             host = "host",
@@ -159,7 +159,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `connect fails with port above 65535`() = runBlocking {
+    fun `connect fails with port above 65535`() = runBlocking<Unit> {
         val config = StorageConfig.SftpConfig(
             name = "bad-port",
             host = "host",
@@ -174,7 +174,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `connect fails with strict host key checking but no known hosts`() = runBlocking {
+    fun `connect fails with strict host key checking but no known hosts`() = runBlocking<Unit> {
         val config = StorageConfig.SftpConfig(
             name = "strict-check",
             host = "host",
@@ -190,7 +190,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `connect succeeds with strict host key checking and known hosts`() = runBlocking {
+    fun `connect succeeds with strict host key checking and known hosts`() = runBlocking<Unit> {
         val config = StorageConfig.SftpConfig(
             name = "strict-ok",
             host = "host",
@@ -207,7 +207,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `disconnect succeeds`() = runBlocking {
+    fun `disconnect succeeds`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         assertTrue(service.isOnline)
@@ -217,7 +217,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `disconnect clears active operations`() = runBlocking {
+    fun `disconnect clears active operations`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.disconnect()
@@ -228,7 +228,7 @@ class SftpServiceDeepCoverageTest {
     // ==================== TEST CONNECTION ====================
 
     @Test
-    fun `testConnection succeeds with valid config`() = runBlocking {
+    fun `testConnection succeeds with valid config`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.testConnection()
         assertTrue(result.isSuccess)
@@ -236,7 +236,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `testConnection fails with no auth`() = runBlocking {
+    fun `testConnection fails with no auth`() = runBlocking<Unit> {
         val config = StorageConfig.SftpConfig(
             name = "no-auth",
             host = "host",
@@ -252,7 +252,7 @@ class SftpServiceDeepCoverageTest {
     // ==================== STORAGE INFO ====================
 
     @Test
-    fun `getStorageInfo returns correct metadata`() = runBlocking {
+    fun `getStorageInfo returns correct metadata`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val info = service.getStorageInfo()
         assertEquals("sftp_test-sftp", info.id)
@@ -265,7 +265,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getStorageInfo reflects connection state`() = runBlocking {
+    fun `getStorageInfo reflects connection state`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         assertFalse(service.getStorageInfo().isOnline)
         service.connect()
@@ -277,14 +277,14 @@ class SftpServiceDeepCoverageTest {
     // ==================== LIST FILES ====================
 
     @Test
-    fun `listFiles fails when disconnected`() = runBlocking {
+    fun `listFiles fails when disconnected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.listFiles("/").first()
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `listFiles returns files when connected`() = runBlocking {
+    fun `listFiles returns files when connected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val result = service.listFiles("/").first()
@@ -294,7 +294,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `listFiles returns default VFS files after connect`() = runBlocking {
+    fun `listFiles returns default VFS files after connect`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val files = service.listFiles("/").first().getOrThrow()
@@ -306,7 +306,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `listFiles includes folders and files`() = runBlocking {
+    fun `listFiles includes folders and files`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val files = service.listFiles("/").first().getOrThrow()
@@ -319,7 +319,7 @@ class SftpServiceDeepCoverageTest {
     // ==================== UPLOAD FILE ====================
 
     @Test
-    fun `uploadFile fails when disconnected`() = runBlocking {
+    fun `uploadFile fails when disconnected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val ops = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
         assertTrue(ops.isNotEmpty())
@@ -327,7 +327,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `uploadFile completes when connected`() = runBlocking {
+    fun `uploadFile completes when connected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val ops = service.uploadFile("/local/file.txt", "/upload/test.txt").toList()
@@ -338,7 +338,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `uploadFile registers in VFS`() = runBlocking {
+    fun `uploadFile registers in VFS`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.uploadFile("/local/file.txt", "/upload/test.txt").toList()
@@ -348,7 +348,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `uploadFile updates sync status`() = runBlocking {
+    fun `uploadFile updates sync status`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.uploadFile("/local/file.txt", "/upload/test.txt").toList()
@@ -359,7 +359,7 @@ class SftpServiceDeepCoverageTest {
     // ==================== DOWNLOAD FILE ====================
 
     @Test
-    fun `downloadFile fails when disconnected`() = runBlocking {
+    fun `downloadFile fails when disconnected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val ops = service.downloadFile("/remote/file.txt", "/local/file.txt").toList()
         assertTrue(ops.isNotEmpty())
@@ -367,7 +367,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `downloadFile completes when connected`() = runBlocking {
+    fun `downloadFile completes when connected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val ops = service.downloadFile("/remote/file.txt", "/local/file.txt").toList()
@@ -377,7 +377,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `downloadFile tracks progress through multiple steps`() = runBlocking {
+    fun `downloadFile tracks progress through multiple steps`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val ops = service.downloadFile("/remote/file.txt", "/local/file.txt").toList()
@@ -391,14 +391,14 @@ class SftpServiceDeepCoverageTest {
     // ==================== DELETE FILE ====================
 
     @Test
-    fun `deleteFile fails when disconnected`() = runBlocking {
+    fun `deleteFile fails when disconnected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.deleteFile("/some/file.txt")
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `deleteFile removes from VFS`() = runBlocking {
+    fun `deleteFile removes from VFS`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         // Upload first then delete
@@ -411,7 +411,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `deleteFile cleans up sync status`() = runBlocking {
+    fun `deleteFile cleans up sync status`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.uploadFile("/local/f.txt", "/sync-test.txt").toList()
@@ -422,7 +422,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `deleteFile cleans up cache`() = runBlocking {
+    fun `deleteFile cleans up cache`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.addToCache("/cache-delete-test.txt", 1)
@@ -435,14 +435,14 @@ class SftpServiceDeepCoverageTest {
     // ==================== CREATE FOLDER ====================
 
     @Test
-    fun `createFolder fails when disconnected`() = runBlocking {
+    fun `createFolder fails when disconnected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.createFolder("/new-folder")
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `createFolder succeeds when connected`() = runBlocking {
+    fun `createFolder succeeds when connected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val result = service.createFolder("/new-folder")
@@ -453,7 +453,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `createFolder registers in VFS`() = runBlocking {
+    fun `createFolder registers in VFS`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.createFolder("/test-folder")
@@ -463,7 +463,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `createFolder has correct permissions`() = runBlocking {
+    fun `createFolder has correct permissions`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val result = service.createFolder("/perm-folder")
@@ -476,14 +476,14 @@ class SftpServiceDeepCoverageTest {
     // ==================== RENAME FILE ====================
 
     @Test
-    fun `renameFile fails when disconnected`() = runBlocking {
+    fun `renameFile fails when disconnected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.renameFile("/file.txt", "renamed.txt")
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `renameFile succeeds when connected`() = runBlocking {
+    fun `renameFile succeeds when connected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.uploadFile("/local/f.txt", "/rename-source.txt").toList()
@@ -492,7 +492,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `renameFile updates VFS paths`() = runBlocking {
+    fun `renameFile updates VFS paths`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.uploadFile("/local/f.txt", "/rename-test.txt").toList()
@@ -504,7 +504,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `renameFile updates sync status`() = runBlocking {
+    fun `renameFile updates sync status`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.uploadFile("/local/f.txt", "/sync-rename.txt").toList()
@@ -517,14 +517,14 @@ class SftpServiceDeepCoverageTest {
     // ==================== MOVE FILE ====================
 
     @Test
-    fun `moveFile fails when disconnected`() = runBlocking {
+    fun `moveFile fails when disconnected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.moveFile("/source.txt", "/dest/source.txt")
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `moveFile succeeds when connected`() = runBlocking {
+    fun `moveFile succeeds when connected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.uploadFile("/local/f.txt", "/move-source.txt").toList()
@@ -534,7 +534,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `moveFile updates VFS`() = runBlocking {
+    fun `moveFile updates VFS`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.uploadFile("/local/f.txt", "/move-vfs.txt").toList()
@@ -546,14 +546,14 @@ class SftpServiceDeepCoverageTest {
     // ==================== COPY FILE ====================
 
     @Test
-    fun `copyFile fails when disconnected`() = runBlocking {
+    fun `copyFile fails when disconnected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.copyFile("/source.txt", "/dest.txt")
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `copyFile succeeds when connected`() = runBlocking {
+    fun `copyFile succeeds when connected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.uploadFile("/local/f.txt", "/copy-source.txt").toList()
@@ -562,7 +562,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `copyFile keeps source in VFS`() = runBlocking {
+    fun `copyFile keeps source in VFS`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.uploadFile("/local/f.txt", "/copy-keep.txt").toList()
@@ -572,7 +572,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `copyFile creates destination in VFS`() = runBlocking {
+    fun `copyFile creates destination in VFS`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.uploadFile("/local/f.txt", "/copy-src2.txt").toList()
@@ -584,14 +584,14 @@ class SftpServiceDeepCoverageTest {
     // ==================== GET FILE INFO ====================
 
     @Test
-    fun `getFileInfo fails when disconnected`() = runBlocking {
+    fun `getFileInfo fails when disconnected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.getFileInfo("/file.txt")
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `getFileInfo returns VFS entry when connected`() = runBlocking {
+    fun `getFileInfo returns VFS entry when connected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         // VFS has document.pdf after connect
@@ -600,7 +600,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getFileInfo synthesizes document for unknown paths`() = runBlocking {
+    fun `getFileInfo synthesizes document for unknown paths`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val result = service.getFileInfo("/unknown/path/file.txt")
@@ -611,7 +611,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getFileInfo for path ending in slash is folder`() = runBlocking {
+    fun `getFileInfo for path ending in slash is folder`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val result = service.getFileInfo("/some/dir/")
@@ -622,7 +622,7 @@ class SftpServiceDeepCoverageTest {
     // ==================== EXISTS ====================
 
     @Test
-    fun `exists returns true for known VFS entry`() = runBlocking {
+    fun `exists returns true for known VFS entry`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val result = service.exists("document.pdf")
@@ -631,7 +631,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `exists returns true for synthesized paths when connected`() = runBlocking {
+    fun `exists returns true for synthesized paths when connected`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val result = service.exists("/nonexistent/file.txt")
@@ -693,7 +693,7 @@ class SftpServiceDeepCoverageTest {
     // ==================== CACHE OPERATIONS ====================
 
     @Test
-    fun `addToCache creates entry`() = runBlocking {
+    fun `addToCache creates entry`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.addToCache("/test/file.txt", 5)
         assertTrue(result.isSuccess)
@@ -702,7 +702,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `removeFromCache removes entry`() = runBlocking {
+    fun `removeFromCache removes entry`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.addToCache("/test/file.txt", 5)
         service.removeFromCache("/test/file.txt")
@@ -712,7 +712,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `clearCache removes all entries`() = runBlocking {
+    fun `clearCache removes all entries`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.addToCache("/file1.txt", 1)
         service.addToCache("/file2.txt", 2)
@@ -723,7 +723,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getCacheEntries with path filter`() = runBlocking {
+    fun `getCacheEntries with path filter`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.addToCache("/docs/a.txt", 1)
         service.addToCache("/docs/b.txt", 2)
@@ -736,14 +736,14 @@ class SftpServiceDeepCoverageTest {
     // ==================== SYNC STATUS ====================
 
     @Test
-    fun `getSyncStatus empty initially`() = runBlocking {
+    fun `getSyncStatus empty initially`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val statuses = service.getSyncStatus(null).first()
         assertTrue(statuses.isEmpty())
     }
 
     @Test
-    fun `syncFile marks file as synced`() = runBlocking {
+    fun `syncFile marks file as synced`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val ops = service.syncFile("/test.txt", false).toList()
         assertTrue(ops.isNotEmpty())
@@ -751,7 +751,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `syncAll marks all tracked files as synced`() = runBlocking {
+    fun `syncAll marks all tracked files as synced`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         // List files populates sync status
@@ -762,7 +762,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getSyncStatus with path filter`() = runBlocking {
+    fun `getSyncStatus with path filter`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.listFiles("/").first()
@@ -773,14 +773,14 @@ class SftpServiceDeepCoverageTest {
     // ==================== SEARCH FILES ====================
 
     @Test
-    fun `searchFiles always returns failure`() = runBlocking {
+    fun `searchFiles always returns failure`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.searchFiles("query").first()
         assertTrue(result.isFailure)
     }
 
     @Test
-    fun `searchFiles with path returns failure`() = runBlocking {
+    fun `searchFiles with path returns failure`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.searchFiles("query", "/some/path").first()
         assertTrue(result.isFailure)
@@ -789,7 +789,7 @@ class SftpServiceDeepCoverageTest {
     // ==================== RECENT CHANGES ====================
 
     @Test
-    fun `getRecentChanges returns empty for old timestamp`() = runBlocking {
+    fun `getRecentChanges returns empty for old timestamp`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val futureTime = Clock.System.now().plus(24.hours)
         val changes = service.getRecentChanges(futureTime).first()
@@ -797,7 +797,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getRecentChanges returns files after connect`() = runBlocking {
+    fun `getRecentChanges returns files after connect`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val pastTime = Clock.System.now().minus(48.hours)
@@ -806,7 +806,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getRecentChanges filters by path`() = runBlocking {
+    fun `getRecentChanges filters by path`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val pastTime = Clock.System.now().minus(48.hours)
@@ -818,7 +818,7 @@ class SftpServiceDeepCoverageTest {
     // ==================== QUOTA INFO ====================
 
     @Test
-    fun `getQuotaInfo returns zeroed values`() = runBlocking {
+    fun `getQuotaInfo returns zeroed values`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.getQuotaInfo()
         assertTrue(result.isSuccess)
@@ -831,7 +831,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `getQuotaInfo includes SFTP metadata`() = runBlocking {
+    fun `getQuotaInfo includes SFTP metadata`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val quota = service.getQuotaInfo().getOrThrow()
         assertEquals("SFTP", quota.metadata?.get("provider"))
@@ -841,28 +841,28 @@ class SftpServiceDeepCoverageTest {
     // ==================== ACTIVE OPERATIONS ====================
 
     @Test
-    fun `getActiveOperations empty initially`() = runBlocking {
+    fun `getActiveOperations empty initially`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val ops = service.getActiveOperations().first()
         assertTrue(ops.isEmpty())
     }
 
     @Test
-    fun `cancelOperation succeeds`() = runBlocking {
+    fun `cancelOperation succeeds`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.cancelOperation(12345L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `pauseOperation succeeds`() = runBlocking {
+    fun `pauseOperation succeeds`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.pauseOperation(12345L)
         assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `resumeOperation succeeds`() = runBlocking {
+    fun `resumeOperation succeeds`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         val result = service.resumeOperation(12345L)
         assertTrue(result.isSuccess)
@@ -871,7 +871,7 @@ class SftpServiceDeepCoverageTest {
     // ==================== CONNECT INITIALIZES VFS ====================
 
     @Test
-    fun `connect initializes virtual file system`() = runBlocking {
+    fun `connect initializes virtual file system`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         // After connect, VFS should have default files
@@ -882,7 +882,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `reconnect reinitializes VFS`() = runBlocking {
+    fun `reconnect reinitializes VFS`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         service.uploadFile("/local/f.txt", "/extra-file.txt").toList()
@@ -896,7 +896,7 @@ class SftpServiceDeepCoverageTest {
     // ==================== UPLOAD + DOWNLOAD PROGRESS TRACKING ====================
 
     @Test
-    fun `uploadFile emits progress from 0 to 1`() = runBlocking {
+    fun `uploadFile emits progress from 0 to 1`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val ops = service.uploadFile("/local/file.txt", "/progress-test.txt").toList()
@@ -909,7 +909,7 @@ class SftpServiceDeepCoverageTest {
     }
 
     @Test
-    fun `downloadFile emits progress from 0 to 1`() = runBlocking {
+    fun `downloadFile emits progress from 0 to 1`() = runBlocking<Unit> {
         val service = SftpService(createPasswordConfig())
         service.connect()
         val ops = service.downloadFile("/remote/file.txt", "/local/file.txt").toList()

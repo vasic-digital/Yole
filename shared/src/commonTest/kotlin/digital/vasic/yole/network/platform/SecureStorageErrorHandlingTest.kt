@@ -27,7 +27,7 @@ import kotlinx.coroutines.runBlocking
 class SecureStorageErrorHandlingTest {
 
     @Test
-    fun `should handle null and empty inputs gracefully`() = runBlocking {
+    fun `should handle null and empty inputs gracefully`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -51,7 +51,7 @@ class SecureStorageErrorHandlingTest {
     }
 
     @Test
-    fun `should handle extremely long keys`() = runBlocking {
+    fun `should handle extremely long keys`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -82,7 +82,7 @@ class SecureStorageErrorHandlingTest {
     }
 
     @Test
-    fun `should handle extremely large values`() = runBlocking {
+    fun `should handle extremely large values`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -110,7 +110,7 @@ class SecureStorageErrorHandlingTest {
     }
 
     @Test
-    fun `should handle binary and special character data`() = runBlocking {
+    fun `should handle binary and special character data`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -144,7 +144,7 @@ class SecureStorageErrorHandlingTest {
     }
 
     @Test
-    fun `should handle malformed credential data`() = runBlocking {
+    fun `should handle malformed credential data`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -191,7 +191,7 @@ class SecureStorageErrorHandlingTest {
     }
 
     @Test
-    fun `should handle rapid successive operations`() = runBlocking {
+    fun `should handle rapid successive operations`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -234,7 +234,7 @@ class SecureStorageErrorHandlingTest {
     }
 
     @Test
-    fun `should handle concurrent modification scenarios`() = runBlocking {
+    fun `should handle concurrent modification scenarios`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -259,7 +259,7 @@ class SecureStorageErrorHandlingTest {
     }
 
     @Test
-    fun `should handle storage quota and resource limits`() = runBlocking {
+    fun `should handle storage quota and resource limits`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -296,7 +296,7 @@ class SecureStorageErrorHandlingTest {
     }
 
     @Test
-    fun `should handle corrupted internal state gracefully`() = runBlocking {
+    fun `should handle corrupted internal state gracefully`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -332,7 +332,7 @@ class SecureStorageErrorHandlingTest {
     }
 
     @Test
-    fun `should handle special key collision scenarios`() = runBlocking {
+    fun `should handle special key collision scenarios`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -376,7 +376,7 @@ class SecureStorageErrorHandlingTest {
     }
 
     @Test
-    fun `should handle unicode normalization edge cases`() = runBlocking {
+    fun `should handle unicode normalization edge cases`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -414,7 +414,7 @@ class SecureStorageErrorHandlingTest {
     }
 
     @Test
-    fun `should provide meaningful error messages`() = runBlocking {
+    fun `should provide meaningful error messages`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         if (result.isFailure) {
             val exception = result.exceptionOrNull()

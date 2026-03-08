@@ -10,6 +10,7 @@ package digital.vasic.yole.format
 
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.yield
 
 /**
  * Thread-safe LRU (Least Recently Used) cache for [ParsedDocument] instances.
@@ -31,10 +32,13 @@ class DocumentCache(private val maxSize: Int = 100) {
     val misses: Long get() = _misses
     val hitRate: Double get() = if (_hits + _misses == 0L) 0.0 else _hits.toDouble() / (_hits + _misses)
 
-    suspend fun get(key: String): ParsedDocument? = mutex.withLock {
-        val value = cache[key]
-        if (value != null) _hits++ else _misses++
-        value
+    suspend fun get(key: String): ParsedDocument? {
+        yield()
+        return mutex.withLock {
+            val value = cache[key]
+            if (value != null) _hits++ else _misses++
+            value
+        }
     }
 
     suspend fun put(key: String, document: ParsedDocument) = mutex.withLock {

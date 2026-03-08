@@ -38,7 +38,7 @@ class ResourceManagementStressTest {
     // ==================== CONNECTION LIFECYCLE STRESS ====================
 
     @Test
-    fun `repeated connect-disconnect cycles do not leak resources`() = runBlocking {
+    fun `repeated connect-disconnect cycles do not leak resources`() = runBlocking<Unit> {
         val service = createFtpService("ftp")
 
         repeat(100) {
@@ -53,7 +53,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `multiple disconnect calls are safe`() = runBlocking {
+    fun `multiple disconnect calls are safe`() = runBlocking<Unit> {
         val service = createSmbService("smb")
 
         service.connect()
@@ -67,7 +67,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `connect after failed connect is safe`() = runBlocking {
+    fun `connect after failed connect is safe`() = runBlocking<Unit> {
         val service = createWebDavService("webdav")
 
         // First connect
@@ -82,7 +82,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `operations after disconnect fail gracefully`() = runBlocking {
+    fun `operations after disconnect fail gracefully`() = runBlocking<Unit> {
         val service = createFtpService("ftp")
 
         service.connect() // Will fail with real client, but that's OK
@@ -100,7 +100,7 @@ class ResourceManagementStressTest {
     // ==================== CONCURRENT LIFECYCLE ====================
 
     @Test
-    fun `concurrent connect-disconnect on same service`() = runBlocking {
+    fun `concurrent connect-disconnect on same service`() = runBlocking<Unit> {
         val service = createSmbService("smb")
 
         val jobs = (1..50).map {
@@ -122,7 +122,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `many services created and destroyed concurrently`() = runBlocking {
+    fun `many services created and destroyed concurrently`() = runBlocking<Unit> {
         val jobs = (1..100).map { i ->
             async {
                 val service = when (i % 4) {
@@ -148,7 +148,7 @@ class ResourceManagementStressTest {
     // ==================== OPERATION UNDER RESOURCE PRESSURE ====================
 
     @Test
-    fun `many simultaneous file info requests`() = runBlocking {
+    fun `many simultaneous file info requests`() = runBlocking<Unit> {
         val service = createFtpService("ftp")
 
         // Real FTP client cannot connect to non-existent server
@@ -170,7 +170,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `many simultaneous folder creations`() = runBlocking {
+    fun `many simultaneous folder creations`() = runBlocking<Unit> {
         val service = createSmbService("smb")
         service.connect()
 
@@ -187,7 +187,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `many simultaneous exists checks`() = runBlocking {
+    fun `many simultaneous exists checks`() = runBlocking<Unit> {
         val service = createWebDavService("webdav")
         service.connect()
 
@@ -206,7 +206,7 @@ class ResourceManagementStressTest {
     // ==================== CACHE RESOURCE MANAGEMENT ====================
 
     @Test
-    fun `cache can handle many entries`() = runBlocking {
+    fun `cache can handle many entries`() = runBlocking<Unit> {
         val service = createFtpService("ftp")
 
         // Add many cache entries
@@ -220,7 +220,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `concurrent cache operations`() = runBlocking {
+    fun `concurrent cache operations`() = runBlocking<Unit> {
         val service = createSmbService("smb")
 
         val addJobs = (1..200).map { i ->
@@ -242,7 +242,7 @@ class ResourceManagementStressTest {
     // ==================== STORAGE INFO STRESS ====================
 
     @Test
-    fun `rapid storage info requests`() = runBlocking {
+    fun `rapid storage info requests`() = runBlocking<Unit> {
         val service = createWebDavService("webdav")
 
         val infos = (1..100).map {
@@ -254,7 +254,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `rapid quota info requests`() = runBlocking {
+    fun `rapid quota info requests`() = runBlocking<Unit> {
         val service = createGitService("git")
 
         val quotas = (1..100).map {
@@ -268,7 +268,7 @@ class ResourceManagementStressTest {
     // ==================== PATH VALIDATION STRESS ====================
 
     @Test
-    fun `many path validations concurrently`() = runBlocking {
+    fun `many path validations concurrently`() = runBlocking<Unit> {
         val service = createFtpService("ftp")
 
         val results = (1..500).map { i ->
@@ -282,7 +282,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `invalid paths handled consistently`() = runBlocking {
+    fun `invalid paths handled consistently`() = runBlocking<Unit> {
         val service = createSmbService("smb")
 
         val invalidPaths = listOf("", " ", "\t", "\n")
@@ -296,7 +296,7 @@ class ResourceManagementStressTest {
     // ==================== SYNC OPERATION STRESS ====================
 
     @Test
-    fun `many sync operations concurrently`() = runBlocking {
+    fun `many sync operations concurrently`() = runBlocking<Unit> {
         val service = createWebDavService("webdav")
 
         val syncResults = (1..50).map { i ->
@@ -310,7 +310,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `sync with force flag variations`() = runBlocking {
+    fun `sync with force flag variations`() = runBlocking<Unit> {
         val service = createFtpService("ftp")
 
         repeat(50) { i ->
@@ -322,7 +322,7 @@ class ResourceManagementStressTest {
     // ==================== UPLOAD/DOWNLOAD STRESS ====================
 
     @Test
-    fun `concurrent upload operations`() = runBlocking {
+    fun `concurrent upload operations`() = runBlocking<Unit> {
         val service = createSmbService("smb")
         service.connect()
 
@@ -341,7 +341,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `concurrent download operations`() = runBlocking {
+    fun `concurrent download operations`() = runBlocking<Unit> {
         val service = createWebDavService("webdav")
         service.connect()
 
@@ -360,7 +360,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `interleaved upload and download`() = runBlocking {
+    fun `interleaved upload and download`() = runBlocking<Unit> {
         val service = createFtpService("ftp")
 
         // Real FTP client cannot connect to non-existent server
@@ -390,7 +390,7 @@ class ResourceManagementStressTest {
     // ==================== EDGE CASES ====================
 
     @Test
-    fun `operations on uninitialized service`() = runBlocking {
+    fun `operations on uninitialized service`() = runBlocking<Unit> {
         val service = createGitService("git")
 
         // Should not crash
@@ -402,7 +402,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `very long file paths`() = runBlocking {
+    fun `very long file paths`() = runBlocking<Unit> {
         val service = createFtpService("ftp")
         service.connect() // Will fail with real client, but that's OK
 
@@ -416,7 +416,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `special characters in paths`() = runBlocking {
+    fun `special characters in paths`() = runBlocking<Unit> {
         val service = createSmbService("smb")
         service.connect()
 
@@ -437,7 +437,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `unicode paths handled correctly`() = runBlocking {
+    fun `unicode paths handled correctly`() = runBlocking<Unit> {
         val service = createWebDavService("webdav")
         service.connect()
 
@@ -459,7 +459,7 @@ class ResourceManagementStressTest {
     // ==================== SERVICE-SPECIFIC STRESS ====================
 
     @Test
-    fun `git branch operations stress`() = runBlocking {
+    fun `git branch operations stress`() = runBlocking<Unit> {
         val service = createGitService("git")
 
         repeat(50) {
@@ -469,7 +469,7 @@ class ResourceManagementStressTest {
     }
 
     @Test
-    fun `cloud service token handling stress`() = runBlocking {
+    fun `cloud service token handling stress`() = runBlocking<Unit> {
         val dropboxService = DropboxService(
             StorageConfig.DropboxConfig(
                 name = "dropbox",

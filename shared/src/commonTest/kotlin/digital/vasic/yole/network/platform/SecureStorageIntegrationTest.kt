@@ -31,7 +31,7 @@ class SecureStorageIntegrationTest {
     // ==================== Cross-Platform Consistency Tests ====================
 
     @Test
-    fun `should maintain data consistency across operations`() = runBlocking {
+    fun `should maintain data consistency across operations`() = runBlocking<Unit> {
         // This test would run on each platform with its specific implementation
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess, "Factory should create storage on current platform")
@@ -96,7 +96,7 @@ class SecureStorageIntegrationTest {
     }
 
     @Test
-    fun `should handle error scenarios consistently across platforms`() = runBlocking {
+    fun `should handle error scenarios consistently across platforms`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -139,7 +139,7 @@ class SecureStorageIntegrationTest {
     }
 
     @Test
-    fun `should provide consistent security validation`() = runBlocking {
+    fun `should provide consistent security validation`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -157,7 +157,7 @@ class SecureStorageIntegrationTest {
     }
 
     @Test
-    fun `should handle concurrent operations safely`() = runBlocking {
+    fun `should handle concurrent operations safely`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -192,7 +192,7 @@ class SecureStorageIntegrationTest {
     // ==================== Factory Pattern Tests ====================
 
     @Test
-    fun `should provide appropriate platform-specific implementations`() = runBlocking {
+    fun `should provide appropriate platform-specific implementations`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess, "Factory should succeed on current platform")
         
@@ -204,7 +204,7 @@ class SecureStorageIntegrationTest {
     }
 
     @Test
-    fun `should handle factory availability consistently`() = runBlocking {
+    fun `should handle factory availability consistently`() = runBlocking<Unit> {
         // Availability should be consistent across multiple calls
         val availability1 = SecureStorageFactory.isAvailable()
         val availability2 = SecureStorageFactory.isAvailable()
@@ -222,7 +222,7 @@ class SecureStorageIntegrationTest {
     }
 
     @Test
-    fun `should handle factory creation failures gracefully`() = runBlocking {
+    fun `should handle factory creation failures gracefully`() = runBlocking<Unit> {
         // Test multiple creation attempts
         val results = (1..5).map {
             SecureStorageFactory.create()
@@ -241,7 +241,7 @@ class SecureStorageIntegrationTest {
     // ==================== Security Integration Tests ====================
 
     @Test
-    fun `should maintain security across different data types`() = runBlocking {
+    fun `should maintain security across different data types`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -281,7 +281,7 @@ class SecureStorageIntegrationTest {
     }
 
     @Test
-    fun `should handle credential management securely`() = runBlocking {
+    fun `should handle credential management securely`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -327,7 +327,7 @@ class SecureStorageIntegrationTest {
     // ==================== Performance Integration Tests ====================
 
     @Test
-    fun `should handle large data volumes efficiently`() = runBlocking {
+    fun `should handle large data volumes efficiently`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
@@ -364,7 +364,7 @@ class SecureStorageIntegrationTest {
     }
 
     @Test
-    fun `should handle large individual items`() = runBlocking {
+    fun `should handle large individual items`() = runBlocking<Unit> {
         val result = SecureStorageFactory.create()
         assertTrue(result.isSuccess)
         
