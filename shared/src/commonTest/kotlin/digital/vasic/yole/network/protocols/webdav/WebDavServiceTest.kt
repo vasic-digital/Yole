@@ -3,7 +3,7 @@ package digital.vasic.yole.network.protocols.webdav
 import digital.vasic.yole.network.StorageQuota
 import digital.vasic.yole.network.common.*
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals

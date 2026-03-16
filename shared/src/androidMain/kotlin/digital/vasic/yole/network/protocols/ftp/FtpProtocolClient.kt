@@ -460,12 +460,18 @@ actual class FtpProtocolClient actual constructor() {
         // Check if this is a multi-line response
         if (firstLine.length >= 4 && firstLine[3] == '-') {
             val code = firstLine.substring(0, 3)
-            // Read until we find the terminating line "NNN "
+            // Read until we find the terminating line "NNN " (safety limit: 10,000 lines)
+            var linesRead = 0
+            val maxLines = 10_000
             while (true) {
                 val line = r.readLine() ?: throw Exception("FTP connection closed during multi-line response")
                 sb.appendLine(line)
+                linesRead++
                 if (line.length >= 4 && line.startsWith(code) && line[3] == ' ') {
                     break
+                }
+                if (linesRead >= maxLines) {
+                    throw Exception("FTP multi-line response exceeded $maxLines lines safety limit")
                 }
             }
         }

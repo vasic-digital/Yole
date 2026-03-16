@@ -26,10 +26,10 @@ RUN wget -q https://services.gradle.org/distributions/gradle-8.11.1-bin.zip -O /
     ln -s /opt/gradle-8.11.1/bin/gradle /usr/local/bin/gradle && \
     rm /tmp/gradle.zip
 
-# Download and extract pre-built Android SDK
+# Download and extract official Android command-line tools
 RUN mkdir -p $ANDROID_SDK_ROOT && \
     cd /tmp && \
-    wget -q https://github.com/b吸收Android/sdk-linux/releases/download/v35.0.0/commandlinetools-linux.zip -O cmdline-tools.zip && \
+    wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip && \
     unzip -q cmdline-tools.zip && \
     mkdir -p $ANDROID_SDK_ROOT/cmdline-tools && \
     mv cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest && \

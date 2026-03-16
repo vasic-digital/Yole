@@ -6,7 +6,7 @@ package digital.vasic.yole.network
 
 import digital.vasic.yole.network.common.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.*

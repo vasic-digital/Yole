@@ -90,8 +90,8 @@ clean_build() {
 run_tests() {
     echo -e "${YELLOW}Running all tests...${NC}"
 
-    # Shared module tests
-    ./gradlew :shared:testDebugUnitTest
+    # Shared module tests (desktop JVM — primary test target)
+    ./gradlew :shared:desktopTest
 
     # Android module tests
     ./gradlew :androidApp:testDebugUnitTest

@@ -11,7 +11,7 @@ package digital.vasic.yole.network
 
 import digital.vasic.yole.network.common.*
 import digital.vasic.yole.network.protocols.dropbox.DropboxService
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds

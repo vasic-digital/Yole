@@ -1,6 +1,6 @@
 # Yole Video Course
 
-Comprehensive video course across beginner, advanced, and expert levels for Kotlin Multiplatform development with Yole. 19 modules covering everything from first steps to contributing to the project.
+Comprehensive video course across beginner, advanced, and expert levels for Kotlin Multiplatform development with Yole. 21 modules and 147 videos covering everything from first steps to contributing to the project.
 
 ## Course Overview
 
@@ -8,7 +8,7 @@ Comprehensive video course across beginner, advanced, and expert levels for Kotl
 |-------|---------|--------|
 | Beginner | 5 modules | Getting started, Markdown, Todo.txt, cross-platform app, migration |
 | Advanced | 7 modules | Custom formats, performance, network storage, UI, cloud, containers, security |
-| Expert | 7 modules | Architecture, deployment, testing, community, challenges, monitoring, contributing |
+| Expert | 9 modules | Architecture, deployment, testing, community, challenges, monitoring, contributing, platform-specific, stress testing |
 
 ## Structure
 
@@ -35,7 +35,9 @@ video-course/
     ├── 12-community/                # Module 12: Community Contribution (5 videos)
     ├── 16-challenges-framework/     # Module 16: Challenges Framework (6 videos)
     ├── 17-monitoring-performance/   # Module 17: Monitoring & Performance (7 videos)
-    └── 18-contributing/             # Module 18: Contributing to Yole (7 videos)
+    ├── 18-contributing/             # Module 18: Contributing to Yole (7 videos)
+    ├── 20-platform-specific/        # Module 20: Platform-Specific Development (7 videos)
+    └── 21-stress-testing/           # Module 21: Stress Testing & Responsiveness (8 videos)
 ```
 
 ## Beginner Level (5 modules)
@@ -102,7 +104,7 @@ Comprehensive security scanning with SonarQube, Snyk, Gitleaks, CodeQL, OWASP De
 
 **Prerequisites:** Module 14.
 
-## Expert Level (7 modules)
+## Expert Level (9 modules)
 
 ### Module 9: Advanced Architecture Patterns (12 videos)
 Clean architecture, dependency injection, state management (MVI), event-driven patterns, modularization, plugin architecture, and database design.
@@ -130,14 +132,24 @@ The Go-based Challenges framework: challenge banks (JSON), running challenges ag
 **Prerequisites:** Modules 9-12, basic Go knowledge.
 
 ### Module 17: Monitoring & Performance (7 videos)
-Resilience patterns (CircuitBreaker, ConnectionLimiter, DocumentCache, RateLimitedStorageService), document caching with hit/miss tracking, connection management, performance metrics (9,400+ test methods, 63.0% coverage), memory profiling, and benchmark testing.
+Resilience patterns (CircuitBreaker, ConnectionLimiter, DocumentCache, RateLimitedStorageService), document caching with hit/miss tracking, connection management, performance metrics (11,000+ test methods, 63.0% coverage), memory profiling, and benchmark testing.
 
 **Prerequisites:** Module 9, Module 6.
 
 ### Module 18: Contributing to Yole (7 videos)
-Complete contributor guide: repository structure (main + 10 KMP modules + 2 Go submodules), git workflow, development environment, running the full test suite (9,400+ test methods across 195 files), adding formats, adding protocols, resilience patterns, security scanning, and code review standards.
+Complete contributor guide: repository structure (main + 10 KMP modules + 2 Go submodules), git workflow, development environment, running the full test suite (11,000+ test methods across 195 files), adding formats, adding protocols, resilience patterns, security scanning, and code review standards.
 
 **Prerequisites:** Modules 9-12 (or equivalent familiarity with the codebase).
+
+### Module 20: Platform-Specific Development (7 videos)
+The expect/actual pattern in depth, platform-specific implementations for all four targets (Android, Desktop, iOS, Wasm), browser sandbox constraints, platform factory patterns, and testing strategies for platform-specific code including MockK JVM-only limitations.
+
+**Prerequisites:** Module 9, Module 11.
+
+### Module 21: Stress Testing & Responsiveness (8 videos)
+Stress testing philosophy, concurrent format parsing, protocol overload and circuit breaker testing, cache overflow and LRU stress testing, rate limiter saturation, end-to-end responsiveness validation (<100ms p99), non-blocking guarantee verification, and memory leak regression testing patterns.
+
+**Prerequisites:** Module 11, Module 17.
 
 ## Production Details
 
@@ -165,7 +177,10 @@ Module 19 -> 1 -> 13 -> 4
 Modules 1 -> 14 -> 15 -> 16 -> 10
 
 ### Performance / Architecture Focus
-Modules 1 -> 5 -> 6 -> 9 -> 17
+Modules 1 -> 5 -> 6 -> 9 -> 17 -> 21
+
+### Platform / KMP Focus
+Modules 1 -> 4 -> 9 -> 20 -> 11 -> 21
 
 ### Contributor
 Modules 1 -> 14 -> 11 -> 18 -> 16

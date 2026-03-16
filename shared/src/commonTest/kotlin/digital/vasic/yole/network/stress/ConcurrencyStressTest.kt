@@ -3,7 +3,7 @@ package digital.vasic.yole.network.stress
 import digital.vasic.yole.network.common.*
 import digital.vasic.yole.network.protocols.smb.SmbService
 import kotlinx.coroutines.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

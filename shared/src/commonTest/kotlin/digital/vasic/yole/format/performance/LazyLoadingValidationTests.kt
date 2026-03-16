@@ -17,7 +17,7 @@ package digital.vasic.yole.format.performance
 import digital.vasic.yole.format.*
 import digital.vasic.yole.format.markdown.MarkdownParser
 import digital.vasic.yole.format.plaintext.PlaintextParser
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 import kotlin.time.measureTime
 import kotlinx.coroutines.runBlocking
@@ -216,7 +216,7 @@ class LazyLoadingValidationTests {
     // ====================================================================
 
     @Test
-    fun `DocumentCache starts empty`() = runTest {
+    fun `DocumentCache starts empty`() = runBlocking<Unit> {
         val cache = DocumentCache()
         assertEquals(0, cache.size, "New cache should be empty")
         assertEquals(0, cache.hits, "New cache should have 0 hits")
@@ -224,7 +224,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `DocumentCache get on empty cache records miss`() = runTest {
+    fun `DocumentCache get on empty cache records miss`() = runBlocking<Unit> {
         val cache = DocumentCache()
         val result = cache.get("nonexistent")
         assertNull(result, "Get on empty cache should return null")
@@ -233,7 +233,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `DocumentCache put and get works correctly`() = runTest {
+    fun `DocumentCache put and get works correctly`() = runBlocking<Unit> {
         val cache = DocumentCache()
         val format = TextFormat(id = "plaintext", name = "Plain Text", defaultExtension = ".txt")
         val doc = ParsedDocument(format = format, rawContent = "test", parsedContent = "test")
@@ -248,7 +248,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `DocumentCache hit rate is calculated correctly`() = runTest {
+    fun `DocumentCache hit rate is calculated correctly`() = runBlocking<Unit> {
         val cache = DocumentCache()
         val format = TextFormat(id = "plaintext", name = "Plain Text", defaultExtension = ".txt")
         val doc = ParsedDocument(format = format, rawContent = "test", parsedContent = "test")
@@ -266,7 +266,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `DocumentCache respects maxSize with LRU eviction`() = runTest {
+    fun `DocumentCache respects maxSize with LRU eviction`() = runBlocking<Unit> {
         val cache = DocumentCache(maxSize = 3)
         val format = TextFormat(id = "plaintext", name = "Plain Text", defaultExtension = ".txt")
 
@@ -285,7 +285,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `DocumentCache invalidate removes single entry`() = runTest {
+    fun `DocumentCache invalidate removes single entry`() = runBlocking<Unit> {
         val cache = DocumentCache()
         val format = TextFormat(id = "plaintext", name = "Plain Text", defaultExtension = ".txt")
         val doc = ParsedDocument(format = format, rawContent = "test", parsedContent = "test")
@@ -301,7 +301,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `DocumentCache clear resets everything`() = runTest {
+    fun `DocumentCache clear resets everything`() = runBlocking<Unit> {
         val cache = DocumentCache()
         val format = TextFormat(id = "plaintext", name = "Plain Text", defaultExtension = ".txt")
         val doc = ParsedDocument(format = format, rawContent = "test", parsedContent = "test")
@@ -486,7 +486,7 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `DocumentCache operations are suspend-only and non-blocking`() = runTest {
+    fun `DocumentCache operations are suspend-only and non-blocking`() = runBlocking<Unit> {
         // Verify DocumentCache uses suspend functions (not runBlocking internally)
         val cache = DocumentCache()
         val format = TextFormat(id = "plaintext", name = "Plain Text", defaultExtension = ".txt")
@@ -543,7 +543,7 @@ class LazyLoadingValidationTests {
     // ====================================================================
 
     @Test
-    fun `end-to-end lazy pipeline works correctly`() = runTest {
+    fun `end-to-end lazy pipeline works correctly`() = runBlocking<Unit> {
         ParserRegistry.clear()
         StyleSheets.clearCache()
 

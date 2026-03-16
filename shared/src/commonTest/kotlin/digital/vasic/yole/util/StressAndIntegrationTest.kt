@@ -15,7 +15,7 @@ import kotlin.test.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import digital.vasic.yole.format.*
 
@@ -35,7 +35,7 @@ class RateLimiterStressTest {
     // -- RateLimiter --
 
     @Test
-    fun testRateLimiterUnderExtremeConcurrentLoad() = runTest {
+    fun testRateLimiterUnderExtremeConcurrentLoad() = runBlocking<Unit> {
         val limiter = RateLimiter(maxConcurrent = 5)
         val mutex = Mutex()
         var peakActive = 0
@@ -62,7 +62,7 @@ class RateLimiterStressTest {
     }
 
     @Test
-    fun testRateLimiterConcurrencyNeverExceeded() = runTest {
+    fun testRateLimiterConcurrencyNeverExceeded() = runBlocking<Unit> {
         val maxConcurrent = 3
         val limiter = RateLimiter(maxConcurrent = maxConcurrent)
         val mutex = Mutex()
@@ -87,7 +87,7 @@ class RateLimiterStressTest {
     }
 
     @Test
-    fun testRateLimiterTimeoutUnderLoad() = runTest {
+    fun testRateLimiterTimeoutUnderLoad() = runBlocking<Unit> {
         val limiter = RateLimiter(maxConcurrent = 1)
         val mutex = Mutex()
         var timedOut = 0
@@ -115,7 +115,7 @@ class RateLimiterStressTest {
     }
 
     @Test
-    fun testRateLimiterQueueDrainsCompletely() = runTest {
+    fun testRateLimiterQueueDrainsCompletely() = runBlocking<Unit> {
         val limiter = RateLimiter(maxConcurrent = 2)
         val mutex = Mutex()
         var completed = 0
@@ -137,7 +137,7 @@ class RateLimiterStressTest {
     // -- TokenBucket --
 
     @Test
-    fun testTokenBucketBurstHandling() = runTest {
+    fun testTokenBucketBurstHandling() = runBlocking<Unit> {
         val capacity = 20
         val bucket = TokenBucket(capacity = capacity, refillRate = 100.0)
         var acquired = 0
@@ -155,7 +155,7 @@ class RateLimiterStressTest {
     }
 
     @Test
-    fun testTokenBucketRefillRecovery() = runTest {
+    fun testTokenBucketRefillRecovery() = runBlocking<Unit> {
         val bucket = TokenBucket(capacity = 10, refillRate = 200.0)
 
         // Drain the bucket
@@ -176,7 +176,7 @@ class RateLimiterStressTest {
     }
 
     @Test
-    fun testTokenBucketConcurrentAcquire() = runTest {
+    fun testTokenBucketConcurrentAcquire() = runBlocking<Unit> {
         val capacity = 50
         val bucket = TokenBucket(capacity = capacity, refillRate = 0.1) // Very slow refill
         val mutex = Mutex()
@@ -199,7 +199,7 @@ class RateLimiterStressTest {
     }
 
     @Test
-    fun testTokenBucketCapacityCap() = runTest {
+    fun testTokenBucketCapacityCap() = runBlocking<Unit> {
         val capacity = 10
         val bucket = TokenBucket(capacity = capacity, refillRate = 1000.0)
 
@@ -216,7 +216,7 @@ class RateLimiterStressTest {
     // -- AdaptiveRateLimiter --
 
     @Test
-    fun testAdaptiveRateLimiterScalesOnSuccess() = runTest {
+    fun testAdaptiveRateLimiterScalesOnSuccess() = runBlocking<Unit> {
         val limiter = AdaptiveRateLimiter(initialRate = 5, minRate = 1, maxRate = 20)
         val initialRate = limiter.getCurrentRate()
 
@@ -234,7 +234,7 @@ class RateLimiterStressTest {
     }
 
     @Test
-    fun testAdaptiveRateLimiterScalesOnFailure() = runTest {
+    fun testAdaptiveRateLimiterScalesOnFailure() = runBlocking<Unit> {
         val limiter = AdaptiveRateLimiter(initialRate = 10, minRate = 1, maxRate = 20)
         val initialRate = limiter.getCurrentRate()
 
@@ -255,7 +255,7 @@ class RateLimiterStressTest {
     }
 
     @Test
-    fun testAdaptiveRateLimiterUnderVaryingFailureRates() = runTest {
+    fun testAdaptiveRateLimiterUnderVaryingFailureRates() = runBlocking<Unit> {
         val limiter = AdaptiveRateLimiter(initialRate = 5, minRate = 1, maxRate = 20)
         val mutex = Mutex()
         var successes = 0
@@ -285,7 +285,7 @@ class RateLimiterStressTest {
     }
 
     @Test
-    fun testAdaptiveRateLimiterRespectsMinMaxBounds() = runTest {
+    fun testAdaptiveRateLimiterRespectsMinMaxBounds() = runBlocking<Unit> {
         val limiter = AdaptiveRateLimiter(initialRate = 2, minRate = 1, maxRate = 5)
 
         // Drive failures to push rate down to min
@@ -308,7 +308,7 @@ class RateLimiterStressTest {
     // -- OperationThrottler --
 
     @Test
-    fun testOperationThrottlerRapidFire() = runTest {
+    fun testOperationThrottlerRapidFire() = runBlocking<Unit> {
         val throttler = OperationThrottler(windowMs = 1000, maxOperations = 10)
         var allowed = 0
         var throttled = 0
@@ -323,7 +323,7 @@ class RateLimiterStressTest {
     }
 
     @Test
-    fun testOperationThrottlerDifferentIds() = runTest {
+    fun testOperationThrottlerDifferentIds() = runBlocking<Unit> {
         val throttler = OperationThrottler(windowMs = 1000, maxOperations = 5)
 
         var allowedA = 0
@@ -339,7 +339,7 @@ class RateLimiterStressTest {
     }
 
     @Test
-    fun testOperationThrottlerConcurrentAccess() = runTest {
+    fun testOperationThrottlerConcurrentAccess() = runBlocking<Unit> {
         val throttler = OperationThrottler(windowMs = 1000, maxOperations = 50)
         val mutex = Mutex()
         var totalAllowed = 0
@@ -363,7 +363,7 @@ class RateLimiterStressTest {
     }
 
     @Test
-    fun testOperationThrottlerClearResetsState() = runTest {
+    fun testOperationThrottlerClearResetsState() = runBlocking<Unit> {
         val throttler = OperationThrottler(windowMs = 1000, maxOperations = 5)
 
         // Exhaust the limit
@@ -405,7 +405,7 @@ class LazyLoadingStressTest {
     // -- LazyStringLoader --
 
     @Test
-    fun testLazyStringLoaderWithVeryLargeDocument() = runTest {
+    fun testLazyStringLoaderWithVeryLargeDocument() = runBlocking<Unit> {
         val lineCount = 10000
         val content = generateLargeDocument(lineCount)
         val loader = LazyStringLoader(content, chunkSize = 500)
@@ -422,7 +422,7 @@ class LazyLoadingStressTest {
     }
 
     @Test
-    fun testLazyStringLoaderGetLinesAcrossChunks() = runTest {
+    fun testLazyStringLoaderGetLinesAcrossChunks() = runBlocking<Unit> {
         val lineCount = 10000
         val content = generateLargeDocument(lineCount)
         val loader = LazyStringLoader(content, chunkSize = 500)
@@ -434,7 +434,7 @@ class LazyLoadingStressTest {
     }
 
     @Test
-    fun testLazyStringLoaderConcurrentChunkAccess() = runTest {
+    fun testLazyStringLoaderConcurrentChunkAccess() = runBlocking<Unit> {
         val content = generateLargeDocument(10000)
         val loader = LazyStringLoader(content, chunkSize = 500)
         val mutex = Mutex()
@@ -454,7 +454,7 @@ class LazyLoadingStressTest {
     }
 
     @Test
-    fun testLazyStringLoaderSameChunkConcurrent() = runTest {
+    fun testLazyStringLoaderSameChunkConcurrent() = runBlocking<Unit> {
         val content = generateLargeDocument(5000)
         val loader = LazyStringLoader(content, chunkSize = 500)
         val results = mutableListOf<String?>()
@@ -477,7 +477,7 @@ class LazyLoadingStressTest {
     // -- LazyDocumentLoader --
 
     @Test
-    fun testLazyDocumentLoaderPreloadAround() = runTest {
+    fun testLazyDocumentLoaderPreloadAround() = runBlocking<Unit> {
         val content = generateLargeDocument(10000)
         val loader = LazyStringLoader(content, chunkSize = 500)
 
@@ -492,7 +492,7 @@ class LazyLoadingStressTest {
     }
 
     @Test
-    fun testLazyDocumentLoaderClearFreesMemory() = runTest {
+    fun testLazyDocumentLoaderClearFreesMemory() = runBlocking<Unit> {
         val content = generateLargeDocument(10000)
         val loader = LazyStringLoader(content, chunkSize = 500)
 
@@ -511,7 +511,7 @@ class LazyLoadingStressTest {
     }
 
     @Test
-    fun testLazyDocumentLoaderOutOfBoundsReturnsNull() = runTest {
+    fun testLazyDocumentLoaderOutOfBoundsReturnsNull() = runBlocking<Unit> {
         val content = generateLargeDocument(100)
         val loader = LazyStringLoader(content, chunkSize = 50)
 
@@ -525,7 +525,7 @@ class LazyLoadingStressTest {
     // -- FlowLazyLoader --
 
     @Test
-    fun testFlowLazyLoaderMassiveConcurrentLoadMore() = runTest {
+    fun testFlowLazyLoaderMassiveConcurrentLoadMore() = runBlocking<Unit> {
         val loader = FlowLazyLoader<String>()
         val mutex = Mutex()
         var totalItemsLoaded = 0
@@ -551,7 +551,7 @@ class LazyLoadingStressTest {
     }
 
     @Test
-    fun testFlowLazyLoaderCleanupClearsContent() = runTest {
+    fun testFlowLazyLoaderCleanupClearsContent() = runBlocking<Unit> {
         val loader = FlowLazyLoader<String>()
 
         loader.loadMore(listOf("a", "b", "c"))
@@ -563,7 +563,7 @@ class LazyLoadingStressTest {
     }
 
     @Test
-    fun testFlowLazyLoaderDoesNotLeakAfterCleanup() = runTest {
+    fun testFlowLazyLoaderDoesNotLeakAfterCleanup() = runBlocking<Unit> {
         val loader = FlowLazyLoader<String>()
 
         // Load substantial data
@@ -581,7 +581,7 @@ class LazyLoadingStressTest {
     }
 
     @Test
-    fun testFlowLazyLoaderGetVisibleRange() = runTest {
+    fun testFlowLazyLoaderGetVisibleRange() = runBlocking<Unit> {
         val loader = FlowLazyLoader<String>()
 
         val items = (1..1000).map { "item-$it" }
@@ -595,7 +595,7 @@ class LazyLoadingStressTest {
     }
 
     @Test
-    fun testFlowLazyLoaderGetVisibleRangeBoundsClamp() = runTest {
+    fun testFlowLazyLoaderGetVisibleRangeBoundsClamp() = runBlocking<Unit> {
         val loader = FlowLazyLoader<String>()
 
         val items = (1..50).map { "item-$it" }
@@ -637,7 +637,7 @@ class ParserRegistryStressTest {
     }
 
     @Test
-    fun testConcurrentGetParserCalls() = runTest {
+    fun testConcurrentGetParserCalls() = runBlocking<Unit> {
         ParserInitializer.registerAllParsersLazy()
 
         val mutex = Mutex()
@@ -667,7 +667,7 @@ class ParserRegistryStressTest {
     }
 
     @Test
-    fun testConcurrentGetParserDifferentFormats() = runTest {
+    fun testConcurrentGetParserDifferentFormats() = runBlocking<Unit> {
         ParserInitializer.registerAllParsersLazy()
 
         val formatIds = listOf(
@@ -716,7 +716,7 @@ class ParserRegistryStressTest {
     }
 
     @Test
-    fun testLazyInstantiationUnderConcurrentAccess() = runTest {
+    fun testLazyInstantiationUnderConcurrentAccess() = runBlocking<Unit> {
         ParserInitializer.registerAllParsersLazy()
 
         // Verify that initially nothing is instantiated (all lazy)
@@ -738,7 +738,7 @@ class ParserRegistryStressTest {
     }
 
     @Test
-    fun testClearAndReRegisterCycle() = runTest {
+    fun testClearAndReRegisterCycle() = runBlocking<Unit> {
         // First registration
         ParserInitializer.registerAllParsersLazy()
         val parser1 = ParserRegistry.getParser(FormatRegistry.ID_MARKDOWN)
@@ -756,7 +756,7 @@ class ParserRegistryStressTest {
     }
 
     @Test
-    fun testClearAndReRegisterWithConcurrentGetParser() = runTest {
+    fun testClearAndReRegisterWithConcurrentGetParser() = runBlocking<Unit> {
         ParserInitializer.registerAllParsersLazy()
 
         // Pre-instantiate one parser
@@ -783,7 +783,7 @@ class ParserRegistryStressTest {
     }
 
     @Test
-    fun testHasParserDoesNotTriggerInstantiation() = runTest {
+    fun testHasParserDoesNotTriggerInstantiation() = runBlocking<Unit> {
         ParserInitializer.registerAllParsersLazy()
 
         val pendingBefore = ParserRegistry.getPendingParserCount()
@@ -809,7 +809,7 @@ class ParserRegistryStressTest {
     }
 
     @Test
-    fun testAllFormatsResolvableAfterLazyRegistration() = runTest {
+    fun testAllFormatsResolvableAfterLazyRegistration() = runBlocking<Unit> {
         ParserInitializer.registerAllParsersLazy()
 
         val allFormatIds = listOf(
@@ -849,7 +849,7 @@ class ParserRegistryStressTest {
 class NonBlockingResponsivenessTest {
 
     @Test
-    fun testRateLimiterDoesNotBlockIndefinitely() = runTest {
+    fun testRateLimiterDoesNotBlockIndefinitely() = runBlocking<Unit> {
         val limiter = RateLimiter(maxConcurrent = 2)
 
         // The operations run on Dispatchers.Default (real time), so the timeout
@@ -874,7 +874,7 @@ class NonBlockingResponsivenessTest {
     }
 
     @Test
-    fun testRateLimiterExecuteWithTimeoutReturnsPromptly() = runTest {
+    fun testRateLimiterExecuteWithTimeoutReturnsPromptly() = runBlocking<Unit> {
         val limiter = RateLimiter(maxConcurrent = 1)
 
         // Run on real time so blocker actually acquires the slot and timeout uses real clock
@@ -900,7 +900,7 @@ class NonBlockingResponsivenessTest {
     }
 
     @Test
-    fun testLazyDocumentLoaderGetChunkRespondsQuickly() = runTest {
+    fun testLazyDocumentLoaderGetChunkRespondsQuickly() = runBlocking<Unit> {
         val content = buildString {
             repeat(10000) { i ->
                 appendLine("Line $i")
@@ -920,7 +920,7 @@ class NonBlockingResponsivenessTest {
     }
 
     @Test
-    fun testLazyDocumentLoaderConcurrentGetChunkResponds() = runTest {
+    fun testLazyDocumentLoaderConcurrentGetChunkResponds() = runBlocking<Unit> {
         val content = buildString {
             repeat(10000) { i ->
                 appendLine("Line $i")
@@ -948,7 +948,7 @@ class NonBlockingResponsivenessTest {
     }
 
     @Test
-    fun testFlowLazyLoaderCleanupIsImmediate() = runTest {
+    fun testFlowLazyLoaderCleanupIsImmediate() = runBlocking<Unit> {
         val loader = FlowLazyLoader<String>()
 
         // Load substantial data
@@ -969,7 +969,7 @@ class NonBlockingResponsivenessTest {
     }
 
     @Test
-    fun testTokenBucketAcquireDoesNotStarveUnderContention() = runTest {
+    fun testTokenBucketAcquireDoesNotStarveUnderContention() = runBlocking<Unit> {
         val bucket = TokenBucket(capacity = 20, refillRate = 100.0)
         val mutex = Mutex()
         var acquired = 0
@@ -991,7 +991,7 @@ class NonBlockingResponsivenessTest {
     }
 
     @Test
-    fun testTokenBucketTryAcquireIsNonBlocking() = runTest {
+    fun testTokenBucketTryAcquireIsNonBlocking() = runBlocking<Unit> {
         val bucket = TokenBucket(capacity = 5, refillRate = 0.01) // Very slow refill
 
         // Drain the bucket
@@ -1009,7 +1009,7 @@ class NonBlockingResponsivenessTest {
     }
 
     @Test
-    fun testTokenBucketAcquireWithRefillCompletesInTime() = runTest {
+    fun testTokenBucketAcquireWithRefillCompletesInTime() = runBlocking<Unit> {
         val bucket = TokenBucket(capacity = 5, refillRate = 50.0) // 50 tokens/sec
 
         // Drain all tokens
@@ -1030,7 +1030,7 @@ class NonBlockingResponsivenessTest {
     }
 
     @Test
-    fun testOperationThrottlerRespondsInstantly() = runTest {
+    fun testOperationThrottlerRespondsInstantly() = runBlocking<Unit> {
         val throttler = OperationThrottler(windowMs = 1000, maxOperations = 100)
 
         val startMs = Clock.System.now().toEpochMilliseconds()
@@ -1046,7 +1046,7 @@ class NonBlockingResponsivenessTest {
     }
 
     @Test
-    fun testParserRegistryGetParserRespondsQuickly() = runTest {
+    fun testParserRegistryGetParserRespondsQuickly() = runBlocking<Unit> {
         ParserRegistry.clear()
         ParserInitializer.registerAllParsersLazy()
 
@@ -1064,7 +1064,7 @@ class NonBlockingResponsivenessTest {
     }
 
     @Test
-    fun testConcurrentMixedOperationsComplete() = runTest {
+    fun testConcurrentMixedOperationsComplete() = runBlocking<Unit> {
         val limiter = RateLimiter(maxConcurrent = 5)
         val bucket = TokenBucket(capacity = 50, refillRate = 100.0)
         val throttler = OperationThrottler(windowMs = 2000, maxOperations = 100)

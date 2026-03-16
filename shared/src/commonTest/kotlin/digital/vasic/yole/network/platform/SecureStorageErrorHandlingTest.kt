@@ -8,7 +8,7 @@
  *########################################################*/
 package digital.vasic.yole.network.platform
 
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.runBlocking

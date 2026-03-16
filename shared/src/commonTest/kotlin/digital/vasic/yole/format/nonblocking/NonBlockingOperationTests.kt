@@ -24,7 +24,7 @@ import digital.vasic.yole.network.common.CircuitBreaker
 import digital.vasic.yole.network.common.CircuitBreakerOpenException
 import digital.vasic.yole.network.common.ConnectionLimiter
 import kotlinx.coroutines.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds

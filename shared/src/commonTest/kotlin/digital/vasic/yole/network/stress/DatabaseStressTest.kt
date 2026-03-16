@@ -17,7 +17,7 @@ package digital.vasic.yole.network.stress
 import digital.vasic.yole.network.common.*
 import digital.vasic.yole.network.database.NetworkStorageDatabase
 import kotlinx.coroutines.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds

@@ -11,7 +11,7 @@ package digital.vasic.yole.network.database
 import digital.vasic.yole.network.common.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlin.test.*
 import kotlin.time.Duration.Companion.hours
@@ -35,14 +35,14 @@ class NetworkStorageDatabaseTest {
     @BeforeTest
     fun setUp() {
         database = InMemoryNetworkStorageDatabase()
-        runTest {
+        runBlocking {
             database.initialize()
         }
     }
 
     @AfterTest
     fun tearDown() {
-        runTest {
+        runBlocking {
             database.clearAll()
         }
     }

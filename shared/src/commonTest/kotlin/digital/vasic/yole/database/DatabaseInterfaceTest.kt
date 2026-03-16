@@ -10,7 +10,7 @@
 package digital.vasic.yole.database
 
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import digital.vasic.yole.network.common.*
 import digital.vasic.yole.network.database.NetworkStorageDatabase
 import digital.vasic.yole.network.common.NetworkOperation.Type
@@ -28,19 +28,19 @@ class DatabaseInterfaceTest {
     private lateinit var database: NetworkStorageDatabase
     
     @BeforeTest
-    fun setup() = runTest {
+    fun setup() = runBlocking<Unit> {
         // Use in-memory database for testing
         database = InMemoryDatabase()
         database.initialize().getOrThrow()
     }
     
     @AfterTest
-    fun tearDown() = runTest {
+    fun tearDown() = runBlocking<Unit> {
         database.close().getOrThrow()
     }
     
     @Test
-    fun testInitializeAndClose() = runTest {
+    fun testInitializeAndClose() = runBlocking<Unit> {
         // Test that database is properly initialized
         val initResult = database.initialize()
         assertTrue(initResult.isSuccess)
@@ -51,7 +51,7 @@ class DatabaseInterfaceTest {
     }
     
     @Test
-    fun testStorageOperations() = runTest {
+    fun testStorageOperations() = runBlocking<Unit> {
         val storage = NetworkStorage.mock()
         
         // Insert storage
@@ -86,7 +86,7 @@ class DatabaseInterfaceTest {
     }
     
     @Test
-    fun testDocumentOperations() = runTest {
+    fun testDocumentOperations() = runBlocking<Unit> {
         val storage = NetworkStorage.mock()
         database.insertStorage(storage).getOrThrow()
         
@@ -129,7 +129,7 @@ class DatabaseInterfaceTest {
     }
     
     @Test
-    fun testCacheOperations() = runTest {
+    fun testCacheOperations() = runBlocking<Unit> {
         val document = NetworkDocument.mock()
         database.insertDocument(document).getOrThrow()
         
@@ -181,7 +181,7 @@ class DatabaseInterfaceTest {
     }
     
     @Test
-    fun testExpiredCacheCleanup() = runTest {
+    fun testExpiredCacheCleanup() = runBlocking<Unit> {
         val document = NetworkDocument.mock()
         database.insertDocument(document).getOrThrow()
         
@@ -231,7 +231,7 @@ class DatabaseInterfaceTest {
     }
     
     @Test
-    fun testOperationOperations() = runTest {
+    fun testOperationOperations() = runBlocking<Unit> {
         val operation = NetworkOperation(
             id = 1L,
             type = Type.UPLOAD,
@@ -279,7 +279,7 @@ class DatabaseInterfaceTest {
     }
     
     @Test
-    fun testSyncStatusOperations() = runTest {
+    fun testSyncStatusOperations() = runBlocking<Unit> {
         val remotePath = "/test.txt"
         val syncStatus = SyncStatus.SYNCING
         
@@ -306,7 +306,7 @@ class DatabaseInterfaceTest {
     }
     
     @Test
-    fun testClearAll() = runTest {
+    fun testClearAll() = runBlocking<Unit> {
         // Insert some test data
         val storage = NetworkStorage.mock()
         val document = NetworkDocument.mock(storageId = storage.id)
@@ -353,14 +353,14 @@ class DatabaseInterfaceTest {
     }
     
     @Test
-    fun testVacuum() = runTest {
+    fun testVacuum() = runBlocking<Unit> {
         // Vacuum operation should succeed (no-op for in-memory database)
         val vacuumResult = database.vacuum()
         assertTrue(vacuumResult.isSuccess)
     }
     
     @Test
-    fun testObserveDocumentsByStorage() = runTest {
+    fun testObserveDocumentsByStorage() = runBlocking<Unit> {
         val storage = NetworkStorage.mock()
         database.insertStorage(storage).getOrThrow()
         

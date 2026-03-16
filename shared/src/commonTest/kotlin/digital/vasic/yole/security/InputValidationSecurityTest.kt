@@ -24,7 +24,7 @@ import digital.vasic.yole.network.protocols.smb.SmbService
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 /**
@@ -53,7 +53,7 @@ class InputValidationSecurityTest {
     }
 
     @Test
-    fun `parser escapes HTML in code blocks`() = runTest {
+    fun `parser escapes HTML in code blocks`() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val content = "```\n<script>evil()</script>\n```"
 
@@ -63,7 +63,7 @@ class InputValidationSecurityTest {
     }
 
     @Test
-    fun `parser handles nested injection attempts`() = runTest {
+    fun `parser handles nested injection attempts`() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val content = "**<script>evil()</script>**"
 
@@ -73,7 +73,7 @@ class InputValidationSecurityTest {
     }
 
     @Test
-    fun `inline code escapes HTML`() = runTest {
+    fun `inline code escapes HTML`() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val content = "`<img src=x onerror=alert(1)>`"
 
@@ -85,7 +85,7 @@ class InputValidationSecurityTest {
     }
 
     @Test
-    fun `link URLs are sanitized`() = runTest {
+    fun `link URLs are sanitized`() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val maliciousLinks = listOf(
             "[click](javascript:alert('xss'))",
@@ -103,7 +103,7 @@ class InputValidationSecurityTest {
     // ==================== PATH TRAVERSAL PREVENTION ====================
 
     @Test
-    fun `service rejects path traversal attempts`() = runTest {
+    fun `service rejects path traversal attempts`() = runBlocking<Unit> {
         val service = FtpService(
             StorageConfig.FtpConfig(
                 name = "test",
@@ -132,7 +132,7 @@ class InputValidationSecurityTest {
     }
 
     @Test
-    fun `path validation handles encoded traversal`() = runTest {
+    fun `path validation handles encoded traversal`() = runBlocking<Unit> {
         val service = SmbService(
             StorageConfig.SmbConfig(
                 name = "test",
@@ -161,7 +161,7 @@ class InputValidationSecurityTest {
     // ==================== INJECTION PREVENTION ====================
 
     @Test
-    fun `SQL-like injection in format content is safe`() = runTest {
+    fun `SQL-like injection in format content is safe`() = runBlocking<Unit> {
         val parser = PlaintextParser()
         val sqlInjection = "'; DROP TABLE users; --"
 
@@ -171,7 +171,7 @@ class InputValidationSecurityTest {
     }
 
     @Test
-    fun `command injection patterns are treated as text`() = runTest {
+    fun `command injection patterns are treated as text`() = runBlocking<Unit> {
         val parser = PlaintextParser()
         val commandInjection = "; rm -rf /; cat /etc/passwd"
 
@@ -181,7 +181,7 @@ class InputValidationSecurityTest {
     }
 
     @Test
-    fun `LDAP injection patterns are treated as text`() = runTest {
+    fun `LDAP injection patterns are treated as text`() = runBlocking<Unit> {
         val parser = PlaintextParser()
         val ldapInjection = "*)(&(user=*))"
 
@@ -237,7 +237,7 @@ class InputValidationSecurityTest {
     // ==================== TODOTXT INJECTION PREVENTION ====================
 
     @Test
-    fun `todotxt handles special characters safely`() = runTest {
+    fun `todotxt handles special characters safely`() = runBlocking<Unit> {
         val parser = TodoTxtParser()
         val injection = "(A) Do task @context +project key:value'; DROP TABLE tasks; --"
 
@@ -248,7 +248,7 @@ class InputValidationSecurityTest {
     }
 
     @Test
-    fun `todotxt handles malformed priority`() = runTest {
+    fun `todotxt handles malformed priority`() = runBlocking<Unit> {
         val parser = TodoTxtParser()
         val malformed = listOf(
             "(AA) task",
@@ -302,7 +302,7 @@ class InputValidationSecurityTest {
     }
 
     @Test
-    fun `storage handles special characters in credentials`() = runTest {
+    fun `storage handles special characters in credentials`() = runBlocking<Unit> {
         // Credentials with special characters
         val service = FtpService(
             StorageConfig.FtpConfig(
@@ -323,7 +323,7 @@ class InputValidationSecurityTest {
     // ==================== RESOURCE EXHAUSTION PREVENTION ====================
 
     @Test
-    fun `parser handles regex complexity attacks`() = runTest {
+    fun `parser handles regex complexity attacks`() = runBlocking<Unit> {
         val parser = MarkdownParser()
 
         // ReDoS patterns that could cause exponential backtracking
@@ -341,7 +341,7 @@ class InputValidationSecurityTest {
     }
 
     @Test
-    fun `storage handles many concurrent requests`() = runTest {
+    fun `storage handles many concurrent requests`() = runBlocking<Unit> {
         val service = FtpService(
             StorageConfig.FtpConfig(
                 name = "test",

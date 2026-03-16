@@ -1,5 +1,8 @@
 #!/bin/bash
 # Yole Test Automation Script - Runs all tests with proper frameworks
+#
+# SPDX-FileCopyrightText: 2025-2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
 
 set -e
 
@@ -10,37 +13,37 @@ NC='\033[0m'
 
 echo -e "${GREEN}=== Yole Test Automation ===${NC}"
 
+# Detect container runtime (prefer podman, fall back to docker)
+CONTAINER_RUNTIME="$(command -v podman 2>/dev/null || command -v docker 2>/dev/null || true)"
+COMPOSE_CMD="$(command -v podman-compose 2>/dev/null || echo "${CONTAINER_RUNTIME} compose" 2>/dev/null || true)"
+
 # Test results directory
 TEST_RESULTS="releases/test-results"
 mkdir -p "$TEST_RESULTS"
 
-# Run unit tests with Kotest
+# Run shared module unit tests (desktop JVM — works on all platforms without Android SDK)
 run_unit_tests() {
-    echo -e "${YELLOW}Running unit tests...${NC}"
-    
-    ./gradlew :shared:testDebugUnitTest \
-        --tests "digital.vasic.yole.format.*" \
-        --tests "digital.vasic.yole.model.*" \
-        --tests "digital.vasic.yole.network.*" \
-        --tests "digital.vasic.yole.util.*" \
+    echo -e "${YELLOW}Running shared module unit tests (desktop JVM)...${NC}"
+
+    ./gradlew :shared:desktopTest \
         --info \
         --no-daemon
-    
+
     cp -r shared/build/reports/tests "$TEST_RESULTS/unit" 2>/dev/null || true
 }
 
 # Run Android tests with Robolectric
 run_android_tests() {
     echo -e "${YELLOW}Running Android Robolectric tests...${NC}"
-    
+
     # Check if emulator is running
-    if adb devices | grep -q "emulator"; then
+    if command -v adb &>/dev/null && adb devices | grep -q "emulator"; then
         echo "Emulator detected, running instrumented tests..."
-        
+
         ./gradlew :androidApp:testDebugUnitTest \
             --info \
             --no-daemon
-        
+
         # Run on emulator
         ./gradlew :androidApp:connectedDebugAndroidTest \
             --info \
@@ -52,36 +55,36 @@ run_android_tests() {
             --info \
             --no-daemon
     fi
-    
+
     cp -r androidApp/build/reports/tests "$TEST_RESULTS/android" 2>/dev/null || true
 }
 
-# Run Desktop tests
+# Run Desktop app tests
 run_desktop_tests() {
-    echo -e "${YELLOW}Running Desktop tests...${NC}"
-    
+    echo -e "${YELLOW}Running Desktop app tests...${NC}"
+
     ./gradlew :desktopApp:test \
         --info \
         --no-daemon
-    
+
     cp -r desktopApp/build/reports/tests "$TEST_RESULTS/desktop" 2>/dev/null || true
 }
 
 # Run Web/WASM tests
 run_web_tests() {
     echo -e "${YELLOW}Running Web/WASM tests...${NC}"
-    
+
     ./gradlew :webApp:wasmJsBrowserTest \
         --info \
         --no-daemon || true
-    
+
     cp -r webApp/build/reports/tests "$TEST_RESULTS/web" 2>/dev/null || true
 }
 
 # Run iOS tests (requires macOS)
 run_ios_tests() {
     echo -e "${YELLOW}Running iOS tests...${NC}"
-    
+
     if [[ "$OSTYPE" == "darwin"* ]]; then
         ./gradlew :shared:iosX64Test --info --no-daemon || true
     else
@@ -92,40 +95,39 @@ run_ios_tests() {
 # Run integration tests
 run_integration_tests() {
     echo -e "${YELLOW}Running integration tests...${NC}"
-    
-    # Start required services
-    docker compose up -d sonarqube 2>/dev/null || true
-    
-    # Wait for services
-    sleep 30
-    
-    # Run integration tests
-    ./gradlew :shared:testDebugUnitTest \
+
+    # Start required services if container runtime is available
+    if [ -n "$COMPOSE_CMD" ]; then
+        $COMPOSE_CMD up -d sonarqube 2>/dev/null || true
+        sleep 30
+    fi
+
+    # Run integration tests via desktop JVM
+    ./gradlew :shared:desktopTest \
         --tests "digital.vasic.yole.network.integration.*" \
         --info \
         --no-daemon
-    
+
     cp -r shared/build/reports/tests "$TEST_RESULTS/integration" 2>/dev/null || true
 }
 
 # Run stress tests
 run_stress_tests() {
     echo -e "${YELLOW}Running stress tests...${NC}"
-    
-    ./gradlew :shared:testDebugUnitTest \
+
+    ./gradlew :shared:desktopTest \
         --tests "digital.vasic.yole.format.stress.*" \
         --tests "digital.vasic.yole.network.stress.*" \
         --info \
         --no-daemon
-    
+
     cp -r shared/build/reports/tests "$TEST_RESULTS/stress" 2>/dev/null || true
 }
 
 # Generate test report
 generate_report() {
     echo -e "${YELLOW}Generating test report...${NC}"
-    
-    # Combine all test results
+
     cat > "$TEST_RESULTS/index.html" << EOF
 <!DOCTYPE html>
 <html>
@@ -145,10 +147,10 @@ generate_report() {
     <p>Generated: $(date)</p>
     <table>
         <tr><th>Test Suite</th><th>Status</th></tr>
-        <tr><td>Unit Tests</td><td class="pass">Completed</td></tr>
+        <tr><td>Shared Module Unit Tests (Desktop JVM)</td><td class="pass">Completed</td></tr>
         <tr><td>Android Tests</td><td class="pass">Completed</td></tr>
-        <tr><td>Desktop Tests</td><td class="pass">Completed</td></tr>
-        <tr><td>Web Tests</td><td class="pass">Completed</td></tr>
+        <tr><td>Desktop App Tests</td><td class="pass">Completed</td></tr>
+        <tr><td>Web/WASM Tests</td><td class="pass">Completed</td></tr>
         <tr><td>Integration Tests</td><td class="pass">Completed</td></tr>
         <tr><td>Stress Tests</td><td class="pass">Completed</td></tr>
     </table>
@@ -169,7 +171,7 @@ main() {
     run_integration_tests
     run_stress_tests
     generate_report
-    
+
     echo -e "${GREEN}=== All Tests Complete ===${NC}"
     echo "Results: $TEST_RESULTS/"
 }

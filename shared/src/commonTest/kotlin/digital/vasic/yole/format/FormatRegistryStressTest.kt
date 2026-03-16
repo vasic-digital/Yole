@@ -16,7 +16,7 @@ package digital.vasic.yole.format
 
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 /**
@@ -27,7 +27,7 @@ class FormatRegistryStressTest {
     // ==================== FORMAT REGISTRY STRESS ====================
 
     @Test
-    fun `concurrent format lookups by id`() = runTest {
+    fun `concurrent format lookups by id`() = runBlocking<Unit> {
         val formatIds = listOf(
             FormatRegistry.ID_MARKDOWN,
             FormatRegistry.ID_PLAINTEXT,
@@ -47,7 +47,7 @@ class FormatRegistryStressTest {
     }
 
     @Test
-    fun `concurrent format lookups by extension`() = runTest {
+    fun `concurrent format lookups by extension`() = runBlocking<Unit> {
         val extensions = listOf("md", "txt", "csv", "tex", "org", "wiki", "rst")
 
         val results = (1..1000).map { i ->
@@ -61,7 +61,7 @@ class FormatRegistryStressTest {
     }
 
     @Test
-    fun `concurrent format detection by content`() = runTest {
+    fun `concurrent format detection by content`() = runBlocking<Unit> {
         val contents = listOf(
             "# Markdown heading",
             "(A) Todo task",
@@ -188,7 +188,7 @@ class FormatRegistryStressTest {
     // ==================== CONTENT DETECTION STRESS ====================
 
     @Test
-    fun `content detection handles very long content`() = runTest {
+    fun `content detection handles very long content`() = runBlocking<Unit> {
         val longContent = "# Heading\n\n" + "a".repeat(100000)
 
         val result = FormatRegistry.detectByContent(longContent)
@@ -199,7 +199,7 @@ class FormatRegistryStressTest {
     }
 
     @Test
-    fun `content detection respects maxLines parameter`() = runTest {
+    fun `content detection respects maxLines parameter`() = runBlocking<Unit> {
         // Content with markdown at line 20
         val content = (1..25).joinToString("\n") { i ->
             if (i == 20) "# Markdown Heading" else "Plain text line $i"
@@ -312,7 +312,7 @@ class FormatRegistryStressTest {
     }
 
     @Test
-    fun `format patterns match expected content`() = runTest {
+    fun `format patterns match expected content`() = runBlocking<Unit> {
         val testCases = listOf(
             "# Heading" to FormatRegistry.ID_MARKDOWN,
             "## Subheading" to FormatRegistry.ID_MARKDOWN,
@@ -336,7 +336,7 @@ class FormatRegistryStressTest {
     // ==================== CONCURRENT MIXED OPERATIONS ====================
 
     @Test
-    fun `concurrent mixed registry operations`() = runTest {
+    fun `concurrent mixed registry operations`() = runBlocking<Unit> {
         val operations = (1..1000).map { i ->
             async {
                 when (i % 5) {

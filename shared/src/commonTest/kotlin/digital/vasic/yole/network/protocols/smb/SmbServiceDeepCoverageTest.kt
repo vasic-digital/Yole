@@ -11,7 +11,7 @@ package digital.vasic.yole.network.protocols.smb
 import digital.vasic.yole.network.common.*
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlin.test.*
 import kotlin.time.Duration.Companion.hours

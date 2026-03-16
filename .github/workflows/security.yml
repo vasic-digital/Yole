@@ -72,7 +72,7 @@ jobs:
   snyk:
     name: Vulnerability Scan (Snyk)
     runs-on: ubuntu-latest
-    continue-on-error: true
+    continue-on-error: false
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
