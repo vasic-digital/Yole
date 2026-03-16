@@ -1,0 +1,5 @@
+# Snyk (https://snyk.io) policy file
+# Manage false positives and known issues locally
+version: v1.25.0
+ignore: {}
+patch: {}

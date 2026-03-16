@@ -9,7 +9,7 @@
 package digital.vasic.yole.util
 
 import kotlinx.coroutines.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -19,7 +19,7 @@ import kotlin.test.assertTrue
 class LazyStringLoaderTest {
 
     @Test
-    fun testGetChunkReturnsCorrectContent() = runTest {
+    fun testGetChunkReturnsCorrectContent() = runBlocking<Unit> {
         val content = (1..100).joinToString("\n") { "Line $it" }
         val loader = LazyStringLoader(content, chunkSize = 10)
 
@@ -29,7 +29,7 @@ class LazyStringLoaderTest {
     }
 
     @Test
-    fun testGetChunkOutOfRangeReturnsNull() = runTest {
+    fun testGetChunkOutOfRangeReturnsNull() = runBlocking<Unit> {
         val content = "single line"
         val loader = LazyStringLoader(content, chunkSize = 100)
 
@@ -38,7 +38,7 @@ class LazyStringLoaderTest {
     }
 
     @Test
-    fun testGetLinesReturnsCorrectRange() = runTest {
+    fun testGetLinesReturnsCorrectRange() = runBlocking<Unit> {
         val content = (1..50).joinToString("\n") { "Line $it" }
         val loader = LazyStringLoader(content, chunkSize = 10)
 
@@ -49,7 +49,7 @@ class LazyStringLoaderTest {
     }
 
     @Test
-    fun testClearFreesChunks() = runTest {
+    fun testClearFreesChunks() = runBlocking<Unit> {
         val content = (1..100).joinToString("\n") { "Line $it" }
         val loader = LazyStringLoader(content, chunkSize = 10)
 
@@ -62,7 +62,7 @@ class LazyStringLoaderTest {
     }
 
     @Test
-    fun testPreloadAroundLoadsAdjacentChunks() = runTest {
+    fun testPreloadAroundLoadsAdjacentChunks() = runBlocking<Unit> {
         val content = (1..100).joinToString("\n") { "Line $it" }
         val loader = LazyStringLoader(content, chunkSize = 10)
 
@@ -79,14 +79,14 @@ class LazyStringLoaderTest {
 class FlowLazyLoaderTest {
 
     @Test
-    fun testInitialContentIsEmpty() = runTest {
+    fun testInitialContentIsEmpty() = runBlocking<Unit> {
         val loader = FlowLazyLoader<String>()
         assertTrue(loader.content.value.isEmpty())
         loader.cleanup()
     }
 
     @Test
-    fun testLoadMoreAddsItems() = runTest {
+    fun testLoadMoreAddsItems() = runBlocking<Unit> {
         val loader = FlowLazyLoader<String>()
         loader.loadMore(listOf("a", "b", "c"))
         assertEquals(3, loader.content.value.size)
@@ -95,7 +95,7 @@ class FlowLazyLoaderTest {
     }
 
     @Test
-    fun testMultipleLoadMoreAccumulates() = runTest {
+    fun testMultipleLoadMoreAccumulates() = runBlocking<Unit> {
         val loader = FlowLazyLoader<String>()
         loader.loadMore(listOf("a", "b"))
         loader.loadMore(listOf("c", "d"))
@@ -104,7 +104,7 @@ class FlowLazyLoaderTest {
     }
 
     @Test
-    fun testGetVisibleRange() = runTest {
+    fun testGetVisibleRange() = runBlocking<Unit> {
         val loader = FlowLazyLoader<Int>()
         loader.loadMore((1..50).toList())
         val range = loader.getVisibleRange(5, 15, buffer = 3)
@@ -113,7 +113,7 @@ class FlowLazyLoaderTest {
     }
 
     @Test
-    fun testCleanupClearsContent() = runTest {
+    fun testCleanupClearsContent() = runBlocking<Unit> {
         val loader = FlowLazyLoader<String>()
         loader.loadMore(listOf("data"))
         assertEquals(1, loader.content.value.size)

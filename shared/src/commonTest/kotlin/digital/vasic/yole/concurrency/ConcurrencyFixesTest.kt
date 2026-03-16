@@ -21,7 +21,7 @@ import digital.vasic.yole.network.protocols.smb.SmbService
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds
 
@@ -112,7 +112,7 @@ class ConcurrencyFixesTest {
     // ==================== ISSUE 1: pauseFlags Protected Access ====================
 
     @Test
-    fun `SMB concurrent pause and resume operations are thread-safe`() = runTest {
+    fun `SMB concurrent pause and resume operations are thread-safe`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -135,7 +135,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB concurrent cancel operations are thread-safe`() = runTest {
+    fun `SMB concurrent cancel operations are thread-safe`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -150,7 +150,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `Concurrent pause resume cancel interleaved for 100 operations`() = runTest {
+    fun `Concurrent pause resume cancel interleaved for 100 operations`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -169,7 +169,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB pause then resume yields consistent state`() = runTest {
+    fun `SMB pause then resume yields consistent state`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -189,7 +189,7 @@ class ConcurrencyFixesTest {
     // ==================== ISSUE 2: ServiceScope Race Safety ====================
 
     @Test
-    fun `SFTP concurrent connect and disconnect do not crash`() = runTest {
+    fun `SFTP concurrent connect and disconnect do not crash`() = runBlocking<Unit> {
         val service = SftpService(createSftpConfig())
 
         // Rapidly alternate connect/disconnect
@@ -211,7 +211,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB concurrent connect disconnect maintains connection state consistency`() = runTest {
+    fun `SMB concurrent connect disconnect maintains connection state consistency`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
 
         // Rapid connect/disconnect cycles
@@ -234,7 +234,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SFTP multiple disconnect calls are idempotent`() = runTest {
+    fun `SFTP multiple disconnect calls are idempotent`() = runBlocking<Unit> {
         val service = SftpService(createSftpConfig())
         service.connect()
 
@@ -250,7 +250,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB reconnect cycle is safe under concurrency`() = runTest {
+    fun `SMB reconnect cycle is safe under concurrency`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
 
         // Simulate a full connect-disconnect-connect cycle from multiple coroutines
@@ -268,7 +268,7 @@ class ConcurrencyFixesTest {
     // ==================== ISSUE 3: httpClient Lifecycle ====================
 
     @Test
-    fun `SFTP disconnect without prior httpClient access does not crash`() = runTest {
+    fun `SFTP disconnect without prior httpClient access does not crash`() = runBlocking<Unit> {
         // SftpService doesn't have httpClient but this tests the general pattern
         val service = SftpService(createSftpConfig())
         // Disconnect without ever connecting (no httpClient initialized)
@@ -277,7 +277,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB disconnect without connect does not crash`() = runTest {
+    fun `SMB disconnect without connect does not crash`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         val result = service.disconnect()
         assertTrue(result.isSuccess)
@@ -286,7 +286,7 @@ class ConcurrencyFixesTest {
     // ==================== ISSUE 4: initJob Cancellation ====================
 
     @Test
-    fun `SFTP rapid create-and-disconnect does not leak coroutines`() = runTest {
+    fun `SFTP rapid create-and-disconnect does not leak coroutines`() = runBlocking<Unit> {
         // Create services and immediately disconnect them
         val services = (1..10).map { SftpService(createSftpConfig()) }
 
@@ -299,7 +299,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB service created and immediately disconnected is clean`() = runTest {
+    fun `SMB service created and immediately disconnected is clean`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         val result = service.disconnect()
         assertTrue(result.isSuccess)
@@ -309,7 +309,7 @@ class ConcurrencyFixesTest {
     // ==================== ISSUE 5: SecureStorage Double-Checked Locking ====================
 
     @Test
-    fun `AuthTokenManager concurrent getAccessToken calls are safe`() = runTest {
+    fun `AuthTokenManager concurrent getAccessToken calls are safe`() = runBlocking<Unit> {
         val storage = TestSecureStorage()
         storage.store("test_access_token", "test-token-value")
         val manager = AuthTokenManager("test", storage)
@@ -326,7 +326,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `AuthTokenManager concurrent storeTokenInfo calls are safe`() = runTest {
+    fun `AuthTokenManager concurrent storeTokenInfo calls are safe`() = runBlocking<Unit> {
         val storage = TestSecureStorage()
         val manager = AuthTokenManager("test", storage)
 
@@ -347,7 +347,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `AuthTokenManager concurrent hasValidToken calls are consistent`() = runTest {
+    fun `AuthTokenManager concurrent hasValidToken calls are consistent`() = runBlocking<Unit> {
         val storage = TestSecureStorage()
         val manager = AuthTokenManager("test", storage)
 
@@ -370,7 +370,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `AuthTokenManager concurrent clearTokens and getAccessToken`() = runTest {
+    fun `AuthTokenManager concurrent clearTokens and getAccessToken`() = runBlocking<Unit> {
         val storage = TestSecureStorage()
         val manager = AuthTokenManager("test", storage)
 
@@ -392,7 +392,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `AuthTokenManager double-checked locking prevents duplicate storage creation`() = runTest {
+    fun `AuthTokenManager double-checked locking prevents duplicate storage creation`() = runBlocking<Unit> {
         val storage = TestSecureStorage()
         val manager = AuthTokenManager("test", storage)
 
@@ -410,7 +410,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `AuthTokenManager getTokenInfo concurrent access`() = runTest {
+    fun `AuthTokenManager getTokenInfo concurrent access`() = runBlocking<Unit> {
         val storage = TestSecureStorage()
         val manager = AuthTokenManager("test", storage)
         manager.storeTokenInfo(accessToken = "access", refreshToken = "refresh", expiresIn = 3600L)
@@ -430,7 +430,7 @@ class ConcurrencyFixesTest {
     // ==================== ISSUE 6: activeJobs Cleanup on Disconnect ====================
 
     @Test
-    fun `SFTP disconnect clears active operations`() = runTest {
+    fun `SFTP disconnect clears active operations`() = runBlocking<Unit> {
         val service = SftpService(createSftpConfig())
         service.connect()
 
@@ -441,7 +441,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SFTP concurrent operations and disconnect`() = runTest {
+    fun `SFTP concurrent operations and disconnect`() = runBlocking<Unit> {
         val service = SftpService(createSftpConfig())
         service.connect()
 
@@ -467,7 +467,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB disconnect clears all state safely`() = runTest {
+    fun `SMB disconnect clears all state safely`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
         assertTrue(service.isOnline)
@@ -485,7 +485,7 @@ class ConcurrencyFixesTest {
     // ==================== CONCURRENT OPERATION STATE TESTS ====================
 
     @Test
-    fun `SMB concurrent createFolder does not corrupt file tree`() = runTest {
+    fun `SMB concurrent createFolder does not corrupt file tree`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -507,7 +507,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB concurrent deleteFile does not corrupt state`() = runTest {
+    fun `SMB concurrent deleteFile does not corrupt state`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -533,7 +533,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB concurrent copyFile operations are safe`() = runTest {
+    fun `SMB concurrent copyFile operations are safe`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -550,7 +550,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB concurrent renameFile operations are safe`() = runTest {
+    fun `SMB concurrent renameFile operations are safe`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -569,7 +569,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB concurrent getFileInfo operations are safe`() = runTest {
+    fun `SMB concurrent getFileInfo operations are safe`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -593,7 +593,7 @@ class ConcurrencyFixesTest {
     // ==================== CACHE/SYNC CONCURRENT ACCESS TESTS ====================
 
     @Test
-    fun `SMB concurrent addToCache and removeFromCache`() = runTest {
+    fun `SMB concurrent addToCache and removeFromCache`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -615,7 +615,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB concurrent syncFile operations`() = runTest {
+    fun `SMB concurrent syncFile operations`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -633,7 +633,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB concurrent clearCache is safe`() = runTest {
+    fun `SMB concurrent clearCache is safe`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -655,7 +655,7 @@ class ConcurrencyFixesTest {
     // ==================== SFTP CONCURRENT STATE TESTS ====================
 
     @Test
-    fun `SFTP concurrent connect calls are safe`() = runTest {
+    fun `SFTP concurrent connect calls are safe`() = runBlocking<Unit> {
         val service = SftpService(createSftpConfig())
 
         val jobs = (1..20).map {
@@ -668,7 +668,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SFTP concurrent testConnection calls are safe`() = runTest {
+    fun `SFTP concurrent testConnection calls are safe`() = runBlocking<Unit> {
         val service = SftpService(createSftpConfig())
         service.connect()
 
@@ -684,7 +684,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SFTP concurrent createFolder operations are safe`() = runTest {
+    fun `SFTP concurrent createFolder operations are safe`() = runBlocking<Unit> {
         val service = SftpService(createSftpConfig())
         service.connect()
 
@@ -700,7 +700,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SFTP concurrent exists checks are safe`() = runTest {
+    fun `SFTP concurrent exists checks are safe`() = runBlocking<Unit> {
         val service = SftpService(createSftpConfig())
         service.connect()
 
@@ -715,7 +715,7 @@ class ConcurrencyFixesTest {
     // ==================== SMB OPERATION LIFECYCLE TESTS ====================
 
     @Test
-    fun `SMB getActiveOperations under concurrent mutations`() = runTest {
+    fun `SMB getActiveOperations under concurrent mutations`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -737,7 +737,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB getSyncStatus under concurrent sync changes`() = runTest {
+    fun `SMB getSyncStatus under concurrent sync changes`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -759,7 +759,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB getCacheEntries under concurrent cache mutations`() = runTest {
+    fun `SMB getCacheEntries under concurrent cache mutations`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -785,7 +785,7 @@ class ConcurrencyFixesTest {
     // ==================== MUTEX ORDERING AND DEADLOCK PREVENTION ====================
 
     @Test
-    fun `Concurrent mutex operations on different resources do not deadlock`() = runTest {
+    fun `Concurrent mutex operations on different resources do not deadlock`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -815,7 +815,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `No deadlock with rapid create-delete-rename cycle`() = runTest {
+    fun `No deadlock with rapid create-delete-rename cycle`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -834,7 +834,7 @@ class ConcurrencyFixesTest {
     // ==================== AuthTokenManager EDGE CASES ====================
 
     @Test
-    fun `AuthTokenManager storeTokenExpiration concurrent calls`() = runTest {
+    fun `AuthTokenManager storeTokenExpiration concurrent calls`() = runBlocking<Unit> {
         val storage = TestSecureStorage()
         val manager = AuthTokenManager("test", storage)
 
@@ -851,7 +851,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `AuthTokenManager isTokenExpired concurrent with store`() = runTest {
+    fun `AuthTokenManager isTokenExpired concurrent with store`() = runBlocking<Unit> {
         val storage = TestSecureStorage()
         val manager = AuthTokenManager("test", storage)
 
@@ -873,7 +873,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `AuthTokenManager storeRefreshToken concurrent with getRefreshToken`() = runTest {
+    fun `AuthTokenManager storeRefreshToken concurrent with getRefreshToken`() = runBlocking<Unit> {
         val storage = TestSecureStorage()
         val manager = AuthTokenManager("test", storage)
 
@@ -891,7 +891,7 @@ class ConcurrencyFixesTest {
     // ==================== SFTP OPERATION CONTROL TESTS ====================
 
     @Test
-    fun `SFTP pauseOperation concurrent calls are safe`() = runTest {
+    fun `SFTP pauseOperation concurrent calls are safe`() = runBlocking<Unit> {
         val service = SftpService(createSftpConfig())
         service.connect()
 
@@ -904,7 +904,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SFTP resumeOperation concurrent calls are safe`() = runTest {
+    fun `SFTP resumeOperation concurrent calls are safe`() = runBlocking<Unit> {
         val service = SftpService(createSftpConfig())
         service.connect()
 
@@ -917,7 +917,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SFTP cancelOperation concurrent calls are safe`() = runTest {
+    fun `SFTP cancelOperation concurrent calls are safe`() = runBlocking<Unit> {
         val service = SftpService(createSftpConfig())
         service.connect()
 
@@ -930,7 +930,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB moveFile concurrent operations are safe`() = runTest {
+    fun `SMB moveFile concurrent operations are safe`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -949,7 +949,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB validatePath concurrent calls are safe`() = runTest {
+    fun `SMB validatePath concurrent calls are safe`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
 
         val jobs = (1..100).map { i ->
@@ -961,7 +961,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB getParentPath concurrent calls are safe`() = runTest {
+    fun `SMB getParentPath concurrent calls are safe`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
 
         val jobs = (1..100).map { i ->
@@ -974,7 +974,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB getStorageInfo concurrent calls are safe`() = runTest {
+    fun `SMB getStorageInfo concurrent calls are safe`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 
@@ -991,7 +991,7 @@ class ConcurrencyFixesTest {
     }
 
     @Test
-    fun `SMB getQuotaInfo concurrent calls are safe`() = runTest {
+    fun `SMB getQuotaInfo concurrent calls are safe`() = runBlocking<Unit> {
         val service = SmbService(createSmbConfig())
         service.connect()
 

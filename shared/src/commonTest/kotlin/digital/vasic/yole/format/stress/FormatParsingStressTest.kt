@@ -20,7 +20,7 @@ import digital.vasic.yole.format.todotxt.TodoTxtParser
 import digital.vasic.yole.format.latex.LatexParser
 import digital.vasic.yole.format.orgmode.OrgModeParser
 import kotlinx.coroutines.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 /**
@@ -32,7 +32,7 @@ class FormatParsingStressTest {
     // ==================== MARKDOWN STRESS TESTS ====================
 
     @Test
-    fun `Markdown concurrent parsing`() = runTest {
+    fun `Markdown concurrent parsing`() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val content = """
             # Heading 1
@@ -62,7 +62,7 @@ class FormatParsingStressTest {
     }
 
     @Test
-    fun `Markdown large document parsing`() = runTest {
+    fun `Markdown large document parsing`() = runBlocking<Unit> {
         val parser = MarkdownParser()
 
         // Generate a large document
@@ -86,7 +86,7 @@ class FormatParsingStressTest {
     }
 
     @Test
-    fun `Markdown rapid HTML conversion`() = runTest {
+    fun `Markdown rapid HTML conversion`() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val content = "# Hello **World**"
 
@@ -105,7 +105,7 @@ class FormatParsingStressTest {
     // ==================== CSV STRESS TESTS ====================
 
     @Test
-    fun `CSV concurrent parsing`() = runTest {
+    fun `CSV concurrent parsing`() = runBlocking<Unit> {
         val parser = CsvParser()
         val content = """
             name,age,city
@@ -124,7 +124,7 @@ class FormatParsingStressTest {
     }
 
     @Test
-    fun `CSV large table parsing`() = runTest {
+    fun `CSV large table parsing`() = runBlocking<Unit> {
         val parser = CsvParser()
 
         // Generate a large CSV
@@ -140,7 +140,7 @@ class FormatParsingStressTest {
     }
 
     @Test
-    fun `CSV wide table parsing`() = runTest {
+    fun `CSV wide table parsing`() = runBlocking<Unit> {
         val parser = CsvParser()
 
         // Generate a wide CSV (many columns)
@@ -157,7 +157,7 @@ class FormatParsingStressTest {
     // ==================== TODO.TXT STRESS TESTS ====================
 
     @Test
-    fun `TodoTxt concurrent parsing`() = runTest {
+    fun `TodoTxt concurrent parsing`() = runBlocking<Unit> {
         val parser = TodoTxtParser()
         val content = """
             (A) Important task @work +project1
@@ -176,7 +176,7 @@ class FormatParsingStressTest {
     }
 
     @Test
-    fun `TodoTxt large task list parsing`() = runTest {
+    fun `TodoTxt large task list parsing`() = runBlocking<Unit> {
         val parser = TodoTxtParser()
 
         // Generate a large todo list
@@ -200,7 +200,7 @@ class FormatParsingStressTest {
     // ==================== LATEX STRESS TESTS ====================
 
     @Test
-    fun `LaTeX concurrent parsing`() = runTest {
+    fun `LaTeX concurrent parsing`() = runBlocking<Unit> {
         val parser = LatexParser()
         val content = """
             \documentclass{article}
@@ -220,7 +220,7 @@ class FormatParsingStressTest {
     }
 
     @Test
-    fun `LaTeX complex document parsing`() = runTest {
+    fun `LaTeX complex document parsing`() = runBlocking<Unit> {
         val parser = LatexParser()
 
         val complexContent = buildString {
@@ -244,7 +244,7 @@ class FormatParsingStressTest {
     // ==================== ORG MODE STRESS TESTS ====================
 
     @Test
-    fun `OrgMode concurrent parsing`() = runTest {
+    fun `OrgMode concurrent parsing`() = runBlocking<Unit> {
         val parser = OrgModeParser()
         val content = """
             * Heading 1
@@ -266,7 +266,7 @@ class FormatParsingStressTest {
     }
 
     @Test
-    fun `OrgMode deep hierarchy parsing`() = runTest {
+    fun `OrgMode deep hierarchy parsing`() = runBlocking<Unit> {
         val parser = OrgModeParser()
 
         // Generate deep hierarchy
@@ -290,7 +290,7 @@ class FormatParsingStressTest {
     // ==================== FORMAT DETECTION STRESS TESTS ====================
 
     @Test
-    fun `Rapid format detection`() = runTest {
+    fun `Rapid format detection`() = runBlocking<Unit> {
         val contents = listOf(
             "# Markdown" to "md",
             "name,age\nAlice,30" to "csv",
@@ -312,7 +312,7 @@ class FormatParsingStressTest {
     }
 
     @Test
-    fun `Extension detection stress`() = runTest {
+    fun `Extension detection stress`() = runBlocking<Unit> {
         val extensions = listOf(
             ".md", ".markdown", ".txt", ".csv", ".tex",
             ".org", ".adoc", ".rst", ".wiki", ".json"
@@ -333,7 +333,7 @@ class FormatParsingStressTest {
     // ==================== EDGE CASE STRESS TESTS ====================
 
     @Test
-    fun `Empty content parsing stress`() = runTest {
+    fun `Empty content parsing stress`() = runBlocking<Unit> {
         val parsers = listOf(
             MarkdownParser(),
             CsvParser(),
@@ -355,7 +355,7 @@ class FormatParsingStressTest {
     }
 
     @Test
-    fun `Single character content stress`() = runTest {
+    fun `Single character content stress`() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val chars = ('a'..'z') + ('A'..'Z') + ('0'..'9')
 
@@ -371,7 +371,7 @@ class FormatParsingStressTest {
     }
 
     @Test
-    fun `Unicode content stress`() = runTest {
+    fun `Unicode content stress`() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val unicodeContents = listOf(
             "# 中文标题",
@@ -395,7 +395,7 @@ class FormatParsingStressTest {
     }
 
     @Test
-    fun `Special characters stress`() = runTest {
+    fun `Special characters stress`() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val specialContent = """
             # Special Characters Test
@@ -419,7 +419,7 @@ class FormatParsingStressTest {
     // ==================== MEMORY STRESS TESTS ====================
 
     @Test
-    fun `Repeated parsing without memory leak`() = runTest {
+    fun `Repeated parsing without memory leak`() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val content = "# Test\n\nParagraph with content."
 
@@ -431,7 +431,7 @@ class FormatParsingStressTest {
     }
 
     @Test
-    fun `Large content repeated parsing`() = runTest {
+    fun `Large content repeated parsing`() = runBlocking<Unit> {
         val parser = CsvParser()
 
         val largeContent = buildString {

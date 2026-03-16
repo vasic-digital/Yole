@@ -20,7 +20,7 @@ import digital.vasic.yole.network.protocols.smb.SmbService
 import digital.vasic.yole.network.protocols.webdav.WebDavService
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds
 

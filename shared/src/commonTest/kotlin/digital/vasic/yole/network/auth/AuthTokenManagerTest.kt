@@ -9,7 +9,7 @@
 package digital.vasic.yole.network.auth
 
 import digital.vasic.yole.network.platform.SecureStorage
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlin.test.*
 import kotlin.time.Duration.Companion.hours

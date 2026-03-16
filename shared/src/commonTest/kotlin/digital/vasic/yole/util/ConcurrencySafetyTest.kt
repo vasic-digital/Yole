@@ -24,7 +24,7 @@ import kotlinx.coroutines.test.*
 class ConcurrencySafetyTest {
 
     @Test
-    fun testMutexProtectedCounter() = runTest {
+    fun testMutexProtectedCounter() = runBlocking<Unit> {
         val mutex = Mutex()
         var counter = 0
 
@@ -44,7 +44,7 @@ class ConcurrencySafetyTest {
     }
 
     @Test
-    fun testConcurrentReadWrite() = runTest {
+    fun testConcurrentReadWrite() = runBlocking<Unit> {
         val mutex = Mutex()
         var value = 0
         var totalReads = 0
@@ -78,7 +78,7 @@ class ConcurrencySafetyTest {
     }
 
     @Test
-    fun testConcurrentMapAccess() = runTest {
+    fun testConcurrentMapAccess() = runBlocking<Unit> {
         val mutex = Mutex()
         val map = mutableMapOf<String, Int>()
 
@@ -102,7 +102,7 @@ class ConcurrencySafetyTest {
     }
 
     @Test
-    fun testCoroutineMutex() = runTest {
+    fun testCoroutineMutex() = runBlocking<Unit> {
         val mutex = Mutex()
         var counter = 0
 
@@ -122,7 +122,7 @@ class ConcurrencySafetyTest {
     }
 
     @Test
-    fun testChannelThreadSafety() = runTest {
+    fun testChannelThreadSafety() = runBlocking<Unit> {
         val channel = Channel<Int>(10)
         val mutex = Mutex()
         val results = mutableListOf<Int>()
@@ -149,7 +149,7 @@ class ConcurrencySafetyTest {
     }
 
     @Test
-    fun testCoroutineCompletion() = runTest {
+    fun testCoroutineCompletion() = runBlocking<Unit> {
         var completed = false
 
         val job = launch(Dispatchers.Default) {
@@ -170,7 +170,7 @@ class ConcurrencySafetyTest {
 class RaceConditionDetectionTest {
 
     @Test
-    fun testCheckThenActWithMutex() = runTest {
+    fun testCheckThenActWithMutex() = runBlocking<Unit> {
         val mutex = Mutex()
         var state: String? = null
         var setCount = 0
@@ -194,7 +194,7 @@ class RaceConditionDetectionTest {
     }
 
     @Test
-    fun testProtectedIncrement() = runTest {
+    fun testProtectedIncrement() = runBlocking<Unit> {
         val mutex = Mutex()
         var counter = 0
 

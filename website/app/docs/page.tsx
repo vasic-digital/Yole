@@ -232,6 +232,25 @@ export default function DocsPage() {
         ))}
       </div>
 
+      {/* Additional Documentation */}
+      <section className="mt-16 mb-16">
+        <h2 className="text-3xl font-bold tracking-tight mb-6">Guides and References</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <a href="https://github.com/vasic-digital/Yole/blob/master/TROUBLESHOOTING.md" target="_blank" rel="noopener noreferrer" className="card group">
+            <h3 className="font-semibold text-lg mb-1 group-hover:text-primary-500 transition-colors">Troubleshooting Guide</h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">Common issues and solutions for building, testing, and running Yole across all platforms.</p>
+          </a>
+          <a href="https://github.com/vasic-digital/Yole/blob/master/RELEASE_PROCESS.md" target="_blank" rel="noopener noreferrer" className="card group">
+            <h3 className="font-semibold text-lg mb-1 group-hover:text-primary-500 transition-colors">Release Process</h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">How releases are versioned, built, and published. Includes CI/CD pipeline and distribution details.</p>
+          </a>
+          <a href="https://github.com/vasic-digital/Yole/blob/master/docs/adr/" target="_blank" rel="noopener noreferrer" className="card group">
+            <h3 className="font-semibold text-lg mb-1 group-hover:text-primary-500 transition-colors">Architecture Decision Records</h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">ADRs documenting key architectural decisions, trade-offs, and rationale behind the design choices.</p>
+          </a>
+        </div>
+      </section>
+
       <section className="mt-16">
         <h2 className="text-3xl font-bold tracking-tight mb-4">Architecture</h2>
         <p className="text-[var(--color-text-secondary)] mb-6 max-w-3xl">

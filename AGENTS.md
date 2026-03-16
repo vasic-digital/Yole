@@ -48,11 +48,18 @@ Any fix applied must be:
 ## Build Commands
 
 ```bash
+# Primary dev test command (no Android SDK needed, runs on host JVM)
+./gradlew :shared:desktopTest
+make test-shared                                   # Makefile shortcut
+
+# Single test class
+./gradlew :shared:desktopTest --tests "digital.vasic.yole.format.todotxt.TodoTxtQuerySyntaxTests"
+
 # Android
 ./gradlew :androidApp:assembleDebug
 make build
 
-# Desktop  
+# Desktop
 ./gradlew :desktopApp:run
 make desktop
 
@@ -60,21 +67,36 @@ make desktop
 ./gradlew :webApp:wasmJsBrowserRun
 make web
 
-# Testing
-./gradlew test                                    # All tests
-./gradlew test --tests "full.TestClassName.testName"  # Single test
+# All tests (requires Android SDK for androidApp module)
+./gradlew test
 ./gradlew test koverHtmlReport                   # With coverage
 
-# Lint & Clean
+# Lint & Static Analysis
 ./gradlew lintFlavorDefaultDebug
-./gradlew clean
+./gradlew detekt
 
 # API Docs
 ./gradlew :shared:dokkaHtml
 
 # Benchmarks
 ./gradlew :shared:runSimpleBenchmarks
+
+# Challenge framework
+./gradlew runChallenges
 ```
+
+## Known Issues
+
+- **AGP version mismatch**: `androidApp` tests may fail due to AGP version mismatch. Use `:shared:desktopTest` for routine testing.
+- **Container OOM**: Exit code 137 = OOM kill. Increase container memory limits.
+- **Go flaky tests**: `TestStress_ConcurrentJWTRefresh` (Auth) and `TestGenericPool_HealthyConnectionsSurvive` (Database) are pre-existing flaky tests.
+
+## Testing Constraints
+
+- **JUnit4 runner**: Tests use `runBlocking<Unit> { }` (not `runTest`). JUnit4 requires `Unit` return type.
+- **MockK is JVM-only**: Available in `desktopTest` and `androidUnitTest`, NOT in `commonTest` or `wasmJsTest`.
+- **kotlinx-coroutines-test**: No WASM variant. Unavailable in `commonTest`.
+- **jvmTarget**: Must be `"11"` in all JVM compilations.
 
 ## Architecture
 

@@ -36,7 +36,7 @@ import digital.vasic.yole.format.binary.BinaryParser
 import kotlin.test.*
 import kotlin.system.measureTimeMillis
 import kotlin.random.Random
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.async
 
 /**
@@ -328,7 +328,7 @@ class UltimateSupremacyTest {
     // ==================== ULTIMATE CONCURRENT PROCESSING ====================
 
     @Test
-    fun `ULTIMATE - Concurrent parsing optimization supremacy`() = runTest {
+    fun `ULTIMATE - Concurrent parsing optimization supremacy`() = runBlocking<Unit> {
         val documentsPerBatch = 100
         val contentSize = 5000 // 5KB per document
 

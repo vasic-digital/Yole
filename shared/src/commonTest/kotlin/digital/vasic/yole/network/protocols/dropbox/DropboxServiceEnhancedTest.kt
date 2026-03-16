@@ -5,7 +5,7 @@ import digital.vasic.yole.network.auth.AuthTokenManager
 import digital.vasic.yole.network.common.*
 import digital.vasic.yole.network.platform.SecureStorage
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.hours
 import kotlin.test.*

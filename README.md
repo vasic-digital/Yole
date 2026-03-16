@@ -3,7 +3,7 @@
 [![GitHub CI](https://github.com/vasic-digital/Yole/workflows/CI/badge.svg)](https://github.com/vasic-digital/Yole/actions)
 [![Tests & Coverage](https://github.com/vasic-digital/Yole/workflows/Tests%20%26%20Coverage/badge.svg)](https://github.com/vasic-digital/Yole/actions)
 [![Lint & Docs](https://github.com/vasic-digital/Yole/workflows/Lint%20%26%20Docs/badge.svg)](https://github.com/vasic-digital/Yole/actions)
-[![Code Coverage](https://img.shields.io/badge/coverage-63%25-yellow.svg)](build/reports/kover/html/index.html)
+[![codecov](https://codecov.io/gh/vasic-digital/Yole/branch/master/graph/badge.svg)](https://codecov.io/gh/vasic-digital/Yole)
 [![Translate on Crowdin](https://img.shields.io/badge/translate-crowdin-green.svg)](https://crowdin.com/project/markor)
 [![Community Discussion](https://img.shields.io/badge/chat-community-blue.svg)](https://github.com/vasic-digital/Yole/discussions)
 

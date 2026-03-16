@@ -4,9 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## MANDATORY: Build and Test in Containers
 
-**ALL builds and tests MUST be executed inside Docker/Podman containers, NOT directly on the host machine!**
-
-This ensures consistent environment, proper dependencies, reproducible builds, Android emulator access, and all integration services.
+**Release builds and full CI test suites MUST be executed inside Docker/Podman containers.**
 
 ```bash
 # Build container
@@ -18,6 +16,8 @@ docker compose run --rm build ./docker/scripts/test-all.sh
 # Build releases in container
 docker compose run --rm build ./docker/scripts/build.sh
 ```
+
+For day-to-day development, `:shared:desktopTest` runs on the host (JVM). See Build Commands below.
 
 ## MANDATORY: Never Remove or Disable Tests
 
@@ -51,153 +51,115 @@ Any fix applied must be:
 
 ## Git Submodules
 
-| Submodule | Purpose | URL |
-|-----------|---------|-----|
-| `Challenges/` | Go-based testing framework with cross-platform challenges | `git@github.com:vasic-digital/Challenges.git` |
-| `Containers/` | Go-based container orchestration (dependency of Challenges) | `git@github.com:vasic-digital/Containers.git` |
+| Submodule | Purpose |
+|-----------|---------|
+| `Challenges/` | Go-based testing framework with cross-platform challenges |
+| `Containers/` | Go-based container orchestration (dependency of Challenges) |
 
 ```bash
-# Initialize submodules after clone
 git submodule update --init --recursive
 
-# Build and test Challenges
+# Build and test (requires Go 1.24+)
 cd Challenges && go build ./... && go vet ./... && go test ./... -race -count=1
-
-# Build and test Containers
 cd Containers && go build ./... && go vet ./... && go test ./... -race -count=1
 ```
 
 ## Build Commands
 
 ```bash
-# Android
-./gradlew :androidApp:assembleDebug
-
-# Desktop
-./gradlew :desktopApp:run
-
-# Web (Wasm)
-./gradlew :webApp:wasmJsBrowserRun
-
-# iOS — open iosApp/iosApp.xcodeproj in Xcode
-
-# All tests
-./gradlew test
+# Primary dev test command (no Android SDK needed, runs on host JVM)
+./gradlew :shared:desktopTest
 
 # Single test class
-./gradlew test --tests "digital.vasic.yole.format.todotxt.TodoTxtQuerySyntaxTests"
+./gradlew :shared:desktopTest --tests "digital.vasic.yole.format.todotxt.TodoTxtQuerySyntaxTests"
 
 # Single test method
-./gradlew test --tests "digital.vasic.yole.format.todotxt.TodoTxtQuerySyntaxTests.ParseQuery"
+./gradlew :shared:desktopTest --tests "digital.vasic.yole.format.todotxt.TodoTxtQuerySyntaxTests.ParseQuery"
+
+# All tests (requires Android SDK for androidApp module)
+./gradlew test
 
 # Tests with coverage report
 ./gradlew test koverHtmlReport
 
-# Lint (Android)
-./gradlew lintFlavorDefaultDebug
+# Run apps
+./gradlew :desktopApp:run                 # Desktop
+./gradlew :androidApp:assembleDebug       # Android (requires ANDROID_SDK_ROOT)
+./gradlew :webApp:wasmJsBrowserRun        # Web (Wasm)
+# iOS — open iosApp/iosApp.xcodeproj in Xcode
+
+# Static analysis
+./gradlew detekt
+./gradlew lintFlavorDefaultDebug          # Android lint
 
 # API docs
 ./gradlew :shared:dokkaHtml
 
-# Makefile (legacy Android-oriented, requires ANDROID_SDK_ROOT)
-make all install run
+# Makefile shortcuts (no Android SDK needed for these)
+make test-shared    # = :shared:desktopTest
+make desktop        # = :desktopApp:run
+
+# Go challenge framework
+./gradlew runChallenges
 ```
+
+## Known Issues
+
+- **AGP version mismatch**: `androidApp` tests may fail due to AGP 8.2.2 vs 8.7.3 mismatch. Use `:shared:desktopTest` for routine testing.
+- **Container OOM**: Exit code 137 in containers = OOM kill. Increase container memory limits.
+- **Go flaky tests**: `TestStress_ConcurrentJWTRefresh` (Auth) and `TestGenericPool_HealthyConnectionsSurvive` (Database) are pre-existing flaky tests in the Go submodules.
 
 ## Architecture
 
 ### Module Structure
 
-Yole's shared business logic is split between the `shared` module and **10 extracted KMP modules** consumed via Gradle composite builds. Platform app modules (`androidApp/`, `desktopApp/`, `iosApp/`, `webApp/`) are thin wrappers that depend on `shared`.
-
-Legacy Android-only modules (`commons/`, `core/`) are minimal and being phased out.
+The `shared` module contains all platform-agnostic business logic. **10 extracted KMP modules** are consumed via `includeBuild()` in `settings.gradle.kts`. Platform app modules (`androidApp/`, `desktopApp/`, `iosApp/`, `webApp/`) are thin wrappers. Legacy modules (`commons/`, `core/`) are being phased out.
 
 ### Extracted KMP Modules (Composite Builds)
 
-Each module is an independent project with its own repo, tests, and documentation. They are wired into Yole via `includeBuild()` in `settings.gradle.kts`:
+Each is an independent project in a sibling directory (`../ModuleName-KMP`):
 
-| Module | Package | Source |
-|--------|---------|--------|
-| `RateLimiter-KMP` | `digital.vasic.ratelimiter` | Rate limiting utilities |
-| `Concurrency-KMP` | `digital.vasic.concurrency` | Lazy loading, platform sync |
-| `UI-Components-KMP` | `digital.vasic.uicomponents` | Theme, animations, accessibility |
-| `Auth-KMP` | `digital.vasic.auth` | OAuth2 flows, token management |
-| `Security-KMP` | `digital.vasic.security` | Secure storage |
-| `Document-KMP` | `digital.vasic.document` | Document model |
-| `Config-KMP` | `digital.vasic.config` | Network configuration |
-| `Database-KMP` | `digital.vasic.database` | Metadata storage |
-| `Storage-KMP` | `digital.vasic.storage` | Protocol abstractions + implementations |
-| `Formatters-KMP` | `digital.vasic.formatters` | 17 text format parsers |
+| Module | Package |
+|--------|---------|
+| `RateLimiter-KMP` | `digital.vasic.ratelimiter` |
+| `Concurrency-KMP` | `digital.vasic.concurrency` |
+| `UI-Components-KMP` | `digital.vasic.uicomponents` |
+| `Auth-KMP` | `digital.vasic.auth` |
+| `Security-KMP` | `digital.vasic.security` |
+| `Document-KMP` | `digital.vasic.document` |
+| `Config-KMP` | `digital.vasic.config` |
+| `Database-KMP` | `digital.vasic.database` |
+| `Storage-KMP` | `digital.vasic.storage` |
+| `Formatters-KMP` | `digital.vasic.formatters` |
 
 ### Facade Bridges
 
-During the transition, some Yole source files are **facade bridges** — thin typealiases that re-export types from extracted modules under the original `digital.vasic.yole.*` package. This allows existing code to compile without mass-renaming imports.
+Some Yole source files are thin typealiases that re-export types from extracted modules under the `digital.vasic.yole.*` package (avoids mass-renaming imports during migration). Active facades: `util/RateLimiting.kt`, `util/LazyLoading.kt`, `util/PlatformSync.kt`, `network/auth/OAuth2Flow.kt`.
 
-**Active facades** (typealias files):
-- `util/RateLimiting.kt` — `RateLimiter`, `TokenBucket`, `AdaptiveRateLimiter`, `OperationThrottler`
-- `util/LazyLoading.kt` — `LazyDocumentLoader<T>`, `LazyStringLoader`, `FlowLazyLoader<T>`
-- `util/PlatformSync.kt` — `platformSynchronized()` delegate function
-- `network/auth/OAuth2Flow.kt` — `OAuth2Flow`, `TokenResponse`, `DropboxOAuth2Flow`, `GoogleDriveOAuth2Flow`, `OneDriveOAuth2Flow`
-
-**Not facaded** (original code kept in Yole due to Kotlin typealias limitations with nested objects, sealed class pattern matching, and expect/actual declarations):
-- `ui/Theme.kt`, `ui/Animations.kt`, `ui/Accessibility.kt`
-- `network/common/StorageConfig.kt`
-- `network/auth/AuthTokenManager.kt`
-- All `network/platform/` expect/actual files
-
-### Shared Module Source Sets
-
-```
-shared/src/
-├── commonMain/          # All shared code (the primary codebase)
-├── commonTest/          # All shared tests
-├── commonBenchmark/     # Benchmarks
-├── androidMain/         # Android-specific expect/actual
-├── androidTest/
-├── desktopMain/         # Desktop (JVM) expect/actual
-├── desktopTest/
-├── desktopBenchmark/
-├── iosMain/             # iOS expect/actual
-├── iosTest/
-├── wasmJsMain/          # Web/Wasm expect/actual
-└── wasmJsTest/
-```
+Types with nested objects, sealed class pattern matching, or expect/actual declarations cannot use typealiases and remain as original code in Yole (e.g., `ui/Theme.kt`, `network/common/StorageConfig.kt`, all `network/platform/` files).
 
 ### Package Layout (`shared/src/commonMain/kotlin/digital/vasic/yole/`)
 
 ```
 format/                  # Format system — the core of the app
-├── FormatRegistry.kt    # Central registry: all formats with detection priority
+├── FormatRegistry.kt    # Central registry: lazy-loaded, detection priority order
 ├── TextFormat.kt        # Format metadata (id, name, extensions, detectionPatterns)
 ├── TextParser.kt        # ParsedDocument class with lazy HTML caching
-├── ParserInitializer.kt # Format initialization
-├── StyleSheets.kt       # CSS generation for HTML rendering
-├── markdown/            # 17 text format parsers (one dir each)
-├── todotxt/
-├── csv/ latex/ orgmode/ plaintext/ wikitext/ asciidoc/
-├── restructuredtext/ rmarkdown/ taskpaper/ textile/
-├── creole/ tiddlywiki/ jupyter/ keyvalue/ binary/
-├── dropbox/             # Cloud storage protocols
-├── googledrive/
-├── onedrive/
-├── ftp/                 # Network protocols
-└── sftp/
+├── DocumentCache.kt     # LRU cache for ParsedDocument with hit/miss tracking
+├── StyleSheets.kt       # CSS generation with styleSheetCache
+├── [17 format dirs]/    # One parser per format (markdown/, todotxt/, csv/, etc.)
+├── dropbox/ googledrive/ onedrive/  # Cloud storage protocols
+└── ftp/ sftp/           # Network protocols
 model/                   # Document model (Document.kt)
 network/                 # Network storage system
 ├── NetworkStorageService.kt
-├── auth/                # Authentication
-├── common/              # Shared network utilities
-├── config/              # Network configuration
-├── database/            # Metadata storage
-├── platform/            # Platform-specific networking
+├── auth/                # Authentication (AuthTokenManager, OAuth2Flow facade)
+├── common/              # CircuitBreaker, ConnectionLimiter, PathUtils
+├── platform/            # Platform-specific expect/actual networking
 ├── protocol/            # Protocol abstractions
-└── protocols/           # Protocol implementations
+└── protocols/           # Protocol implementations (8 services)
 ui/                      # Shared UI (Compose Multiplatform)
-├── Theme.kt
-├── Accessibility.kt
-└── Animations.kt
-util/                    # Utilities
-├── LazyLoading.kt
-└── RateLimiting.kt
+util/                    # Facade bridges (LazyLoading.kt, RateLimiting.kt)
 ```
 
 ### Text Parsing Pipeline
@@ -209,21 +171,33 @@ util/                    # Utilities
 
 Format IDs are string constants on `TextFormat.Companion` (e.g., `TextFormat.ID_MARKDOWN`, `TextFormat.ID_TODOTXT`).
 
-### Test Organization
+### Key Architectural Patterns
 
-Tests live in `shared/src/commonTest/kotlin/digital/vasic/yole/format/`:
+- **FormatRegistry**: Lazy-loaded `formats` list via `lazy { createFormats() }`. Check `isFormatsInitialized` before accessing.
+- **StyleSheets**: Uses `styleSheetCache` with `clearCache()`.
+- **Resilience**: All 8 protocol services use CircuitBreaker, ConnectionLimiter, CancellationException rethrow, normalizePath() for path traversal protection, and serviceScope lifecycle management.
+- **Coroutine safety**: `scopeMutex`, `pauseFlagsMutex` for concurrent state. `CancellationException` must always be rethrown in catch blocks.
 
-```
-├── [format]/            # Per-format test directories (mirrors source)
-├── integration/         # Cross-format integration tests
-├── stress/              # Performance and stress tests
-├── supremacy/           # Edge case and boundary tests
-└── FormatRegistryStressTest.kt
-```
+## Testing
 
 ~9,400+ tests across ~195 test files (commonTest + desktopTest + androidUnitTest + wasmJsTest).
 
-Test types include: unit, integration, stress, supremacy/edge-case, mock HTTP, property-based, contract, security, performance metrics, monitoring, resilience, fuzz, snapshot, load, E2E, accessibility, and non-blocking tests.
+Test types: unit, integration, stress, supremacy/edge-case, mock HTTP, property-based, contract, security, performance, resilience, fuzz, snapshot, load, E2E, accessibility, non-blocking.
+
+### Test Constraints
+
+- **JUnit4 runner**: Tests use `runBlocking<Unit> { }` (not `runTest`). JUnit4 requires `Unit` return type; `runTest` returns `TestResult` which causes `void` signature mismatch.
+- **MockK is JVM-only**: Available in `desktopTest` and `androidUnitTest`, NOT in `commonTest` or `wasmJsTest`.
+- **kotlinx-coroutines-test**: No WASM variant. Unavailable in `commonTest` (which compiles for all targets including WASM).
+- **jvmTarget**: Must be `"11"` in all JVM compilations (`compilations.all { kotlinOptions { jvmTarget = "11" } }`).
+
+### Test Organization
+
+Tests in `shared/src/commonTest/kotlin/digital/vasic/yole/format/`:
+- `[format]/` — Per-format test directories (mirrors source)
+- `integration/` — Cross-format integration tests
+- `stress/` — Performance and stress tests
+- `supremacy/` — Edge case and boundary tests
 
 ## Adding New Formats
 
@@ -242,32 +216,13 @@ Test types include: unit, integration, stress, supremacy/edge-case, mock HTTP, p
 - **Build variants**: `flavorDefault` for dev, `flavorAtest` for testing
 - All tests must pass before merging
 
-## Resilience Patterns
-
-The network protocol layer includes these resilience mechanisms:
-
-- **CircuitBreaker** (`network/common/CircuitBreaker.kt`) — CLOSED/OPEN/HALF_OPEN states, configurable failure threshold and reset timeout
-- **ConnectionLimiter** (`network/common/ConnectionLimiter.kt`) — Semaphore-based concurrent connection limiting, non-blocking
-- **DocumentCache** (`format/DocumentCache.kt`) — LRU cache for ParsedDocument with hit/miss tracking
-- **CancellationException safety** — All catch blocks in all 8 protocol services rethrow CancellationException
-- **Path traversal protection** — normalizePath() resolves `..` segments and enforces root boundary
-- **Query injection protection** — API query strings are sanitized (single-quote escaping, URL encoding, JSON escaping)
-- **CoroutineScope lifecycle** — serviceScope cancelled on reconnect/disconnect to prevent coroutine leaks
-
 ## Security Scanning
 
 ```bash
-# Start SonarQube locally
-docker compose --profile security up -d sonarqube
-
-# Run Detekt static analysis
-./gradlew detekt
-
-# Run security scan script
-./scripts/run_security_scan.sh
-
-# Full security stack via Docker
-docker compose --profile full up -d
+docker compose --profile security up -d sonarqube   # SonarQube at localhost:9000
+./gradlew detekt                                     # Static analysis
+./scripts/run_security_scan.sh                       # Full scan script
+docker compose --profile full up -d                  # Full security stack
 ```
 
 Tools configured: SonarQube (Docker), Snyk (CI + Docker), CodeQL (CI), Gitleaks (CI), Detekt (Gradle), OWASP Dependency Check (CI).
@@ -279,18 +234,15 @@ Tools configured: SonarQube (Docker), Snyk (CI + Docker), CodeQL (CI), Gitleaks 
 - Ktor Client 3.0.2 (networking)
 - Kotlinx: Coroutines 1.9.0, Serialization 1.7.3, DateTime 0.6.1
 - Okio 3.9.1 (file system)
-- Testing: Kotest 5.9.1, MockK 1.13.13, AssertJ 3.26.3
+- Testing: Kotest 5.9.1, MockK 1.13.13 (JVM-only), AssertJ 3.26.3
 - Coverage: Kover 0.8.3
 - Version catalog: `gradle/libs.versions.toml`
 
 ## Key Files
 
 - `shared/build.gradle.kts` — KMP configuration with all platform targets
-- `settings.gradle.kts` — Module includes + 10 composite build `includeBuild()` directives for extracted KMP modules
+- `settings.gradle.kts` — Module includes + 10 composite build `includeBuild()` directives
 - `gradle/libs.versions.toml` — Centralized dependency versions
-- `Makefile` — Legacy Android build automation (requires `ANDROID_SDK_ROOT`)
-- `docker-compose.yml` — Podman/Docker container build environment
-- `docker/scripts/test-all.sh` — Comprehensive multi-platform test runner
-- `docker/scripts/build.sh` — Container build script
-- `Challenges/` — Go testing framework submodule (cross-platform challenges)
-- `Containers/` — Go container orchestration submodule (Challenges dependency)
+- `Makefile` — Build automation with `make help` for all targets
+- `docker-compose.yml` — Container build environment (Podman or Docker)
+- `Challenges/` — Go testing framework submodule (run via `./gradlew runChallenges`)

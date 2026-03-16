@@ -116,7 +116,7 @@ const faqCategories = [
       },
       {
         q: "How do I run the tests?",
-        a: "Run './gradlew test' to execute all tests, or './gradlew :shared:desktopTest' for shared module tests. You can run specific test classes with '--tests' flag. For containerized testing, use 'docker compose run --rm build ./docker/scripts/test-all.sh'. Yole has 9,400+ tests across 195 test files.",
+        a: "Run './gradlew test' to execute all tests, or './gradlew :shared:desktopTest' for shared module tests. You can run specific test classes with '--tests' flag. For containerized testing, use 'docker compose run --rm build ./docker/scripts/test-all.sh'. Yole has 11,000+ tests across 225+ test files.",
       },
       {
         q: "What is the module structure?",
@@ -133,6 +133,14 @@ const faqCategories = [
       {
         q: "Where can I report bugs or request features?",
         a: "Use GitHub Issues at github.com/vasic-digital/Yole/issues. Search for existing issues first to avoid duplicates. Use the bug report template for bugs and the feature request template for new feature ideas. For questions and discussions, use GitHub Discussions.",
+      },
+      {
+        q: "I get an AGP version mismatch error when building androidApp tests. What should I do?",
+        a: "There is a known AGP version mismatch (8.2.2 vs 8.9.0) that can prevent androidApp tests from running. Use ':shared:desktopTest' instead, which runs the same shared test suite on the Desktop (JVM) target. All commonTest tests are executed on desktopTest, so coverage is equivalent.",
+      },
+      {
+        q: "My container build exits with code 137. What does that mean?",
+        a: "Exit code 137 means the container was killed by the OOM (Out of Memory) killer. Increase the memory limit for your Docker or Podman container. For Docker, use '--memory=4g' or increase the Docker Desktop memory allocation. For Podman on Linux, adjust the cgroup memory limit. A minimum of 4 GB is recommended for full builds and tests.",
       },
     ],
   },

@@ -35,7 +35,7 @@ const levels = [
     level: "Expert",
     color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
     description: "Dive into the architecture, contribute to the project, and extend Yole with custom formats.",
-    prerequisites: "Advanced videos (8-13), Kotlin knowledge",
+    prerequisites: "Advanced videos (8-13), Kotlin knowledge recommended",
     videos: [
       { id: 14, title: "Architecture Deep Dive", duration: "18 min", description: "Kotlin Multiplatform architecture, module structure, shared code organization, and platform targets." },
       { id: 15, title: "Building from Source", duration: "12 min", description: "Setting up the development environment. Building for Android, Desktop, and Web. Running the test suite." },
@@ -43,6 +43,8 @@ const levels = [
       { id: 17, title: "Network Protocol Implementation", duration: "16 min", description: "Implementing a new cloud storage protocol. NetworkStorageService interface, authentication, and Ktor Client." },
       { id: 18, title: "Testing Best Practices", duration: "14 min", description: "Writing comprehensive tests with Kotest. Mock HTTP testing, edge cases, stress tests, and code coverage." },
       { id: 19, title: "Contributing to Yole", duration: "10 min", description: "Git workflow, commit conventions, pull request process, code review, and community guidelines." },
+      { id: 20, title: "Platform-Specific Development", duration: "16 min", description: "Implementing expect/actual declarations for Android, Desktop, iOS, and Wasm. Platform-specific UI, networking, and secure storage." },
+      { id: 21, title: "Stress Testing and Monitoring", duration: "14 min", description: "Writing stress tests, fuzz tests, load tests, and snapshot tests. Performance baselines, monitoring metrics, and CI integration." },
     ],
   },
 ];
@@ -143,10 +145,10 @@ export default function VideoCoursePage() {
             <div>
               <h3 className="font-semibold text-lg mb-2 text-red-600 dark:text-red-400">Week 3: Mastery</h3>
               <p className="text-sm text-[var(--color-text-secondary)] mb-3">
-                Dive into the Expert videos (14-19). Understand the architecture,
+                Dive into the Expert videos (14-21). Understand the architecture,
                 contribute to the project, and build custom extensions.
               </p>
-              <p className="text-xs text-[var(--color-text-secondary)]">~90 minutes total</p>
+              <p className="text-xs text-[var(--color-text-secondary)]">~120 minutes total</p>
             </div>
           </div>
         </div>

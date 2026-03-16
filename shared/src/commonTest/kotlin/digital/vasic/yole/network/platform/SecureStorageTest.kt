@@ -8,7 +8,7 @@
  *########################################################*/
 package digital.vasic.yole.network.platform
 
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue

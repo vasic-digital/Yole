@@ -18,7 +18,7 @@ import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.TextFormat
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlin.test.*
 
@@ -30,7 +30,7 @@ class DocumentStressTest {
     // ==================== CREATION STRESS ====================
 
     @Test
-    fun `create many documents concurrently`() = runTest {
+    fun `create many documents concurrently`() = runBlocking<Unit> {
         val documents = (1..1000).map { i ->
             async {
                 Document(
@@ -47,7 +47,7 @@ class DocumentStressTest {
     }
 
     @Test
-    fun `create documents with all format types`() = runTest {
+    fun `create documents with all format types`() = runBlocking<Unit> {
         val formats = listOf(
             Document.FORMAT_PLAINTEXT to "txt",
             Document.FORMAT_MARKDOWN to "md",
@@ -84,7 +84,7 @@ class DocumentStressTest {
     // ==================== FORMAT DETECTION STRESS ====================
 
     @Test
-    fun `detect format by extension for all supported extensions`() = runTest {
+    fun `detect format by extension for all supported extensions`() = runBlocking<Unit> {
         val documents = FormatRegistry.getAllExtensions().map { ext ->
             async {
                 val doc = Document(
@@ -102,7 +102,7 @@ class DocumentStressTest {
     }
 
     @Test
-    fun `detect format by content concurrently`() = runTest {
+    fun `detect format by content concurrently`() = runBlocking<Unit> {
         val contentSamples = listOf(
             "# Markdown Heading\n\nParagraph with **bold** text." to "markdown",
             "(A) Todo task @context +project" to "todotxt",
@@ -129,7 +129,7 @@ class DocumentStressTest {
     }
 
     @Test
-    fun `format detection is idempotent`() = runTest {
+    fun `format detection is idempotent`() = runBlocking<Unit> {
         val doc = Document(
             path = "/path/to/file.md",
             title = "file",
@@ -148,7 +148,7 @@ class DocumentStressTest {
     // ==================== FILENAME GENERATION STRESS ====================
 
     @Test
-    fun `filename property handles various extensions`() = runTest {
+    fun `filename property handles various extensions`() = runBlocking<Unit> {
         val testCases = listOf(
             Triple("doc", "md", "doc.md"),
             Triple("doc", "markdown", "doc.markdown"),
@@ -170,7 +170,7 @@ class DocumentStressTest {
     }
 
     @Test
-    fun `filename with special characters`() = runTest {
+    fun `filename with special characters`() = runBlocking<Unit> {
         val specialTitles = listOf(
             "doc with spaces",
             "doc-with-dashes",
@@ -194,7 +194,7 @@ class DocumentStressTest {
     // ==================== CHANGE TRACKING STRESS ====================
 
     @Test
-    fun `change tracking reset is consistent`() = runTest {
+    fun `change tracking reset is consistent`() = runBlocking<Unit> {
         val doc = Document(
             path = "/path/to/file.md",
             title = "file",
@@ -211,7 +211,7 @@ class DocumentStressTest {
     }
 
     @Test
-    fun `touch updates time correctly`() = runTest {
+    fun `touch updates time correctly`() = runBlocking<Unit> {
         val doc = Document(
             path = "/path/to/file.md",
             title = "file",
@@ -232,7 +232,7 @@ class DocumentStressTest {
     // ==================== SERIALIZATION STRESS ====================
 
     @Test
-    fun `serialize and deserialize many documents`() = runTest {
+    fun `serialize and deserialize many documents`() = runBlocking<Unit> {
         val json = Json { ignoreUnknownKeys = true }
 
         val documents = (1..500).map { i ->
@@ -257,7 +257,7 @@ class DocumentStressTest {
     }
 
     @Test
-    fun `serialization handles special characters`() = runTest {
+    fun `serialization handles special characters`() = runBlocking<Unit> {
         val json = Json { ignoreUnknownKeys = true }
 
         val specialDocs = listOf(
@@ -279,7 +279,7 @@ class DocumentStressTest {
     // ==================== EQUALITY AND HASHING STRESS ====================
 
     @Test
-    fun `equals and hashCode are consistent`() = runTest {
+    fun `equals and hashCode are consistent`() = runBlocking<Unit> {
         val documents = (1..1000).map { i ->
             Document(
                 path = "/path/to/doc${i % 100}.md",
@@ -297,7 +297,7 @@ class DocumentStressTest {
     }
 
     @Test
-    fun `different documents have different hashes`() = runTest {
+    fun `different documents have different hashes`() = runBlocking<Unit> {
         val documents = (1..100).map { i ->
             Document(
                 path = "/path/to/unique/doc$i.md",
@@ -316,7 +316,7 @@ class DocumentStressTest {
     // ==================== TEXT FORMAT ACCESS STRESS ====================
 
     @Test
-    fun `getTextFormat handles all format types`() = runTest {
+    fun `getTextFormat handles all format types`() = runBlocking<Unit> {
         val formatIds = listOf(
             Document.FORMAT_PLAINTEXT,
             Document.FORMAT_MARKDOWN,
@@ -343,7 +343,7 @@ class DocumentStressTest {
     }
 
     @Test
-    fun `getTextFormat handles unknown format gracefully`() = runTest {
+    fun `getTextFormat handles unknown format gracefully`() = runBlocking<Unit> {
         val doc = Document(
             path = "/path/to/file.xyz",
             title = "file",
@@ -359,7 +359,7 @@ class DocumentStressTest {
     // ==================== EDGE CASES ====================
 
     @Test
-    fun `document handles empty path`() = runTest {
+    fun `document handles empty path`() = runBlocking<Unit> {
         val doc = Document(
             path = "",
             title = "",
@@ -373,7 +373,7 @@ class DocumentStressTest {
     }
 
     @Test
-    fun `document handles very long paths`() = runTest {
+    fun `document handles very long paths`() = runBlocking<Unit> {
         val longPath = "/" + "a".repeat(10000) + "/file.md"
 
         val doc = Document(
@@ -386,7 +386,7 @@ class DocumentStressTest {
     }
 
     @Test
-    fun `document handles unicode paths`() = runTest {
+    fun `document handles unicode paths`() = runBlocking<Unit> {
         val unicodePaths = listOf(
             "/documents/\u6587\u6863/file.md",
             "/\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b/file.md",

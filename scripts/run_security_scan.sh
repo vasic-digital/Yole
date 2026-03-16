@@ -73,16 +73,25 @@ run_check "OWASP Dependency Check" "./gradlew dependencyCheckAnalyze --info 2>&1
 echo -e "${BLUE}[3/6] Static Analysis (Detekt)${NC}"
 run_check "Detekt Static Analysis" "./gradlew detekt --info 2>&1 | tail -20" "false"
 
-# 4. Detekt - Additional Static Analysis Pass (stricter rules)
-echo -e "${BLUE}[4/6] Static Analysis (Detekt - strict)${NC}"
-run_check "Detekt Strict Analysis" "./gradlew detekt --info 2>&1 | tail -20" "false"
+# 4. Snyk Vulnerability Scan (if available)
+echo -e "${BLUE}[4/7] Snyk Vulnerability Scan${NC}"
+if command -v snyk &> /dev/null; then
+    run_check "Snyk Vulnerability Scan" "snyk test --severity-threshold=high --gradle-sub-project=shared 2>&1 | tail -20" "false"
+else
+    echo -e "${YELLOW}[SKIP] Snyk not installed. Install with: npm install -g snyk${NC}"
+    echo ""
+fi
 
 # 5. Android Lint
-echo -e "${BLUE}[5/6] Android Lint${NC}"
+echo -e "${BLUE}[5/7] Android Lint${NC}"
 run_check "Android Lint" "./gradlew :androidApp:lintDebug --info 2>&1 | tail -20" "false"
 
-# 6. Check for hardcoded secrets in code
-echo -e "${BLUE}[6/6] Manual Secret Patterns${NC}"
+# 6. Kover Coverage Report
+echo -e "${BLUE}[6/7] Coverage Report${NC}"
+run_check "Kover Coverage Report" "./gradlew koverXmlReport koverHtmlReport --info 2>&1 | tail -10" "false"
+
+# 7. Check for hardcoded secrets in code
+echo -e "${BLUE}[7/7] Manual Secret Patterns${NC}"
 echo "Checking for common secret patterns..."
 
 SECRET_PATTERNS=(

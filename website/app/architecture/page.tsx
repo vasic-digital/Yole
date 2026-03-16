@@ -88,7 +88,7 @@ export default function ArchitecturePage() {
           <pre className="text-sm bg-[var(--color-bg-secondary)] rounded-lg p-4 overflow-x-auto border border-[var(--color-border)]"><code>{`Yole/
 ├── shared/                  # Shared KMP module (depends on extracted modules)
 │   ├── src/commonMain/      # Common Kotlin code
-│   ├── src/commonTest/      # 9,400+ tests
+│   ├── src/commonTest/      # 11,000+ tests
 │   ├── src/androidMain/     # Android expect/actual
 │   ├── src/desktopMain/     # Desktop (JVM) expect/actual
 │   ├── src/iosMain/         # iOS expect/actual
@@ -228,6 +228,42 @@ export default function ArchitecturePage() {
         </div>
       </section>
 
+      {/* Monitoring and Stress Testing */}
+      <section className="mb-16">
+        <h2 className="text-3xl font-bold tracking-tight mb-4">Monitoring and Stress Testing</h2>
+        <div className="card">
+          <p className="text-[var(--color-text-secondary)] leading-relaxed mb-4">
+            Yole includes a monitoring and metrics layer that tracks performance baselines,
+            cache hit rates, connection pool utilization, and parsing throughput across all
+            format parsers and network protocols.
+          </p>
+          <p className="text-[var(--color-text-secondary)] leading-relaxed mb-4">
+            The stress testing infrastructure validates system behavior under extreme conditions
+            including concurrent file operations, large document parsing, rapid connection
+            cycling, and high-frequency rate limiter contention. Fuzz tests exercise parsers
+            with randomized inputs to catch edge cases and prevent regressions.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">Fuzz</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Randomized input testing</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">Snapshot</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Output regression checks</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">Load</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Throughput benchmarks</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">Monitoring</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Performance baselines</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Key Dependencies */}
       <section className="mb-16">
         <h2 className="text-3xl font-bold tracking-tight mb-4">Key Dependencies</h2>
@@ -262,17 +298,18 @@ export default function ArchitecturePage() {
         <h2 className="text-3xl font-bold tracking-tight mb-4">Testing</h2>
         <div className="card">
           <p className="text-[var(--color-text-secondary)] leading-relaxed mb-4">
-            Yole has a comprehensive test suite of 9,400+ tests across 195 test files.
+            Yole has a comprehensive test suite of 11,000+ tests across 225+ test files.
             Tests cover all 17 format parsers, network protocol clients, authentication
-            flows, rate limiting, concurrency, and UI components.
+            flows, rate limiting, concurrency, UI components, stress testing, monitoring
+            metrics, fuzz testing, snapshot testing, and load testing.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary-500">9,400+</div>
+              <div className="text-2xl font-bold text-primary-500">11,000+</div>
               <div className="text-xs text-[var(--color-text-secondary)]">Total Tests</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary-500">170+</div>
+              <div className="text-2xl font-bold text-primary-500">225+</div>
               <div className="text-xs text-[var(--color-text-secondary)]">Test Files</div>
             </div>
             <div className="text-center">

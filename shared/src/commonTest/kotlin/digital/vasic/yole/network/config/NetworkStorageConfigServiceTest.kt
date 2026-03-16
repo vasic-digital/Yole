@@ -2,7 +2,7 @@ package digital.vasic.yole.network.config
 
 import digital.vasic.yole.network.common.*
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

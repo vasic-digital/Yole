@@ -36,7 +36,7 @@ import digital.vasic.yole.format.todotxt.TodoTxtParser
 import digital.vasic.yole.format.wikitext.WikitextParser
 import digital.vasic.yole.format.binary.BinaryParser
 import kotlinx.coroutines.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 import kotlin.time.measureTime
 import kotlin.time.Duration.Companion.seconds

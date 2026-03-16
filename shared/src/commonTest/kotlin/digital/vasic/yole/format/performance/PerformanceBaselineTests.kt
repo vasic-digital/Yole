@@ -35,7 +35,7 @@ import digital.vasic.yole.format.todotxt.TodoTxtParser
 import digital.vasic.yole.format.wikitext.WikitextParser
 import digital.vasic.yole.network.common.CircuitBreaker
 import digital.vasic.yole.network.common.ConnectionLimiter
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime

@@ -20,7 +20,7 @@ import digital.vasic.yole.util.FlowLazyLoader
 import digital.vasic.yole.util.LazyDocumentLoader
 import digital.vasic.yole.util.LazyStringLoader
 import kotlinx.coroutines.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 import kotlin.time.measureTime
 import kotlin.time.Duration.Companion.seconds

@@ -275,7 +275,16 @@ chore(deps): update Kotlin to 2.0.20`}</code></pre>
         <div className="card">
           <p className="text-[var(--color-text-secondary)] mb-4">
             We are committed to providing a welcoming and inclusive community. All
-            participants are expected to follow these guidelines:
+            participants are expected to follow these guidelines. See our full{" "}
+            <a
+              href="https://github.com/vasic-digital/Yole/blob/master/CODE_OF_CONDUCT.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary-500 hover:text-primary-600"
+            >
+              Code of Conduct
+            </a>{" "}
+            for details.
           </p>
           <ul className="space-y-2">
             {codeOfConduct.map((item) => (

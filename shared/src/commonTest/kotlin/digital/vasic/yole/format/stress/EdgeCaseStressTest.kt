@@ -31,7 +31,7 @@ import digital.vasic.yole.format.textile.TextileParser
 import digital.vasic.yole.format.tiddlywiki.TiddlyWikiParser
 import digital.vasic.yole.format.todotxt.TodoTxtParser
 import digital.vasic.yole.format.wikitext.WikitextParser
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.async
 import kotlin.test.*
 
@@ -43,7 +43,7 @@ class EdgeCaseStressTest {
     // ==================== EMPTY INPUT HANDLING ====================
 
     @Test
-    fun `all parsers handle empty string`() = runTest {
+    fun `all parsers handle empty string`() = runBlocking<Unit> {
         val parsers = getAllParsers()
 
         parsers.forEach { parser ->
@@ -53,7 +53,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `all parsers handle whitespace only`() = runTest {
+    fun `all parsers handle whitespace only`() = runBlocking<Unit> {
         val parsers = getAllParsers()
         val whitespaceInputs = listOf(" ", "  ", "\t", "\n", "\r\n", "   \t\n  ")
 
@@ -66,7 +66,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `all parsers handle null bytes`() = runTest {
+    fun `all parsers handle null bytes`() = runBlocking<Unit> {
         val parsers = getAllParsers()
         val nullByteInput = "test\u0000content"
 
@@ -79,7 +79,7 @@ class EdgeCaseStressTest {
     // ==================== VERY LONG INPUT HANDLING ====================
 
     @Test
-    fun `parsers handle very long single line`() = runTest {
+    fun `parsers handle very long single line`() = runBlocking<Unit> {
         // Use 10,000 chars to avoid regex backtracking timeouts on single-line content
         val longLine = "a".repeat(10000)
 
@@ -96,7 +96,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `parsers handle many short lines`() = runTest {
+    fun `parsers handle many short lines`() = runBlocking<Unit> {
         val manyLines = (1..10000).joinToString("\n") { "line $it" }
 
         val parsers = listOf(
@@ -112,7 +112,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `parsers handle very long words`() = runTest {
+    fun `parsers handle very long words`() = runBlocking<Unit> {
         val longWord = "supercalifragilisticexpialidocious".repeat(100)
 
         val parsers = listOf(
@@ -129,7 +129,7 @@ class EdgeCaseStressTest {
     // ==================== UNICODE EDGE CASES ====================
 
     @Test
-    fun `parsers handle emoji`() = runTest {
+    fun `parsers handle emoji`() = runBlocking<Unit> {
         val emojiContent = "\uD83D\uDE00 Hello \uD83D\uDC4B World \uD83C\uDF0E"
 
         val parsers = getAllParsers()
@@ -141,7 +141,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `parsers handle right-to-left text`() = runTest {
+    fun `parsers handle right-to-left text`() = runBlocking<Unit> {
         val rtlContent = "\u0645\u0631\u062D\u0628\u0627 \u0628\u0627\u0644\u0639\u0627\u0644\u0645"
 
         val parsers = getAllParsers()
@@ -153,7 +153,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `parsers handle mixed scripts`() = runTest {
+    fun `parsers handle mixed scripts`() = runBlocking<Unit> {
         val mixedContent = "Hello \u4E16\u754C \u0645\u0631\u062D\u0628\u0627 \u041F\u0440\u0438\u0432\u0435\u0442 \u3053\u3093\u306B\u3061\u306F"
 
         val parsers = getAllParsers()
@@ -165,7 +165,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `parsers handle combining characters`() = runTest {
+    fun `parsers handle combining characters`() = runBlocking<Unit> {
         val combiningChars = "e\u0301" // e as e + combining accent
 
         val parsers = getAllParsers()
@@ -177,7 +177,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `parsers handle zero-width characters`() = runTest {
+    fun `parsers handle zero-width characters`() = runBlocking<Unit> {
         val zeroWidthContent = "hello\u200Bworld" // zero-width space
 
         val parsers = getAllParsers()
@@ -191,7 +191,7 @@ class EdgeCaseStressTest {
     // ==================== SPECIAL CHARACTER HANDLING ====================
 
     @Test
-    fun `parsers handle control characters`() = runTest {
+    fun `parsers handle control characters`() = runBlocking<Unit> {
         val controlChars = "line1\u0001\u0002\u0003line2"
 
         val parsers = getAllParsers()
@@ -203,7 +203,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `parsers handle backslash sequences`() = runTest {
+    fun `parsers handle backslash sequences`() = runBlocking<Unit> {
         val backslashContent = "path\\to\\file\\name"
 
         val parsers = getAllParsers()
@@ -215,7 +215,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `parsers handle angle brackets`() = runTest {
+    fun `parsers handle angle brackets`() = runBlocking<Unit> {
         val angleContent = "<test> & <another>"
 
         val parsers = getAllParsers()
@@ -229,7 +229,7 @@ class EdgeCaseStressTest {
     // ==================== LINE ENDING VARIATIONS ====================
 
     @Test
-    fun `parsers handle Unix line endings`() = runTest {
+    fun `parsers handle Unix line endings`() = runBlocking<Unit> {
         val unixContent = "line1\nline2\nline3"
 
         val parsers = getAllParsers()
@@ -241,7 +241,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `parsers handle Windows line endings`() = runTest {
+    fun `parsers handle Windows line endings`() = runBlocking<Unit> {
         val windowsContent = "line1\r\nline2\r\nline3"
 
         val parsers = getAllParsers()
@@ -253,7 +253,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `parsers handle old Mac line endings`() = runTest {
+    fun `parsers handle old Mac line endings`() = runBlocking<Unit> {
         val macContent = "line1\rline2\rline3"
 
         val parsers = getAllParsers()
@@ -265,7 +265,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `parsers handle mixed line endings`() = runTest {
+    fun `parsers handle mixed line endings`() = runBlocking<Unit> {
         val mixedContent = "line1\nline2\r\nline3\rline4"
 
         val parsers = getAllParsers()
@@ -279,7 +279,7 @@ class EdgeCaseStressTest {
     // ==================== FORMAT-SPECIFIC EDGE CASES ====================
 
     @Test
-    fun `markdown handles unclosed code blocks`() = runTest {
+    fun `markdown handles unclosed code blocks`() = runBlocking<Unit> {
         val parser = MarkdownParser()
 
         val unclosedCode = "```kotlin\nfun test() {"
@@ -289,7 +289,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `markdown handles deeply nested lists`() = runTest {
+    fun `markdown handles deeply nested lists`() = runBlocking<Unit> {
         val parser = MarkdownParser()
 
         val deepList = (1..20).joinToString("\n") { "  ".repeat(it) + "- item $it" }
@@ -299,7 +299,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `markdown handles broken links`() = runTest {
+    fun `markdown handles broken links`() = runBlocking<Unit> {
         val parser = MarkdownParser()
 
         val brokenLinks = "[link](broken\n[another](incomplete"
@@ -309,7 +309,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `csv handles quoted fields with special characters`() = runTest {
+    fun `csv handles quoted fields with special characters`() = runBlocking<Unit> {
         val parser = CsvParser()
 
         val specialCsv = """
@@ -323,7 +323,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `csv handles inconsistent column counts`() = runTest {
+    fun `csv handles inconsistent column counts`() = runBlocking<Unit> {
         val parser = CsvParser()
 
         val inconsistentCsv = """
@@ -337,7 +337,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `todotxt handles malformed priorities`() = runTest {
+    fun `todotxt handles malformed priorities`() = runBlocking<Unit> {
         val parser = TodoTxtParser()
 
         val malformedContent = """
@@ -353,7 +353,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `todotxt handles dates in various formats`() = runTest {
+    fun `todotxt handles dates in various formats`() = runBlocking<Unit> {
         val parser = TodoTxtParser()
 
         val dateContent = """
@@ -367,7 +367,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `latex handles unmatched braces`() = runTest {
+    fun `latex handles unmatched braces`() = runBlocking<Unit> {
         val parser = LatexParser()
 
         val unmatchedBraces = """
@@ -381,7 +381,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `keyvalue handles various formats`() = runTest {
+    fun `keyvalue handles various formats`() = runBlocking<Unit> {
         val parser = KeyValueParser()
 
         val mixedContent = """
@@ -398,7 +398,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `orgmode handles complex hierarchies`() = runTest {
+    fun `orgmode handles complex hierarchies`() = runBlocking<Unit> {
         val parser = OrgModeParser()
 
         val complexOrg = """
@@ -416,7 +416,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `wikitext handles nested templates`() = runTest {
+    fun `wikitext handles nested templates`() = runBlocking<Unit> {
         val parser = WikitextParser()
 
         val nestedTemplates = """
@@ -431,7 +431,7 @@ class EdgeCaseStressTest {
     // ==================== BINARY DETECTION EDGE CASES ====================
 
     @Test
-    fun `binary parser detects various signatures`() = runTest {
+    fun `binary parser detects various signatures`() = runBlocking<Unit> {
         val parser = BinaryParser()
 
         // PNG signature
@@ -448,7 +448,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `binary parser handles text files`() = runTest {
+    fun `binary parser handles text files`() = runBlocking<Unit> {
         val parser = BinaryParser()
 
         val textContent = "This is plain text content without binary signatures"
@@ -459,7 +459,7 @@ class EdgeCaseStressTest {
     // ==================== CONCURRENT PARSING EDGE CASES ====================
 
     @Test
-    fun `same parser instance used concurrently`() = runTest {
+    fun `same parser instance used concurrently`() = runBlocking<Unit> {
         val parser = MarkdownParser()
 
         val contents = (1..100).map { "# Heading $it\n\nContent for document $it" }
@@ -477,7 +477,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `different parser types used concurrently`() = runTest {
+    fun `different parser types used concurrently`() = runBlocking<Unit> {
         val parsers = getAllParsers()
         val content = "Test content for all parsers"
 
@@ -494,7 +494,7 @@ class EdgeCaseStressTest {
     // ==================== BOUNDARY CONDITIONS ====================
 
     @Test
-    fun `parsers handle max int length content`() = runTest {
+    fun `parsers handle max int length content`() = runBlocking<Unit> {
         // Test with content near typical buffer sizes
         val bufferSizes = listOf(1024, 4096, 8192, 16384)
 
@@ -508,7 +508,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `parsers handle content with many matches`() = runTest {
+    fun `parsers handle content with many matches`() = runBlocking<Unit> {
         val parser = MarkdownParser()
 
         // Many bold markers
@@ -518,7 +518,7 @@ class EdgeCaseStressTest {
     }
 
     @Test
-    fun `parsers handle alternating patterns`() = runTest {
+    fun `parsers handle alternating patterns`() = runBlocking<Unit> {
         val parser = MarkdownParser()
 
         // Alternating emphasis

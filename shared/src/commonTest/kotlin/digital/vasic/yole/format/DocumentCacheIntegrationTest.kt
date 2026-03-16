@@ -10,7 +10,7 @@ package digital.vasic.yole.format
 
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 class DocumentCacheIntegrationTest {
@@ -25,7 +25,7 @@ class DocumentCacheIntegrationTest {
     // ==================== parseWithCache: Cache Hits and Misses ====================
 
     @Test
-    fun parseWithCacheReturnsParsedDocument() = runTest {
+    fun parseWithCacheReturnsParsedDocument() = runBlocking<Unit> {
         // Ensure a parser is registered for plaintext
         ensurePlaintextParser()
 
@@ -36,7 +36,7 @@ class DocumentCacheIntegrationTest {
     }
 
     @Test
-    fun parseWithCacheReturnsCachedOnSecondCall() = runTest {
+    fun parseWithCacheReturnsCachedOnSecondCall() = runBlocking<Unit> {
         ensurePlaintextParser()
         val cache = FormatRegistry.documentCache
         cache.clear()
@@ -52,7 +52,7 @@ class DocumentCacheIntegrationTest {
     }
 
     @Test
-    fun parseWithCacheDifferentContentIsCacheMiss() = runTest {
+    fun parseWithCacheDifferentContentIsCacheMiss() = runBlocking<Unit> {
         ensurePlaintextParser()
         val cache = FormatRegistry.documentCache
         cache.clear()
@@ -64,7 +64,7 @@ class DocumentCacheIntegrationTest {
     }
 
     @Test
-    fun parseWithCacheSameContentDifferentFormatIsCacheMiss() = runTest {
+    fun parseWithCacheSameContentDifferentFormatIsCacheMiss() = runBlocking<Unit> {
         ensurePlaintextParser()
         val cache = FormatRegistry.documentCache
         cache.clear()
@@ -101,7 +101,7 @@ class DocumentCacheIntegrationTest {
     // ==================== Cache Invalidation ====================
 
     @Test
-    fun cacheInvalidationForcesFreshParse() = runTest {
+    fun cacheInvalidationForcesFreshParse() = runBlocking<Unit> {
         ensurePlaintextParser()
         val cache = FormatRegistry.documentCache
         cache.clear()
@@ -117,7 +117,7 @@ class DocumentCacheIntegrationTest {
     }
 
     @Test
-    fun cacheClearForcesFreshParseForAllKeys() = runTest {
+    fun cacheClearForcesFreshParseForAllKeys() = runBlocking<Unit> {
         ensurePlaintextParser()
         val cache = FormatRegistry.documentCache
         cache.clear()
@@ -136,7 +136,7 @@ class DocumentCacheIntegrationTest {
     // ==================== Concurrent Cache Access ====================
 
     @Test
-    fun concurrentParseWithCacheIsThreadSafe() = runTest {
+    fun concurrentParseWithCacheIsThreadSafe() = runBlocking<Unit> {
         ensurePlaintextParser()
         val cache = FormatRegistry.documentCache
         cache.clear()
@@ -154,7 +154,7 @@ class DocumentCacheIntegrationTest {
     }
 
     @Test
-    fun concurrentCacheAccessWithSameContentReturnsSameDocument() = runTest {
+    fun concurrentCacheAccessWithSameContentReturnsSameDocument() = runBlocking<Unit> {
         ensurePlaintextParser()
         val cache = FormatRegistry.documentCache
         cache.clear()
@@ -172,7 +172,7 @@ class DocumentCacheIntegrationTest {
     }
 
     @Test
-    fun concurrentPutAndGetOnDocumentCache() = runTest {
+    fun concurrentPutAndGetOnDocumentCache() = runBlocking<Unit> {
         val cache = DocumentCache()
         val results = (1..20).map { i ->
             async {
@@ -192,7 +192,7 @@ class DocumentCacheIntegrationTest {
     // ==================== Cache Size and Eviction ====================
 
     @Test
-    fun cacheRespectMaxSize() = runTest {
+    fun cacheRespectMaxSize() = runBlocking<Unit> {
         val cache = DocumentCache(maxSize = 3)
         for (i in 1..5) {
             val doc = ParsedDocument(format = plainTextFormat, rawContent = "d$i", parsedContent = "d$i")
@@ -209,7 +209,7 @@ class DocumentCacheIntegrationTest {
     }
 
     @Test
-    fun cacheClearResetsHitAndMissCounters() = runTest {
+    fun cacheClearResetsHitAndMissCounters() = runBlocking<Unit> {
         val cache = DocumentCache()
         val doc = ParsedDocument(format = plainTextFormat, rawContent = "x", parsedContent = "x")
         cache.put("k", doc)
@@ -221,7 +221,7 @@ class DocumentCacheIntegrationTest {
     }
 
     @Test
-    fun cacheSizeIsZeroAfterClear() = runTest {
+    fun cacheSizeIsZeroAfterClear() = runBlocking<Unit> {
         val cache = DocumentCache()
         val doc = ParsedDocument(format = plainTextFormat, rawContent = "x", parsedContent = "x")
         cache.put("k1", doc)
@@ -231,7 +231,7 @@ class DocumentCacheIntegrationTest {
     }
 
     @Test
-    fun cacheOverwriteExistingKey() = runTest {
+    fun cacheOverwriteExistingKey() = runBlocking<Unit> {
         val cache = DocumentCache()
         val doc1 = ParsedDocument(format = plainTextFormat, rawContent = "old", parsedContent = "old")
         val doc2 = ParsedDocument(format = plainTextFormat, rawContent = "new", parsedContent = "new")
@@ -245,7 +245,7 @@ class DocumentCacheIntegrationTest {
     // ==================== Error Handling ====================
 
     @Test
-    fun parseWithCacheThrowsForUnknownFormat() = runTest {
+    fun parseWithCacheThrowsForUnknownFormat() = runBlocking<Unit> {
         val unknownFormat = TextFormat(
             id = "totally-unknown-format-xyz",
             name = "Unknown",
@@ -258,7 +258,7 @@ class DocumentCacheIntegrationTest {
     }
 
     @Test
-    fun parseWithCachePassesOptionsToParser() = runTest {
+    fun parseWithCachePassesOptionsToParser() = runBlocking<Unit> {
         ensurePlaintextParser()
 
         val options = mapOf("lineNumbers" to true as Any)

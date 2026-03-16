@@ -21,7 +21,7 @@ import digital.vasic.yole.network.protocols.onedrive.OneDriveService
 import digital.vasic.yole.network.protocols.git.GitService
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 /**

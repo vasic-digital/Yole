@@ -26,7 +26,7 @@ import digital.vasic.yole.format.jupyter.JupyterParser
 import digital.vasic.yole.format.rmarkdown.RMarkdownParser
 import digital.vasic.yole.format.binary.BinaryParser
 import kotlinx.coroutines.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 import kotlin.time.measureTime
 
@@ -560,7 +560,7 @@ class MonitoringMetricsTests {
     }
 
     @Test
-    fun testConcurrentThroughput10Coroutines() = runTest {
+    fun testConcurrentThroughput10Coroutines() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val content = "# Concurrent\n\nSome **bold** text.\n\n- Item 1\n- Item 2"
         val docsPerCoroutine = 100
@@ -578,7 +578,7 @@ class MonitoringMetricsTests {
     }
 
     @Test
-    fun testSequentialVsParallelThroughputComparison() = runTest {
+    fun testSequentialVsParallelThroughputComparison() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val content = "# Throughput\n\n**Bold** and *italic*."
         val totalDocs = 500

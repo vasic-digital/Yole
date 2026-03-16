@@ -3,6 +3,24 @@
 
 const releases = [
   {
+    version: "2.16.0",
+    date: "2026-03-16",
+    title: "Comprehensive Audit, Stress Testing, and Documentation Overhaul",
+    highlights: [
+      "11,000+ tests across 225+ test files -- up from 9,400+",
+      "Added stress, fuzz, snapshot, load, and monitoring test suites",
+      "Performance baselines and monitoring metrics layer",
+      "Platform-specific tests for Desktop and Wasm targets",
+      "21 video course modules (added Platform-Specific Development and Stress Testing)",
+      "Troubleshooting guide, Release Process, and Architecture Decision Records",
+      "CODE_OF_CONDUCT.md added to the repository",
+      "Website audit: updated all pages with latest counts and documentation links",
+      "FAQ expanded with AGP version mismatch and container OOM guidance",
+      "Comprehensive changelog with Session 4 audit phases",
+    ],
+    breaking: false,
+  },
+  {
     version: "2.15.1",
     date: "2026-03-07",
     title: "Kotlin Multiplatform Migration Complete",

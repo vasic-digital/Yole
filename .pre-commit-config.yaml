@@ -1,0 +1,115 @@
+# Pre-commit hooks configuration for Yole
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Gitleaks - Secret scanning
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.1
+    hooks:
+      - id: gitleaks
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-xml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # Kotlin formatting with ktlint
+  - repo: https://github.com/JLLeitworKT/ktlint-pre-commit-hook
+    rev: v0.1.0
+    hooks:
+      - id: ktlint
+        args: ['--format']
+        types: [kotlin]
+        exclude: |
+          (?x)^(
+            .*/build/.*|
+            .*/generated/.*
+          )$
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.38.0
+    hooks:
+      - id: markdownlint
+        args: ['--fix', '--disable', 'MD013', 'MD033', 'MD041']
+
+  # YAML linting
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.33.0
+    hooks:
+      - id: yamllint
+        args: ['-d', '{extends: relaxed, rules: {line-length: {max: 150}}}']
+
+  # Shell script linting
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+
+  # Gradle wrapper validation
+  - repo: https://github.com/gradle/wrapper-validation-action
+    rev: v1.1.0
+    hooks:
+      - id: gradle-wrapper-validation
+
+# Local hooks for project-specific checks
+  - repo: local
+    hooks:
+      - id: check-spdx-headers
+        name: Check SPDX License Headers
+        entry: bash -c 'for file in "$@"; do if [[ "$file" == *.kt || "$file" == *.java ]]; then if ! grep -q "SPDX-License-Identifier" "$file"; then echo "Missing SPDX header in $file"; exit 1; fi; fi; done'
+        language: system
+        types: [file]
+        exclude: |
+          (?x)^(
+            .*/build/.*|
+            .*/generated/.*|
+            gradlew.*
+          )$
+
+      - id: no-println
+        name: Check for println statements
+        entry: bash -c 'for file in "$@"; do if [[ "$file" == *.kt ]]; then if grep -n "println(" "$file" | grep -v "// DEBUG" | grep -v "// ALLOWED"; then echo "Found println in $file (use logging instead)"; exit 1; fi; fi; done'
+        language: system
+        types: [kotlin]
+        exclude: |
+          (?x)^(
+            .*/test/.*|
+            .*/androidTest/.*|
+            .*Test\.kt$
+          )$
+
+      - id: no-todo-without-issue
+        name: Check TODOs have issue references
+        entry: bash -c 'for file in "$@"; do if grep -nE "TODO[^(]|TODO$" "$file" | grep -v "TODO(" | grep -v "TODO:" ; then echo "TODO without issue reference in $file (use TODO(#123) format)"; exit 1; fi; done'
+        language: system
+        types: [kotlin, java]
+        exclude: |
+          (?x)^(
+            .*/build/.*
+          )$
+
+# CI configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from hooks
+  autofix_prs: true
+  autoupdate_branch: 'develop'
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: [gradle-wrapper-validation]
+  submodules: false

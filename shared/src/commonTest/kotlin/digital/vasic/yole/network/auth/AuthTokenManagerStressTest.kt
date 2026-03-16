@@ -17,7 +17,7 @@ package digital.vasic.yole.network.auth
 import digital.vasic.yole.network.platform.SecureStorage
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.*

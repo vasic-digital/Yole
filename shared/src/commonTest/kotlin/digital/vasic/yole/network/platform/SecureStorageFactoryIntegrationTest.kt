@@ -8,7 +8,7 @@
  *########################################################*/
 package digital.vasic.yole.network.platform
 
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlin.test.Test
 

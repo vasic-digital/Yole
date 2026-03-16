@@ -10,7 +10,7 @@ package digital.vasic.yole.network
 
 import digital.vasic.yole.network.common.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlin.test.*
 import kotlin.time.Duration

@@ -10,7 +10,7 @@ package digital.vasic.yole.util
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.test.runTest
+// runTest replaced with runBlocking<Unit> for JUnit4 compatibility
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -19,14 +19,14 @@ import kotlin.test.assertTrue
 class RateLimiterTest {
 
     @Test
-    fun testExecuteReturnsResult() = runTest {
+    fun testExecuteReturnsResult() = runBlocking<Unit> {
         val limiter = RateLimiter(maxConcurrent = 3)
         val result = limiter.execute { 42 }
         assertEquals(42, result)
     }
 
     @Test
-    fun testExecuteWithTimeout() = runTest {
+    fun testExecuteWithTimeout() = runBlocking<Unit> {
         val limiter = RateLimiter(maxConcurrent = 1)
 
         // Fast operation should succeed
@@ -35,20 +35,20 @@ class RateLimiterTest {
     }
 
     @Test
-    fun testActiveCountTracking() = runTest {
+    fun testActiveCountTracking() = runBlocking<Unit> {
         val limiter = RateLimiter(maxConcurrent = 5)
         assertEquals(0, limiter.getActiveCount())
         assertEquals(0, limiter.getQueueLength())
     }
 
     @Test
-    fun testIsAtCapacity() = runTest {
+    fun testIsAtCapacity() = runBlocking<Unit> {
         val limiter = RateLimiter(maxConcurrent = 1)
         assertFalse(limiter.isAtCapacity())
     }
 
     @Test
-    fun testConcurrentExecutionsAreThrottled() = runTest {
+    fun testConcurrentExecutionsAreThrottled() = runBlocking<Unit> {
         val limiter = RateLimiter(maxConcurrent = 2)
         var maxActive = 0
         val mutex = kotlinx.coroutines.sync.Mutex()
@@ -71,14 +71,14 @@ class RateLimiterTest {
 class TokenBucketTest {
 
     @Test
-    fun testInitialTokensAvailable() = runTest {
+    fun testInitialTokensAvailable() = runBlocking<Unit> {
         val bucket = TokenBucket(capacity = 10, refillRate = 5.0)
         val available = bucket.getAvailableTokens()
         assertEquals(10, available)
     }
 
     @Test
-    fun testTryAcquireConsumesToken() = runTest {
+    fun testTryAcquireConsumesToken() = runBlocking<Unit> {
         val bucket = TokenBucket(capacity = 5, refillRate = 1.0)
         assertTrue(bucket.tryAcquire())
         val remaining = bucket.getAvailableTokens()
@@ -86,14 +86,14 @@ class TokenBucketTest {
     }
 
     @Test
-    fun testTryAcquireFailsWhenEmpty() = runTest {
+    fun testTryAcquireFailsWhenEmpty() = runBlocking<Unit> {
         val bucket = TokenBucket(capacity = 1, refillRate = 0.001)
         assertTrue(bucket.tryAcquire())
         assertFalse(bucket.tryAcquire())
     }
 
     @Test
-    fun testAcquireSucceedsWhenTokensAvailable() = runTest {
+    fun testAcquireSucceedsWhenTokensAvailable() = runBlocking<Unit> {
         val bucket = TokenBucket(capacity = 5, refillRate = 1.0)
         // Tokens are available, acquire should succeed immediately
         withTimeout(1000) {
@@ -106,20 +106,20 @@ class TokenBucketTest {
 class AdaptiveRateLimiterTest {
 
     @Test
-    fun testExecuteSuccessfully() = runTest {
+    fun testExecuteSuccessfully() = runBlocking<Unit> {
         val limiter = AdaptiveRateLimiter(initialRate = 3)
         val result = limiter.execute { "success" }
         assertEquals("success", result)
     }
 
     @Test
-    fun testGetCurrentRate() = runTest {
+    fun testGetCurrentRate() = runBlocking<Unit> {
         val limiter = AdaptiveRateLimiter(initialRate = 5, minRate = 1, maxRate = 20)
         assertEquals(5, limiter.getCurrentRate())
     }
 
     @Test
-    fun testRateDoesNotExceedBounds() = runTest {
+    fun testRateDoesNotExceedBounds() = runBlocking<Unit> {
         val limiter = AdaptiveRateLimiter(initialRate = 5, minRate = 2, maxRate = 8)
         // Execute many successful operations
         repeat(50) {
@@ -133,13 +133,13 @@ class AdaptiveRateLimiterTest {
 class OperationThrottlerTest {
 
     @Test
-    fun testFirstOperationAllowed() = runTest {
+    fun testFirstOperationAllowed() = runBlocking<Unit> {
         val throttler = OperationThrottler(windowMs = 1000, maxOperations = 5)
         assertTrue(throttler.tryThrottle("op1"))
     }
 
     @Test
-    fun testThrottlesAfterMaxOperations() = runTest {
+    fun testThrottlesAfterMaxOperations() = runBlocking<Unit> {
         val throttler = OperationThrottler(windowMs = 60000, maxOperations = 3)
         assertTrue(throttler.tryThrottle("op1"))
         assertTrue(throttler.tryThrottle("op1"))
@@ -148,7 +148,7 @@ class OperationThrottlerTest {
     }
 
     @Test
-    fun testDifferentOperationIdsIndependent() = runTest {
+    fun testDifferentOperationIdsIndependent() = runBlocking<Unit> {
         val throttler = OperationThrottler(windowMs = 60000, maxOperations = 1)
         assertTrue(throttler.tryThrottle("op1"))
         assertTrue(throttler.tryThrottle("op2"))
@@ -156,7 +156,7 @@ class OperationThrottlerTest {
     }
 
     @Test
-    fun testClearResetsThrottle() = runTest {
+    fun testClearResetsThrottle() = runBlocking<Unit> {
         val throttler = OperationThrottler(windowMs = 60000, maxOperations = 1)
         assertTrue(throttler.tryThrottle("op1"))
         assertFalse(throttler.tryThrottle("op1"))

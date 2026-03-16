@@ -22,7 +22,7 @@ import digital.vasic.yole.model.Document
 import digital.vasic.yole.network.common.*
 import digital.vasic.yole.network.protocols.ftp.FtpService
 import digital.vasic.yole.network.protocols.smb.SmbService
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlin.test.*
 
@@ -215,7 +215,7 @@ class NullSafetyTest {
     // ==================== SERVICE NULL SAFETY ====================
 
     @Test
-    fun `service handles null path gracefully`() = runTest {
+    fun `service handles null path gracefully`() = runBlocking<Unit> {
         val service = FtpService(
             StorageConfig.FtpConfig(
                 name = "test",
@@ -233,7 +233,7 @@ class NullSafetyTest {
     }
 
     @Test
-    fun `service handles root path`() = runTest {
+    fun `service handles root path`() = runBlocking<Unit> {
         val service = SmbService(
             StorageConfig.SmbConfig(
                 name = "test",
@@ -286,7 +286,7 @@ class NullSafetyTest {
     // ==================== PARSER NULL SAFETY ====================
 
     @Test
-    fun `parsers handle null-like edge cases`() = runTest {
+    fun `parsers handle null-like edge cases`() = runBlocking<Unit> {
         val parsers = listOf(
             MarkdownParser(),
             PlaintextParser(),

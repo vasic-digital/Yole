@@ -9,7 +9,7 @@ import digital.vasic.yole.network.protocols.ftp.FtpService
 import digital.vasic.yole.network.protocols.sftp.SftpService
 import digital.vasic.yole.network.protocols.onedrive.OneDriveService
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds

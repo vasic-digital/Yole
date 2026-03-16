@@ -24,7 +24,7 @@ import digital.vasic.yole.network.protocols.ftp.FtpService
 import digital.vasic.yole.network.protocols.smb.SmbService
 import digital.vasic.yole.network.protocols.webdav.WebDavService
 import digital.vasic.yole.network.protocols.git.GitService
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 /**
@@ -53,7 +53,7 @@ class ApiConsistencyTest {
     }
 
     @Test
-    fun `all parsers return ParsedDocument with required fields`() = runTest {
+    fun `all parsers return ParsedDocument with required fields`() = runBlocking<Unit> {
         val parsers = listOf(
             MarkdownParser(),
             PlaintextParser(),
@@ -74,7 +74,7 @@ class ApiConsistencyTest {
     }
 
     @Test
-    fun `all parsers handle empty content consistently`() = runTest {
+    fun `all parsers handle empty content consistently`() = runBlocking<Unit> {
         val parsers = listOf(
             MarkdownParser(),
             PlaintextParser(),
@@ -92,7 +92,7 @@ class ApiConsistencyTest {
     }
 
     @Test
-    fun `canParse returns correct values for own format`() = runTest {
+    fun `canParse returns correct values for own format`() = runBlocking<Unit> {
         val parsers = listOf(
             MarkdownParser(),
             PlaintextParser(),
@@ -108,7 +108,7 @@ class ApiConsistencyTest {
     }
 
     @Test
-    fun `validate returns list for all parsers`() = runTest {
+    fun `validate returns list for all parsers`() = runBlocking<Unit> {
         val parsers = listOf(
             MarkdownParser(),
             PlaintextParser(),
@@ -124,7 +124,7 @@ class ApiConsistencyTest {
     // ==================== SERVICE API CONSISTENCY ====================
 
     @Test
-    fun `all services implement isOnline consistently`() = runTest {
+    fun `all services implement isOnline consistently`() = runBlocking<Unit> {
         val services = listOf(
             createFtpService("ftp"),
             createSmbService("smb"),
@@ -149,7 +149,7 @@ class ApiConsistencyTest {
     }
 
     @Test
-    fun `all services return Result from operations`() = runTest {
+    fun `all services return Result from operations`() = runBlocking<Unit> {
         val services = listOf(
             createFtpService("ftp"),
             createSmbService("smb"),
@@ -193,7 +193,7 @@ class ApiConsistencyTest {
     }
 
     @Test
-    fun `all services return correct storage type`() = runTest {
+    fun `all services return correct storage type`() = runBlocking<Unit> {
         val serviceTypeMap = mapOf(
             createFtpService("ftp") to StorageType.FTP,
             createSmbService("smb") to StorageType.SMB,
@@ -212,7 +212,7 @@ class ApiConsistencyTest {
     }
 
     @Test
-    fun `all services implement getQuotaInfo consistently`() = runTest {
+    fun `all services implement getQuotaInfo consistently`() = runBlocking<Unit> {
         val services = listOf(
             createFtpService("ftp"),
             createSmbService("smb"),
@@ -233,7 +233,7 @@ class ApiConsistencyTest {
     }
 
     @Test
-    fun `all services implement clearCache consistently`() = runTest {
+    fun `all services implement clearCache consistently`() = runBlocking<Unit> {
         val services = listOf(
             createFtpService("ftp"),
             createSmbService("smb"),
@@ -355,7 +355,7 @@ class ApiConsistencyTest {
     }
 
     @Test
-    fun `ParsedDocument implements equals and hashCode correctly`() = runTest {
+    fun `ParsedDocument implements equals and hashCode correctly`() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val doc1 = parser.parse("# Test")
         val doc2 = parser.parse("# Test")
@@ -367,7 +367,7 @@ class ApiConsistencyTest {
     }
 
     @Test
-    fun `ParsedDocument copy works correctly`() = runTest {
+    fun `ParsedDocument copy works correctly`() = runBlocking<Unit> {
         val parser = MarkdownParser()
         val doc = parser.parse("# Test")
 

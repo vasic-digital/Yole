@@ -29,7 +29,7 @@ const platforms = [
 ];
 
 const stats = [
-  { label: "Tests", value: "9,400+" },
+  { label: "Tests", value: "11,000+" },
   { label: "Text Formats", value: "17" },
   { label: "Protocols", value: "8" },
   { label: "Platforms", value: "4" },
@@ -43,8 +43,8 @@ const features = [
   { title: "Open Source", description: "Apache-2.0 licensed. Inspect the code, contribute, and build on top of it." },
   { title: "Syntax Highlighting", description: "Context-aware highlighting for every supported format with customizable themes." },
   { title: "Modular Architecture", description: "10 independently extracted KMP modules. Clean separation of concerns with facade bridges." },
-  { title: "Comprehensive Testing", description: "9,400+ tests across 190+ test files with 63% line coverage. Mock HTTP tests for all protocols." },
-  { title: "Video Course", description: "19 free video tutorials from beginner to expert. Learn Yole at your own pace." },
+  { title: "Comprehensive Testing", description: "11,000+ tests across 225+ test files with 63% line coverage. Includes stress, monitoring, fuzz, snapshot, and load tests for all protocols." },
+  { title: "Video Course", description: "21 free video tutorials from beginner to expert. Learn Yole at your own pace." },
 ];
 
 export default function HomePage() {
@@ -187,7 +187,7 @@ export default function HomePage() {
             </a>
             <a href="/video-course" className="card text-center group">
               <h3 className="font-semibold text-lg mb-2 group-hover:text-primary-500 transition-colors">Video Course</h3>
-              <p className="text-sm text-[var(--color-text-secondary)]">19 free videos from beginner to expert level.</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">21 free videos from beginner to expert level.</p>
             </a>
             <a href="/architecture" className="card text-center group">
               <h3 className="font-semibold text-lg mb-2 group-hover:text-primary-500 transition-colors">Architecture</h3>

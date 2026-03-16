@@ -18,7 +18,7 @@ import digital.vasic.yole.network.common.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 import kotlin.random.Random
 
@@ -31,7 +31,7 @@ class ConcurrencySafetyTest {
     // ==================== FORMAT REGISTRY CONCURRENCY ====================
 
     @Test
-    fun `FormatRegistry concurrent access is thread-safe`() = runTest {
+    fun `FormatRegistry concurrent access is thread-safe`() = runBlocking<Unit> {
         // Concurrent reads from FormatRegistry
         val jobs = (1..100).map {
             async {
@@ -57,7 +57,7 @@ class ConcurrencySafetyTest {
     }
 
     @Test
-    fun `FormatRegistry detection is consistent under concurrent access`() = runTest {
+    fun `FormatRegistry detection is consistent under concurrent access`() = runBlocking<Unit> {
         val content = "# Markdown Header"
 
         val results = (1..100).map {
@@ -74,7 +74,7 @@ class ConcurrencySafetyTest {
     // ==================== NETWORK OPERATION CONCURRENCY ====================
 
     @Test
-    fun `NetworkOperation creation is thread-safe`() = runTest {
+    fun `NetworkOperation creation is thread-safe`() = runBlocking<Unit> {
         val results = (1..100).map { i ->
             async {
                 NetworkOperation.createUpload(
@@ -92,7 +92,7 @@ class ConcurrencySafetyTest {
     }
 
     @Test
-    fun `NetworkOperation copy is thread-safe`() = runTest {
+    fun `NetworkOperation copy is thread-safe`() = runBlocking<Unit> {
         val original = NetworkOperation.createDownload(
             id = "test",
             remotePath = "/remote/file.txt",
@@ -118,7 +118,7 @@ class ConcurrencySafetyTest {
     // ==================== STORAGE CONFIG CONCURRENCY ====================
 
     @Test
-    fun `StorageConfig access is thread-safe`() = runTest {
+    fun `StorageConfig access is thread-safe`() = runBlocking<Unit> {
         val configs = listOf(
             StorageConfig.FtpConfig(
                 name = "ftp", host = "ftp.example.com", port = 21,
@@ -160,7 +160,7 @@ class ConcurrencySafetyTest {
     // ==================== NETWORK DOCUMENT CONCURRENCY ====================
 
     @Test
-    fun `NetworkDocument creation is thread-safe`() = runTest {
+    fun `NetworkDocument creation is thread-safe`() = runBlocking<Unit> {
         val results = (1..100).map { i ->
             async {
                 NetworkDocument(
@@ -186,7 +186,7 @@ class ConcurrencySafetyTest {
     // ==================== MUTEX PATTERN TESTS ====================
 
     @Test
-    fun `Mutex protects shared state correctly`() = runTest {
+    fun `Mutex protects shared state correctly`() = runBlocking<Unit> {
         val mutex = Mutex()
         var counter = 0
 
@@ -205,7 +205,7 @@ class ConcurrencySafetyTest {
     }
 
     @Test
-    fun `Nested mutex does not cause deadlock when avoided`() = runTest {
+    fun `Nested mutex does not cause deadlock when avoided`() = runBlocking<Unit> {
         val outerMutex = Mutex()
         val innerMutex = Mutex()
         var result = 0
@@ -232,7 +232,7 @@ class ConcurrencySafetyTest {
     // ==================== RACE CONDITION DETECTION ====================
 
     @Test
-    fun `Detect potential race condition in non-atomic operations`() = runTest {
+    fun `Detect potential race condition in non-atomic operations`() = runBlocking<Unit> {
         // This test demonstrates why synchronization is needed
         var unsafeCounter = 0
 
@@ -254,7 +254,7 @@ class ConcurrencySafetyTest {
     }
 
     @Test
-    fun `Atomic operations prevent race conditions`() = runTest {
+    fun `Atomic operations prevent race conditions`() = runBlocking<Unit> {
         val mutex = Mutex()
         var safeCounter = 0
 
@@ -276,7 +276,7 @@ class ConcurrencySafetyTest {
     // ==================== COLLECTION SAFETY TESTS ====================
 
     @Test
-    fun `Concurrent list access with synchronization`() = runTest {
+    fun `Concurrent list access with synchronization`() = runBlocking<Unit> {
         val list = mutableListOf<Int>()
         val listLock = Mutex()
 
@@ -293,7 +293,7 @@ class ConcurrencySafetyTest {
     }
 
     @Test
-    fun `Concurrent map access with synchronization`() = runTest {
+    fun `Concurrent map access with synchronization`() = runBlocking<Unit> {
         val map = mutableMapOf<String, Int>()
         val mapLock = Mutex()
 
@@ -312,7 +312,7 @@ class ConcurrencySafetyTest {
     // ==================== TIMEOUT AND CANCELLATION TESTS ====================
 
     @Test
-    fun `Operations can be cancelled without leaving inconsistent state`() = runTest {
+    fun `Operations can be cancelled without leaving inconsistent state`() = runBlocking<Unit> {
         val mutex = Mutex()
         var value = 0
 
@@ -337,7 +337,7 @@ class ConcurrencySafetyTest {
     }
 
     @Test
-    fun `Mutex is properly released on cancellation`() = runTest {
+    fun `Mutex is properly released on cancellation`() = runBlocking<Unit> {
         val mutex = Mutex()
 
         val job = launch {
@@ -361,7 +361,7 @@ class ConcurrencySafetyTest {
     // ==================== HIGH CONTENTION TESTS ====================
 
     @Test
-    fun `High contention mutex performs correctly`() = runTest {
+    fun `High contention mutex performs correctly`() = runBlocking<Unit> {
         val mutex = Mutex()
         val results = mutableListOf<Int>()
 
@@ -381,7 +381,7 @@ class ConcurrencySafetyTest {
     }
 
     @Test
-    fun `Random delays do not cause consistency issues`() = runTest {
+    fun `Random delays do not cause consistency issues`() = runBlocking<Unit> {
         val mutex = Mutex()
         var sum = 0
 
