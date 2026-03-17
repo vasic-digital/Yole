@@ -283,6 +283,10 @@ export default function DocsPage() {
             <h3 className="font-semibold text-lg mb-1 group-hover:text-primary-500 transition-colors">Challenge Framework</h3>
             <p className="text-sm text-[var(--color-text-secondary)]">Go-based cross-platform testing framework with 21+ challenge banks for security, formats, and resilience.</p>
           </a>
+          <a href="https://github.com/vasic-digital/Yole/blob/master/docs/UI_AUTOMATION_TESTING.md" target="_blank" rel="noopener noreferrer" className="card group">
+            <h3 className="font-semibold text-lg mb-1 group-hover:text-primary-500 transition-colors">UI Automation Testing</h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">Cross-platform UI automation with recording across Desktop, Web, and Android at three speed modes.</p>
+          </a>
         </div>
       </section>
 

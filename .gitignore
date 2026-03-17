@@ -124,3 +124,11 @@ app/flavor*
 reports/
 screenshots/
 
+# UI Automation recordings and screenshots (too large for repo)
+recordings/
+automation-screenshots/
+*.mp4
+*.webm
+*.avi
+!website/**/*.mp4
+

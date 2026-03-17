@@ -340,6 +340,59 @@ export default function ArchitecturePage() {
         </div>
       </section>
 
+      {/* UI/UX Automation Testing */}
+      <section className="mb-16">
+        <h2 className="text-3xl font-bold tracking-tight mb-4">UI/UX Automation Testing</h2>
+        <div className="card">
+          <p className="text-[var(--color-text-secondary)] leading-relaxed mb-4">
+            Yole validates complete user flows across all three runtime platforms using
+            recorded UI automation. Each flow runs at three speed modes (slow, normal, fast)
+            to catch animation timing issues, functional regressions, and race conditions
+            under rapid interaction. Every test produces a video recording for visual
+            verification and CI artifact review.
+          </p>
+          <p className="text-[var(--color-text-secondary)] leading-relaxed mb-4">
+            The framework uses platform-specific adapters: xdotool + FFmpeg for Desktop,
+            Playwright CDP with recordVideo for Web, and ADB CLI with screenrecord for
+            Android. 36 challenges cover app launch, file browser navigation, document
+            creation and editing, theme switching, settings, preview mode, keyboard
+            shortcuts, responsive layout, offline operation, rotation handling, and share
+            intents.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-primary-500">Desktop</div>
+              <div className="text-sm text-[var(--color-text-secondary)] mb-2">12 flows</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Compose Desktop + xdotool + FFmpeg</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-primary-500">Web</div>
+              <div className="text-sm text-[var(--color-text-secondary)] mb-2">12 flows</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Wasm PWA + Playwright + recordVideo</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-primary-500">Android</div>
+              <div className="text-sm text-[var(--color-text-secondary)] mb-2">12 flows</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">ADB CLI + screenrecord</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4 mt-6">
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">Slow</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">800-1200ms delay, animation verification</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">Normal</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">300-500ms delay, functional validation</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">Fast</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">50-100ms delay, race condition detection</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Key Dependencies */}
       <section className="mb-16">
         <h2 className="text-3xl font-bold tracking-tight mb-4">Key Dependencies</h2>

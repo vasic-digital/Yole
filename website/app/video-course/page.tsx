@@ -35,7 +35,7 @@ const levels = [
     level: "Expert",
     color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
     description: "Dive into the architecture, contribute to the project, and extend Yole with custom formats.",
-    prerequisites: "Advanced videos (8-13), Kotlin knowledge recommended for 14-21, production experience recommended for 22-25",
+    prerequisites: "Advanced videos (8-13), Kotlin knowledge recommended for 14-21, production experience recommended for 22-26",
     videos: [
       { id: 14, title: "Architecture Deep Dive", duration: "18 min", description: "Kotlin Multiplatform architecture, module structure, shared code organization, and platform targets." },
       { id: 15, title: "Building from Source", duration: "12 min", description: "Setting up the development environment. Building for Android, Desktop, and Web. Running the test suite." },
@@ -49,6 +49,7 @@ const levels = [
       { id: 23, title: "Security Scanning Deep Dive", duration: "18 min", description: "Setting up and configuring SonarQube, Snyk, Detekt, Gitleaks, OWASP Dependency Check, and CodeQL. Interpreting scan results and fixing vulnerabilities." },
       { id: 24, title: "Performance Optimization", duration: "14 min", description: "FormatRegistry lazy initialization, StyleSheets caching, DocumentCache LRU strategy, and parsing throughput benchmarks. Profiling and optimization techniques." },
       { id: 25, title: "Complete Test Coverage", duration: "16 min", description: "Achieving comprehensive coverage with 16 test types: unit, integration, stress, fuzz, snapshot, load, E2E, accessibility, non-blocking, and more. Test organization and CI best practices." },
+      { id: 26, title: "UI/UX Automation Testing", duration: "16 min", description: "Cross-platform UI automation with recording across Desktop (xdotool + FFmpeg), Web (Playwright), and Android (ADB). Speed mode testing at slow, normal, and fast interaction rates. Recording validation and CI integration." },
     ],
   },
 ];
@@ -157,10 +158,11 @@ export default function VideoCoursePage() {
             <div>
               <h3 className="font-semibold text-lg mb-2 text-red-600 dark:text-red-400">Week 4: Mastery</h3>
               <p className="text-sm text-[var(--color-text-secondary)] mb-3">
-                Complete the advanced Expert videos (22-25). Master concurrency safety,
-                security scanning, performance optimization, and complete test coverage.
+                Complete the advanced Expert videos (22-26). Master concurrency safety,
+                security scanning, performance optimization, complete test coverage,
+                and cross-platform UI automation.
               </p>
-              <p className="text-xs text-[var(--color-text-secondary)]">~64 minutes total</p>
+              <p className="text-xs text-[var(--color-text-secondary)]">~80 minutes total</p>
             </div>
           </div>
         </div>

@@ -1,0 +1,86 @@
+%% SPDX-FileCopyrightText: 2025-2026 Milos Vasic
+%% SPDX-License-Identifier: Apache-2.0
+
+graph TB
+    subgraph Challenge Banks
+        DB[ui-automation-desktop.json<br/>12 challenges]
+        WB[ui-automation-web.json<br/>12 challenges]
+        AB[ui-automation-android.json<br/>12 challenges]
+    end
+
+    subgraph Speed Modes
+        SM_SLOW[Slow<br/>800-1200ms delay]
+        SM_NORMAL[Normal<br/>300-500ms delay]
+        SM_FAST[Fast<br/>50-100ms delay]
+    end
+
+    subgraph Platform Adapters
+        DA[ComposeDesktop Adapter<br/>xdotool + JVM]
+        WA[Playwright Adapter<br/>CDP + Chrome]
+        MA[ADB CLI Adapter<br/>adb shell input]
+    end
+
+    subgraph Recording
+        DR[FFmpeg<br/>X11 screen capture<br/>.mp4]
+        WR[Playwright recordVideo<br/>CDP screencast<br/>.webm]
+        MR[adb screenrecord<br/>device capture<br/>.mp4]
+    end
+
+    subgraph Validation Pipeline
+        AE[Assertion Engine<br/>16 evaluators]
+        RV[Recording Validator<br/>size / duration / frames]
+        MET[Metrics Collector<br/>timing / FPS / latency]
+    end
+
+    subgraph Output Artifacts
+        REC[Recordings<br/>recordings/{platform}/{id}/{mode}.mp4]
+        SCR[Screenshots<br/>recordings/{platform}/{id}/screenshots/]
+        REP[Reports<br/>recordings/reports/{platform}-report.md]
+    end
+
+    DB --> DA
+    WB --> WA
+    AB --> MA
+
+    SM_SLOW --> DA
+    SM_NORMAL --> DA
+    SM_FAST --> DA
+    SM_SLOW --> WA
+    SM_NORMAL --> WA
+    SM_FAST --> WA
+    SM_SLOW --> MA
+    SM_NORMAL --> MA
+    SM_FAST --> MA
+
+    DA --> DR
+    WA --> WR
+    MA --> MR
+
+    DA --> AE
+    WA --> AE
+    MA --> AE
+
+    DR --> RV
+    WR --> RV
+    MR --> RV
+
+    AE --> MET
+    RV --> MET
+
+    MET --> REC
+    MET --> SCR
+    MET --> REP
+
+    classDef bank fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef speed fill:#F5A623,stroke:#C47E1A,color:#fff
+    classDef adapter fill:#7ED321,stroke:#5A9B17,color:#fff
+    classDef record fill:#BD10E0,stroke:#8A0BA3,color:#fff
+    classDef validate fill:#D0021B,stroke:#9A0114,color:#fff
+    classDef output fill:#50E3C2,stroke:#39A88E,color:#333
+
+    class DB,WB,AB bank
+    class SM_SLOW,SM_NORMAL,SM_FAST speed
+    class DA,WA,MA adapter
+    class DR,WR,MR record
+    class AE,RV,MET validate
+    class REC,SCR,REP output
