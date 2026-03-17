@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Enhanced Desktop UI for Yole
- * Comprehensive desktop application with all features
+ * IDE-style comprehensive desktop application with all features
  *
  *########################################################*/
 package digital.vasic.yole.desktop.ui
@@ -17,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontFamily
@@ -101,7 +102,7 @@ class UndoManager(private val maxHistory: Int = 100) {
 }
 
 /**
- * Enhanced main application composable with comprehensive desktop functionality.
+ * Enhanced main application composable with IDE-style layout.
  *
  * @param droppedFile A file dropped onto the window via drag-and-drop
  * @param onDroppedFileConsumed Callback when the dropped file has been handled
@@ -130,6 +131,7 @@ fun EnhancedYoleApp(
     var showToolbar by remember { mutableStateOf(true) }
     var showStatusBar by remember { mutableStateOf(true) }
     var showPreview by remember { mutableStateOf(false) }
+    var showSidebar by remember { mutableStateOf(true) }
     var showExportMenu by remember { mutableStateOf(false) }
 
     // Cursor position state tracked from editor
@@ -194,7 +196,6 @@ fun EnhancedYoleApp(
             findMatchIndex = -1
             findStatusMessage = "No matches found"
         } else {
-            // Move to next match
             findMatchIndex = if (findMatchIndex < 0 || findMatchIndex >= matches.size - 1) 0 else findMatchIndex + 1
             findStatusMessage = "Match ${findMatchIndex + 1} of ${matches.size}"
         }
@@ -205,7 +206,6 @@ fun EnhancedYoleApp(
         val window = currentWindow ?: return
         if (findText.isEmpty()) return
         val content = window.content
-        // Replace at the current match position if available
         val replaceIdx = if (findMatchIndex >= 0 && findMatchIndex < findMatchPositions.size) {
             findMatchPositions[findMatchIndex]
         } else {
@@ -216,7 +216,6 @@ fun EnhancedYoleApp(
             val newContent = content.substring(0, replaceIdx) + replaceText + content.substring(replaceIdx + findText.length)
             updateContent(newContent)
             findStatusMessage = "Replaced 1 occurrence"
-            // Re-run find to update match positions after replacement
             findMatchPositions = emptyList()
             findMatchCount = 0
             findMatchIndex = -1
@@ -284,7 +283,7 @@ fun EnhancedYoleApp(
         }
     }
 
-    // Export to PDF handler (writes HTML to file with .pdf extension as a lightweight approach)
+    // Export to PDF handler
     fun exportToPdf() {
         val window = currentWindow ?: return
         val chooser = JFileChooser().apply {
@@ -309,8 +308,6 @@ fun EnhancedYoleApp(
                 } else {
                     "<pre>${window.content}</pre>"
                 }
-                // Write HTML content to the PDF file - a proper PDF library would be needed
-                // for native PDF output, but this provides a functional export
                 val pdfHtml = buildString {
                     append("<!DOCTYPE html>\n<html>\n<head>\n")
                     append("<meta charset=\"UTF-8\">\n")
@@ -320,7 +317,6 @@ fun EnhancedYoleApp(
                     append(htmlContent)
                     append("\n</body>\n</html>")
                 }
-                // Save as .html alongside the .pdf for print-to-PDF workflow
                 val htmlFile = File(chooser.selectedFile.absolutePath.replace(".pdf", ".html"))
                 htmlFile.writeText(pdfHtml, Charsets.UTF_8)
                 println("INFO: Exported HTML for PDF printing: ${htmlFile.name}")
@@ -371,101 +367,106 @@ fun EnhancedYoleApp(
         )
     }
 
-    // Main application layout with keyboard shortcut handling
+    // ========================================================================
+    // IDE-Style Main Layout
+    // ========================================================================
     Column(
-        modifier = Modifier.fillMaxSize().onKeyEvent { event ->
-            val action = keyboardShortcuts.handleKeyEvent(event)
-            when (action) {
-                DesktopKeyboardShortcuts.ACTION_NEW_FILE -> {
-                    val window = windowManager.createWindow()
-                    currentWindow = window
-                    undoManager.clear()
-                    true
-                }
-                DesktopKeyboardShortcuts.ACTION_OPEN_FILE -> {
-                    val chooser = JFileChooser().apply { fileSelectionMode = JFileChooser.FILES_ONLY }
-                    val result = chooser.showOpenDialog(null)
-                    if (result == JFileChooser.APPROVE_OPTION) {
-                        openFileAndSetCurrent(chooser.selectedFile)
+        modifier = Modifier
+            .fillMaxSize()
+            .background(IdeDarkBackground)
+            .onKeyEvent { event ->
+                val action = keyboardShortcuts.handleKeyEvent(event)
+                when (action) {
+                    DesktopKeyboardShortcuts.ACTION_NEW_FILE -> {
+                        val window = windowManager.createWindow()
+                        currentWindow = window
+                        undoManager.clear()
+                        true
                     }
-                    true
-                }
-                DesktopKeyboardShortcuts.ACTION_SAVE_FILE -> {
-                    saveCurrentFile(currentWindow, fileManager); true
-                }
-                DesktopKeyboardShortcuts.ACTION_SAVE_AS_FILE -> {
-                    saveCurrentFileAs(currentWindow, fileManager); true
-                }
-                DesktopKeyboardShortcuts.ACTION_CLOSE_FILE -> {
-                    closeCurrentFile(windowManager, currentWindow)
-                    currentWindow = null
-                    true
-                }
-                DesktopKeyboardShortcuts.ACTION_UNDO -> {
-                    performUndo(); true
-                }
-                DesktopKeyboardShortcuts.ACTION_REDO -> {
-                    performRedo(); true
-                }
-                DesktopKeyboardShortcuts.ACTION_FIND -> {
-                    showFindDialog = true; true
-                }
-                DesktopKeyboardShortcuts.ACTION_REPLACE -> {
-                    showFindDialog = true; true
-                }
-                DesktopKeyboardShortcuts.ACTION_ZOOM_IN -> {
-                    appSettings.value = appSettings.value.copy(
-                        appearance = appSettings.value.appearance.copy(
-                            fontSize = (appSettings.value.appearance.fontSize + 2).coerceAtMost(32)
+                    DesktopKeyboardShortcuts.ACTION_OPEN_FILE -> {
+                        val chooser = JFileChooser().apply { fileSelectionMode = JFileChooser.FILES_ONLY }
+                        val result = chooser.showOpenDialog(null)
+                        if (result == JFileChooser.APPROVE_OPTION) {
+                            openFileAndSetCurrent(chooser.selectedFile)
+                        }
+                        true
+                    }
+                    DesktopKeyboardShortcuts.ACTION_SAVE_FILE -> {
+                        saveCurrentFile(currentWindow, fileManager); true
+                    }
+                    DesktopKeyboardShortcuts.ACTION_SAVE_AS_FILE -> {
+                        saveCurrentFileAs(currentWindow, fileManager); true
+                    }
+                    DesktopKeyboardShortcuts.ACTION_CLOSE_FILE -> {
+                        closeCurrentFile(windowManager, currentWindow)
+                        currentWindow = null
+                        true
+                    }
+                    DesktopKeyboardShortcuts.ACTION_UNDO -> {
+                        performUndo(); true
+                    }
+                    DesktopKeyboardShortcuts.ACTION_REDO -> {
+                        performRedo(); true
+                    }
+                    DesktopKeyboardShortcuts.ACTION_FIND -> {
+                        showFindDialog = true; true
+                    }
+                    DesktopKeyboardShortcuts.ACTION_REPLACE -> {
+                        showFindDialog = true; true
+                    }
+                    DesktopKeyboardShortcuts.ACTION_ZOOM_IN -> {
+                        appSettings.value = appSettings.value.copy(
+                            appearance = appSettings.value.appearance.copy(
+                                fontSize = (appSettings.value.appearance.fontSize + 2).coerceAtMost(32)
+                            )
                         )
-                    )
-                    settings.saveSettings(appSettings.value)
-                    true
-                }
-                DesktopKeyboardShortcuts.ACTION_ZOOM_OUT -> {
-                    appSettings.value = appSettings.value.copy(
-                        appearance = appSettings.value.appearance.copy(
-                            fontSize = (appSettings.value.appearance.fontSize - 2).coerceAtLeast(8)
+                        settings.saveSettings(appSettings.value)
+                        true
+                    }
+                    DesktopKeyboardShortcuts.ACTION_ZOOM_OUT -> {
+                        appSettings.value = appSettings.value.copy(
+                            appearance = appSettings.value.appearance.copy(
+                                fontSize = (appSettings.value.appearance.fontSize - 2).coerceAtLeast(8)
+                            )
                         )
-                    )
-                    settings.saveSettings(appSettings.value)
-                    true
-                }
-                DesktopKeyboardShortcuts.ACTION_RESET_ZOOM -> {
-                    appSettings.value = appSettings.value.copy(
-                        appearance = appSettings.value.appearance.copy(fontSize = 14)
-                    )
-                    settings.saveSettings(appSettings.value)
-                    true
-                }
-                DesktopKeyboardShortcuts.ACTION_TOGGLE_WORD_WRAP -> {
-                    appSettings.value = appSettings.value.copy(
-                        editor = appSettings.value.editor.copy(wordWrap = !appSettings.value.editor.wordWrap)
-                    )
-                    settings.saveSettings(appSettings.value)
-                    true
-                }
-                DesktopKeyboardShortcuts.ACTION_TOGGLE_LINE_NUMBERS -> {
-                    appSettings.value = appSettings.value.copy(
-                        editor = appSettings.value.editor.copy(
-                            showLineNumbers = !appSettings.value.editor.showLineNumbers
+                        settings.saveSettings(appSettings.value)
+                        true
+                    }
+                    DesktopKeyboardShortcuts.ACTION_RESET_ZOOM -> {
+                        appSettings.value = appSettings.value.copy(
+                            appearance = appSettings.value.appearance.copy(fontSize = 14)
                         )
-                    )
-                    settings.saveSettings(appSettings.value)
-                    true
+                        settings.saveSettings(appSettings.value)
+                        true
+                    }
+                    DesktopKeyboardShortcuts.ACTION_TOGGLE_WORD_WRAP -> {
+                        appSettings.value = appSettings.value.copy(
+                            editor = appSettings.value.editor.copy(wordWrap = !appSettings.value.editor.wordWrap)
+                        )
+                        settings.saveSettings(appSettings.value)
+                        true
+                    }
+                    DesktopKeyboardShortcuts.ACTION_TOGGLE_LINE_NUMBERS -> {
+                        appSettings.value = appSettings.value.copy(
+                            editor = appSettings.value.editor.copy(
+                                showLineNumbers = !appSettings.value.editor.showLineNumbers
+                            )
+                        )
+                        settings.saveSettings(appSettings.value)
+                        true
+                    }
+                    DesktopKeyboardShortcuts.ACTION_TOGGLE_TOOLBAR -> {
+                        showToolbar = !showToolbar; true
+                    }
+                    DesktopKeyboardShortcuts.ACTION_TOGGLE_STATUS_BAR -> {
+                        showStatusBar = !showStatusBar; true
+                    }
+                    DesktopKeyboardShortcuts.ACTION_EXIT -> {
+                        onExit(); true
+                    }
+                    else -> false
                 }
-                DesktopKeyboardShortcuts.ACTION_TOGGLE_TOOLBAR -> {
-                    showToolbar = !showToolbar; true
-                }
-                DesktopKeyboardShortcuts.ACTION_TOGGLE_STATUS_BAR -> {
-                    showStatusBar = !showStatusBar; true
-                }
-                DesktopKeyboardShortcuts.ACTION_EXIT -> {
-                    onExit(); true
-                }
-                else -> false
             }
-        }
     ) {
         // Menu Bar
         DesktopMenuBar(
@@ -542,9 +543,9 @@ fun EnhancedYoleApp(
             onExportPdf = { exportToPdf() }
         )
 
-        // Toolbar (toggleable)
+        // IDE Toolbar (toggleable)
         if (showToolbar) {
-            DesktopToolbar(
+            IdeToolbar(
                 currentWindow = currentWindow,
                 onNewFile = {
                     val window = windowManager.createWindow()
@@ -563,19 +564,48 @@ fun EnhancedYoleApp(
                 onRedo = { performRedo() },
                 onFind = { showFindDialog = true },
                 onPreview = { showPreview = !showPreview },
+                onToggleSidebar = { showSidebar = !showSidebar },
                 onExportHtml = { exportToHtml() },
                 onExportPdf = { exportToPdf() }
             )
         }
 
-        // Main Content
+        // Tab bar for open documents
+        IdeTabBar(
+            windows = windowManager.getWindows(),
+            currentWindow = currentWindow,
+            onTabSelected = { window -> currentWindow = window },
+            onTabClosed = { window ->
+                closeCurrentFile(windowManager, window)
+                if (currentWindow?.id == window.id) {
+                    currentWindow = windowManager.getWindows().lastOrNull()
+                }
+            },
+            onNewTab = {
+                val window = windowManager.createWindow()
+                currentWindow = window
+                undoManager.clear()
+            }
+        )
+
+        // Main Content Area
         Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            // Sidebar
-            DesktopSidebar(
-                fileManager = fileManager,
-                onFileSelected = { file -> openFileAndSetCurrent(file) },
-                modifier = Modifier.width(250.dp)
-            )
+            // File Explorer Sidebar (toggleable)
+            if (showSidebar) {
+                IdeFileExplorer(
+                    fileManager = fileManager,
+                    onFileSelected = { file -> openFileAndSetCurrent(file) },
+                    modifier = Modifier.width(250.dp)
+                )
+
+                // Sidebar border
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .fillMaxHeight()
+                        .background(IdeDarkBorder)
+                )
+            }
 
             // Editor Area
             val window = currentWindow
@@ -600,7 +630,12 @@ fun EnhancedYoleApp(
                             },
                             modifier = Modifier.weight(1f)
                         )
-                        Divider(modifier = Modifier.fillMaxHeight().width(1.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .fillMaxHeight()
+                                .background(IdeDarkBorder)
+                        )
                         LivePreviewPane(
                             content = window.content,
                             format = window.format ?: window.file?.let { fileManager.detectFormatFromFile(it) },
@@ -627,7 +662,7 @@ fun EnhancedYoleApp(
                     )
                 }
             } else {
-                WelcomeScreen(
+                IdeWelcomeScreen(
                     onNewFile = {
                         val w = windowManager.createWindow()
                         currentWindow = w
@@ -647,9 +682,9 @@ fun EnhancedYoleApp(
             }
         }
 
-        // Status Bar (toggleable)
+        // IDE Status Bar (toggleable)
         if (showStatusBar) {
-            DesktopStatusBar(
+            IdeEnhancedStatusBar(
                 currentWindow = currentWindow,
                 fileManager = fileManager,
                 cursorLine = cursorLine,
@@ -667,7 +702,6 @@ fun EnhancedYoleApp(
             matchStatusMessage = findStatusMessage,
             onFindTextChange = { newText ->
                 findText = newText
-                // Clear matches when search text changes
                 if (newText.isEmpty()) {
                     findMatchPositions = emptyList()
                     findMatchCount = 0
@@ -707,9 +741,476 @@ fun EnhancedYoleApp(
     }
 }
 
+// ============================================================================
+// IDE Tab Bar
+// ============================================================================
+
 /**
- * Live preview pane that renders document content as HTML using format parsers.
- * Uses htmlToAnnotatedString() to render basic HTML tags into styled text.
+ * IDE-style tab bar for open documents.
+ */
+@Composable
+private fun IdeTabBar(
+    windows: List<DesktopWindow>,
+    currentWindow: DesktopWindow?,
+    onTabSelected: (DesktopWindow) -> Unit,
+    onTabClosed: (DesktopWindow) -> Unit,
+    onNewTab: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(34.dp)
+            .background(IdeDarkSurfaceVariant)
+            .horizontalScroll(rememberScrollState()),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        windows.forEach { window ->
+            val isActive = currentWindow?.id == window.id
+            Box(
+                modifier = Modifier
+                    .clickable { onTabSelected(window) }
+                    .background(
+                        if (isActive) IdeDarkBackground else Color.Transparent
+                    )
+                    .then(
+                        if (isActive) Modifier.border(
+                            width = 1.dp,
+                            color = IdeDarkBorder
+                        ) else Modifier
+                    )
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Modified indicator
+                    if (window.isModified) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(IdeAccent, shape = MaterialTheme.shapes.small)
+                        )
+                    }
+                    Text(
+                        text = window.title,
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = if (isActive) IdeTextPrimary else IdeTextSecondary
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    // Close button
+                    Text(
+                        text = "x",
+                        style = TextStyle(
+                            fontSize = 11.sp,
+                            color = IdeTextMuted
+                        ),
+                        modifier = Modifier
+                            .clickable { onTabClosed(window) }
+                            .padding(horizontal = 4.dp)
+                    )
+                }
+            }
+        }
+
+        // New tab button
+        Box(
+            modifier = Modifier
+                .clickable { onNewTab() }
+                .padding(horizontal = 10.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = "+",
+                style = TextStyle(
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = IdeTextSecondary
+                )
+            )
+        }
+    }
+
+    // Active tab indicator line
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(IdeDarkBorder)
+    )
+}
+
+// ============================================================================
+// IDE Toolbar
+// ============================================================================
+
+/**
+ * IDE-style toolbar with compact icon buttons.
+ */
+@Composable
+private fun IdeToolbar(
+    currentWindow: DesktopWindow?,
+    onNewFile: () -> Unit,
+    onOpenFile: () -> Unit,
+    onSaveFile: () -> Unit,
+    onUndo: () -> Unit,
+    onRedo: () -> Unit,
+    onFind: () -> Unit,
+    onPreview: () -> Unit = {},
+    onToggleSidebar: () -> Unit = {},
+    onExportHtml: () -> Unit = {},
+    onExportPdf: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    var showExportMenu by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(36.dp)
+            .background(IdeDarkSurface)
+            .padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IdeToolbarButton("New", onClick = onNewFile)
+        IdeToolbarButton("Open", onClick = onOpenFile)
+        IdeToolbarButton("Save", onClick = onSaveFile, enabled = currentWindow != null)
+
+        IdeToolbarSeparator()
+
+        IdeToolbarButton("Undo", onClick = onUndo, enabled = currentWindow != null)
+        IdeToolbarButton("Redo", onClick = onRedo, enabled = currentWindow != null)
+
+        IdeToolbarSeparator()
+
+        IdeToolbarButton("Find", onClick = onFind, enabled = currentWindow != null)
+        IdeToolbarButton("Preview", onClick = onPreview, enabled = currentWindow != null)
+        IdeToolbarButton("Sidebar", onClick = onToggleSidebar)
+
+        IdeToolbarSeparator()
+
+        // Export dropdown
+        Box {
+            IdeToolbarButton("Export", onClick = { showExportMenu = true }, enabled = currentWindow != null)
+            DropdownMenu(
+                expanded = showExportMenu,
+                onDismissRequest = { showExportMenu = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Export as HTML") },
+                    onClick = { onExportHtml(); showExportMenu = false }
+                )
+                DropdownMenuItem(
+                    text = { Text("Export as PDF") },
+                    onClick = { onExportPdf(); showExportMenu = false }
+                )
+            }
+        }
+    }
+
+    // Toolbar bottom border
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(IdeDarkBorder)
+    )
+}
+
+@Composable
+private fun IdeToolbarButton(
+    label: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true
+) {
+    Box(
+        modifier = Modifier
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+        Text(
+            text = label,
+            style = TextStyle(
+                fontSize = 12.sp,
+                color = if (enabled) IdeTextPrimary else IdeTextMuted
+            )
+        )
+    }
+}
+
+@Composable
+private fun IdeToolbarSeparator() {
+    Box(
+        modifier = Modifier
+            .width(1.dp)
+            .height(20.dp)
+            .background(IdeDarkBorder)
+    )
+    Spacer(modifier = Modifier.width(2.dp))
+}
+
+// ============================================================================
+// IDE File Explorer Sidebar
+// ============================================================================
+
+/**
+ * IDE-style file explorer sidebar with tree view.
+ */
+@Composable
+private fun IdeFileExplorer(
+    fileManager: DesktopFileManager,
+    onFileSelected: (File) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var selectedTab by remember { mutableStateOf(0) }
+
+    Column(modifier = modifier.background(IdeDarkSurface)) {
+        // Explorer header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(32.dp)
+                .background(IdeDarkSurfaceVariant)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = if (selectedTab == 0) "EXPLORER" else "RECENT",
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.sp,
+                    color = IdeTextSecondary
+                )
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            // Tab toggle
+            Text(
+                text = if (selectedTab == 0) "Recent" else "Files",
+                style = TextStyle(fontSize = 11.sp, color = IdeAccent),
+                modifier = Modifier
+                    .clickable { selectedTab = if (selectedTab == 0) 1 else 0 }
+                    .padding(4.dp)
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(IdeDarkBorder)
+        )
+
+        when (selectedTab) {
+            0 -> IdeFileBrowser(
+                fileManager = fileManager,
+                onFileSelected = onFileSelected,
+                modifier = Modifier.weight(1f)
+            )
+            1 -> IdeRecentFilesList(
+                recentFiles = fileManager.getRecentFiles(),
+                onFileSelected = onFileSelected,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+/**
+ * IDE-style navigable file browser with directory tree.
+ */
+@Composable
+private fun IdeFileBrowser(
+    fileManager: DesktopFileManager,
+    onFileSelected: (File) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var currentDirectory by remember { mutableStateOf(File(System.getProperty("user.home"))) }
+    var showHiddenFiles by remember { mutableStateOf(false) }
+
+    val directoryEntries = remember(currentDirectory, showHiddenFiles) {
+        try {
+            val entries = currentDirectory.listFiles()?.toList() ?: emptyList()
+            val filtered = if (showHiddenFiles) entries else entries.filter { !it.name.startsWith(".") }
+            val directories = filtered.filter { it.isDirectory }.sortedBy { it.name.lowercase() }
+            val files = filtered.filter { it.isFile }.sortedBy { it.name.lowercase() }
+            directories + files
+        } catch (e: SecurityException) {
+            emptyList()
+        }
+    }
+
+    Column(modifier = modifier.padding(4.dp)) {
+        // Current directory path
+        Text(
+            text = currentDirectory.absolutePath,
+            style = TextStyle(
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace,
+                color = IdeTextMuted
+            ),
+            maxLines = 2,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+
+        // Parent navigation
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "[..] Up",
+                style = TextStyle(fontSize = 11.sp, color = IdeAccent),
+                modifier = Modifier
+                    .clickable(enabled = currentDirectory.parentFile != null) {
+                        currentDirectory.parentFile?.let { currentDirectory = it }
+                    }
+                    .padding(4.dp)
+            )
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Hidden",
+                    style = TextStyle(fontSize = 10.sp, color = IdeTextMuted)
+                )
+                Checkbox(
+                    checked = showHiddenFiles,
+                    onCheckedChange = { showHiddenFiles = it },
+                    modifier = Modifier.size(20.dp),
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = IdeAccent,
+                        uncheckedColor = IdeTextMuted
+                    )
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(IdeDarkBorder)
+                .padding(vertical = 2.dp)
+        )
+
+        if (directoryEntries.isEmpty()) {
+            Text(
+                text = "Empty directory",
+                style = TextStyle(fontSize = 11.sp, color = IdeTextMuted),
+                modifier = Modifier.padding(8.dp)
+            )
+        } else {
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                items(directoryEntries) { entry ->
+                    val isDirectory = entry.isDirectory
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                if (isDirectory) {
+                                    currentDirectory = entry
+                                } else {
+                                    onFileSelected(entry)
+                                }
+                            }
+                            .padding(horizontal = 8.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isDirectory) "D" else "F",
+                            style = TextStyle(
+                                fontSize = 10.sp,
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isDirectory) IdeAccent else IdeTextMuted
+                            ),
+                            modifier = Modifier
+                                .size(16.dp)
+                                .wrapContentSize(Alignment.Center)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = entry.name,
+                            style = TextStyle(
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = if (isDirectory) FontWeight.Medium else FontWeight.Normal,
+                                color = if (isDirectory) IdeAccent else IdeTextPrimary
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Recent files list in IDE style.
+ */
+@Composable
+private fun IdeRecentFilesList(
+    recentFiles: List<File>,
+    onFileSelected: (File) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.padding(8.dp)) {
+        if (recentFiles.isEmpty()) {
+            Text(
+                text = "No recent files",
+                style = TextStyle(fontSize = 11.sp, color = IdeTextMuted),
+                modifier = Modifier.padding(8.dp)
+            )
+        } else {
+            LazyColumn {
+                items(recentFiles) { file ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onFileSelected(file) }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = file.name,
+                            style = TextStyle(
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = IdeTextPrimary
+                            ),
+                            maxLines = 1
+                        )
+                        Text(
+                            text = file.parent ?: "",
+                            style = TextStyle(
+                                fontSize = 10.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = IdeTextMuted
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Live Preview Pane
+// ============================================================================
+
+/**
+ * Live preview pane that renders document content as styled text.
  */
 @Composable
 private fun LivePreviewPane(
@@ -738,19 +1239,38 @@ private fun LivePreviewPane(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .background(IdeDarkBackground)
     ) {
-        Text(
-            text = "Preview" + (format?.let { " (${it.name})" } ?: ""),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        // Preview header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(28.dp)
+                .background(IdeDarkSurfaceVariant)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "PREVIEW" + (format?.let { " - ${it.name}" } ?: ""),
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.sp,
+                    color = IdeTextSecondary
+                )
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(IdeDarkBorder)
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        // Render the HTML preview as styled AnnotatedString
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
@@ -759,7 +1279,12 @@ private fun LivePreviewPane(
             }
             Text(
                 text = styledText,
-                style = MaterialTheme.typography.bodyMedium,
+                style = TextStyle(
+                    fontSize = 13.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = IdeTextPrimary,
+                    lineHeight = 20.sp
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -768,22 +1293,9 @@ private fun LivePreviewPane(
 
 /**
  * Converts basic HTML into a styled AnnotatedString.
- *
- * Supported tags:
- * - h1 through h6: Bold with decreasing font sizes
- * - b, strong: Bold
- * - i, em: Italic
- * - code: Monospace font
- * - s, del, strike: Strikethrough
- * - li: Bullet prefix
- * - hr: Horizontal line
- * - br: Newline
- * - p: Double newline
- * - Remaining tags are stripped but their text content is kept.
  */
 private fun htmlToAnnotatedString(html: String): AnnotatedString {
     return buildAnnotatedString {
-        // Decode HTML entities helper
         fun decodeEntities(text: String): String {
             return text
                 .replace("&lt;", "<")
@@ -794,21 +1306,14 @@ private fun htmlToAnnotatedString(html: String): AnnotatedString {
                 .replace("&nbsp;", " ")
         }
 
-        // Font sizes for heading levels (relative to base)
         val headingSizes = mapOf(
-            1 to 28.sp,
-            2 to 24.sp,
-            3 to 20.sp,
-            4 to 18.sp,
-            5 to 16.sp,
-            6 to 14.sp
+            1 to 28.sp, 2 to 24.sp, 3 to 20.sp,
+            4 to 18.sp, 5 to 16.sp, 6 to 14.sp
         )
 
-        // Simple state-based parser
         var pos = 0
         val tagStack = mutableListOf<String>()
 
-        // Pre-process: normalize self-closing tags
         val normalized = html
             .replace(Regex("<br\\s*/?>"), "<br>")
             .replace(Regex("<hr\\s*/?>"), "<hr>")
@@ -817,19 +1322,16 @@ private fun htmlToAnnotatedString(html: String): AnnotatedString {
             val tagStart = normalized.indexOf('<', pos)
 
             if (tagStart < 0) {
-                // No more tags, append remaining text
                 append(decodeEntities(normalized.substring(pos)))
                 break
             }
 
-            // Append text before the tag
             if (tagStart > pos) {
                 append(decodeEntities(normalized.substring(pos, tagStart)))
             }
 
             val tagEnd = normalized.indexOf('>', tagStart)
             if (tagEnd < 0) {
-                // Malformed tag, append as text
                 append(decodeEntities(normalized.substring(tagStart)))
                 break
             }
@@ -837,13 +1339,10 @@ private fun htmlToAnnotatedString(html: String): AnnotatedString {
             val tagContent = normalized.substring(tagStart + 1, tagEnd).trim()
             pos = tagEnd + 1
 
-            // Check if closing tag
             if (tagContent.startsWith("/")) {
                 val tagName = tagContent.substring(1).trim().lowercase()
-                // Pop matching style from stack
                 tagStack.removeLastOrNull()
 
-                // Add spacing after block elements
                 when (tagName) {
                     "p", "div" -> append("\n\n")
                     "h1", "h2", "h3", "h4", "h5", "h6" -> append("\n\n")
@@ -854,7 +1353,6 @@ private fun htmlToAnnotatedString(html: String): AnnotatedString {
                 continue
             }
 
-            // Extract tag name (strip attributes)
             val tagName = tagContent.split(Regex("\\s+"))[0].lowercase()
 
             when (tagName) {
@@ -872,15 +1370,12 @@ private fun htmlToAnnotatedString(html: String): AnnotatedString {
                     if (this.length > 0 && !this.toString().endsWith("\n")) {
                         append("\n")
                     }
-                    // Mark the start position to apply style later
                     val startIdx = this.length
                     tagStack.add(tagName)
 
-                    // Find the content up to the closing tag and apply heading style
                     val closingTag = "</$tagName>"
                     val closingIdx = normalized.indexOf(closingTag, pos, ignoreCase = true)
                     if (closingIdx >= 0) {
-                        // Extract inner text (strip nested tags simply)
                         val innerHtml = normalized.substring(pos, closingIdx)
                         val innerText = innerHtml.replace(Regex("<[^>]+>"), "")
                         append(decodeEntities(innerText))
@@ -900,7 +1395,6 @@ private fun htmlToAnnotatedString(html: String): AnnotatedString {
                 "b", "strong" -> {
                     val startIdx = this.length
                     tagStack.add(tagName)
-                    // Find closing tag and apply bold
                     val closingTag = "</$tagName>"
                     val closingIdx = normalized.indexOf(closingTag, pos, ignoreCase = true)
                     if (closingIdx >= 0) {
@@ -946,7 +1440,7 @@ private fun htmlToAnnotatedString(html: String): AnnotatedString {
                         addStyle(
                             SpanStyle(
                                 fontFamily = FontFamily.Monospace,
-                                background = Color(0xFFE0E0E0)
+                                background = Color(0xFF333333)
                             ),
                             start = startIdx,
                             end = this.length
@@ -990,7 +1484,6 @@ private fun htmlToAnnotatedString(html: String): AnnotatedString {
                     tagStack.add(tagName)
                 }
                 else -> {
-                    // Unknown tag: push onto stack for proper nesting, content will pass through
                     if (!tagContent.endsWith("/")) {
                         tagStack.add(tagName)
                     }
@@ -998,16 +1491,19 @@ private fun htmlToAnnotatedString(html: String): AnnotatedString {
             }
         }
 
-        // Clean up excessive newlines
         val result = this.toString()
         if (result.endsWith("\n\n\n")) {
-            // Trim is not directly available on builder; this is cosmetic
+            // Cosmetic trimming note
         }
     }
 }
 
+// ============================================================================
+// Enhanced Editor Screen
+// ============================================================================
+
 /**
- * Enhanced editor screen with comprehensive functionality.
+ * Enhanced editor screen with IDE-style features.
  */
 @Composable
 private fun EnhancedEditorScreen(
@@ -1024,52 +1520,61 @@ private fun EnhancedEditorScreen(
 ) {
     var content by remember(window.id) { mutableStateOf(window.content) }
 
-    // Keep content in sync with external changes (e.g., undo/redo)
     LaunchedEffect(window.content) {
         if (content != window.content) {
             content = window.content
         }
     }
 
-    Column(modifier = modifier.padding(16.dp)) {
-        // Editor Header
+    Column(modifier = modifier.background(IdeDarkBackground)) {
+        // Editor header with format info
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(28.dp)
+                .background(IdeDarkSurfaceVariant)
+                .padding(horizontal = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = window.getDisplayTitle(),
-                style = MaterialTheme.typography.headlineSmall
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = IdeTextPrimary
+                )
             )
 
-            Row {
-                // Format indicator
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 val detectedFormat = window.format ?: window.file?.let { fileManager.detectFormatFromFile(it) }
                 detectedFormat?.let { format ->
-                    AssistChip(
-                        onClick = { /* Show format info */ },
-                        label = { Text(format.name) }
+                    Text(
+                        text = format.name,
+                        style = TextStyle(
+                            fontSize = 10.sp,
+                            color = IdeAccent
+                        )
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
                 }
-
-                // Encoding indicator
                 Text(
                     text = "UTF-8",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    style = TextStyle(fontSize = 10.sp, color = IdeTextMuted)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(IdeDarkBorder)
+        )
 
         // Enhanced Text Editor
         EnhancedTextEditor(
             content = content,
             onContentChange = { newContent ->
-                // Record previous state for undo before applying the change
                 undoManager.recordState(content)
                 content = newContent
                 window.content = newContent
@@ -1090,8 +1595,7 @@ private fun EnhancedEditorScreen(
 }
 
 /**
- * Builds an AnnotatedString with find/replace match highlights applied.
- * Yellow background for all matches, orange background for the current match.
+ * Builds an AnnotatedString with find/replace match highlights.
  */
 private fun buildHighlightedText(
     text: String,
@@ -1109,16 +1613,14 @@ private fun buildHighlightedText(
             val end = (pos + findLen).coerceAtMost(text.length)
             if (pos < text.length) {
                 if (index == currentMatchIndex) {
-                    // Current match: orange background
                     addStyle(
                         SpanStyle(background = Color(0xFFFF9800)),
                         start = pos,
                         end = end
                     )
                 } else {
-                    // Other matches: yellow background
                     addStyle(
-                        SpanStyle(background = Color(0xFFFFEB3B)),
+                        SpanStyle(background = Color(0xFFFFEB3B).copy(alpha = 0.3f)),
                         start = pos,
                         end = end
                     )
@@ -1129,7 +1631,7 @@ private fun buildHighlightedText(
 }
 
 /**
- * Enhanced text editor with syntax highlighting and advanced features.
+ * Enhanced text editor with line numbers and IDE styling.
  */
 @Composable
 private fun EnhancedTextEditor(
@@ -1144,18 +1646,18 @@ private fun EnhancedTextEditor(
     onSelectionChange: (IntRange?) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val fontSize = appSettings.appearance.fontSize.sp
     val textStyle = TextStyle(
-        fontSize = appSettings.appearance.fontSize.sp,
+        fontSize = fontSize,
         fontFamily = FontFamily.Monospace,
-        color = MaterialTheme.colorScheme.onSurface
+        color = IdeTextPrimary,
+        lineHeight = (appSettings.appearance.fontSize * 1.5).sp
     )
 
-    // Build highlighted AnnotatedString for find matches
     val highlightedText = remember(content, findText, findMatchPositions, findMatchIndex) {
         buildHighlightedText(content, findText, findMatchPositions, findMatchIndex)
     }
 
-    // Track text field value for cursor position, using the highlighted text
     var textFieldValue by remember(content, highlightedText) {
         mutableStateOf(
             TextFieldValue(
@@ -1164,7 +1666,6 @@ private fun EnhancedTextEditor(
         )
     }
 
-    // Compute cursor position (line, column) from selection
     LaunchedEffect(textFieldValue.selection) {
         val offset = textFieldValue.selection.start
         val textBefore = textFieldValue.text.take(offset)
@@ -1177,30 +1678,42 @@ private fun EnhancedTextEditor(
     val scrollState = rememberScrollState()
 
     Row(modifier = modifier.fillMaxSize()) {
-        // Line numbers column
+        // Line number gutter
         if (appSettings.editor.showLineNumbers) {
             val lineCount = content.count { it == '\n' } + 1
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .width(48.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    .width(52.dp)
+                    .background(IdeDarkSurface)
                     .verticalScroll(scrollState)
-                    .padding(end = 8.dp, top = 16.dp)
+                    .padding(end = 8.dp, top = 8.dp, start = 4.dp)
             ) {
-                Column(horizontalAlignment = Alignment.End, modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     for (i in 1..lineCount) {
                         Text(
                             text = i.toString(),
                             style = textStyle.copy(
-                                fontSize = appSettings.appearance.fontSize.sp,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                fontSize = fontSize,
+                                color = IdeTextSecondary,
+                                lineHeight = (appSettings.appearance.fontSize * 1.5).sp
                             ),
                             modifier = Modifier.padding(horizontal = 4.dp)
                         )
                     }
                 }
             }
+
+            // Gutter separator
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .fillMaxHeight()
+                    .background(IdeDarkBorder)
+            )
         }
 
         // Editor field
@@ -1213,11 +1726,12 @@ private fun EnhancedTextEditor(
                 textFieldValue = newValue
             },
             textStyle = textStyle,
+            cursorBrush = SolidColor(IdeAccent),
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(16.dp)
+                .background(IdeDarkBackground)
+                .padding(start = 8.dp, top = 8.dp, end = 8.dp)
                 .verticalScroll(scrollState)
                 .then(
                     if (!appSettings.editor.wordWrap) Modifier.horizontalScroll(rememberScrollState())
@@ -1228,9 +1742,7 @@ private fun EnhancedTextEditor(
                     if (content.isEmpty()) {
                         Text(
                             text = "Start typing...",
-                            style = textStyle.copy(
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                            )
+                            style = textStyle.copy(color = IdeTextMuted)
                         )
                     }
                     innerTextField()
@@ -1240,430 +1752,15 @@ private fun EnhancedTextEditor(
     }
 }
 
-/**
- * Desktop toolbar with quick actions.
- */
-@Composable
-private fun DesktopToolbar(
-    currentWindow: DesktopWindow?,
-    onNewFile: () -> Unit,
-    onOpenFile: () -> Unit,
-    onSaveFile: () -> Unit,
-    onUndo: () -> Unit,
-    onRedo: () -> Unit,
-    onFind: () -> Unit,
-    onPreview: () -> Unit = {},
-    onExportHtml: () -> Unit = {},
-    onExportPdf: () -> Unit = {},
-    modifier: Modifier = Modifier
-) {
-    var showExportMenu by remember { mutableStateOf(false) }
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(48.dp)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Button(onClick = onNewFile) {
-            Text("New")
-        }
-
-        Button(onClick = onOpenFile) {
-            Text("Open")
-        }
-
-        Button(
-            onClick = onSaveFile,
-            enabled = currentWindow != null
-        ) {
-            Text("Save")
-        }
-
-        Divider(
-            modifier = Modifier
-                .height(24.dp)
-                .width(1.dp)
-        )
-
-        Button(onClick = onUndo, enabled = currentWindow != null) {
-            Text("Undo")
-        }
-
-        Button(onClick = onRedo, enabled = currentWindow != null) {
-            Text("Redo")
-        }
-
-        Divider(
-            modifier = Modifier
-                .height(24.dp)
-                .width(1.dp)
-        )
-
-        Button(onClick = onFind, enabled = currentWindow != null) {
-            Text("Find")
-        }
-
-        Button(onClick = onPreview, enabled = currentWindow != null) {
-            Text("Preview")
-        }
-
-        Divider(
-            modifier = Modifier
-                .height(24.dp)
-                .width(1.dp)
-        )
-
-        // Export dropdown
-        Box {
-            Button(
-                onClick = { showExportMenu = true },
-                enabled = currentWindow != null
-            ) {
-                Text("Export")
-            }
-            DropdownMenu(
-                expanded = showExportMenu,
-                onDismissRequest = { showExportMenu = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Export as HTML") },
-                    onClick = { onExportHtml(); showExportMenu = false }
-                )
-                DropdownMenuItem(
-                    text = { Text("Export as PDF") },
-                    onClick = { onExportPdf(); showExportMenu = false }
-                )
-            }
-        }
-    }
-}
+// ============================================================================
+// IDE Welcome Screen
+// ============================================================================
 
 /**
- * Desktop sidebar with file browser and recent files.
+ * Welcome screen with IDE-style layout.
  */
 @Composable
-private fun DesktopSidebar(
-    fileManager: DesktopFileManager,
-    onFileSelected: (File) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var selectedTab by remember { mutableStateOf(0) }
-    
-    Column(modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant)) {
-        // Tab Row
-        TabRow(
-            selectedTabIndex = selectedTab,
-            modifier = Modifier.height(48.dp)
-        ) {
-            Tab(
-                selected = selectedTab == 0,
-                onClick = { selectedTab = 0 },
-                text = { Text("Files") }
-            )
-            Tab(
-                selected = selectedTab == 1,
-                onClick = { selectedTab = 1 },
-                text = { Text("Recent") }
-            )
-        }
-        
-        when (selectedTab) {
-            0 -> FileBrowser(
-                fileManager = fileManager,
-                onFileSelected = onFileSelected,
-                modifier = Modifier.weight(1f)
-            )
-            1 -> RecentFilesList(
-                recentFiles = fileManager.getRecentFiles(),
-                onFileSelected = onFileSelected,
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
-
-/**
- * Navigable directory tree browser component.
- * Shows current directory path, parent navigation, directories first then files,
- * sorted alphabetically with optional hidden file filtering.
- */
-@Composable
-private fun FileBrowser(
-    fileManager: DesktopFileManager,
-    onFileSelected: (File) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var currentDirectory by remember { mutableStateOf(File(System.getProperty("user.home"))) }
-    var showHiddenFiles by remember { mutableStateOf(false) }
-
-    // List directory entries, sorted: directories first, then files, alphabetically case-insensitive
-    val directoryEntries = remember(currentDirectory, showHiddenFiles) {
-        try {
-            val entries = currentDirectory.listFiles()?.toList() ?: emptyList()
-            val filtered = if (showHiddenFiles) entries else entries.filter { !it.name.startsWith(".") }
-            val directories = filtered.filter { it.isDirectory }.sortedBy { it.name.lowercase() }
-            val files = filtered.filter { it.isFile }.sortedBy { it.name.lowercase() }
-            directories + files
-        } catch (e: SecurityException) {
-            emptyList()
-        }
-    }
-
-    Column(modifier = modifier.padding(8.dp)) {
-        // Current directory path
-        Text(
-            text = currentDirectory.absolutePath,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            maxLines = 2,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-
-        // Controls row: parent navigation and hidden files toggle
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Parent directory button
-            TextButton(
-                onClick = {
-                    currentDirectory.parentFile?.let { parent ->
-                        currentDirectory = parent
-                    }
-                },
-                enabled = currentDirectory.parentFile != null
-            ) {
-                Text("[..] Up")
-            }
-
-            // Hidden files toggle
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Hidden",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-                Checkbox(
-                    checked = showHiddenFiles,
-                    onCheckedChange = { showHiddenFiles = it },
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-
-        Divider(modifier = Modifier.padding(vertical = 4.dp))
-
-        // Directory listing using LazyColumn for efficient rendering
-        if (directoryEntries.isEmpty()) {
-            Text(
-                text = "Empty directory",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                modifier = Modifier.padding(8.dp)
-            )
-        } else {
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                items(directoryEntries) { entry ->
-                    val isDirectory = entry.isDirectory
-                    Surface(
-                        onClick = {
-                            if (isDirectory) {
-                                currentDirectory = entry
-                            } else {
-                                onFileSelected(entry)
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        color = Color.Transparent
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Directory/file indicator
-                            Text(
-                                text = if (isDirectory) "[DIR]" else "    ",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontFamily = FontFamily.Monospace,
-                                    color = if (isDirectory)
-                                        MaterialTheme.colorScheme.primary
-                                    else
-                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                                ),
-                                modifier = Modifier.width(40.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = entry.name,
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = if (isDirectory) FontWeight.Medium else FontWeight.Normal,
-                                    color = if (isDirectory)
-                                        MaterialTheme.colorScheme.primary
-                                    else
-                                        MaterialTheme.colorScheme.onSurface
-                                ),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * Recent files list component.
- */
-@Composable
-private fun RecentFilesList(
-    recentFiles: List<File>,
-    onFileSelected: (File) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.padding(16.dp)) {
-        Text(
-            text = "Recent Files",
-            style = MaterialTheme.typography.titleMedium
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        if (recentFiles.isEmpty()) {
-            Text(
-                text = "No recent files",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-        } else {
-            LazyColumn {
-                items(recentFiles) { file ->
-                    RecentFileItem(
-                        file = file,
-                        onClick = { onFileSelected(file) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * Individual recent file item.
- */
-@Composable
-private fun RecentFileItem(
-    file: File,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-            Text(
-                text = file.name,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1
-            )
-            Text(
-                text = file.parent ?: "",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                maxLines = 1
-            )
-        }
-    }
-}
-
-/**
- * Desktop status bar.
- */
-@Composable
-private fun DesktopStatusBar(
-    currentWindow: DesktopWindow?,
-    fileManager: DesktopFileManager,
-    cursorLine: Int = 1,
-    cursorColumn: Int = 1,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier.height(24.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Left side - file info
-            currentWindow?.let { window ->
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(
-                        text = window.getDisplayTitle(),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-
-                    val detectedFormat = window.format ?: window.file?.let { fileManager.detectFormatFromFile(it) }
-                    detectedFormat?.let { format ->
-                        Text(
-                            text = format.name,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        )
-                    }
-
-                    // Word count
-                    val wordCount = window.content.split(Regex("\\s+")).filter { it.isNotEmpty() }.size
-                    Text(
-                        text = "$wordCount words",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                    )
-                }
-            } ?: Text(
-                text = "Ready",
-                style = MaterialTheme.typography.bodySmall
-            )
-
-            // Right side - cursor position and encoding
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(
-                    text = "Ln $cursorLine, Col $cursorColumn",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-                Text(
-                    text = "UTF-8",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                )
-            }
-        }
-    }
-}
-
-/**
- * Welcome screen for when no file is open.
- */
-@Composable
-private fun WelcomeScreen(
+private fun IdeWelcomeScreen(
     onNewFile: () -> Unit,
     onOpenFile: () -> Unit,
     recentFiles: List<File>,
@@ -1673,79 +1770,247 @@ private fun WelcomeScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(IdeDarkBackground)
             .padding(64.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Welcome to Yole",
-            style = MaterialTheme.typography.displaySmall
+            text = "Yole",
+            style = TextStyle(
+                fontSize = 48.sp,
+                fontWeight = FontWeight.Light,
+                color = IdeTextPrimary,
+                letterSpacing = 4.sp
+            )
         )
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Text Editor",
+            style = TextStyle(
+                fontSize = 16.sp,
+                color = IdeTextSecondary,
+                letterSpacing = 2.sp
+            )
+        )
+
+        Spacer(modifier = Modifier.height(48.dp))
+
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Button(
-                onClick = onNewFile,
-                modifier = Modifier.size(120.dp, 48.dp)
-            ) {
-                Text("New File")
-            }
-            
-            Button(
-                onClick = onOpenFile,
-                modifier = Modifier.size(120.dp, 48.dp)
-            ) {
-                Text("Open File")
-            }
+            IdeWelcomeButton("New File", "Ctrl+N", onClick = onNewFile)
+            IdeWelcomeButton("Open File", "Ctrl+O", onClick = onOpenFile)
         }
-        
+
         if (recentFiles.isNotEmpty()) {
             Spacer(modifier = Modifier.height(48.dp))
-            
+
             Text(
-                text = "Recent Files",
-                style = MaterialTheme.typography.titleMedium
+                text = "RECENT FILES",
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.sp,
+                    color = IdeTextSecondary
+                )
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
-            LazyColumn {
+
+            LazyColumn(
+                modifier = Modifier.widthIn(max = 400.dp)
+            ) {
                 items(recentFiles.take(5)) { file ->
-                    RecentFileItem(
-                        file = file,
-                        onClick = { onRecentFileClick(file) }
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onRecentFileClick(file) }
+                            .padding(vertical = 4.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = file.name,
+                            style = TextStyle(
+                                fontSize = 13.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = IdeAccent
+                            ),
+                            maxLines = 1
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = file.parent ?: "",
+                            style = TextStyle(
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = IdeTextMuted
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+@Composable
+private fun IdeWelcomeButton(
+    label: String,
+    shortcut: String,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .border(width = 1.dp, color = IdeDarkBorder)
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = label,
+                style = TextStyle(
+                    fontSize = 14.sp,
+                    color = IdeTextPrimary
+                )
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = shortcut,
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = IdeTextMuted
+                )
+            )
+        }
+    }
+}
+
+// ============================================================================
+// IDE Enhanced Status Bar
+// ============================================================================
+
 /**
- * Helper functions for file operations.
+ * IDE-style status bar with comprehensive information.
  */
+@Composable
+private fun IdeEnhancedStatusBar(
+    currentWindow: DesktopWindow?,
+    fileManager: DesktopFileManager,
+    cursorLine: Int = 1,
+    cursorColumn: Int = 1,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .height(24.dp)
+            .background(IdeAccent),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Left side - file info
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            currentWindow?.let { window ->
+                Text(
+                    text = window.getDisplayTitle(),
+                    style = TextStyle(
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = Color.White
+                    )
+                )
+
+                val detectedFormat = window.format ?: window.file?.let { fileManager.detectFormatFromFile(it) }
+                detectedFormat?.let { format ->
+                    Text(
+                        text = format.name,
+                        style = TextStyle(
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    )
+                }
+
+                val wordCount = window.content.split(Regex("\\s+")).filter { it.isNotEmpty() }.size
+                Text(
+                    text = "$wordCount words",
+                    style = TextStyle(
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                )
+            } ?: Text(
+                text = "Ready",
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = Color.White
+                )
+            )
+        }
+
+        // Right side - cursor position and encoding
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Ln $cursorLine, Col $cursorColumn",
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = Color.White
+                )
+            )
+            Text(
+                text = "UTF-8",
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = Color.White.copy(alpha = 0.8f)
+                )
+            )
+            Text(
+                text = "LF",
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = Color.White.copy(alpha = 0.7f)
+                )
+            )
+        }
+    }
+}
+
+// ============================================================================
+// File Operation Helpers
+// ============================================================================
 
 private fun createNewFile(windowManager: DesktopWindowManager, fileManager: DesktopFileManager) {
     val window = windowManager.createWindow()
-    // Set as current window
 }
 
 private fun openFile(windowManager: DesktopWindowManager, fileManager: DesktopFileManager) {
     val chooser = JFileChooser().apply {
         fileSelectionMode = JFileChooser.FILES_ONLY
-        // Add file filters
     }
-    
+
     val result = chooser.showOpenDialog(null)
     if (result == JFileChooser.APPROVE_OPTION) {
         val file = chooser.selectedFile
         val content = fileManager.loadFile(file)
         if (content != null) {
             val window = windowManager.createWindow(file, content)
-            // Set as current window
         }
     }
 }
@@ -1757,7 +2022,6 @@ private fun saveCurrentFile(currentWindow: DesktopWindow?, fileManager: DesktopF
             fileManager.saveFile(file, window.content)
             window.isModified = false
         } else {
-            // Show save as dialog
             saveCurrentFileAs(window, fileManager)
         }
     }
@@ -1767,14 +2031,12 @@ private fun saveCurrentFileAs(currentWindow: DesktopWindow?, fileManager: Deskto
     currentWindow?.let { window ->
         val chooser = JFileChooser().apply {
             fileSelectionMode = JFileChooser.FILES_ONLY
-            // Add file filters
         }
-        
+
         val result = chooser.showSaveDialog(null)
         if (result == JFileChooser.APPROVE_OPTION) {
             val selectedFile = chooser.selectedFile
             if (fileManager.saveFile(selectedFile, window.content)) {
-                // Update window with new file
                 window.isModified = false
             }
         }
@@ -1795,6 +2057,5 @@ private fun openFileInWindow(windowManager: DesktopWindowManager, fileManager: D
     val content = fileManager.loadFile(file)
     if (content != null) {
         val window = windowManager.createWindow(file, content)
-        // Set as current window
     }
 }

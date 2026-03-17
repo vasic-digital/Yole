@@ -79,23 +79,51 @@ object YoleDesktopTheme {
     }
 
     /**
-     * Creates a color scheme using semantic color tokens optimized for desktop.
+     * Creates a color scheme using IDE-inspired color tokens optimized for desktop.
+     * Dark mode uses VS Code-inspired colors; light mode uses clean editor colors.
      */
     private fun createSemanticColorScheme(isDarkTheme: Boolean): ColorScheme {
         val baseScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
 
-        // Customize the base scheme with our semantic colors
-        return baseScheme.copy(
-            primary = YoleColors.BrandPrimary,
-            secondary = YoleColors.BrandSecondary,
-            tertiary = YoleColors.BrandTertiary,
-            error = YoleColors.Error,
-            surface = YoleColors.SurfacePrimary,
-            onSurface = YoleColors.TextPrimary,
-            background = YoleColors.SurfacePrimary,
-            onBackground = YoleColors.TextPrimary,
-            outline = YoleColors.BorderMedium
-        )
+        return if (isDarkTheme) {
+            // IDE Dark Theme (VS Code inspired)
+            baseScheme.copy(
+                primary = Color(0xFF007ACC),           // IDE accent blue
+                onPrimary = Color.White,
+                primaryContainer = Color(0xFF264F78),
+                onPrimaryContainer = Color(0xFFD4D4D4),
+                secondary = YoleColors.BrandSecondary,
+                tertiary = YoleColors.BrandTertiary,
+                error = Color(0xFFF44747),
+                surface = Color(0xFF252526),            // Sidebar/panels
+                onSurface = Color(0xFFD4D4D4),          // Primary text
+                surfaceVariant = Color(0xFF2D2D30),     // Tab bar, status bar
+                onSurfaceVariant = Color(0xFF858585),   // Secondary text
+                background = Color(0xFF1E1E1E),         // Editor background
+                onBackground = Color(0xFFD4D4D4),
+                outline = Color(0xFF3C3C3C),            // Borders
+                outlineVariant = Color(0xFF5A5A5A)      // Muted borders
+            )
+        } else {
+            // IDE Light Theme
+            baseScheme.copy(
+                primary = Color(0xFF007ACC),
+                onPrimary = Color.White,
+                primaryContainer = Color(0xFFD0E8FF),
+                onPrimaryContainer = Color(0xFF1E1E1E),
+                secondary = YoleColors.BrandSecondary,
+                tertiary = YoleColors.BrandTertiary,
+                error = YoleColors.Error,
+                surface = Color(0xFFF3F3F3),
+                onSurface = Color(0xFF1E1E1E),
+                surfaceVariant = Color(0xFFECECEC),
+                onSurfaceVariant = Color(0xFF6E6E6E),
+                background = Color(0xFFFFFFFF),
+                onBackground = Color(0xFF1E1E1E),
+                outline = Color(0xFFD4D4D4),
+                outlineVariant = Color(0xFFBBBBBB)
+            )
+        }
     }
 
     /**
