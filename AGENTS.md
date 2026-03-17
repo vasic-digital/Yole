@@ -39,6 +39,21 @@ Any fix applied must be:
 - Verified by running all challenges
 - Properly documented
 
+## MANDATORY: Build Naming Convention for Releases
+
+**ALL builds in `releases/` MUST use this naming:**
+
+```
+Yole-{Platform}-{Version}-{Variant}-{VersionCodeDotted}.{ext}
+```
+
+- **Platform**: `Android`, `Desktop-linux-x64`, `Desktop-windows-x64`, `Desktop-macos-arm64`, `Web-wasm`
+- **Version**: Semantic version (e.g., `1.0.0`)
+- **Variant**: `Debug` or `Release` — **both variants MUST be built**
+- **VersionCodeDotted**: Version code as dotted groups (code `1` → `0.0.0.0.1`, code `102` → `0.0.1.0.2`)
+
+Both **signed debug AND signed release** variants are required for every platform.
+
 ## Project Overview
 
 **Yole** is a cross-platform text editor built with Kotlin Multiplatform (KMP), supporting Android (production), Desktop (beta), iOS/Web (development). Supports 17 text formats, 8 network protocols, and 10 extracted KMP modules. 9,400+ tests across ~215 test files.
