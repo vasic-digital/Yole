@@ -358,9 +358,11 @@ async function closeAllDialogs(page) {
   await sleep(100);
 }
 
-/** Click a checkbox inside the settings dialog (hidden inputs need force click) */
+/** Click a checkbox inside the settings dialog by clicking its sibling .slider */
 async function clickCheckbox(page, checkboxId) {
-  await page.click(`#${checkboxId}`, { force: true });
+  // The checkbox input has opacity:0 and size 0, so we click its sibling .slider span
+  // which is the visible toggle switch. The <label> wrapping propagates the click.
+  await page.click(`#${checkboxId} + .slider`, { force: true });
   await sleep(200);
 }
 
@@ -728,9 +730,13 @@ async function testSettingsAndExtras(browser, appUrl) {
     await closeAllDialogs(page);
     await clickEl(page, '#btnSettings');
     await sleep(400);
-    await clickCheckbox(page, 'setDark');  // back to light
-    await clickCheckbox(page, 'setWrap');  // wrap on
-    await clickCheckbox(page, 'setLines'); // lines on
+    // Ensure we reset to: dark=off, wrap=on, lines=on
+    const isDarkChecked = await getCheckboxState(page, 'setDark');
+    if (isDarkChecked) await clickCheckbox(page, 'setDark');
+    const isWrapChecked = await getCheckboxState(page, 'setWrap');
+    if (!isWrapChecked) await clickCheckbox(page, 'setWrap');
+    const isLinesChecked = await getCheckboxState(page, 'setLines');
+    if (!isLinesChecked) await clickCheckbox(page, 'setLines');
     await page.click('#settingsSave', { force: true });
     await sleep(400);
     await closeAllDialogs(page);
