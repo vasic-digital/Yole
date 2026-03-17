@@ -28,7 +28,7 @@ RECORDINGS_ROOT="${PROJECT_ROOT}/recordings/android"
 ADB="${ADB:-adb}"
 
 # Default device — first connected device
-DEFAULT_DEVICE="19bbb528a1dbbc4d"
+DEFAULT_DEVICE="emulator-5554"
 
 # Parse arguments
 DEVICE_SERIAL=""
