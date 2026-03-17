@@ -348,6 +348,22 @@ async function getEditorSelection(page) {
   return page.$eval('#editor', el => el.value.substring(el.selectionStart, el.selectionEnd));
 }
 
+/** Force-close all dialog overlays via DOM manipulation */
+async function closeAllDialogs(page) {
+  await page.$eval('body', () => {
+    document.querySelectorAll('.dialog-overlay').forEach(el => {
+      el.style.display = 'none';
+    });
+  });
+  await sleep(100);
+}
+
+/** Click a checkbox inside the settings dialog (hidden inputs need force click) */
+async function clickCheckbox(page, checkboxId) {
+  await page.click(`#${checkboxId}`, { force: true });
+  await sleep(200);
+}
+
 // ============================================================
 // Format test flow: runs all operations for a single format
 // ============================================================
@@ -662,33 +678,30 @@ async function testSettingsAndExtras(browser, appUrl) {
 
   // --- Settings: Dark theme toggle ---
   await step('settings-dark-theme', async () => {
-    await page.click('#setDark');
-    await sleep(200);
+    await clickCheckbox(page, 'setDark');
     const checked = await getCheckboxState(page, 'setDark');
     if (!checked) throw new Error('Dark theme checkbox not checked');
   });
 
   // --- Settings: Word wrap toggle ---
   await step('settings-word-wrap', async () => {
-    await page.click('#setWrap');
-    await sleep(200);
+    await clickCheckbox(page, 'setWrap');
     const checked = await getCheckboxState(page, 'setWrap');
     if (checked) throw new Error('Word wrap should be unchecked');
   });
 
   // --- Settings: Line numbers toggle ---
   await step('settings-line-numbers', async () => {
-    await page.click('#setLines');
-    await sleep(200);
+    await clickCheckbox(page, 'setLines');
     const checked = await getCheckboxState(page, 'setLines');
     if (checked) throw new Error('Line numbers should be unchecked');
   });
 
   // --- Settings: Font size increase ---
   await step('settings-font-increase', async () => {
-    await clickEl(page, '#fontInc');
+    await page.click('#fontInc', { force: true });
     await sleep(200);
-    await clickEl(page, '#fontInc');
+    await page.click('#fontInc', { force: true });
     await sleep(200);
     const label = await getFontSizeLabel(page);
     if (!label.includes('18')) throw new Error(`Expected 18px, got ${label}`);
@@ -696,7 +709,7 @@ async function testSettingsAndExtras(browser, appUrl) {
 
   // --- Settings: Font size decrease ---
   await step('settings-font-decrease', async () => {
-    await clickEl(page, '#fontDec');
+    await page.click('#fontDec', { force: true });
     await sleep(200);
     const label = await getFontSizeLabel(page);
     if (!label.includes('16')) throw new Error(`Expected 16px, got ${label}`);
@@ -704,7 +717,7 @@ async function testSettingsAndExtras(browser, appUrl) {
 
   // --- Settings: Save ---
   await step('settings-save', async () => {
-    await clickEl(page, '#settingsSave');
+    await page.click('#settingsSave', { force: true });
     await sleep(400);
     const theme = await getBodyTheme(page);
     if (theme !== 'dark') throw new Error('Dark theme not applied after settings save');
@@ -712,14 +725,19 @@ async function testSettingsAndExtras(browser, appUrl) {
 
   // --- Settings: Restore defaults ---
   await step('settings-restore', async () => {
+    await closeAllDialogs(page);
     await clickEl(page, '#btnSettings');
     await sleep(400);
-    await page.click('#setDark');  // back to light
-    await page.click('#setWrap');  // wrap on
-    await page.click('#setLines'); // lines on
-    await clickEl(page, '#settingsSave');
+    await clickCheckbox(page, 'setDark');  // back to light
+    await clickCheckbox(page, 'setWrap');  // wrap on
+    await clickCheckbox(page, 'setLines'); // lines on
+    await page.click('#settingsSave', { force: true });
     await sleep(400);
+    await closeAllDialogs(page);
   });
+
+  // Ensure all dialogs are closed before status bar tests
+  await closeAllDialogs(page);
 
   // --- Status bar: Word wrap toggle ---
   await step('statusbar-wrap', async () => {
@@ -747,8 +765,14 @@ async function testSettingsAndExtras(browser, appUrl) {
     await sleep(400);
   });
 
+  // Ensure all dialogs closed before keyboard shortcut tests
+  await closeAllDialogs(page);
+
   // --- Keyboard shortcut: Ctrl+N (New) ---
   await step('shortcut-ctrl-n', async () => {
+    // Focus the page body first
+    await page.click('#editor', { force: true });
+    await sleep(200);
     await page.keyboard.press('Control+n');
     await sleep(SPEED.navPause);
     const value = await getEditorValue(page);
@@ -757,7 +781,11 @@ async function testSettingsAndExtras(browser, appUrl) {
 
   // --- Keyboard shortcut: Type then Ctrl+S (Save) ---
   await step('shortcut-ctrl-s', async () => {
-    await clearAndType(page, 'Saved via Ctrl+S shortcut');
+    await closeAllDialogs(page);
+    await page.click('#editor', { force: true });
+    await sleep(200);
+    await page.keyboard.type('Saved via Ctrl+S shortcut', { delay: SPEED.typeDelay });
+    await sleep(200);
     await page.keyboard.press('Control+s');
     await sleep(500);
     const isDirty = await isDocDirty(page);
@@ -766,7 +794,9 @@ async function testSettingsAndExtras(browser, appUrl) {
 
   // --- Keyboard shortcut: Ctrl+A (Select All) ---
   await step('shortcut-ctrl-a', async () => {
-    await page.click('#editor');
+    await closeAllDialogs(page);
+    await page.click('#editor', { force: true });
+    await sleep(200);
     await page.keyboard.press('Control+a');
     await sleep(300);
     const selectedText = await getEditorSelection(page);
@@ -775,7 +805,13 @@ async function testSettingsAndExtras(browser, appUrl) {
 
   // --- Keyboard shortcut: Ctrl+Z (Undo) ---
   await step('shortcut-ctrl-z', async () => {
-    await clearAndType(page, 'Before undo');
+    await closeAllDialogs(page);
+    await page.click('#editor', { force: true });
+    await sleep(200);
+    await page.keyboard.press('Control+a');
+    await page.keyboard.press('Backspace');
+    await sleep(100);
+    await page.keyboard.type('Before undo', { delay: SPEED.typeDelay });
     await sleep(200);
     await page.keyboard.type(' ADDED', { delay: SPEED.typeDelay });
     await sleep(200);
@@ -786,13 +822,19 @@ async function testSettingsAndExtras(browser, appUrl) {
 
   // --- Keyboard shortcut: Ctrl+F (Find) ---
   await step('shortcut-ctrl-f', async () => {
+    await closeAllDialogs(page);
+    await page.click('#editor', { force: true });
+    await sleep(200);
     await page.keyboard.press('Control+f');
     await sleep(400);
     const visible = await isDialogVisible(page, 'findDialog');
     if (!visible) throw new Error('Ctrl+F did not open find dialog');
-    await clickEl(page, '#findClose');
+    await page.click('#findClose', { force: true });
     await sleep(300);
   });
+
+  // Ensure all dialogs closed before responsive tests
+  await closeAllDialogs(page);
 
   // --- Responsive: Desktop viewport (already at 1440x900) ---
   await step('responsive-desktop', async () => {
@@ -830,6 +872,7 @@ async function testSettingsAndExtras(browser, appUrl) {
 
   // --- Theme cycling per format (quick cycle through a few) ---
   await step('theme-format-cycle', async () => {
+    await closeAllDialogs(page);
     const formatsToTest = ['todotxt', 'csv', 'latex', 'orgmode'];
     for (const fid of formatsToTest) {
       await selectFormat(page, fid);

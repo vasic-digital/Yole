@@ -30,7 +30,7 @@ ADB="${ADB:-adb}"
 FFMPEG_BIN="${HOME}/bin/ffmpeg"
 
 # Default device
-DEFAULT_DEVICE="emulator-5554"
+DEFAULT_DEVICE="19bbb528a1dbbc4d"
 
 # Parse arguments
 DEVICE_SERIAL=""
