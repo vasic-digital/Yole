@@ -127,6 +127,7 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: java-kotlin
+          config-file: ./.github/codeql/codeql-config.yml
 
       - name: Build for CodeQL analysis
         run: ./gradlew :shared:compileKotlinDesktop :androidApp:compileFlavorDefaultDebugKotlin

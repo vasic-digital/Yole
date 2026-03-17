@@ -26,6 +26,7 @@ plugins {
     // Security and code quality plugins
     id("org.owasp.dependencycheck") version "11.1.1"
     id("io.gitlab.arturbosch.detekt") version "1.23.7" apply false
+    id("org.cyclonedx.bom") version "1.10.0"
 }
 
 // Build configuration
@@ -162,7 +163,7 @@ ext {
 
 // OWASP Dependency Check configuration
 dependencyCheck {
-    failBuildOnCVSS = 9.0f  // Only fail on critical
+    failBuildOnCVSS = 7.0f  // Fail on high and critical vulnerabilities
     formats = listOf("HTML", "XML")
     outputDirectory = "$buildDir/reports/dependency-check"
 }

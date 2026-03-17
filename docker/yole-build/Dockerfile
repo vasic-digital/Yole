@@ -50,4 +50,14 @@ WORKDIR /workspace
 
 RUN mkdir -p /workspace/releases
 
+# Create non-root user for security
+RUN groupadd -r yole && useradd -r -g yole -m -s /bin/bash yole
+RUN chown -R yole:yole /home/yole
+# Grant yole user read access to Android SDK
+RUN chmod -R a+r $ANDROID_SDK_ROOT && find $ANDROID_SDK_ROOT -type d -exec chmod a+x {} \;
+
+# Switch to non-root user for build operations
+USER yole
+WORKDIR /home/yole/project
+
 CMD ["/bin/bash"]

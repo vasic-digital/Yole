@@ -70,6 +70,25 @@ jobs:
       - name: Generate Kover coverage reports (XML + HTML)
         run: ./gradlew koverXmlReport koverHtmlReport
 
+      - name: Check coverage threshold
+        if: success()
+        run: |
+          if [ -f shared/build/reports/kover/report.xml ]; then
+            COVERED=$(grep -o 'covered="[0-9]*"' shared/build/reports/kover/report.xml | head -1 | grep -o '[0-9]*')
+            MISSED=$(grep -o 'missed="[0-9]*"' shared/build/reports/kover/report.xml | head -1 | grep -o '[0-9]*')
+            if [ -n "$COVERED" ] && [ -n "$MISSED" ]; then
+              TOTAL=$((COVERED + MISSED))
+              if [ $TOTAL -gt 0 ]; then
+                PCT=$((COVERED * 100 / TOTAL))
+                echo "Line coverage: ${PCT}%"
+                if [ $PCT -lt 70 ]; then
+                  echo "::error::Coverage ${PCT}% is below minimum threshold of 70%"
+                  exit 1
+                fi
+              fi
+            fi
+          fi
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:

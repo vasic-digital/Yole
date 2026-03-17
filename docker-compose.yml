@@ -6,7 +6,6 @@ services:
   build:
     image: docker.io/thyrlian/android-sdk:latest
     container_name: yole-build
-    privileged: true
     volumes:
       - .:/workspace
       - ./releases:/workspace/releases
@@ -18,12 +17,14 @@ services:
       - ANDROID_SDK_ROOT=/opt/android-sdk
     working_dir: /workspace
     command: sleep infinity
+    mem_limit: 4g
+    memswap_limit: 6g
+    cpus: 2
 
   # Alternative using thyrlian/android-sdk
   build-alt:
     image: docker.io/thyrlian/android-sdk:latest
     container_name: yole-build-alt
-    privileged: true
     volumes:
       - .:/workspace
       - ./releases:/workspace/releases
@@ -45,6 +46,15 @@ services:
     profiles:
       - security
       - full
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/api/system/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    mem_limit: 2g
+    memswap_limit: 3g
+    restart: unless-stopped
 
   # Snyk CLI for vulnerability scanning
   snyk:
@@ -58,6 +68,8 @@ services:
     profiles:
       - security
       - full
+    mem_limit: 1g
+    restart: "no"
 
   # Detekt static analysis runner
   detekt:
@@ -71,6 +83,8 @@ services:
     profiles:
       - security
       - full
+    mem_limit: 2g
+    restart: "no"
 
 volumes:
   sonarqube_data:

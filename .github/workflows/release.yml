@@ -53,6 +53,16 @@ jobs:
       - name: Build Desktop JARs
         run: ./gradlew :desktopApp:jar
 
+      - name: Generate SBOM
+        run: ./gradlew cyclonedxBom
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: build/reports/bom.json
+          retention-days: 90
+
       - name: Collect release artifacts
         run: |
           mkdir -p release-artifacts
