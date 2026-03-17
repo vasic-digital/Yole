@@ -270,6 +270,87 @@ The `fileIO` object is only created when a file download or upload operation fir
 | FlowLazyLoader | First `.flow.collect()` | Async computation |
 | PlatformFileIO | First upload/download | Platform factory |
 
+## 7. FormatRegistry Lazy Format List
+
+**Location:** `shared/src/commonMain/kotlin/digital/vasic/yole/format/FormatRegistry.kt`
+
+### Problem
+
+Constructing all 17 `TextFormat` entries at class load time costs 30-50ms and happens before any format detection is actually needed.
+
+### Solution
+
+```kotlin
+object FormatRegistry {
+    private val formats: List<TextFormat> by lazy { createFormats() }
+
+    val isFormatsInitialized: Boolean
+        get() = /* check lazy state */
+
+    private fun createFormats(): List<TextFormat> {
+        // Constructs all 17 TextFormat entries with detection patterns
+    }
+}
+```
+
+### Key Design Decision
+
+The `isFormatsInitialized` guard allows callers to check whether the lazy list has been triggered without accidentally triggering it. This is used in tests and monitoring code.
+
+### Thread Safety
+
+Kotlin's `by lazy { }` defaults to `LazyThreadSafetyMode.SYNCHRONIZED`, so the format list is constructed at most once even under concurrent first-access from multiple coroutines.
+
+---
+
+## 8. StyleSheets Cache
+
+**Location:** `shared/src/commonMain/kotlin/digital/vasic/yole/format/StyleSheets.kt`
+
+### Problem
+
+Generating CSS for format-specific styling is moderately expensive. The same CSS is needed every time a document is rendered in the same theme mode.
+
+### Solution
+
+```kotlin
+object StyleSheets {
+    private val styleSheetCache = mutableMapOf<String, String>()
+
+    fun getStyleSheet(formatId: String, lightMode: Boolean): String {
+        val key = "$formatId:$lightMode"
+        return styleSheetCache.getOrPut(key) {
+            generateStyleSheet(formatId, lightMode)
+        }
+    }
+
+    fun clearCache() {
+        styleSheetCache.clear()
+    }
+}
+```
+
+### When to Clear
+
+Call `clearCache()` when the user changes themes or when custom CSS settings are modified. This forces regeneration of all style sheets on next access.
+
+---
+
+## Summary of Lazy Loading Points
+
+| Component | Trigger | Cost Deferred |
+|-----------|---------|---------------|
+| Format parsers | First `getParser()` call for that format | Parser instantiation (1-3ms each) |
+| HttpClient | First network operation | Engine creation, TLS setup |
+| OAuth2Flow | First authentication attempt | Flow object creation |
+| ParsedDocument HTML | First `toHtml()` call | HTML generation (5-10KB allocation) |
+| LazyDocumentLoader | First `.value` access | File I/O + parsing |
+| LazyStringLoader | First `.value` access | File I/O |
+| FlowLazyLoader | First `.flow.collect()` | Async computation |
+| PlatformFileIO | First upload/download | Platform factory |
+| FormatRegistry formats | First format detection | 17 TextFormat entries |
+| StyleSheets cache | First CSS request per format/theme | CSS generation |
+
 ## Testing
 
 Lazy loading behavior is verified by:
@@ -278,3 +359,4 @@ Lazy loading behavior is verified by:
 - `ComprehensiveStressTests.kt` -- 30 tests for concurrent access to lazily-loaded resources
 - `ResilienceTests.kt` -- 53 tests including DocumentCache behavior
 - Format parser tests -- verify lazy registration produces identical results to eager registration
+- `ConcurrentFormatParsingStressTest.kt` -- verifies `FormatRegistry.formats` lazy init under 100+ concurrent coroutines

@@ -11,7 +11,7 @@ Yole is a **Kotlin Multiplatform (KMP)** text editor supporting Android, Desktop
 
 **Architecture Philosophy**: Share as much code as possible through Kotlin Multiplatform, with platform-specific implementations only where necessary for optimal user experience.
 
-## Current Platform Status (February 2026)
+## Current Platform Status (March 2026)
 
 | Platform | Status | Notes |
 |----------|--------|-------|
@@ -567,25 +567,59 @@ flowchart LR
 3. **HTML Rendering**: WebView with format-specific CSS
 4. **Syntax Highlighting**: `SyntaxHighlighter.applySyntaxHighlighting()`
 
+### Concurrency Safety
+
+Yole enforces strict concurrency safety patterns across the codebase, required because KMP code runs on JVM, iOS, Wasm, and Desktop targets where `java.util.concurrent.*` is unavailable.
+
+**Key patterns used**:
+
+- **`Mutex + withLock`** -- Protects mutable shared state in all 8 protocol services (`stateMutex` for `_isConnected`, `operationsMutex` for active operations, `scopeMutex` for service scope lifecycle)
+- **`Semaphore`** -- Limits concurrent operations (`ConnectionLimiter`, `RateLimiter`)
+- **`@Volatile`** -- Lazy initialization caches (`ParsedDocument._cachedHtmlLight/Dark`, network service `_httpClientAccessed` flags)
+- **`synchronized(lock)`** -- Registry operations in `ParserRegistry` for atomic check-then-act
+- **`StateFlow.update{}`** -- Atomic state emissions for observable reactive state in `NetworkStorageConfigService`
+- **`SupervisorJob`** -- Structured concurrency in `FlowLazyLoader` for scope cleanup
+- **`by lazy { }`** -- Thread-safe initialization for `HttpClient` in protocol services and `FormatRegistry.formats`
+
+**Lock ordering**: 8 mutex priorities enforced across all protocol services to prevent deadlocks. See `docs/LOCK_ORDERING.md`.
+
+**`isFormatsInitialized` guard**: Prevents accessing the `FormatRegistry.formats` lazy list before initialization completes under concurrent first-access.
+
+### Security Scanning
+
+Yole uses 6 security scanning tools integrated into the development workflow:
+
+| Tool | Purpose | Integration |
+|------|---------|-------------|
+| SonarQube | Code quality, bugs, vulnerabilities | Docker Compose |
+| Snyk | Dependency vulnerability scanning | CI + Docker |
+| CodeQL | Semantic code analysis (java-kotlin) | GitHub Actions |
+| Gitleaks | Secret/credential detection | CI pre-commit |
+| Detekt | Kotlin static analysis | Gradle plugin |
+| OWASP Dependency Check | CVE database scanning | Gradle plugin |
+
+**Security patterns in code**:
+- `normalizePath()` in `PathUtils.kt` for path traversal protection in all 8 protocol services
+- `CancellationException` rethrow in all catch blocks
+- `CircuitBreaker` for denial-of-service protection
+- Platform-specific `SecureStorage` for credential management (Android Keystore, iOS Keychain, Desktop keychain)
+
+See `docs/SECURITY_SCANNING.md` for detailed tool setup and usage.
+
 ### Testing Strategy
 
+**9,400+ tests across ~215 test files** covering 16 test types: unit, integration, stress, supremacy, mock HTTP, property-based, contract, security, performance, resilience, fuzz, snapshot, load, E2E, accessibility, non-blocking.
+
 #### Platform-Specific Tests
-- `androidApp/src/test/`: Android unit tests
-- `desktopApp/src/test/`: Desktop unit tests
-- `iosApp/src/test/`: iOS unit tests
-- `webApp/src/test/`: Web unit tests
+- `shared/src/commonTest/`: Cross-platform tests (all targets)
+- `shared/src/desktopTest/`: Desktop-specific tests with MockK
+- `shared/src/androidUnitTest/`: Android-specific tests with MockK
+- `shared/src/wasmJsTest/`: Wasm-specific tests
 
-#### Legacy Android Tests
-- Format detection accuracy
-- Markup conversion correctness
-- Syntax highlighting patterns
-- Action button functionality
-- UI component integration
-
-#### E2E Tests
-- Full application workflows
-- Real device/emulator testing
-- Cross-platform compatibility testing
+#### Test Constraints
+- JUnit4 runner: `runBlocking<Unit> { }` (not `runTest`)
+- MockK is JVM-only (desktopTest + androidUnitTest only)
+- jvmTarget must be `"11"` in all JVM compilations
 
 ## Build System
 

@@ -1,6 +1,6 @@
 # Yole Video Course
 
-Comprehensive video course across beginner, advanced, and expert levels for Kotlin Multiplatform development with Yole. 21 modules and 147 videos covering everything from first steps to contributing to the project.
+Comprehensive video course across beginner, advanced, and expert levels for Kotlin Multiplatform development with Yole. 25 modules and 175+ videos covering everything from first steps to contributing to the project.
 
 ## Course Overview
 
@@ -8,7 +8,7 @@ Comprehensive video course across beginner, advanced, and expert levels for Kotl
 |-------|---------|--------|
 | Beginner | 5 modules | Getting started, Markdown, Todo.txt, cross-platform app, migration |
 | Advanced | 7 modules | Custom formats, performance, network storage, UI, cloud, containers, security |
-| Expert | 9 modules | Architecture, deployment, testing, community, challenges, monitoring, contributing, platform-specific, stress testing |
+| Expert | 13 modules | Architecture, deployment, testing, community, challenges, monitoring, contributing, platform-specific, stress testing, concurrency safety, security scanning deep dive, performance optimization, complete test coverage |
 
 ## Structure
 
@@ -37,7 +37,11 @@ video-course/
     ├── 17-monitoring-performance/   # Module 17: Monitoring & Performance (7 videos)
     ├── 18-contributing/             # Module 18: Contributing to Yole (7 videos)
     ├── 20-platform-specific/        # Module 20: Platform-Specific Development (7 videos)
-    └── 21-stress-testing/           # Module 21: Stress Testing & Responsiveness (8 videos)
+    ├── 21-stress-testing/           # Module 21: Stress Testing & Responsiveness (8 videos)
+    ├── 22-concurrency-safety/       # Module 22: Concurrency Safety in KMP (8 videos)
+    ├── 23-security-scanning-deep-dive/ # Module 23: Security Scanning Deep Dive (7 videos)
+    ├── 24-performance-optimization/ # Module 24: Performance Optimization (8 videos)
+    └── 25-complete-test-coverage/   # Module 25: Complete Test Coverage (8 videos)
 ```
 
 ## Beginner Level (5 modules)
@@ -104,7 +108,7 @@ Comprehensive security scanning with SonarQube, Snyk, Gitleaks, CodeQL, OWASP De
 
 **Prerequisites:** Module 14.
 
-## Expert Level (9 modules)
+## Expert Level (13 modules)
 
 ### Module 9: Advanced Architecture Patterns (12 videos)
 Clean architecture, dependency injection, state management (MVI), event-driven patterns, modularization, plugin architecture, and database design.
@@ -132,12 +136,12 @@ The Go-based Challenges framework: challenge banks (JSON), running challenges ag
 **Prerequisites:** Modules 9-12, basic Go knowledge.
 
 ### Module 17: Monitoring & Performance (7 videos)
-Resilience patterns (CircuitBreaker, ConnectionLimiter, DocumentCache, RateLimitedStorageService), document caching with hit/miss tracking, connection management, performance metrics (11,000+ test methods, 63.0% coverage), memory profiling, and benchmark testing.
+Resilience patterns (CircuitBreaker, ConnectionLimiter, DocumentCache, RateLimitedStorageService), document caching with hit/miss tracking, connection management, performance metrics (9,400+ test methods, 63.0% coverage), memory profiling, and benchmark testing.
 
 **Prerequisites:** Module 9, Module 6.
 
 ### Module 18: Contributing to Yole (7 videos)
-Complete contributor guide: repository structure (main + 10 KMP modules + 2 Go submodules), git workflow, development environment, running the full test suite (11,000+ test methods across 195 files), adding formats, adding protocols, resilience patterns, security scanning, and code review standards.
+Complete contributor guide: repository structure (main + 10 KMP modules + 2 Go submodules), git workflow, development environment, running the full test suite (9,400+ test methods across ~215 files), adding formats, adding protocols, resilience patterns, security scanning, and code review standards.
 
 **Prerequisites:** Modules 9-12 (or equivalent familiarity with the codebase).
 
@@ -150,6 +154,26 @@ The expect/actual pattern in depth, platform-specific implementations for all fo
 Stress testing philosophy, concurrent format parsing, protocol overload and circuit breaker testing, cache overflow and LRU stress testing, rate limiter saturation, end-to-end responsiveness validation (<100ms p99), non-blocking guarantee verification, and memory leak regression testing patterns.
 
 **Prerequisites:** Module 11, Module 17.
+
+### Module 22: Concurrency Safety in KMP (8 videos)
+KMP concurrency challenges, Mutex and lock ordering convention (8 priority levels), @Volatile and lazy initialization patterns, StateFlow for reactive state, Semaphore and rate limiting, SupervisorJob and structured concurrency, CancellationException handling rules, and concurrency testing patterns.
+
+**Prerequisites:** Module 9, Module 11.
+
+### Module 23: Security Scanning Deep Dive (7 videos)
+Security architecture overview, SonarQube deep dive (setup, scanning, interpreting results), Snyk dependency vulnerability management, CodeQL semantic analysis, Gitleaks secret detection, OWASP Dependency Check with SBOM generation, and building a security-first development workflow.
+
+**Prerequisites:** Module 15 (or basic security knowledge).
+
+### Module 24: Performance Optimization (8 videos)
+Performance architecture overview, FormatRegistry lazy initialization (benchmarks), ParsedDocument lazy HTML caching, DocumentCache LRU strategy, StyleSheets caching, network protocol performance tuning, parser-specific optimization, and performance monitoring in CI.
+
+**Prerequisites:** Module 6, Module 9.
+
+### Module 25: Complete Test Coverage (8 videos)
+The 9,400+ test suite architecture, unit and integration testing patterns, fuzz/snapshot/property-based testing, stress and load testing, E2E and non-blocking testing, security and resilience testing, accessibility and platform-specific testing, and CI coverage strategy.
+
+**Prerequisites:** Module 11, Module 21.
 
 ## Production Details
 
@@ -177,10 +201,16 @@ Module 19 -> 1 -> 13 -> 4
 Modules 1 -> 14 -> 15 -> 16 -> 10
 
 ### Performance / Architecture Focus
-Modules 1 -> 5 -> 6 -> 9 -> 17 -> 21
+Modules 1 -> 5 -> 6 -> 9 -> 17 -> 21 -> 24
 
 ### Platform / KMP Focus
 Modules 1 -> 4 -> 9 -> 20 -> 11 -> 21
 
 ### Contributor
 Modules 1 -> 14 -> 11 -> 18 -> 16
+
+### Security Focus
+Modules 1 -> 14 -> 15 -> 23 -> 10
+
+### Concurrency / Testing Deep Dive
+Modules 1 -> 9 -> 22 -> 11 -> 21 -> 25

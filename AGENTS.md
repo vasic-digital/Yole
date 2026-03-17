@@ -41,7 +41,7 @@ Any fix applied must be:
 
 ## Project Overview
 
-**Yole** is a cross-platform text editor built with Kotlin Multiplatform (KMP), supporting Android (production), Desktop (beta), iOS/Web (development). Supports 17 text formats.
+**Yole** is a cross-platform text editor built with Kotlin Multiplatform (KMP), supporting Android (production), Desktop (beta), iOS/Web (development). Supports 17 text formats, 8 network protocols, and 10 extracted KMP modules. 9,400+ tests across ~215 test files.
 
 **Package namespace:** `digital.vasic.yole.*` (legacy: `net.gsantner.opoc.*`)
 
@@ -101,16 +101,25 @@ make web
 ## Architecture
 
 - **Shared module** (`shared/src/commonMain/kotlin/digital/vasic/yole/`) - All business logic
+- **10 extracted KMP modules** - Consumed via `includeBuild()` in `settings.gradle.kts`
 - **Platform apps** (`androidApp/`, `desktopApp/`, `iosApp/`, `webApp/`) - UI shells
 - **Legacy** (`app/`, `core/`, `commons/`) - Android-specific, being phased out
 
 ```
 shared/src/commonMain/kotlin/digital/vasic/yole/
-├── format/          # 17 format parsers + registry
-├── network/          # Cloud protocols (Dropbox, FTP, SFTP, etc.)
+├── format/          # 17 format parsers + registry + DocumentCache + StyleSheets
+├── network/         # 8 protocols (Dropbox, GDrive, OneDrive, WebDAV, FTP, SFTP, SMB, Git)
 ├── model/           # Document representation
-└── ui/              # Shared Compose components
+├── ui/              # Shared Compose components (Theme, accessibility)
+└── util/            # Facade bridges (LazyLoading, RateLimiting, PlatformSync)
 ```
+
+### Key Patterns
+
+- **FormatRegistry**: Lazy-loaded `formats` via `lazy { createFormats() }`, check `isFormatsInitialized`
+- **StyleSheets**: `styleSheetCache` with `clearCache()`
+- **All 8 protocol services**: CircuitBreaker, ConnectionLimiter, Mutex lock ordering, CancellationException rethrow, `normalizePath()` for path traversal protection
+- **Concurrency**: `scopeMutex` > `stateMutex` > `operationsMutex` > `syncMutex` > `cacheMutex` > `pauseFlagsMutex` > `activeJobsMutex` > `storageInitMutex`
 
 ## Code Style Guidelines
 

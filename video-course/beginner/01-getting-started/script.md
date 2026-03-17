@@ -69,7 +69,7 @@
 **[9:00-11:00] Run First Test**
 - `./gradlew test --tests "digital.vasic.yole.format.markdown.*"`
 - Explain test output
-- Show test count (9,400+ test methods across 195 test files)
+- Show test count (9,400+ test methods across ~215 test files)
 
 **[11:00-12:00] Troubleshooting**
 - Common issues: wrong JDK version, missing Android SDK, Gradle daemon

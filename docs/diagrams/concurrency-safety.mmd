@@ -1,0 +1,64 @@
+%% Concurrency Safety Architecture
+%% Shows lock ordering, @Volatile fields, Mutex usage, and StateFlow patterns
+
+graph TB
+    subgraph lockOrder["Lock Ordering (Ascending Priority)"]
+        direction TB
+        L1["1. scopeMutex<br/>serviceScope lifecycle"]
+        L2["2. stateMutex<br/>_isConnected, _rootPath"]
+        L3["3. operationsMutex<br/>activeOperations map"]
+        L4["4. syncMutex<br/>syncStatusMap"]
+        L5["5. cacheMutex<br/>cacheEntries map"]
+        L6["6. pauseFlagsMutex<br/>pauseFlags map"]
+        L7["7. activeJobsMutex (leaf)<br/>activeJobs map"]
+        L8["8. storageInitMutex (leaf)<br/>SecureStorage init"]
+
+        L1 --> L2
+        L2 --> L3
+        L3 --> L4
+        L4 --> L5
+        L5 --> L6
+        L6 --> L7
+        L6 --> L8
+    end
+
+    subgraph volatileFields["@Volatile Fields (Lazy Caches)"]
+        V1["ParsedDocument._cachedHtmlLight"]
+        V2["ParsedDocument._cachedHtmlDark"]
+        V3["ProtocolService._httpClientAccessed"]
+    end
+
+    subgraph mutexPatterns["Mutex + withLock Patterns"]
+        M1["RateLimiter<br/>Semaphore + Mutex"]
+        M2["LazyDocumentLoader<br/>Double-checked locking"]
+        M3["FlowLazyLoader<br/>Mutex + SupervisorJob"]
+        M4["NetworkStorageConfigService<br/>Mutex + StateFlow"]
+    end
+
+    subgraph stateFlowPatterns["StateFlow Patterns"]
+        SF1["MutableStateFlow<br/>configuredStorages"]
+        SF2["MutableStateFlow<Boolean><br/>pauseFlags per operation"]
+        SF3["Pattern: mutex.withLock {<br/>  _state.value = transform(_state.value)<br/>}"]
+    end
+
+    subgraph lazyInit["Thread-Safe Lazy Init"]
+        LZ1["FormatRegistry.formats<br/>by lazy { createFormats() }"]
+        LZ2["HttpClient<br/>by lazy { createHttpClient() }"]
+        LZ3["OAuth2Flow<br/>by lazy { ... }"]
+        LZ4["ParserRegistry<br/>synchronized(lock)"]
+    end
+
+    subgraph services["All 8 Protocol Services"]
+        SVC["DropboxService<br/>GoogleDriveService<br/>OneDriveService<br/>WebDavService<br/>FtpService<br/>SftpService<br/>SmbService<br/>GitService"]
+    end
+
+    services --> lockOrder
+    services --> volatileFields
+    services --> lazyInit
+
+    style lockOrder fill:#e8f5e9,stroke:#388e3c
+    style volatileFields fill:#fff3e0,stroke:#f57c00
+    style mutexPatterns fill:#e1f5fe,stroke:#0288d1
+    style stateFlowPatterns fill:#f3e5f5,stroke:#7b1fa2
+    style lazyInit fill:#fce4ec,stroke:#c62828
+    style services fill:#f5f5f5,stroke:#616161

@@ -9,7 +9,7 @@ SPDX-License-Identifier: Apache-2.0
 
 ### Timestamps
 - 0:00 Introduction: why Yole invests heavily in stress testing
-- 2:00 The test pyramid at scale: 11,000+ test methods including dedicated stress suites
+- 2:00 The test pyramid at scale: 9,400+ test methods including dedicated stress suites
 - 4:00 Stress testing vs. load testing vs. fuzz testing: definitions and when to use each
 - 6:00 Yole's stress test directory structure: `format/stress/`, `network/stress/`, `util/StressAndIntegrationTest.kt`
 - 8:00 Key stress test classes: `FormatParsingStressTest`, `ComprehensiveStressTests`, `ConcurrentFormatParsingStressTest`, `EdgeCaseStressTest`

@@ -28,7 +28,7 @@
 - Live demo: same document on Android and Desktop side by side
 
 **[9:00-11:00] Developer Experience Improvements**
-- 9,400+ test methods across 195 test files (vs. minimal tests in Markor)
+- 9,400+ test methods across ~215 test files (vs. minimal tests in Markor)
 - 10 extracted KMP modules with independent CI/CD
 - Container-based builds for reproducibility
 - 14 challenge banks in the Go-based Challenges framework

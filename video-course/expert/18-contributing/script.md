@@ -5,7 +5,7 @@
 ### Timestamps
 - 0:00 The Yole ecosystem: 1 main repo + 10 KMP modules + 2 Go submodules
 - 2:00 Main repository structure: shared/, androidApp/, desktopApp/, iosApp/, webApp/
-- 4:00 The shared module: 71 source files, 9,400+ test methods across 195 test files, 17 formats, 8 protocols
+- 4:00 The shared module: 71 source files, 9,400+ test methods across ~215 test files, 17 formats, 8 protocols
 - 6:00 Extracted KMP modules: why they were extracted and how they connect
 
 ### The 10 Extracted KMP Modules
@@ -148,7 +148,7 @@ cd ../Containers && go build ./... && go test ./... -race -count=1
 ### Timestamps
 - 0:00 The mandatory rule: all builds and tests MUST run in containers
 - 2:00 The "never remove or disable tests" rule
-- 4:00 Test statistics: 9,400+ test methods across 195 test files (63.0% line coverage)
+- 4:00 Test statistics: 9,400+ test methods across ~215 test files (63.0% line coverage)
 - 6:00 Test organization: commonTest (shared), desktopTest, androidUnitTest, wasmJsTest
 - 8:00 Running all tests: `docker compose run --rm build ./docker/scripts/test-all.sh`
 - 10:00 Running specific tests: `--tests` flag with class or method patterns

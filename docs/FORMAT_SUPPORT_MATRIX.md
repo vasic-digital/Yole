@@ -2,7 +2,7 @@
 
 Complete feature matrix showing which capabilities are supported for each format across all platforms.
 
-**Last Updated**: November 11, 2025
+**Last Updated**: March 17, 2026
 **Total Formats**: 17
 
 ---
@@ -231,9 +231,11 @@ All formats support detection by file extension. Multiple extensions are support
 | **Org Mode** | ✓ 30+ | ✓ 5+ | 85%+ | Good |
 | **Key-Value** | ✓ 40+ | ✓ 5+ | 90%+ | Excellent |
 | **Other Formats** | ✓ 20+ each | ✓ 3+ each | 75-85% | Good |
-| **Overall** | 852+ tests | 100+ tests | 93% | Excellent |
+| **Cross-Format** | 200+ | 100+ | N/A | Excellent |
+| **Overall** | 9,400+ tests | ~215 files | 63%+ | Excellent |
 
-**Test Pass Rate**: 100% (all tests passing)
+**Test Pass Rate**: 100% (all 9,400+ tests passing)
+**Test Types**: Unit, integration, stress, supremacy, mock HTTP, property-based, contract, security, performance, resilience, fuzz, snapshot, load, E2E, accessibility, non-blocking
 
 ---
 
@@ -292,10 +294,10 @@ Developers can add new format support. See:
 | Date | Version | Changes |
 |------|---------|---------|
 | 2025-11-11 | 1.0 | Initial format support matrix with all 17 formats |
+| 2026-03-17 | 2.0 | Updated test counts to 9,400+, added test types, updated date |
 
 ---
 
-*Last updated: November 11, 2025*
+*Last updated: March 17, 2026*
 *Formats supported: 17*
-*Test coverage: 93% (852+ tests)*
-*Documentation: 13,200+ lines*
+*Test coverage: 9,400+ tests across ~215 files*

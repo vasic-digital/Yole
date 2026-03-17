@@ -387,6 +387,69 @@ gitleaks detect --source . --verbose                              # Secret detec
 
 ---
 
+## SBOM Generation
+
+A Software Bill of Materials (SBOM) can be generated using the CycloneDX Gradle plugin:
+
+```bash
+# Generate SBOM in CycloneDX format
+docker compose run --rm build ./gradlew cyclonedxBom
+```
+
+The SBOM is generated at `build/reports/bom.json` in CycloneDX 1.5 format. It lists all direct and transitive dependencies, their versions, licenses, and known vulnerabilities.
+
+### SBOM Use Cases
+
+- **Compliance**: Provide to customers or auditors upon request
+- **Vulnerability monitoring**: Feed into Dependency-Track or similar tools for continuous monitoring
+- **License compliance**: Verify all dependencies use approved licenses
+
+---
+
+## CodeQL Advanced Configuration
+
+### Custom Query Suites
+
+Create custom CodeQL queries for Yole-specific patterns in `.github/codeql/`:
+
+```yaml
+# .github/codeql/yole-queries.yml
+name: Yole Custom Queries
+queries:
+  - uses: security-extended
+  - uses: security-and-quality
+```
+
+### Language-Specific Configuration
+
+```yaml
+# .github/workflows/codeql.yml
+- uses: github/codeql-action/init@v3
+  with:
+    languages: java-kotlin
+    queries: security-extended,security-and-quality
+    config-file: .github/codeql/yole-queries.yml
+```
+
+---
+
+## CVSS 7.0 Threshold
+
+The OWASP Dependency Check is configured with `failBuildOnCVSS = 7.0f`, meaning:
+- **CVSS 7.0-8.9 (High)**: Build fails, must fix within 1 week
+- **CVSS 9.0-10.0 (Critical)**: Build fails, must fix immediately
+- **CVSS 4.0-6.9 (Medium)**: Build succeeds but findings are reported
+- **CVSS 0.1-3.9 (Low)**: Build succeeds, fix at convenience
+
+To adjust the threshold:
+```kotlin
+dependencyCheck {
+    failBuildOnCVSS = 7.0f  // Change to 9.0f for critical-only gating
+}
+```
+
+---
+
 ## Related Documentation
 
 - [Build System Guide](BUILD_SYSTEM.md) -- Build commands and CI/CD setup
@@ -396,4 +459,4 @@ gitleaks detect --source . --verbose                              # Secret detec
 
 ---
 
-*Last updated: March 7, 2026*
+*Last updated: March 17, 2026*

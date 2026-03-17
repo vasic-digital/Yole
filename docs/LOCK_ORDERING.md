@@ -164,6 +164,29 @@ class ExampleService(...) : NetworkStorageService {
 }
 ```
 
+## Additional Lock Entries
+
+### FormatRegistry Lazy Init Lock
+
+The `FormatRegistry.formats` property uses Kotlin's `lazy { }` delegate with `LazyThreadSafetyMode.SYNCHRONIZED` (the default). This is an implicit lock that serializes access to the format list on first initialization. The `isFormatsInitialized` guard allows callers to check initialization state without triggering the lazy.
+
+### StyleSheets Cache Lock
+
+`StyleSheets.styleSheetCache` is a simple `MutableMap<String, String>` protected by the calling pattern (single-threaded access in practice). The `clearCache()` method resets the map on theme changes.
+
+### ParserRegistry synchronized(lock)
+
+`ParserRegistry` uses `synchronized(lock)` (priority: independent, not part of the protocol service lock hierarchy) for:
+- `register(parser)` -- Atomic check-for-duplicate then insert
+- `registerLazy(formatId, factory)` -- Atomic check then store factory
+- `getParser(format)` -- Atomic check then lazy instantiation
+
+This lock is never held while any protocol service lock is held, so there is no ordering constraint with the protocol lock hierarchy.
+
+### DocumentCache Internal Synchronization
+
+`DocumentCache` uses internal synchronization for LRU eviction with cooperative cancellation (`yield()` in long-running eviction loops). This is independent of the protocol service lock hierarchy.
+
 ## Verification
 
-Lock ordering is enforced through code review. The `ConcurrencySafetyTest` and `ComprehensiveStressTests` test suites exercise concurrent access patterns to detect ordering violations empirically. The `ContractTestsForProtocols` suite verifies that all 8 protocol services maintain consistent locking behavior.
+Lock ordering is enforced through code review. The `ConcurrencySafetyTest` and `ComprehensiveStressTests` test suites exercise concurrent access patterns to detect ordering violations empirically. The `ContractTestsForProtocols` suite verifies that all 8 protocol services maintain consistent locking behavior. The `ConcurrencyFixesTest` (1006 lines) specifically tests the 10 critical concurrency fixes applied to protocol services.

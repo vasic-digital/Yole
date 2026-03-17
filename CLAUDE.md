@@ -178,9 +178,20 @@ Format IDs are string constants on `TextFormat.Companion` (e.g., `TextFormat.ID_
 - **Resilience**: All 8 protocol services use CircuitBreaker, ConnectionLimiter, CancellationException rethrow, normalizePath() for path traversal protection, and serviceScope lifecycle management.
 - **Coroutine safety**: `scopeMutex`, `pauseFlagsMutex` for concurrent state. `CancellationException` must always be rethrown in catch blocks.
 
+### Concurrency Patterns
+
+- **Mutex + withLock**: Protects mutable state in all 8 protocol services (`stateMutex`, `operationsMutex`, `scopeMutex`, `cacheMutex`, `syncMutex`, `pauseFlagsMutex`, `activeJobsMutex`)
+- **Semaphore**: Limits concurrent operations in `ConnectionLimiter` and `RateLimiter`
+- **@Volatile**: Lazy caches in `ParsedDocument` (HTML light/dark), `_httpClientAccessed` flags
+- **synchronized(lock)**: `ParserRegistry` for atomic check-then-act registration
+- **StateFlow.update{}**: Atomic state emissions in `NetworkStorageConfigService`
+- **by lazy { }**: Thread-safe init for `HttpClient`, `FormatRegistry.formats`, `OAuth2Flow`
+- **Lock ordering**: 8 priority levels across all protocol services (see `docs/LOCK_ORDERING.md`)
+- **SupervisorJob**: Structured concurrency in `FlowLazyLoader` for scope cleanup
+
 ## Testing
 
-~9,400+ tests across ~195 test files (commonTest + desktopTest + androidUnitTest + wasmJsTest).
+~9,400+ tests across ~215 test files (commonTest + desktopTest + androidUnitTest + wasmJsTest).
 
 Test types: unit, integration, stress, supremacy/edge-case, mock HTTP, property-based, contract, security, performance, resilience, fuzz, snapshot, load, E2E, accessibility, non-blocking.
 

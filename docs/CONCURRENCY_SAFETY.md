@@ -1,6 +1,6 @@
 # Concurrency Safety Architecture
 
-*Last updated: 2026-03-05*
+*Last updated: 2026-03-17*
 
 ## 1. Overview
 
@@ -353,10 +353,63 @@ fun toHtml(lightMode: Boolean = true): String {
 
 ---
 
-### 3.5 Network Services
+### 3.5 synchronized isConnected() Pattern
+
+All 8 protocol services use `stateMutex.withLock` to protect connection state reads and writes:
+
+```kotlin
+// Thread-safe connection state check
+suspend fun isConnected(): Boolean {
+    return stateMutex.withLock { _isConnected }
+}
+
+// Thread-safe connection state update
+private suspend fun setConnected(connected: Boolean) {
+    stateMutex.withLock { _isConnected = connected }
+}
+```
+
+This replaces the earlier pattern where `_isConnected` was only protected by `@Volatile`. While `@Volatile` provides visibility, it does not provide atomicity for check-then-act patterns. The `stateMutex.withLock` pattern ensures that connection state checks and operations that depend on them are atomic.
+
+---
+
+### 3.6 @Volatile Fields
+
+`@Volatile` is used for simple immutable-after-first-write caches where races are acceptable because the operation is idempotent:
+
+**Current @Volatile usage**:
+- `ParsedDocument._cachedHtmlLight` -- Lazy HTML cache (light mode)
+- `ParsedDocument._cachedHtmlDark` -- Lazy HTML cache (dark mode)
+- Protocol services `_httpClientAccessed` -- Tracks whether `by lazy` has been triggered
+
+**Not using @Volatile (protected by Mutex instead)**:
+- `_isConnected` in all 8 protocol services -- Protected by `stateMutex`
+- `activeOperations` maps -- Protected by `operationsMutex`
+- `cacheEntries` maps -- Protected by `cacheMutex`
+
+---
+
+### 3.7 StateFlow.update{} for Atomic State Emissions
+
+For reactive state observed by UI, use `StateFlow` with `Mutex` protection:
+
+```kotlin
+// Atomic update pattern
+suspend fun updateConfiguredStorages(transform: (List<NetworkStorage>) -> List<NetworkStorage>) {
+    mutex.withLock {
+        _configuredStorages.value = transform(_configuredStorages.value)
+    }
+}
+```
+
+This ensures that read-modify-write cycles on `StateFlow` values are atomic, preventing lost updates when multiple coroutines modify the state concurrently.
+
+---
+
+### 3.8 Network Services
 
 #### Pattern
-All network services (DropboxService, FtpService, GoogleDriveService, OneDriveService, WebDavService) follow:
+All 8 network services (DropboxService, FtpService, SftpService, GoogleDriveService, OneDriveService, WebDavService, SmbService, GitService) follow:
 
 ```kotlin
 class DropboxService {

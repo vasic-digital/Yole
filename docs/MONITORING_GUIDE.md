@@ -252,9 +252,39 @@ docker compose run --rm build ./docker/scripts/test-all.sh
 ```
 
 The CI pipeline reports:
-- Total test count (9,400+ methods across 195 test files)
+- Total test count (9,400+ methods across ~215 test files)
 - Failure details with stack traces
 - Coverage report via Kover (63.0% line coverage)
+
+### Metrics Test Patterns
+
+The monitoring tests follow a consistent pattern for measuring and asserting performance:
+
+```kotlin
+// Pattern: measure, collect, assert threshold
+@Test
+fun parseTimeUnderThreshold() = runBlocking<Unit> {
+    val times = (1..50).map {
+        measureTimeMillis { parser.parse(document) }
+    }
+    val p99 = times.sorted()[47] // 95th percentile of 50 samples
+    assertTrue(p99 < 100, "p99 parse time ${p99}ms exceeds 100ms threshold")
+}
+
+// Pattern: cache effectiveness measurement
+@Test
+fun cacheHitRateAboveThreshold() = runBlocking<Unit> {
+    val cache = DocumentCache(maxSize = 50)
+    // Simulate realistic access pattern
+    repeat(100) { i ->
+        val key = "doc-${i % 20}" // 20 unique docs, 80% re-access rate
+        cache.getOrPut(key) { parser.parse("content-$i") }
+    }
+    assertTrue(cache.hitRate > 0.70, "Cache hit rate ${cache.hitRate} below 0.70")
+}
+```
+
+These patterns are used in `MonitoringMetricsTests.kt` and `PerformanceMetricsTests.kt` to establish baselines that detect regressions automatically in CI.
 
 ### Alerting on Regressions
 

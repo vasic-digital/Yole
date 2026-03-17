@@ -3,7 +3,7 @@
 ## Video 11.1: Comprehensive Testing Strategy (22 min)
 
 ### Timestamps
-- 0:00 Introduction: why Yole maintains 9,400+ test methods across 195 test files
+- 0:00 Introduction: why Yole maintains 9,400+ test methods across ~215 test files
 - 1:30 The golden rule: **never remove, disable, skip, or leave broken tests**
 - 3:00 Test pyramid: unit tests (parsers), integration tests (cross-format), end-to-end tests (full pipeline)
 - 5:00 KMP testing architecture: `commonTest` for shared logic, `platformTest` for platform-specific behavior
@@ -46,7 +46,7 @@ All issues must be fixed by addressing the root causes:
 ```
 
 ### Key Test Statistics
-- **9,400+ test methods** across **195 test files** in commonTest + desktopTest + androidUnitTest + wasmJsTest
+- **9,400+ test methods** across **~215 test files** in commonTest + desktopTest + androidUnitTest + wasmJsTest
 - Test categories: format parsers, model, network, UI, security, concurrency, stress, integration, property-based, contract, resilience, monitoring, performance
 - Dedicated test suites: SafetyFixesTest (92 tests), ContractTestsForProtocols (89 tests), ResilienceTests (53 tests), MonitoringMetricsTests (42 tests), SecurityValidationTests (36 tests), ComprehensiveStressTests (30 tests), PerformanceMetricsTests (29 tests)
 - All tests run on every commit via CI/CD

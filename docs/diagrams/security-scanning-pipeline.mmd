@@ -1,0 +1,86 @@
+%% Security Scanning Pipeline
+%% Shows all security tools, triggers, and report flows
+
+flowchart TB
+    subgraph triggers["Triggers"]
+        push["git push"]
+        pr["Pull Request"]
+        schedule["Weekly Schedule<br/>(Sunday 00:00 UTC)"]
+        manual["Manual Run"]
+        precommit["Pre-Commit Hook"]
+    end
+
+    subgraph ciTools["CI/CD Security Tools"]
+        direction TB
+        codeql["CodeQL<br/>(Semantic Analysis)<br/>java-kotlin"]
+        snykCI["Snyk CI<br/>(Dependency Scan)<br/>All sub-projects"]
+        gitleaksCI["Gitleaks CI<br/>(Secret Detection)<br/>Full git history"]
+        owaspCI["OWASP Dependency Check<br/>(CVE Database)<br/>failBuildOnCVSS=7.0"]
+    end
+
+    subgraph localTools["Local Development Tools"]
+        direction TB
+        detekt["Detekt<br/>(Kotlin Static Analysis)<br/>./gradlew detekt"]
+        sonarqube["SonarQube<br/>(Code Quality)<br/>localhost:9000"]
+        snykLocal["Snyk Local<br/>(Docker Compose)<br/>snyk test"]
+        gitleaksLocal["Gitleaks Local<br/>(Pre-Commit)<br/>gitleaks protect --staged"]
+    end
+
+    subgraph sbom["SBOM Generation"]
+        cyclonedx["CycloneDX<br/>./gradlew cyclonedxBom<br/>build/reports/bom.json"]
+    end
+
+    subgraph reports["Reports & Dashboards"]
+        direction TB
+        ghSecurity["GitHub Security Tab<br/>Code Scanning Alerts"]
+        sonarDash["SonarQube Dashboard<br/>Bugs, Vulnerabilities,<br/>Code Smells, Coverage"]
+        snykDash["Snyk Dashboard<br/>Vulnerability Monitor"]
+        detektReport["Detekt Report<br/>build/reports/detekt/"]
+        owaspReport["OWASP Report<br/>dependency-check-report.html"]
+        coverageReport["Kover Coverage<br/>build/reports/kover/html/"]
+    end
+
+    subgraph actions["Actions on Findings"]
+        direction TB
+        critical["CVSS 9.0-10.0<br/>Fix Immediately"]
+        high["CVSS 7.0-8.9<br/>Fix Within 1 Week"]
+        medium["CVSS 4.0-6.9<br/>Fix Within 1 Month"]
+        low["CVSS 0.1-3.9<br/>Fix at Convenience"]
+    end
+
+    push --> codeql
+    push --> snykCI
+    push --> gitleaksCI
+    pr --> codeql
+    pr --> snykCI
+    pr --> gitleaksCI
+    pr --> owaspCI
+    schedule --> codeql
+    schedule --> snykCI
+    schedule --> owaspCI
+    manual --> sonarqube
+    manual --> snykLocal
+    manual --> detekt
+    manual --> cyclonedx
+    precommit --> gitleaksLocal
+
+    codeql --> ghSecurity
+    snykCI --> snykDash
+    gitleaksCI --> ghSecurity
+    owaspCI --> owaspReport
+    detekt --> detektReport
+    sonarqube --> sonarDash
+
+    owaspReport --> critical
+    owaspReport --> high
+    owaspReport --> medium
+    owaspReport --> low
+    snykDash --> critical
+    snykDash --> high
+
+    style triggers fill:#fff9c4,stroke:#f9a825
+    style ciTools fill:#e8f5e9,stroke:#388e3c
+    style localTools fill:#e1f5fe,stroke:#0288d1
+    style sbom fill:#f3e5f5,stroke:#7b1fa2
+    style reports fill:#fff3e0,stroke:#f57c00
+    style actions fill:#fce4ec,stroke:#c62828

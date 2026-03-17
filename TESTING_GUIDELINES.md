@@ -1,17 +1,127 @@
 # Parser Testing Guidelines
 
-**Version**: 1.0
-**Date**: 2025-11-19
+**Version**: 2.0
+**Date**: 2026-03-17
 **Status**: Production-Ready
-**Coverage Achievement**: 56.01% branch (from 38.57% baseline)
+**Coverage**: 9,400+ tests across 215 test files
 
 ---
 
 ## Purpose
 
-This document provides comprehensive guidelines for testing Yole parsers, based on proven patterns that achieved +17.44% branch coverage improvement across 4 parsers with 186 tests.
+This document provides comprehensive guidelines for testing Yole parsers and the broader codebase, covering all 16 test types used in the project.
 
-**Key Principle**: Targeted, coverage-driven testing achieves **31x better ROI** than broad integration testing.
+**Key Principle**: Targeted, coverage-driven testing achieves the best ROI. All 17 format parsers and 8 network protocol services are thoroughly tested.
+
+---
+
+## Test Coverage Summary
+
+| Metric | Value |
+|--------|-------|
+| Total test methods | 9,400+ |
+| Test files | ~215 |
+| Source sets | commonTest, desktopTest, androidUnitTest, wasmJsTest |
+| Format parsers tested | 17/17 |
+| Protocol services tested | 8/8 |
+| Test pass rate | 100% |
+
+---
+
+## 16 Test Types
+
+### 1. Unit Tests
+Test individual classes and functions in isolation.
+
+**Location**: `shared/src/commonTest/kotlin/digital/vasic/yole/format/[format]/`
+**Pattern**: One test class per parser, covering all parsing branches.
+
+### 2. Integration Tests
+Test cross-format interactions and module boundaries.
+
+**Location**: `shared/src/commonTest/kotlin/digital/vasic/yole/format/integration/`
+**Pattern**: Test FormatRegistry detection pipeline, format conversion, and parser interop.
+
+### 3. Stress Tests
+Verify behavior under high load and concurrent access.
+
+**Location**: `shared/src/commonTest/kotlin/digital/vasic/yole/format/stress/`
+**Suites**: `FormatParsingStressTest`, `ComprehensiveStressTests`, `ConcurrentFormatParsingStressTest`, `EdgeCaseStressTest`
+**Pattern**: 100+ concurrent coroutines, 10,000+ line documents, sustained high-frequency operations.
+
+### 4. Supremacy / Edge Case Tests
+Test boundary conditions and unusual inputs.
+
+**Location**: `shared/src/commonTest/kotlin/digital/vasic/yole/format/supremacy/`
+**Pattern**: Empty content, whitespace-only, Unicode, mixed encodings, extremely long lines, deeply nested structures.
+
+### 5. Mock HTTP Tests
+Test network protocol services with mock HTTP responses.
+
+**Location**: `shared/src/commonTest/kotlin/digital/vasic/yole/network/`
+**Pattern**: Mock Ktor HTTP client with predefined responses for each protocol.
+
+### 6. Property-Based Tests
+Generate random inputs to find edge cases automatically.
+
+**Pattern**: Random document generation, random format detection, random parse/serialize round-trips.
+
+### 7. Contract Tests
+Verify that all 8 protocol services implement `NetworkStorageService` consistently.
+
+**Location**: `shared/src/commonTest/kotlin/digital/vasic/yole/network/`
+**Pattern**: `ContractTestsForProtocols` verifies identical behavior across all services for connection, file operations, and error handling.
+
+### 8. Security Tests
+Test for path traversal, injection, and access control issues.
+
+**Pattern**: Path traversal with `..`, `normalizePath()` validation, OWASP Top 10 patterns, input sanitization for all 17 parsers.
+
+### 9. Performance Tests
+Establish timing baselines and detect regressions.
+
+**Location**: `shared/src/commonTest/kotlin/digital/vasic/yole/format/stress/PerformanceMetricsTests.kt`
+**Baselines**: Parse time < 100ms for 10,000 lines, HTML cache hit < 1ms, format detection < 1ms.
+
+### 10. Resilience Tests
+Test CircuitBreaker, ConnectionLimiter, and recovery patterns.
+
+**Location**: `shared/src/commonTest/kotlin/digital/vasic/yole/network/`
+**Pattern**: Trip circuit breaker, saturate connection limiter, verify recovery after timeout.
+
+### 11. Fuzz Tests
+Feed semi-random and malformed inputs to parsers.
+
+**Pattern**: Random byte sequences, truncated documents, mixed format syntax, invalid JSON for Jupyter.
+
+### 12. Snapshot Tests
+Compare parser output against known-good reference snapshots.
+
+**Pattern**: Parse a fixed document, compare HTML output against saved snapshot string. Detect unintended changes.
+
+### 13. Load Tests
+Measure throughput and resource usage under sustained load.
+
+**Location**: `shared/src/commonTest/kotlin/digital/vasic/yole/format/load/`
+**Pattern**: Parse hundreds of documents sequentially and concurrently, measure throughput (docs/second).
+
+### 14. E2E (End-to-End) Tests
+Test the complete pipeline from raw input to rendered HTML.
+
+**Location**: `shared/src/commonTest/kotlin/digital/vasic/yole/format/e2e/`
+**Pattern**: Format detection -> parsing -> HTML generation -> CSS styling, for all 17 formats.
+
+### 15. Accessibility Tests
+Verify theme contrast ratios and WCAG compliance.
+
+**Location**: `shared/src/commonTest/kotlin/digital/vasic/yole/ui/`
+**Pattern**: Theme color contrast ratios, font size accessibility, screen reader compatibility metadata.
+
+### 16. Non-Blocking Tests
+Verify suspend functions do not block the calling thread.
+
+**Location**: `shared/src/commonTest/kotlin/digital/vasic/yole/format/nonblocking/`
+**Pattern**: Wrap operations in `withTimeout()` to detect blocking, verify `CancellationException` propagation.
 
 ---
 
@@ -19,66 +129,121 @@ This document provides comprehensive guidelines for testing Yole parsers, based 
 
 ### 1. Identify High-Impact Targets
 
-Use Kover coverage reports to find parsers with:
-- ✅ **Low branch coverage** (<30%)
-- ✅ **High missed branch count** (>70)
-- ✅ **Complex conditional logic**
-- ✅ **Production usage**
+Use Kover coverage reports to find parsers with low branch coverage:
 
-**Command**:
 ```bash
 ./gradlew :shared:koverXmlReport
-python3 analyze_coverage.py  # See script below
 ```
 
-**Analysis Script**:
-```python
-import xml.etree.ElementTree as ET
-import glob
-
-xml_files = glob.glob("shared/build/reports/kover/*.xml")
-tree = ET.parse(xml_files[0])
-root = tree.getroot()
-
-files_coverage = []
-for package in root.findall(".//package"):
-    for sourcefile in package.findall(".//sourcefile"):
-        filename = sourcefile.get('name', '')
-        if 'Parser.kt' in filename:
-            for counter in sourcefile.findall(".//counter"):
-                if counter.get('type') == 'BRANCH':
-                    covered = int(counter.get('covered', 0))
-                    missed = int(counter.get('missed', 0))
-                    total = covered + missed
-                    pct = (covered / total * 100) if total > 0 else 100
-
-                    if pct < 30 and missed > 70:
-                        files_coverage.append({
-                            'file': filename,
-                            'pct': pct,
-                            'missed': missed
-                        })
-
-# Sort by missed branches (descending)
-files_coverage.sort(key=lambda x: x['missed'], reverse=True)
-for item in files_coverage[:10]:
-    print(f"{item['file']}: {item['pct']:.1f}% coverage, {item['missed']} missed branches")
-```
+Look for parsers with:
+- Low branch coverage (<50%)
+- High missed branch count (>30)
+- Complex conditional logic
+- Production usage
 
 ### 2. Understand the Implementation
 
-**Before writing tests**, read the parser implementation to understand:
+Before writing tests, read the parser implementation to understand:
 - Branch logic (if/when/try-catch)
-- State management
+- State management (lists, code blocks, tables)
 - Format-specific features
 - Edge cases
 
-**Key Questions**:
-1. What are the main conditional branches?
-2. How is state tracked (lists, code blocks, etc.)?
-3. What formats can input data take?
-4. What optional fields have defaults?
-5. What validation is performed?
+### 3. Write Tests by Category
+
+Every parser test suite should include:
+1. Format-specific feature tests
+2. Metadata extraction tests (including defaults)
+3. Validation tests (errors and valid input)
+4. HTML generation tests (light/dark modes, escaping)
+5. Edge case tests (empty, whitespace, Unicode)
+6. Complex document test (all features combined)
+
+---
+
+## Concurrency Testing Guidelines
+
+### Thread Safety Tests
+
+All concurrency tests must use KMP-compatible patterns:
+
+```kotlin
+@Test
+fun concurrentParsingProducesConsistentResults() = runBlocking<Unit> {
+    val content = "# Test Document\nSome content"
+    val results = (1..100).map {
+        async(Dispatchers.Default) {
+            MarkdownParser().parse(content)
+        }
+    }.awaitAll()
+
+    // All results must be identical
+    val reference = results.first().parsedContent
+    results.forEach { assertEquals(reference, it.parsedContent) }
+}
+```
+
+### Rules for Concurrency Tests
+
+- Use `Mutex` and `Semaphore` from `kotlinx.coroutines.sync` (not `java.util.concurrent`)
+- Use `Clock.System.now()` instead of `System.currentTimeMillis()`
+- Use `delay()` instead of `Thread.sleep()`
+- Use `runBlocking<Unit> { }` (not `runTest`) for JUnit4 compatibility
+- Test lock ordering: always acquire locks in ascending priority order (see `LOCK_ORDERING.md`)
+- Verify `CancellationException` is rethrown in all catch blocks
+- Test `@Volatile` fields under concurrent access
+- Test `StateFlow.update{}` atomic updates
+
+### Key Concurrency Test Files
+
+- `ConcurrencySafetyTest.kt` -- Mutex, channel, deadlock prevention
+- `RaceConditionDetectionTest.kt` -- Check-then-act races
+- `MemoryLeakDetectionTest.kt` -- FlowLazyLoader scope cancellation
+- `StressAndIntegrationTest.kt` -- Rate limiter, lazy loading under 100+ concurrent requests
+
+---
+
+## Performance Baseline Guidelines
+
+### Establishing Baselines
+
+Performance tests use assertion-based thresholds to detect regressions:
+
+```kotlin
+@Test
+fun markdownParsingUnder100ms() = runBlocking<Unit> {
+    val content = generateMarkdownDocument(lines = 10000)
+    val elapsed = measureTimeMillis {
+        MarkdownParser().parse(content)
+    }
+    assertTrue(elapsed < 100, "Parsing took ${elapsed}ms, expected <100ms")
+}
+```
+
+### Standard Baselines
+
+| Operation | Threshold | Notes |
+|-----------|-----------|-------|
+| Parse 10,000 lines | < 100ms | Any format |
+| First `toHtml()` call | < 50ms | Medium document |
+| Cached `toHtml()` call | < 1ms | Returns cached HTML |
+| `detectByExtension()` | < 1ms | O(1) map lookup |
+| `detectByContent()` | < 5ms | Regex pattern matching |
+| `registerAllParsersLazy()` | < 2ms | Factory lambdas only |
+| FormatRegistry lazy init | < 5ms | First access to `formats` |
+| StyleSheets cache hit | < 1ms | CSS from `styleSheetCache` |
+
+### Running Performance Tests
+
+```bash
+# Desktop only (fast iteration)
+./gradlew :shared:desktopTest \
+  --tests "digital.vasic.yole.format.stress.PerformanceMetricsTests"
+
+# All monitoring metrics
+./gradlew :shared:desktopTest \
+  --tests "digital.vasic.yole.format.stress.MonitoringMetricsTests"
+```
 
 ---
 
@@ -89,7 +254,7 @@ for item in files_coverage[:10]:
 ```kotlin
 /*#######################################################
  *
- * SPDX-FileCopyrightText: 2025 Milos Vasic
+ * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  *
  * Comprehensive tests for [Parser Name]
@@ -97,19 +262,9 @@ for item in files_coverage[:10]:
  *########################################################*/
 package digital.vasic.yole.format.[formatname]
 
-import digital.vasic.yole.format.ParserRegistry
+import digital.vasic.yole.format.TextParser
 import kotlin.test.*
 
-/**
- * Comprehensive tests for [Parser] covering all parsing branches.
- *
- * Tests cover:
- * - [Feature 1]
- * - [Feature 2]
- * - [Feature 3]
- * - Validation
- * - Edge cases
- */
 class [Parser]ComprehensiveTest {
 
     private lateinit var parser: [Parser]
@@ -117,293 +272,48 @@ class [Parser]ComprehensiveTest {
     @BeforeTest
     fun setup() {
         parser = [Parser]()
-        ParserRegistry.clear()
-        ParserRegistry.register(parser)
     }
 
-    @AfterTest
-    fun teardown() {
-        ParserRegistry.clear()
+    // ==================== Feature Tests ====================
+
+    @Test
+    fun `should parse [feature] correctly`() {
+        val content = "[format-specific syntax]"
+        val doc = parser.parse(content)
+        assertTrue(doc.parsedContent.contains("[expected]"))
     }
 
-    // Test categories here...
-}
-```
-
-### Test Categories (Standard)
-
-Every parser test suite should include these categories:
-
-#### 1. Format-Specific Feature Tests
-Test the unique features of the format:
-```kotlin
-// ==================== [Feature Name] Tests ====================
-
-@Test
-fun `should convert [feature] to HTML`() {
-    val content = """
-        [format-specific syntax]
-    """.trimIndent()
-
-    val doc = parser.parse(content)
-
-    assertTrue(doc.parsedContent.contains("[expected HTML]"))
-}
-```
-
-**Examples**:
-- Jupyter: Cell types, output formats, metadata fields
-- AsciiDoc: Headings, admonitions, code blocks
-- LaTeX: Math mode, environments, sections
-- Creole: Lists, tables, inline markup
-
-#### 2. Metadata Extraction Tests
-Test all metadata fields + defaults:
-```kotlin
-// ==================== Metadata Tests ====================
-
-@Test
-fun `should extract [field] metadata`() {
-    val content = "[syntax with metadata]"
-
-    val doc = parser.parse(content)
-
-    assertEquals("expected value", doc.metadata["field"])
-}
-
-@Test
-fun `should provide default for missing [field]`() {
-    val content = "[content without field]"
-
-    val doc = parser.parse(content)
-
-    assertEquals("default value", doc.metadata["field"])
-}
-```
-
-#### 3. Validation Tests
-Test error detection + valid input:
-```kotlin
-// ==================== Validation Tests ====================
-
-@Test
-fun `should detect [error type]`() {
-    val content = "[malformed content]"
-
-    val errors = parser.validate(content)
-
-    assertTrue(errors.any { it.contains("[error description]") })
-}
-
-@Test
-fun `should accept valid [feature]`() {
-    val content = "[valid content]"
-
-    val errors = parser.validate(content)
-
-    assertFalse(errors.any { it.contains("[error]") })
-}
-```
-
-#### 4. HTML Generation Tests
-Test light/dark modes, escaping, structure:
-```kotlin
-// ==================== HTML Generation Tests ====================
-
-@Test
-fun `should generate light mode HTML`() {
-    val content = "[content]"
-
-    val doc = parser.parse(content)
-    val html = doc.toHtml(lightMode = true)
-
-    assertTrue(html.contains("[expected structure]"))
-}
-
-@Test
-fun `should generate dark mode HTML`() {
-    val content = "[content]"
-
-    val doc = parser.parse(content)
-    val html = doc.toHtml(lightMode = false)
-
-    assertTrue(html.contains("[expected structure]"))
-}
-
-@Test
-fun `should escape HTML special characters`() {
-    val content = "Text with <>&\"'"
-
-    val doc = parser.parse(content)
-    val html = doc.toHtml(lightMode = true)
-
-    assertTrue(html.contains("&lt;") || html.contains("&gt;"))
-}
-```
-
-#### 5. Edge Case Tests
-Test boundary conditions:
-```kotlin
-// ==================== Edge Cases ====================
-
-@Test
-fun `should handle empty content`() {
-    val doc = parser.parse("")
-
-    assertEquals("", doc.rawContent)
-    assertNotNull(doc.parsedContent)
-}
-
-@Test
-fun `should handle only whitespace`() {
-    val content = "   \n\n\t  "
-
-    val doc = parser.parse(content)
-
-    assertNotNull(doc.parsedContent)
-}
-
-@Test
-fun `should handle unicode characters`() {
-    val content = "Unicode: 你好世界 🌍"
-
-    val doc = parser.parse(content)
-
-    assertTrue(doc.parsedContent.contains("你好世界"))
-    assertTrue(doc.parsedContent.contains("🌍"))
-}
-```
-
-#### 6. Complex Document Test
-One comprehensive test with all features:
-```kotlin
-// ==================== Complex Document Tests ====================
-
-@Test
-fun `should handle complete [format] document`() {
-    val content = """
-        [comprehensive example with all features]
-    """.trimIndent()
-
-    val doc = parser.parse(content)
-
-    // Assert all features present
-    assertTrue(doc.parsedContent.contains("[feature 1]"))
-    assertTrue(doc.parsedContent.contains("[feature 2]"))
-    // ... etc
+    // ==================== Metadata Tests ====================
+    // ==================== Validation Tests ====================
+    // ==================== HTML Generation Tests ====================
+    // ==================== Edge Cases ====================
+    // ==================== Complex Document Tests ====================
 }
 ```
 
 ---
 
-## Common Testing Patterns
+## Test Constraints
 
-### Pattern 1: State Management Testing
-For parsers that track state (lists, code blocks, tables):
-
-```kotlin
-@Test
-fun `should close [structure] when encountering [other structure]`() {
-    val content = """
-        [start structure 1]
-        [start structure 2]
-    """.trimIndent()
-
-    val doc = parser.parse(content)
-
-    assertTrue(doc.parsedContent.contains("[closing tag for structure 1]"))
-    assertTrue(doc.parsedContent.contains("[opening tag for structure 2]"))
-}
-```
-
-**Example (Creole)**:
-```kotlin
-@Test
-fun `should close unordered list when encountering table`() {
-    val content = """
-        * Item 1
-        |Cell|
-    """.trimIndent()
-
-    val doc = parser.parse(content)
-
-    assertTrue(doc.parsedContent.contains("</ul>"))
-    assertTrue(doc.parsedContent.contains("<table>"))
-}
-```
-
-### Pattern 2: Multiple Format Testing
-For features that accept different input formats:
-
-```kotlin
-@Test
-fun `should handle [feature] as [format 1]`() {
-    val content = "[feature in format 1]"
-    val doc = parser.parse(content)
-    assertTrue(doc.parsedContent.contains("[expected]"))
-}
-
-@Test
-fun `should handle [feature] as [format 2]`() {
-    val content = "[feature in format 2]"
-    val doc = parser.parse(content)
-    assertTrue(doc.parsedContent.contains("[expected]"))
-}
-```
-
-**Example (Jupyter)**:
-```kotlin
-@Test
-fun `should handle source as array`() {
-    val notebook = """{"cells": [{"source": ["line1", "line2"]}]}"""
-    // Test array format
-}
-
-@Test
-fun `should handle source as string`() {
-    val notebook = """{"cells": [{"source": "single line"}]}"""
-    // Test string format
-}
-```
-
-### Pattern 3: Nested Structure Testing
-For parsers with nesting (lists, environments):
-
-```kotlin
-@Test
-fun `should handle nested [structure]`() {
-    val content = """
-        [outer structure]
-        [nested structure level 2]
-        [nested structure level 3]
-    """.trimIndent()
-
-    val doc = parser.parse(content)
-
-    // Verify nesting structure in HTML
-}
-```
+- **JUnit4 runner**: Tests use `runBlocking<Unit> { }` (not `runTest`). JUnit4 requires `Unit` return type; `runTest` returns `TestResult` which causes `void` signature mismatch.
+- **MockK is JVM-only**: Available in `desktopTest` and `androidUnitTest`, NOT in `commonTest` or `wasmJsTest`.
+- **kotlinx-coroutines-test**: No WASM variant. Unavailable in `commonTest`.
+- **jvmTarget**: Must be `"11"` in all JVM compilations.
 
 ---
 
 ## Test Naming Conventions
 
 ### Good Test Names
-✅ `should convert level 1 heading to HTML`
-✅ `should detect unclosed code block`
-✅ `should handle source as array instead of string`
-✅ `should escape HTML special characters`
-✅ `should close unordered list when encountering table`
+- `should convert level 1 heading to HTML`
+- `should detect unclosed code block`
+- `should handle source as array instead of string`
+- `should escape HTML special characters`
+- `concurrentParsingShouldNotCorruptResults`
 
-### Poor Test Names
-❌ `testHeading`
-❌ `test1`
-❌ `shouldWork`
-❌ `parseTest`
-
-**Rules**:
+### Rules
 1. Use backticks for descriptive names
-2. Start with "should"
+2. Start with "should" for behavior tests
 3. Be specific about what is being tested
 4. Include the expected behavior
 
@@ -411,207 +321,72 @@ fun `should handle nested [structure]`() {
 
 ## Coverage Measurement
 
-### Before Testing
+### Generate Coverage Report
+
 ```bash
-# Generate baseline coverage
-./gradlew :shared:koverXmlReport
-python3 analyze_coverage.py > baseline_coverage.txt
+./gradlew test koverHtmlReport
+# Report at: shared/build/reports/kover/html/index.html
 ```
 
-### After Testing
-```bash
-# Run new tests
-./gradlew :shared:testDebugUnitTest --tests "[YourParser]ComprehensiveTest"
+### Target Coverage
 
-# Verify all pass
-# Expected: "X tests completed, 0 failed"
-
-# Generate new coverage
-./gradlew :shared:koverXmlReport --rerun-tasks
-
-# Compare coverage
-python3 << 'EOF'
-import xml.etree.ElementTree as ET
-import glob
-
-xml_files = glob.glob("shared/build/reports/kover/*.xml")
-tree = ET.parse(xml_files[0])
-root = tree.getroot()
-
-# Show overall coverage
-for counter in root.findall("counter"):
-    if counter.get('type') == 'BRANCH':
-        covered = int(counter.get('covered', 0))
-        total = covered + int(counter.get('missed', 0))
-        print(f"Branch Coverage: {covered/total*100:.2f}% ({covered}/{total})")
-
-# Show specific parser coverage
-for package in root.findall(".//package"):
-    for sourcefile in package.findall(".//sourcefile"):
-        if '[YourParser].kt' in sourcefile.get('name', ''):
-            for counter in sourcefile.findall(".//counter"):
-                if counter.get('type') == 'BRANCH':
-                    covered = int(counter.get('covered', 0))
-                    total = covered + int(counter.get('missed', 0))
-                    print(f"Parser: {covered/total*100:.1f}% ({covered}/{total})")
-EOF
-```
-
-### Expected Improvements
-Based on historical data:
-- **Low-coverage parser** (<30%): +55-70% improvement
-- **Medium-coverage parser** (30-50%): +30-50% improvement
-- **Overall project**: +3-5% per parser tested
+- **Parser-specific**: 80-90% branch coverage
+- **Project overall**: 63%+ line coverage (current baseline)
+- **New code**: Must not reduce overall coverage
 
 ---
 
 ## Troubleshooting
 
-### Test Failures
-
-#### Issue: String interpolation in test content
+### String interpolation in test content
 ```kotlin
-// ❌ WRONG - $ will be interpreted
-val content = "$x = y$"  // Compilation error!
+// WRONG - $ will be interpreted
+val content = "$x = y$"
 
-// ✅ CORRECT - Escape the $
+// CORRECT - Escape the $
 val content = "\$x = y\$"
 ```
 
-#### Issue: Assertion expects exact HTML structure
+### Assertion expects exact HTML structure
 ```kotlin
-// ❌ FRAGILE - Expects exact tag structure
+// FRAGILE - Expects exact tag structure
 assertTrue(html.contains("<ul><li>Item</li></ul>"))
 
-// ✅ ROBUST - Check for key elements
+// ROBUST - Check for key elements
 assertTrue(html.contains("<ul>"))
 assertTrue(html.contains("<li>Item</li>"))
 ```
 
-#### Issue: Implementation behaves differently than expected
+### Test using wrong coroutine runner
 ```kotlin
-// ❌ Test fails because implementation differs
-assertTrue(html.contains("<ul>"))  // But it uses <div class='list'>
+// WRONG - runTest returns TestResult, incompatible with JUnit4
+@Test
+fun myTest() = runTest { ... }
 
-// ✅ Adjust test to match actual behavior
-assertTrue(html.contains("list"))
-assertTrue(html.contains("Item"))
+// CORRECT - runBlocking<Unit> returns Unit
+@Test
+fun myTest() = runBlocking<Unit> { ... }
 ```
-
-**Rule**: Adjust tests to match implementation behavior unless it's a bug.
-
-### Coverage Not Improving
-
-Possible causes:
-1. **Tests don't exercise new branches** - Check if tests actually hit uncovered code
-2. **Code already covered** - Integration tests may have covered it
-3. **Unreachable code** - Dead code that should be removed
-4. **Platform-specific code** - Needs platform-specific tests
-
-**Solution**: Use debugger or logging to verify test execution paths.
 
 ---
 
 ## Quality Standards
 
 ### Minimum Requirements
-- ✅ **100% test pass rate** before committing
-- ✅ **All major features covered** (at least one test per feature)
-- ✅ **Edge cases included** (empty, unicode, malformed)
-- ✅ **No hardcoded values** (use const or extract to variables)
-- ✅ **Clear test names** (descriptive, follows naming convention)
+- 100% test pass rate before committing
+- All major features covered (at least one test per feature)
+- Edge cases included (empty, unicode, malformed)
+- Clear test names (descriptive, follows naming convention)
+- No tests may ever be removed, disabled, or skipped
 
 ### Aspirational Goals
-- 🎯 **80%+ branch coverage** for the parser
-- 🎯 **90%+ line coverage** for the parser
-- 🎯 **Complex document test** exercising all features
-- 🎯 **Performance consideration** (tests run in <1s total)
+- 80%+ branch coverage for each parser
+- 90%+ line coverage for each parser
+- Complex document test exercising all features
+- Performance considerations (tests run in <1s total)
 
 ---
 
-## Example: Complete Test Suite
-
-See `JupyterParserComprehensiveTest.kt` as the gold standard:
-- ✅ 37 tests covering all branches
-- ✅ Improved coverage from 1.8% → 68.2%
-- ✅ All features tested (cells, metadata, outputs, validation)
-- ✅ Edge cases included (empty, null, malformed JSON)
-- ✅ Complex document test with mixed cells
-- ✅ Clear organization with comment sections
-
-**Location**: `shared/src/commonTest/kotlin/digital/vasic/yole/format/jupyter/JupyterParserComprehensiveTest.kt`
-
----
-
-## Quick Reference
-
-### Test Categories Checklist
-- [ ] Format-specific features (headings, lists, tables, etc.)
-- [ ] Metadata extraction
-- [ ] Metadata defaults
-- [ ] Validation (errors)
-- [ ] Validation (valid input)
-- [ ] HTML generation (light mode)
-- [ ] HTML generation (dark mode)
-- [ ] HTML escaping
-- [ ] Edge cases (empty, whitespace, unicode)
-- [ ] Complex document
-
-### Expected Test Count
-- **Simple parser**: 20-30 tests
-- **Medium complexity**: 30-50 tests
-- **Complex parser**: 45-60 tests
-
-### Target Coverage
-- **Parser-specific**: 80-90% branch coverage
-- **Project overall**: +3-5% per parser
-
----
-
-## FAQs
-
-**Q: How many tests should I write?**
-A: Enough to cover all major branches. Typical range: 30-60 tests depending on parser complexity.
-
-**Q: Should I test every single branch?**
-A: Focus on meaningful branches. Skip trivial getters/setters unless they have logic.
-
-**Q: What if a test fails?**
-A: First, understand the implementation behavior. Adjust test if implementation is correct, file bug if it's wrong.
-
-**Q: How do I know if I've covered enough?**
-A: Run Kover and check parser-specific coverage. Aim for 80%+ branch coverage.
-
-**Q: Should I write tests for edge cases first?**
-A: No - start with happy path (main features), then add edge cases.
-
----
-
-## Next Steps
-
-### For New Parsers
-1. Run coverage analysis to identify target
-2. Read parser implementation
-3. Create test file from template
-4. Write tests by category
-5. Run tests + measure coverage
-6. Iterate until 80%+ coverage
-
-### For Existing Parsers
-1. Check current coverage
-2. Identify uncovered branches
-3. Add targeted tests
-4. Measure improvement
-
-### For Project
-1. Continue testing remaining parsers
-2. Document patterns discovered
-3. Create parser testing checklist
-4. Integrate into CI/CD
-
----
-
-**Document Version**: 1.0
-**Last Updated**: 2025-11-19
+**Document Version**: 2.0
+**Last Updated**: 2026-03-17
 **Maintained By**: Engineering Team
-**Next Review**: After completing 2-3 more parsers
