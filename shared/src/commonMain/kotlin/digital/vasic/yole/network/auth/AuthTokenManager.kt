@@ -29,10 +29,9 @@ class AuthTokenManager(
 
     /**
      * Get the secure storage instance, creating it if necessary.
-     * Uses double-checked locking to avoid race conditions during initialization.
+     * Always acquires the mutex to avoid data races on _secureStorage.
      */
     private suspend fun getSecureStorage(): SecureStorage {
-        _secureStorage?.let { return it }
         return storageInitMutex.withLock {
             _secureStorage ?: SecureStorageFactory.create().getOrThrow().also {
                 _secureStorage = it

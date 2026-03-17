@@ -101,6 +101,9 @@ class WebDavService(
     override val isOnline: Boolean
         get() = _isConnected
 
+    /** Read _isConnected under stateMutex for safe access from suspending contexts. */
+    private suspend fun isConnected(): Boolean = stateMutex.withLock { _isConnected }
+
     override val rootPath: String
         get() = "/"
 
@@ -111,7 +114,7 @@ class WebDavService(
             name = config.name,
             type = StorageType.WEBDAV,
             location = config.url,
-            isOnline = _isConnected,
+            isOnline = isConnected(),
             lastSync = Clock.System.now()
         )
     }
@@ -166,7 +169,7 @@ class WebDavService(
 
     /** Tests server reachability by performing a connect/disconnect cycle if not already connected. */
     override suspend fun testConnection(): Result<Boolean> = try {
-        if (_isConnected) {
+        if (isConnected()) {
             Result.success(true)
         } else {
             val connectResult = connect()
@@ -187,7 +190,7 @@ class WebDavService(
      * Parses the multistatus XML response to extract NetworkDocument entries.
      */
     override fun listFiles(path: String): Flow<Result<List<NetworkDocument>>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(Result.failure(NetworkStorageException.ConnectionException.NotConnected(
                 message = "WebDAV not connected"
             )))
@@ -229,7 +232,7 @@ class WebDavService(
      * Upload a file to the WebDAV server using HTTP PUT with progress tracking.
      */
     override suspend fun uploadFile(localPath: String, remotePath: String): Flow<NetworkOperation> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(NetworkOperation.error(
                 id = "upload_$remotePath".hashCode().toLong(),
                 operationType = NetworkOperation.Type.UPLOAD,
@@ -291,7 +294,7 @@ class WebDavService(
      * Download a file from the WebDAV server using HTTP GET with progress tracking.
      */
     override suspend fun downloadFile(remotePath: String, localPath: String): Flow<NetworkOperation> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(NetworkOperation.error(
                 id = "download_$remotePath".hashCode().toLong(),
                 operationType = NetworkOperation.Type.DOWNLOAD,
@@ -368,7 +371,7 @@ class WebDavService(
      * Copy a file on the WebDAV server using HTTP COPY with Destination header.
      */
     override suspend fun copyFile(sourcePath: String, destinationPath: String): Result<Unit> = try {
-        if (_isConnected) {
+        if (isConnected()) {
             try {
                 val sourceUrl = buildWebDavUrl(sourcePath)
                 val destUrl = buildWebDavUrl(destinationPath)
@@ -402,7 +405,7 @@ class WebDavService(
      * Delete a file on the WebDAV server using HTTP DELETE.
      */
     override suspend fun deleteFile(remotePath: String): Result<Unit> = try {
-        if (_isConnected) {
+        if (isConnected()) {
             try {
                 val fullUrl = buildWebDavUrl(remotePath)
                 httpClient.delete(fullUrl) {
@@ -429,7 +432,7 @@ class WebDavService(
      * Create a folder on the WebDAV server using HTTP MKCOL.
      */
     override suspend fun createFolder(remotePath: String): Result<NetworkDocument> = try {
-        if (_isConnected) {
+        if (isConnected()) {
             try {
                 val fullUrl = buildWebDavUrl(remotePath)
                 httpClient.request(fullUrl) {
@@ -470,7 +473,7 @@ class WebDavService(
      * Rename a file on the WebDAV server using HTTP MOVE with Destination header.
      */
     override suspend fun renameFile(remotePath: String, newName: String): Result<Unit> = try {
-        if (_isConnected) {
+        if (isConnected()) {
             try {
                 val sourceUrl = buildWebDavUrl(remotePath)
                 val parentPath = remotePath.substringBeforeLast("/").ifEmpty { "/" }
@@ -511,7 +514,7 @@ class WebDavService(
      * Move a file on the WebDAV server using HTTP MOVE with Destination header.
      */
     override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> = try {
-        if (_isConnected) {
+        if (isConnected()) {
             try {
                 val sourceUrl = buildWebDavUrl(sourcePath)
                 val destUrl = buildWebDavUrl(destinationPath)
@@ -568,7 +571,7 @@ class WebDavService(
      * for a single resource.
      */
     override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> { return try {
-        if (_isConnected) {
+        if (isConnected()) {
             try {
                 val fullUrl = buildWebDavUrl(remotePath)
                 val propfindBody = buildPropfindRequestBody()
@@ -621,7 +624,7 @@ class WebDavService(
      * Returns true for 200 OK, false for 404 Not Found.
      */
     override suspend fun exists(remotePath: String): Result<Boolean> = try {
-        if (_isConnected) {
+        if (isConnected()) {
             try {
                 val fullUrl = buildWebDavUrl(remotePath)
                 val response = httpClient.head(fullUrl) {
@@ -758,7 +761,7 @@ class WebDavService(
             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.0))
 
             // Attempt to fetch file info from server to verify sync
-            if (_isConnected) {
+            if (isConnected()) {
                 try {
                     val fullUrl = buildWebDavUrl(remotePath)
                     httpClient.head(fullUrl) { applyAuth() }
@@ -790,7 +793,7 @@ class WebDavService(
             remotePath = "/"
         )
 
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(operation.copy(
                 status = NetworkOperation.Status.FAILED,
                 error = "WebDAV not connected"
@@ -888,7 +891,7 @@ class WebDavService(
         path: String?,
         includeContent: Boolean
     ): Flow<Result<List<NetworkDocument>>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(Result.failure(Exception("WebDAV search not implemented")))
             return@flow
         }
@@ -934,7 +937,7 @@ class WebDavService(
         since: kotlinx.datetime.Instant,
         path: String?
     ): Flow<List<NetworkDocument>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(emptyList())
             return@flow
         }
@@ -1030,7 +1033,7 @@ class WebDavService(
      * quota-available-bytes and quota-used-bytes properties.
      */
     override suspend fun getQuotaInfo(): Result<StorageQuota> { return try {
-        if (_isConnected) {
+        if (isConnected()) {
             try {
                 val baseUrl = config.url.trimEnd('/')
                 val quotaBody = """<?xml version="1.0" encoding="utf-8" ?>

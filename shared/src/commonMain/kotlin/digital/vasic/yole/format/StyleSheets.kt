@@ -9,6 +9,8 @@
  *########################################################*/
 package digital.vasic.yole.format
 
+import digital.vasic.yole.util.platformSynchronized
+
 /**
  * Centralized CSS stylesheets for all format parsers.
  *
@@ -39,6 +41,9 @@ package digital.vasic.yole.format
  */
 object StyleSheets {
 
+    // Synchronization lock for thread-safe cache access
+    private val cacheLock = Any()
+
     /**
      * Cache for stylesheet lookups keyed by "formatId:lightMode".
      *
@@ -51,22 +56,23 @@ object StyleSheets {
     /**
      * Whether the cache has been populated (for testing/monitoring).
      */
-    val cacheSize: Int get() = styleSheetCache.size
+    val cacheSize: Int get() = platformSynchronized(cacheLock) { styleSheetCache.size }
 
     /**
      * Get the appropriate stylesheet for a given format and theme.
      *
      * Results are cached after the first call for each format+theme combination.
      * Subsequent calls with the same arguments return the cached reference
-     * without re-evaluating the `when` expression.
+     * without re-evaluating the `when` expression. Access is synchronized for
+     * thread safety.
      *
      * @param formatId The format identifier (e.g., TextFormat.ID_MARKDOWN)
      * @param lightMode true for light theme, false for dark theme
      * @return Complete HTML div + style tags with appropriate CSS
      */
-    fun getStyleSheet(formatId: String, lightMode: Boolean): String {
+    fun getStyleSheet(formatId: String, lightMode: Boolean): String = platformSynchronized(cacheLock) {
         val cacheKey = "$formatId:$lightMode"
-        styleSheetCache[cacheKey]?.let { return it }
+        styleSheetCache[cacheKey]?.let { return@platformSynchronized it }
 
         val result = when (formatId) {
             TextFormat.ID_MARKDOWN -> MARKDOWN_STYLES
@@ -78,13 +84,13 @@ object StyleSheets {
             else -> "" // No predefined styles for this format
         }
         styleSheetCache[cacheKey] = result
-        return result
+        result
     }
 
     /**
      * Clear the stylesheet cache (primarily for testing).
      */
-    fun clearCache() {
+    fun clearCache() = platformSynchronized(cacheLock) {
         styleSheetCache.clear()
     }
 

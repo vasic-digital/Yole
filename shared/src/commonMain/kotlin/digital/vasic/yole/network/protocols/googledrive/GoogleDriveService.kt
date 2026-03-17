@@ -79,12 +79,9 @@ class GoogleDriveService(
     private val fileIO by lazy { PlatformFileIOFactory.create() }
 
     // Lazy initialization of HttpClient to avoid resource allocation if never used
-    // _httpClientAccessed tracks whether the lazy has been triggered, for safe close in disconnect()
-    private var _httpClientAccessed = false
-    private val httpClient by lazy {
-        _httpClientAccessed = true
-        _injectedHttpClient ?: createHttpClient()
-    }
+    // Use named lazy delegate so disconnect() can check isInitialized() without a race
+    private val _httpClientLazy = lazy { _injectedHttpClient ?: createHttpClient() }
+    private val httpClient by _httpClientLazy
 
     private val authTokenManager = _injectedAuthTokenManager ?: AuthTokenManager("googledrive")
     private val oauth2Flow by lazy {
@@ -111,6 +108,9 @@ class GoogleDriveService(
     /** Whether the Google Drive connection is currently active. */
     override val isOnline: Boolean
         get() = _isConnected
+
+    /** Read _isConnected under stateMutex for safe access from suspending contexts. */
+    private suspend fun isConnected(): Boolean = stateMutex.withLock { _isConnected }
 
     /** The root path used as the base for all Google Drive operations. */
     override val rootPath: String
@@ -139,12 +139,12 @@ class GoogleDriveService(
                 initializeConnection()
             } catch (e: kotlin.coroutines.cancellation.CancellationException) {
                 throw e
-            } catch (_: Exception) {
-                // Initialization failure is non-fatal
+            } catch (e: Exception) {
+                println("WARNING: ${this@GoogleDriveService::class.simpleName} initialization failed: ${e.message}")
             }
         }
     }
-    
+
     private suspend fun initializeConnection() {
         val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
         if (hasValidToken) {
@@ -161,13 +161,13 @@ class GoogleDriveService(
             name = config.name,
             type = StorageType.GOOGLE_DRIVE,
             location = "googledrive://",
-            isOnline = _isConnected,
+            isOnline = isConnected(),
             lastSync = Clock.System.now(),
             supportsFolders = true,
             supportsMetadata = true
         )
     }
-    
+
     /** Authenticate with Google Drive using OAuth2 tokens and fetch drive info. */
     override suspend fun connect(): Result<Unit> {
         return circuitBreaker.execute {
@@ -232,7 +232,7 @@ class GoogleDriveService(
             serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         }
         // Only close httpClient if it was actually initialized
-        if (_httpClientAccessed) {
+        if (_httpClientLazy.isInitialized()) {
             try {
                 httpClient.close()
             } catch (_: Exception) {
@@ -305,7 +305,7 @@ class GoogleDriveService(
     
     /** List files and folders at the given [path] using the Google Drive files.list API. */
     override fun listFiles(path: String): Flow<Result<List<NetworkDocument>>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(Result.failure(NetworkStorageException.ConnectionException.NotConnected(
                 message = "Google Drive not connected"
             )))
@@ -437,7 +437,7 @@ class GoogleDriveService(
     ): Flow<NetworkOperation> = flow {
         val operationId = Clock.System.now().toEpochMilliseconds()
         
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(createFailedOperation(operationId, NetworkOperation.Type.DOWNLOAD, remotePath, localPath, "Google Drive not connected"))
             return@flow
         }
@@ -543,7 +543,7 @@ class GoogleDriveService(
     ): Flow<NetworkOperation> = flow {
         val operationId = Clock.System.now().toEpochMilliseconds()
         
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(createFailedOperation(operationId, NetworkOperation.Type.UPLOAD, remotePath, localPath, "Google Drive not connected"))
             return@flow
         }
@@ -672,7 +672,7 @@ class GoogleDriveService(
 
     /** Delete a file or folder at [remotePath] on Google Drive using the files.delete API. */
     override suspend fun deleteFile(remotePath: String): Result<Unit> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(Unit) // Offline: succeed silently for queue-based sync
         }
         return try {
@@ -712,7 +712,7 @@ class GoogleDriveService(
 
     /** Create a new folder at [remotePath] on Google Drive using the files.create API. */
     override suspend fun createFolder(remotePath: String): Result<NetworkDocument> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(NetworkDocument(
                 id = remotePath,
                 name = remotePath.substringAfterLast("/"),
@@ -777,7 +777,7 @@ class GoogleDriveService(
 
     /** Rename a file or folder at [remotePath] to [newName] on Google Drive using the files.patch API. */
     override suspend fun renameFile(remotePath: String, newName: String): Result<Unit> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(Unit)
         }
         return try {
@@ -814,7 +814,7 @@ class GoogleDriveService(
 
     /** Move a file from [sourcePath] to [destinationPath] on Google Drive by updating parent references. */
     override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(NetworkDocument(
                 id = destinationPath,
                 name = destinationPath.substringAfterLast("/"),
@@ -894,7 +894,7 @@ class GoogleDriveService(
 
     /** Copy a file from [sourcePath] to [destinationPath] on Google Drive using the files.copy API. */
     override suspend fun copyFile(sourcePath: String, destinationPath: String): Result<Unit> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(Unit)
         }
         return try {
@@ -937,7 +937,7 @@ class GoogleDriveService(
 
     /** Retrieve file metadata for [remotePath] from the Google Drive files.get API. */
     override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(NetworkDocument(
                 id = remotePath,
                 name = remotePath.substringAfterLast("/"),
@@ -1136,7 +1136,7 @@ class GoogleDriveService(
         syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNCING }
 
         // If connected, attempt real sync by fetching metadata
-        if (_isConnected) {
+        if (isConnected()) {
             emit(NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.SYNC,
@@ -1179,7 +1179,7 @@ class GoogleDriveService(
         val operationId = Clock.System.now().toEpochMilliseconds()
         val now = Clock.System.now()
 
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.SYNC,
@@ -1286,7 +1286,7 @@ class GoogleDriveService(
         path: String?,
         includeContent: Boolean
     ): Flow<Result<List<NetworkDocument>>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(Result.success(emptyList()))
             return@flow
         }
@@ -1353,7 +1353,7 @@ class GoogleDriveService(
         since: kotlinx.datetime.Instant,
         path: String?
     ): Flow<List<NetworkDocument>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(emptyList())
             return@flow
         }
@@ -1417,7 +1417,7 @@ class GoogleDriveService(
 
     /** Retrieve Google Drive storage quota information using the about API. */
     override suspend fun getQuotaInfo(): Result<StorageQuota> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.failure(
                 NetworkStorageException.ConnectionException.NotConnected(
                     message = "Google Drive not connected"

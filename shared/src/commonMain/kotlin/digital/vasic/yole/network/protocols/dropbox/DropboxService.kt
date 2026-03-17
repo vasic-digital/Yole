@@ -80,12 +80,9 @@ class DropboxService(
     private val fileIO by lazy { PlatformFileIOFactory.create() }
 
     // Lazy initialization of HttpClient to avoid resource allocation if never used
-    // _httpClientAccessed tracks whether the lazy has been triggered, for safe close in disconnect()
-    private var _httpClientAccessed = false
-    private val httpClient by lazy {
-        _httpClientAccessed = true
-        _injectedHttpClient ?: createHttpClient()
-    }
+    // Use named lazy delegate so disconnect() can check isInitialized() without a race
+    private val _httpClientLazy = lazy { _injectedHttpClient ?: createHttpClient() }
+    private val httpClient by _httpClientLazy
 
     private val authTokenManager = _injectedAuthTokenManager ?: AuthTokenManager("dropbox")
     private val oauth2Flow by lazy {
@@ -111,6 +108,9 @@ class DropboxService(
 
     override val isOnline: Boolean
         get() = _isConnected
+
+    /** Read _isConnected under stateMutex for safe access from suspending contexts. */
+    private suspend fun isConnected(): Boolean = stateMutex.withLock { _isConnected }
 
     override val rootPath: String
         get() = "/"
@@ -138,8 +138,8 @@ class DropboxService(
                 initializeConnection()
             } catch (e: kotlin.coroutines.cancellation.CancellationException) {
                 throw e
-            } catch (_: Exception) {
-                // Initialization failure is non-fatal
+            } catch (e: Exception) {
+                println("WARNING: ${this@DropboxService::class.simpleName} initialization failed: ${e.message}")
             }
         }
     }
@@ -160,7 +160,7 @@ class DropboxService(
             name = config.name,
             type = StorageType.DROPBOX,
             location = "dropbox://${_rootPath}",
-            isOnline = _isConnected,
+            isOnline = stateMutex.withLock { _isConnected },
             lastSync = Clock.System.now(),
             supportsFolders = true,
             supportsMetadata = true
@@ -232,7 +232,7 @@ class DropboxService(
                 serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
             }
             // Only close httpClient if it was actually initialized
-            if (_httpClientAccessed) {
+            if (_httpClientLazy.isInitialized()) {
                 try {
                     httpClient.close()
                 } catch (_: Exception) {
@@ -305,7 +305,7 @@ class DropboxService(
     
     /** List files and folders at the given Dropbox [path] using the list_folder API. */
     override fun listFiles(path: String): Flow<Result<List<NetworkDocument>>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(Result.failure(NetworkStorageException.ConnectionException.NotConnected(
                 message = "Dropbox not connected"
             )))
@@ -397,7 +397,7 @@ class DropboxService(
     ): Flow<NetworkOperation> = flow {
         val operationId = Clock.System.now().toEpochMilliseconds()
         
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(createFailedOperation(operationId, NetworkOperation.Type.DOWNLOAD, remotePath, localPath, "Dropbox not connected"))
             return@flow
         }
@@ -492,7 +492,7 @@ class DropboxService(
     ): Flow<NetworkOperation> = flow {
         val operationId = Clock.System.now().toEpochMilliseconds()
         
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(createFailedOperation(operationId, NetworkOperation.Type.UPLOAD, remotePath, localPath, "Dropbox not connected"))
             return@flow
         }
@@ -606,7 +606,7 @@ class DropboxService(
 
     /** Delete a file or folder at [remotePath] on Dropbox using the delete_v2 API. */
     override suspend fun deleteFile(remotePath: String): Result<Unit> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(Unit) // Offline: succeed silently for queue-based sync
         }
         return try {
@@ -646,7 +646,7 @@ class DropboxService(
 
     /** Create a new folder at [remotePath] on Dropbox using the create_folder_v2 API. */
     override suspend fun createFolder(remotePath: String): Result<NetworkDocument> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(NetworkDocument(
                 id = remotePath,
                 name = remotePath.substringAfterLast("/"),
@@ -708,7 +708,7 @@ class DropboxService(
 
     /** Rename a file or folder at [remotePath] to [newName] on Dropbox using the move_v2 API. */
     override suspend fun renameFile(remotePath: String, newName: String): Result<Unit> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(Unit)
         }
         return try {
@@ -746,7 +746,7 @@ class DropboxService(
 
     /** Move a file or folder from [sourcePath] to [destinationPath] on Dropbox using the move_v2 API. */
     override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(NetworkDocument(
                 id = destinationPath,
                 name = destinationPath.substringAfterLast("/"),
@@ -809,7 +809,7 @@ class DropboxService(
 
     /** Copy a file or folder from [sourcePath] to [destinationPath] on Dropbox using the copy_v2 API. */
     override suspend fun copyFile(sourcePath: String, destinationPath: String): Result<Unit> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(Unit)
         }
         return try {
@@ -842,7 +842,7 @@ class DropboxService(
 
     /** Retrieve file metadata for [remotePath] from the Dropbox get_metadata API. */
     override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(NetworkDocument(
                 id = remotePath,
                 name = remotePath.substringAfterLast("/"),
@@ -1037,7 +1037,7 @@ class DropboxService(
         syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNCING }
 
         // If connected, attempt real sync by fetching metadata
-        if (_isConnected) {
+        if (isConnected()) {
             emit(NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.SYNC,
@@ -1079,7 +1079,7 @@ class DropboxService(
         val operationId = Clock.System.now().toEpochMilliseconds()
         val now = Clock.System.now()
 
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.SYNC,
@@ -1190,7 +1190,7 @@ class DropboxService(
         path: String?,
         includeContent: Boolean
     ): Flow<Result<List<NetworkDocument>>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(Result.success(emptyList()))
             return@flow
         }
@@ -1268,7 +1268,7 @@ class DropboxService(
         since: kotlinx.datetime.Instant,
         path: String?
     ): Flow<List<NetworkDocument>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(emptyList())
             return@flow
         }
@@ -1352,7 +1352,7 @@ class DropboxService(
 
     /** Retrieve Dropbox storage quota information using the get_space_usage API. */
     override suspend fun getQuotaInfo(): Result<StorageQuota> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.failure(
                 NetworkStorageException.ConnectionException.NotConnected(
                     message = "Dropbox not connected"

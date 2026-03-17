@@ -87,6 +87,9 @@ class FtpService(
     override val isOnline: Boolean
         get() = _isConnected
 
+    /** Read _isConnected under stateMutex for safe access from suspending contexts. */
+    private suspend fun isConnected(): Boolean = stateMutex.withLock { _isConnected }
+
     override val rootPath: String
         get() = "/"
 
@@ -107,7 +110,7 @@ class FtpService(
             name = config.name,
             type = StorageType.FTP,
             location = "ftp://${config.host}:${config.port}${_rootPath}",
-            isOnline = _isConnected,
+            isOnline = isConnected(),
             lastSync = Clock.System.now(),
             supportsFolders = false, // Basic FTP doesn't have reliable folder support
             supportsMetadata = false
@@ -257,7 +260,7 @@ class FtpService(
      * by [FtpProtocolClient], and each [FtpEntry] is mapped to a [NetworkDocument].
      */
     override fun listFiles(path: String): Flow<Result<List<NetworkDocument>>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(Result.failure(NetworkStorageException.ConnectionException.NotConnected(
                 message = "FTP not connected"
             )))
@@ -321,7 +324,7 @@ class FtpService(
     ): Flow<NetworkOperation> = flow {
         val operationId = nextOperationId()
 
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(createFailedOperation(operationId, NetworkOperation.Type.DOWNLOAD, remotePath, localPath, "FTP not connected"))
             return@flow
         }
@@ -444,7 +447,7 @@ class FtpService(
     ): Flow<NetworkOperation> = flow {
         val operationId = nextOperationId()
 
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(createFailedOperation(operationId, NetworkOperation.Type.UPLOAD, remotePath, localPath, "FTP not connected"))
             return@flow
         }
@@ -602,7 +605,7 @@ class FtpService(
      */
     override suspend fun deleteFile(remotePath: String): Result<Unit> {
         return try {
-            if (!_isConnected) {
+            if (!isConnected()) {
                 return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
                     message = "FTP not connected"
                 ))
@@ -654,7 +657,7 @@ class FtpService(
      */
     override suspend fun createFolder(remotePath: String): Result<NetworkDocument> {
         return try {
-            if (!_isConnected) {
+            if (!isConnected()) {
                 return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
                     message = "FTP not connected"
                 ))
@@ -703,7 +706,7 @@ class FtpService(
      */
     override suspend fun renameFile(remotePath: String, newName: String): Result<Unit> {
         return try {
-            if (!_isConnected) {
+            if (!isConnected()) {
                 return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
                     message = "FTP not connected"
                 ))
@@ -742,7 +745,7 @@ class FtpService(
      */
     override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> {
         return try {
-            if (!_isConnected) {
+            if (!isConnected()) {
                 return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
                     message = "FTP not connected"
                 ))
@@ -810,7 +813,7 @@ class FtpService(
      */
     override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> {
         return try {
-            if (!_isConnected) {
+            if (!isConnected()) {
                 return Result.failure(NetworkStorageException.ConnectionException.NotConnected(
                     message = "FTP not connected"
                 ))
@@ -1009,7 +1012,7 @@ class FtpService(
             syncStatusMap[fullPath] = SyncStatus.SYNCING
         }
 
-        if (_isConnected) {
+        if (isConnected()) {
             try {
                 // Check remote file state via SIZE and MDTM
                 val remoteSize = ftpClient.size(fullPath).getOrNull()
@@ -1069,7 +1072,7 @@ class FtpService(
         val operationId = nextOperationId()
         val now = Clock.System.now()
 
-        if (_isConnected) {
+        if (isConnected()) {
             try {
                 // List all files in root
                 val listResult = ftpClient.list(_rootPath)
@@ -1153,7 +1156,7 @@ class FtpService(
         since: kotlinx.datetime.Instant,
         path: String?
     ): Flow<List<NetworkDocument>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(emptyList())
             return@flow
         }
@@ -1209,7 +1212,7 @@ class FtpService(
      * Check if a file or directory exists by attempting SIZE, then LIST.
      */
     override suspend fun exists(remotePath: String): Result<Boolean> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(false)
         }
 

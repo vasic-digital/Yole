@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -132,13 +133,9 @@ class NetworkStorageConfigService {
                 }
             }
             
-            // Update state
-            val currentStorages = _configuredStorages.value.toMutableList()
-            _configuredStorages.value = currentStorages + networkStorage
-            
-            val currentStatus = _connectionStatus.value.toMutableMap()
-            currentStatus[storageConfig.name] = true
-            _connectionStatus.value = currentStatus
+            // Update state atomically
+            _configuredStorages.update { it + networkStorage }
+            _connectionStatus.update { it + (storageConfig.name to true) }
             
             Result.success(networkStorage)
         } catch (e: Exception) {
@@ -175,18 +172,12 @@ class NetworkStorageConfigService {
                 storageId.startsWith("onedrive_") -> secureStorage.deleteToken(storageId)
             }
             
-            // Update state
-            val currentStorages = _configuredStorages.value.filter { it.id != storageId }
-            _configuredStorages.value = currentStorages
-            
-            val currentStatus = _connectionStatus.value.toMutableMap()
-            currentStatus.remove(storageId)
-            _connectionStatus.value = currentStatus
-            
+            // Update state atomically
+            _configuredStorages.update { it.filter { s -> s.id != storageId } }
+            _connectionStatus.update { it - storageId }
+
             // Clear active storage if it was the removed one
-            if (_activeStorage.value?.id == storageId) {
-                _activeStorage.value = null
-            }
+            _activeStorage.update { if (it?.id == storageId) null else it }
             
             Result.success(Unit)
         } catch (e: Exception) {
@@ -219,7 +210,7 @@ class NetworkStorageConfigService {
                 }
             }
 
-            _activeStorage.value = storage
+            _activeStorage.update { storage }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(NetworkStorageException.fromThrowable(e, "setActiveStorage"))
@@ -470,8 +461,8 @@ class NetworkStorageConfigService {
                 statusMap[storage.id] = isOnline
             }
 
-            // Update connection status in a single operation
-            _connectionStatus.value = statusMap
+            // Update connection status atomically
+            _connectionStatus.update { statusMap }
 
             Result.success(Unit)
         } catch (e: Exception) {

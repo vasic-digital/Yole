@@ -81,6 +81,9 @@ class SftpService(
     override val isOnline: Boolean
         get() = _isConnected
 
+    /** Read _isConnected under stateMutex for safe access from suspending contexts. */
+    private suspend fun isConnected(): Boolean = stateMutex.withLock { _isConnected }
+
     override val rootPath: String
         get() = "/"
 
@@ -101,7 +104,7 @@ class SftpService(
             name = config.name,
             type = StorageType.SFTP,
             location = "sftp://${config.host}:${config.port}${_rootPath}",
-            isOnline = _isConnected,
+            isOnline = isConnected(),
             lastSync = Clock.System.now(),
             supportsFolders = true,
             supportsMetadata = true
@@ -307,7 +310,7 @@ class SftpService(
      * Returns file entries with full POSIX-style permissions and metadata.
      */
     override fun listFiles(path: String): Flow<Result<List<NetworkDocument>>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(
                 Result.failure(
                     NetworkStorageException.ConnectionException.NotConnected(
@@ -426,7 +429,7 @@ class SftpService(
     ): Flow<NetworkOperation> = flow {
         val operationId = nextOperationId()
 
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(
                 createFailedOperation(
                     operationId, NetworkOperation.Type.DOWNLOAD,
@@ -544,7 +547,7 @@ class SftpService(
     ): Flow<NetworkOperation> = flow {
         val operationId = nextOperationId()
 
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(
                 createFailedOperation(
                     operationId, NetworkOperation.Type.UPLOAD,
@@ -721,7 +724,7 @@ class SftpService(
      */
     override suspend fun deleteFile(remotePath: String): Result<Unit> {
         return try {
-            if (!_isConnected) {
+            if (!isConnected()) {
                 return Result.failure(
                     NetworkStorageException.ConnectionException.NotConnected(
                         message = "SFTP not connected"
@@ -765,7 +768,7 @@ class SftpService(
      */
     override suspend fun createFolder(remotePath: String): Result<NetworkDocument> {
         return try {
-            if (!_isConnected) {
+            if (!isConnected()) {
                 return Result.failure(
                     NetworkStorageException.ConnectionException.NotConnected(
                         message = "SFTP not connected"
@@ -823,7 +826,7 @@ class SftpService(
      */
     override suspend fun renameFile(remotePath: String, newName: String): Result<Unit> {
         return try {
-            if (!_isConnected) {
+            if (!isConnected()) {
                 return Result.failure(
                     NetworkStorageException.ConnectionException.NotConnected(
                         message = "SFTP not connected"
@@ -873,7 +876,7 @@ class SftpService(
         destinationPath: String
     ): Result<NetworkDocument> {
         return try {
-            if (!_isConnected) {
+            if (!isConnected()) {
                 return Result.failure(
                     NetworkStorageException.ConnectionException.NotConnected(
                         message = "SFTP not connected"
@@ -945,7 +948,7 @@ class SftpService(
         destinationPath: String
     ): Result<Unit> {
         return try {
-            if (!_isConnected) {
+            if (!isConnected()) {
                 return Result.failure(
                     NetworkStorageException.ConnectionException.NotConnected(
                         message = "SFTP not connected"
@@ -997,7 +1000,7 @@ class SftpService(
      */
     override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> {
         return try {
-            if (!_isConnected) {
+            if (!isConnected()) {
                 return Result.failure(
                     NetworkStorageException.ConnectionException.NotConnected(
                         message = "SFTP not connected"

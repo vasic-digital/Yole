@@ -125,6 +125,9 @@ class SmbService(
     override val isOnline: Boolean
         get() = _isConnected
 
+    /** Read _isConnected under stateMutex for safe access from suspending contexts. */
+    private suspend fun isConnected(): Boolean = stateMutex.withLock { _isConnected }
+
     override val rootPath: String
         get() = _rootPath
 
@@ -135,7 +138,7 @@ class SmbService(
             name = config.name,
             type = StorageType.SMB,
             location = "smb://${config.host}/${config.share}${_rootPath}",
-            isOnline = _isConnected,
+            isOnline = isConnected(),
             lastSync = Clock.System.now()
         )
     }
@@ -172,7 +175,7 @@ class SmbService(
 
     /** Tests connectivity by verifying the connection flag or performing a connect/disconnect cycle. */
     override suspend fun testConnection(): Result<Boolean> = try {
-        if (_isConnected) {
+        if (isConnected()) {
             Result.success(true)
         } else {
             val connectResult = connect()
@@ -192,7 +195,7 @@ class SmbService(
 
     /** Lists files at [path]; always fails because native SMB protocol support is required. */
     override fun listFiles(path: String): Flow<Result<List<NetworkDocument>>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(
                 Result.failure(
                     NetworkStorageException.ConnectionException.NotConnected(
@@ -233,7 +236,7 @@ class SmbService(
         localPath: String,
         remotePath: String
     ): Flow<NetworkOperation> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(
                 NetworkOperation.error(
                     id = "upload_$remotePath".hashCode().toLong(),
@@ -325,7 +328,7 @@ class SmbService(
         remotePath: String,
         localPath: String
     ): Flow<NetworkOperation> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(
                 NetworkOperation.error(
                     id = "download_$remotePath".hashCode().toLong(),
@@ -452,7 +455,7 @@ class SmbService(
 
     /** Removes the node at [remotePath] and all its children from the file tree. */
     override suspend fun deleteFile(remotePath: String): Result<Unit> = try {
-        if (!_isConnected) {
+        if (!isConnected()) {
             Result.failure(
                 NetworkStorageException.ConnectionException.NotConnected(
                     message = "SMB not connected"
@@ -673,7 +676,7 @@ class SmbService(
 
     /** Returns the file tree node for [remotePath], or a synthesized document if not found. */
     override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> = try {
-        if (!_isConnected) {
+        if (!isConnected()) {
             Result.failure(
                 NetworkStorageException.ConnectionException.NotConnected(
                     message = "SMB not connected"

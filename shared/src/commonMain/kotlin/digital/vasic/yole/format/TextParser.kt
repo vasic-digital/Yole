@@ -71,12 +71,16 @@ class ParsedDocument(
 ) {
     /**
      * Cached HTML for light mode. Lazily generated on first toHtml(lightMode=true) call.
+     * Marked volatile for safe publication across threads.
      */
+    @kotlin.concurrent.Volatile
     private var _cachedHtmlLight: String? = null
 
     /**
      * Cached HTML for dark mode. Lazily generated on first toHtml(lightMode=false) call.
+     * Marked volatile for safe publication across threads.
      */
+    @kotlin.concurrent.Volatile
     private var _cachedHtmlDark: String? = null
 
     /**

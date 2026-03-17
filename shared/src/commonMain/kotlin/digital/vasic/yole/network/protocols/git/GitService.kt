@@ -115,6 +115,9 @@ class GitService(
     override val isOnline: Boolean
         get() = _isConnected
 
+    /** Read _isConnected under stateMutex for safe access from suspending contexts. */
+    private suspend fun isConnected(): Boolean = stateMutex.withLock { _isConnected }
+
     override val rootPath: String
         get() = "/"
 
@@ -125,7 +128,7 @@ class GitService(
             name = config.name,
             type = StorageType.GIT,
             location = "https://github.com/example/repo",
-            isOnline = _isConnected,
+            isOnline = isConnected(),
             lastSync = Clock.System.now()
         )
     }
@@ -210,7 +213,7 @@ class GitService(
      * to list the tree contents via the raw file API.
      */
     override fun listFiles(path: String): Flow<Result<List<NetworkDocument>>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(Result.failure(NetworkStorageException.ConnectionException.NotConnected(
                 message = "Git not connected"
             )))
@@ -303,7 +306,7 @@ class GitService(
      */
     @OptIn(ExperimentalEncodingApi::class)
     override suspend fun uploadFile(localPath: String, remotePath: String): Flow<NetworkOperation> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(NetworkOperation.error(
                 id = "upload_$remotePath".hashCode().toLong(),
                 operationType = NetworkOperation.Type.UPLOAD,
@@ -480,7 +483,7 @@ class GitService(
      * Download a file from the Git repository using the raw file HTTP endpoint.
      */
     override suspend fun downloadFile(remotePath: String, localPath: String): Flow<NetworkOperation> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(NetworkOperation.error(
                 id = "download_$remotePath".hashCode().toLong(),
                 operationType = NetworkOperation.Type.DOWNLOAD,
@@ -609,7 +612,7 @@ class GitService(
         val branch = config.branch.ifBlank { "main" }
         var deletedViaApi = false
 
-        if (_isConnected && repoUrl.isNotBlank()) {
+        if (isConnected() && repoUrl.isNotBlank()) {
             try {
                 when {
                     repoUrl.contains("github.com") -> {
@@ -704,7 +707,7 @@ class GitService(
         val branch = config.branch.ifBlank { "main" }
         var createdViaApi = false
 
-        if (_isConnected && repoUrl.isNotBlank()) {
+        if (isConnected() && repoUrl.isNotBlank()) {
             try {
                 when {
                     repoUrl.contains("github.com") -> {
@@ -803,7 +806,7 @@ class GitService(
         val destClean = destPath.trimStart('/')
         var renamedViaApi = false
 
-        if (_isConnected && repoUrl.isNotBlank() && repoUrl.contains("github.com")) {
+        if (isConnected() && repoUrl.isNotBlank() && repoUrl.contains("github.com")) {
             try {
                 val repoPath = repoUrl.trimEnd('/').removeSuffix(".git")
                     .substringAfter("github.com/")
@@ -898,7 +901,7 @@ class GitService(
         val destClean = destinationPath.trimStart('/')
         var movedViaApi = false
 
-        if (_isConnected && repoUrl.isNotBlank() && repoUrl.contains("github.com")) {
+        if (isConnected() && repoUrl.isNotBlank() && repoUrl.contains("github.com")) {
             try {
                 val repoPath = repoUrl.trimEnd('/').removeSuffix(".git")
                     .substringAfter("github.com/")
@@ -1023,7 +1026,7 @@ class GitService(
                 ),
                 syncStatus = SyncStatus.SYNCED
             ))
-        } else if (_isConnected) {
+        } else if (isConnected()) {
             // Try to check existence via HTTP
             try {
                 val repoUrl = config.repositoryUrl.ifBlank { "" }
@@ -1101,7 +1104,7 @@ class GitService(
      * Check if a file exists in the Git repository via HTTP HEAD request.
      */
     override suspend fun exists(remotePath: String): Result<Boolean> = try {
-        if (_isConnected) {
+        if (isConnected()) {
             // Check known files first
             val known = fileListMutex.withLock {
                 knownFiles.containsKey(remotePath.trimStart('/'))
@@ -1255,7 +1258,7 @@ class GitService(
             // Check for pending changes
             val pendingChange = changesMutex.withLock { pendingChanges[remotePath] }
 
-            if (pendingChange != null && _isConnected) {
+            if (pendingChange != null && isConnected()) {
                 // Pending changes are uploaded via uploadFile(); clear after sync
                 changesMutex.withLock { pendingChanges.remove(remotePath) }
             }
@@ -1283,7 +1286,7 @@ class GitService(
             remotePath = "/"
         )
 
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(operation.copy(
                 status = NetworkOperation.Status.FAILED,
                 error = "Git not connected"
@@ -1387,7 +1390,7 @@ class GitService(
         path: String?,
         includeContent: Boolean
     ): Flow<Result<List<NetworkDocument>>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(Result.failure(Exception("Git search not implemented")))
             return@flow
         }
@@ -1440,7 +1443,7 @@ class GitService(
         since: kotlinx.datetime.Instant,
         path: String?
     ): Flow<List<NetworkDocument>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(emptyList())
             return@flow
         }

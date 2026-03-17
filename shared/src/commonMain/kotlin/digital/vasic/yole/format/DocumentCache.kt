@@ -27,10 +27,14 @@ class DocumentCache(private val maxSize: Int = 100) {
     private var _hits = 0L
     private var _misses = 0L
 
-    val size: Int get() = cache.size
-    val hits: Long get() = _hits
-    val misses: Long get() = _misses
-    val hitRate: Double get() = if (_hits + _misses == 0L) 0.0 else _hits.toDouble() / (_hits + _misses)
+    val size: Int get() = kotlinx.coroutines.runBlocking { mutex.withLock { cache.size } }
+    val hits: Long get() = kotlinx.coroutines.runBlocking { mutex.withLock { _hits } }
+    val misses: Long get() = kotlinx.coroutines.runBlocking { mutex.withLock { _misses } }
+    val hitRate: Double get() = kotlinx.coroutines.runBlocking {
+        mutex.withLock {
+            if (_hits + _misses == 0L) 0.0 else _hits.toDouble() / (_hits + _misses)
+        }
+    }
 
     suspend fun get(key: String): ParsedDocument? {
         yield()

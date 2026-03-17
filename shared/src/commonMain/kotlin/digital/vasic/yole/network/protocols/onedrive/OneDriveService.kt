@@ -80,12 +80,9 @@ class OneDriveService(
     private val fileIO by lazy { PlatformFileIOFactory.create() }
 
     // Lazy initialization of HttpClient to avoid resource allocation if never used
-    // _httpClientAccessed tracks whether the lazy has been triggered, for safe close in disconnect()
-    private var _httpClientAccessed = false
-    private val httpClient by lazy {
-        _httpClientAccessed = true
-        _injectedHttpClient ?: createHttpClient()
-    }
+    // Use named lazy delegate so disconnect() can check isInitialized() without a race
+    private val _httpClientLazy = lazy { _injectedHttpClient ?: createHttpClient() }
+    private val httpClient by _httpClientLazy
 
     private val authTokenManager = _injectedAuthTokenManager ?: AuthTokenManager("onedrive")
     private val oauth2Flow by lazy {
@@ -111,6 +108,9 @@ class OneDriveService(
 
     override val isOnline: Boolean
         get() = _isConnected
+
+    /** Read _isConnected under stateMutex for safe access from suspending contexts. */
+    private suspend fun isConnected(): Boolean = stateMutex.withLock { _isConnected }
 
     override val rootPath: String
         get() = "/"
@@ -138,12 +138,12 @@ class OneDriveService(
                 initializeConnection()
             } catch (e: kotlin.coroutines.cancellation.CancellationException) {
                 throw e
-            } catch (_: Exception) {
-                // Initialization failure is non-fatal
+            } catch (e: Exception) {
+                println("WARNING: ${this@OneDriveService::class.simpleName} initialization failed: ${e.message}")
             }
         }
     }
-    
+
     private suspend fun initializeConnection() {
         val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
         if (hasValidToken) {
@@ -160,13 +160,13 @@ class OneDriveService(
             name = config.name,
             type = StorageType.ONEDRIVE,
             location = "onedrive://",
-            isOnline = _isConnected,
+            isOnline = isConnected(),
             lastSync = Clock.System.now(),
             supportsFolders = true,
             supportsMetadata = true
         )
     }
-    
+
     /** Authenticates and connects to OneDrive, refreshing the OAuth2 token if needed. */
     override suspend fun connect(): Result<Unit> {
         return circuitBreaker.execute {
@@ -231,7 +231,7 @@ class OneDriveService(
             serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         }
         // Only close httpClient if it was actually initialized
-        if (_httpClientAccessed) {
+        if (_httpClientLazy.isInitialized()) {
             try {
                 httpClient.close()
             } catch (_: Exception) {
@@ -313,7 +313,7 @@ class OneDriveService(
     
     /** Lists files and folders in the OneDrive directory at [path] via the Graph API. */
     override fun listFiles(path: String): Flow<Result<List<NetworkDocument>>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(Result.failure(NetworkStorageException.ConnectionException.NotConnected(
                 message = "OneDrive not connected"
             )))
@@ -398,7 +398,7 @@ class OneDriveService(
             return Result.success(_rootFolderId)
         }
 
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(_rootFolderId)
         }
 
@@ -445,7 +445,7 @@ class OneDriveService(
     ): Flow<NetworkOperation> = flow {
         val operationId = Clock.System.now().toEpochMilliseconds()
         
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(createFailedOperation(operationId, NetworkOperation.Type.DOWNLOAD, remotePath, localPath, "OneDrive not connected"))
             return@flow
         }
@@ -563,7 +563,7 @@ class OneDriveService(
     ): Flow<NetworkOperation> = flow {
         val operationId = Clock.System.now().toEpochMilliseconds()
         
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(createFailedOperation(operationId, NetworkOperation.Type.UPLOAD, remotePath, localPath, "OneDrive not connected"))
             return@flow
         }
@@ -709,7 +709,7 @@ class OneDriveService(
 
     /** Deletes the item at [remotePath] from OneDrive and removes it from cache and sync tracking. */
     override suspend fun deleteFile(remotePath: String): Result<Unit> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(Unit) // Offline: succeed silently for queue-based sync
         }
         return try {
@@ -754,7 +754,7 @@ class OneDriveService(
 
     /** Creates a new folder at [remotePath] on OneDrive via the Graph API. */
     override suspend fun createFolder(remotePath: String): Result<NetworkDocument> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(NetworkDocument(
                 id = remotePath,
                 name = remotePath.substringAfterLast("/"),
@@ -825,7 +825,7 @@ class OneDriveService(
 
     /** Renames the item at [remotePath] to [newName] using a PATCH request to the Graph API. */
     override suspend fun renameFile(remotePath: String, newName: String): Result<Unit> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(Unit)
         }
         return try {
@@ -867,7 +867,7 @@ class OneDriveService(
 
     /** Moves an item from [sourcePath] to [destinationPath] on OneDrive by updating its parent reference. */
     override suspend fun moveFile(sourcePath: String, destinationPath: String): Result<NetworkDocument> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(NetworkDocument(
                 id = destinationPath,
                 name = destinationPath.substringAfterLast("/"),
@@ -940,7 +940,7 @@ class OneDriveService(
 
     /** Copies an item from [sourcePath] to [destinationPath] on OneDrive (asynchronous, returns 202 Accepted). */
     override suspend fun copyFile(sourcePath: String, destinationPath: String): Result<Unit> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(Unit)
         }
         return try {
@@ -988,7 +988,7 @@ class OneDriveService(
 
     /** Retrieves metadata for the item at [remotePath] from the Graph API. */
     override suspend fun getFileInfo(remotePath: String): Result<NetworkDocument> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.success(NetworkDocument(
                 id = remotePath,
                 name = remotePath.substringAfterLast("/"),
@@ -1192,7 +1192,7 @@ class OneDriveService(
         syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNCING }
 
         // If connected, attempt real sync by fetching metadata
-        if (_isConnected) {
+        if (isConnected()) {
             emit(NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.SYNC,
@@ -1235,7 +1235,7 @@ class OneDriveService(
         val operationId = Clock.System.now().toEpochMilliseconds()
         val now = Clock.System.now()
 
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(NetworkOperation(
                 id = operationId,
                 type = NetworkOperation.Type.SYNC,
@@ -1342,7 +1342,7 @@ class OneDriveService(
         path: String?,
         includeContent: Boolean
     ): Flow<Result<List<NetworkDocument>>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(Result.success(emptyList()))
             return@flow
         }
@@ -1399,7 +1399,7 @@ class OneDriveService(
         since: kotlinx.datetime.Instant,
         path: String?
     ): Flow<List<NetworkDocument>> = flow {
-        if (!_isConnected) {
+        if (!isConnected()) {
             emit(emptyList())
             return@flow
         }
@@ -1459,7 +1459,7 @@ class OneDriveService(
 
     /** Retrieves storage quota information (total, used, remaining space) from OneDrive. */
     override suspend fun getQuotaInfo(): Result<StorageQuota> {
-        if (!_isConnected) {
+        if (!isConnected()) {
             return Result.failure(
                 NetworkStorageException.ConnectionException.NotConnected(
                     message = "OneDrive not connected"
