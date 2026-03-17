@@ -9,6 +9,9 @@
  *########################################################*/
 package digital.vasic.yole.format
 
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+
 /**
  * Registry for all supported text formats in Yole.
  * 
@@ -432,31 +435,44 @@ object FormatRegistry {
     val documentCache = DocumentCache()
 
     /**
-     * Semaphore to limit concurrent parsing operations, preventing resource
-     * exhaustion when many documents are parsed simultaneously.
-     * Permits set to 4 to balance throughput with memory/CPU constraints.
+     * Semaphore that limits the number of concurrent parse operations.
+     *
+     * Parsing can be CPU-intensive (regex matching, AST construction) and
+     * memory-hungry (intermediate buffers). Allowing unbounded concurrency
+     * may cause latency spikes and OOM under load. Four permits strikes a
+     * balance between throughput and resource consumption on typical
+     * multicore devices.
      */
-    private val parseSemaphore = kotlinx.coroutines.sync.Semaphore(permits = 4)
+    private val parseSemaphore = Semaphore(permits = 4)
 
     /**
-     * Parse content with caching and concurrency control via semaphore.
+     * Parse content with caching **and** concurrency control.
      *
-     * Limits the number of concurrent parse operations to prevent resource
-     * exhaustion. Uses [parseSemaphore] to enforce a maximum of 4 concurrent
-     * parse operations. Callers that need unconstrained parsing should use
-     * [parseWithCache] directly.
+     * Behaves identically to [parseWithCache] but acquires a permit from
+     * [parseSemaphore] before executing. At most 4 parse operations can run
+     * concurrently; additional callers suspend until a permit is released.
+     *
+     * Uses [withPermit] to guarantee permit release even on cancellation.
+     *
+     * Use this method when many coroutines may parse simultaneously (e.g.,
+     * batch import, background re-parse on format change) to avoid CPU
+     * saturation and memory pressure.
      *
      * @param content The raw text content to parse
-     * @param format The [TextFormat] to use for parsing
+     * @param format  The [TextFormat] to use for parsing
      * @param options Optional parsing options passed to the parser
      * @return The parsed document (possibly from cache)
+     * @throws IllegalArgumentException if no parser exists for [format]
+     *
+     * @see parseWithCache
      */
-    suspend fun parseWithCacheConcurrent(content: String, format: TextFormat, options: Map<String, Any> = emptyMap()): ParsedDocument {
-        parseSemaphore.acquire()
-        try {
-            return parseWithCache(content, format, options)
-        } finally {
-            parseSemaphore.release()
+    suspend fun parseWithCacheConcurrent(
+        content: String,
+        format: TextFormat,
+        options: Map<String, Any> = emptyMap()
+    ): ParsedDocument {
+        return parseSemaphore.withPermit {
+            parseWithCache(content, format, options)
         }
     }
 
