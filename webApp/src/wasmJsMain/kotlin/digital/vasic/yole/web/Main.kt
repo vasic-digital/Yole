@@ -51,10 +51,12 @@ import org.w3c.files.FileReader
 fun main() {
     // Initialize PWA features
     PWAFeatures.initialize()
-    
-    CanvasBasedWindow(canvasElementId = "yoleCanvas", title = "Yole - Web Editor") {
-        MaterialTheme {
-            YoleWebApp()
+
+    CanvasBasedWindow(canvasElementId = "yoleCanvas", title = "Yole - IDE Editor") {
+        MaterialTheme(
+            colorScheme = darkColorScheme()
+        ) {
+            EnhancedYoleWebApp()
         }
     }
 }

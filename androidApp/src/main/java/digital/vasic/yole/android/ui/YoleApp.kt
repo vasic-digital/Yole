@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Main Compose UI for Yole Android App
+ * IDE-style mobile layout with tabs, line numbers, status bar
  *
  *########################################################*/
 
@@ -18,11 +19,15 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -45,7 +50,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.documentfile.provider.DocumentFile
@@ -68,13 +78,44 @@ import digital.vasic.yole.android.util.PdfExportUtil
 import digital.vasic.yole.android.util.BackupRestoreUtil
 import java.io.File
 
+// ===== IDE Theme Colors =====
+object IdeTheme {
+    // Dark
+    val darkBackground = Color(0xFF1E1E1E)
+    val darkSurface = Color(0xFF252526)
+    val darkSurfaceVariant = Color(0xFF2D2D30)
+    val darkBorder = Color(0xFF3C3C3C)
+    val darkAccent = Color(0xFF007ACC)
+    val darkText = Color(0xFFD4D4D4)
+    val darkTextSecondary = Color(0xFF858585)
+    val darkCurrentLine = Color(0xFF2A2D2E)
+    val darkStatusBar = Color(0xFF007ACC)
+    val darkTabActive = Color(0xFF1E1E1E)
+    val darkTabInactive = Color(0xFF2D2D30)
+    val darkLineNumbers = Color(0xFF858585)
+
+    // Light
+    val lightBackground = Color(0xFFFFFFFF)
+    val lightSurface = Color(0xFFF3F3F3)
+    val lightSurfaceVariant = Color(0xFFECECEC)
+    val lightBorder = Color(0xFFD4D4D4)
+    val lightAccent = Color(0xFF007ACC)
+    val lightText = Color(0xFF1E1E1E)
+    val lightTextSecondary = Color(0xFF6E6E6E)
+    val lightCurrentLine = Color(0xFFF0F0F0)
+    val lightStatusBar = Color(0xFF007ACC)
+    val lightTabActive = Color(0xFFFFFFFF)
+    val lightTabInactive = Color(0xFFECECEC)
+    val lightLineNumbers = Color(0xFF6E6E6E)
+}
+
 /**
  * Settings manager for Yole app
  */
 class YoleSettings(context: android.content.Context) : GsSharedPreferencesPropertyBackend(context, "yole_settings") {
 
     // Theme settings
-    fun getThemeMode(): String = getString("theme_mode", "system")
+    fun getThemeMode(): String = getString("theme_mode", "dark") // IDE dark theme default
     fun setThemeMode(mode: String) = setString("theme_mode", mode)
 
     fun getDynamicColorsEnabled(): Boolean = getBool("dynamic_colors_enabled", true)
@@ -111,7 +152,7 @@ class YoleSettings(context: android.content.Context) : GsSharedPreferencesProper
 fun saveFile(filePath: String, content: String): Boolean {
     return try {
         val file = File(filePath)
-        file.parentFile?.mkdirs() // Create parent directories if they don't exist
+        file.parentFile?.mkdirs()
         file.writeText(content)
         true
     } catch (e: Exception) {
@@ -142,6 +183,13 @@ fun deleteFile(filePath: String): Boolean {
         false
     }
 }
+
+// Represents an open editor tab
+data class EditorTab(
+    val fileName: String,
+    val content: String,
+    val isDirty: Boolean = false
+)
 
 enum class Screen {
     FILES,
@@ -180,6 +228,7 @@ fun MainScreen() {
     val context = LocalContext.current
     val settings = remember { YoleSettings(context) }
     val coroutineScope = rememberCoroutineScope()
+    val isDarkTheme = isSystemInDarkTheme() || settings.getThemeMode() == "dark"
 
     var currentScreen by remember { mutableStateOf(Screen.FILES) }
     var currentSubScreen by remember { mutableStateOf<SubScreen?>(null) }
@@ -190,11 +239,15 @@ fun MainScreen() {
     var fileSearchQuery by remember { mutableStateOf("") }
     var fileSortBy by remember { mutableStateOf("name") }
 
+    // Tab management
+    var openTabs by remember { mutableStateOf(listOf<EditorTab>()) }
+    var activeTabIndex by remember { mutableStateOf(0) }
+
     // Complete screen state management for TODO screen
     var showTodoSearch by remember { mutableStateOf(false) }
     var todoSearchQuery by remember { mutableStateOf("") }
     var showTodoFilter by remember { mutableStateOf(false) }
-    var todoFilterType by remember { mutableStateOf("all") } // all, active, completed
+    var todoFilterType by remember { mutableStateOf("all") }
     var todoItems by remember { mutableStateOf(listOf<TodoItem>()) }
 
     // Editor state
@@ -206,12 +259,44 @@ fun MainScreen() {
     var showBackupDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
     var exportInProgress by remember { mutableStateOf(false) }
+    var showNewDocDialog by remember { mutableStateOf(false) }
+    var newDocFormat by remember { mutableStateOf("markdown") }
+
+    // Drawer state
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
 
     // Load settings
     var themeMode by remember { mutableStateOf(settings.getThemeMode()) }
     var showLineNumbers by remember { mutableStateOf(settings.getShowLineNumbers()) }
     var autoSave by remember { mutableStateOf(settings.getAutoSave()) }
     var animationsEnabled by remember { mutableStateOf(settings.getAnimationsEnabled()) }
+
+    // IDE theme colors
+    val bg = if (isDarkTheme) IdeTheme.darkBackground else IdeTheme.lightBackground
+    val surface = if (isDarkTheme) IdeTheme.darkSurface else IdeTheme.lightSurface
+    val border = if (isDarkTheme) IdeTheme.darkBorder else IdeTheme.lightBorder
+    val accent = if (isDarkTheme) IdeTheme.darkAccent else IdeTheme.lightAccent
+    val textColor = if (isDarkTheme) IdeTheme.darkText else IdeTheme.lightText
+    val textSecondary = if (isDarkTheme) IdeTheme.darkTextSecondary else IdeTheme.lightTextSecondary
+    val statusBarBg = if (isDarkTheme) IdeTheme.darkStatusBar else IdeTheme.lightStatusBar
+    val tabActive = if (isDarkTheme) IdeTheme.darkTabActive else IdeTheme.lightTabActive
+    val tabInactive = if (isDarkTheme) IdeTheme.darkTabInactive else IdeTheme.lightTabInactive
+    val lineNumColor = if (isDarkTheme) IdeTheme.darkLineNumbers else IdeTheme.lightLineNumbers
+
+    // Helper: open file in a new tab or switch to existing tab
+    fun openFileInTab(fileName: String, content: String) {
+        val existingIndex = openTabs.indexOfFirst { it.fileName == fileName }
+        if (existingIndex >= 0) {
+            activeTabIndex = existingIndex
+            fileContent = openTabs[existingIndex].content
+        } else {
+            openTabs = openTabs + EditorTab(fileName = fileName, content = content)
+            activeTabIndex = openTabs.size // will be the new last index
+            fileContent = content
+        }
+        selectedFile = fileName
+        currentSubScreen = SubScreen.EDITOR
+    }
 
     // File pickers
     val backupFilePicker = rememberLauncherForActivityResult(
@@ -222,16 +307,9 @@ fun MainScreen() {
                 val result = BackupRestoreUtil.restoreBackup(context, backupUri, settings)
                 if (result.isSuccess) {
                     Toast.makeText(context, "Backup restored successfully", Toast.LENGTH_SHORT).show()
-                    // Refresh current screen
                     when (currentScreen) {
-                        Screen.FILES -> {
-                            // Trigger file list refresh
-                            fileSearchQuery = fileSearchQuery
-                        }
-                        Screen.TODO -> {
-                            // Trigger todo list refresh
-                            todoItems = todoItems
-                        }
+                        Screen.FILES -> { fileSearchQuery = fileSearchQuery }
+                        Screen.TODO -> { todoItems = todoItems }
                         else -> {}
                     }
                 } else {
@@ -261,191 +339,398 @@ fun MainScreen() {
         // Add global keyboard shortcuts here
     }
 
-    Scaffold(
-        modifier = Modifier.onKeyEvent { event ->
-            if (event.type == KeyEventType.KeyDown) {
-                when (event.key) {
-                    Key.S -> {
-                        // Save current file (Ctrl+S on desktop, just S on Android)
-                        if (currentSubScreen == SubScreen.EDITOR) {
-                            selectedFile?.let { file ->
-                                val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-                                if (!docsDir.exists()) docsDir.mkdirs()
-                                val filePath = File(docsDir, file).absolutePath
-                                try {
-                                    File(filePath).writeText(fileContent)
-                                    // Announce save success
-                                    if (settings.getAnnounceChanges()) {
-                                        Toast.makeText(context, "File saved: $file", Toast.LENGTH_SHORT).show()
-                                    }
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, "Failed to save file: ${e.message}", Toast.LENGTH_LONG).show()
-                                }
-                            }
-                        }
-                        true
-                    }
-                    Key.N -> {
-                        // New file (Ctrl+N on desktop, just N on Android)
-                        selectedFile = null
-                        fileContent = ""
-                        currentSubScreen = SubScreen.EDITOR
-                        true
-                    }
-                    Key.O -> {
-                        // Open file (Ctrl+O on desktop, just O on Android)
-                        currentSubScreen = SubScreen.FILE_BROWSER
-                        true
-                    }
-                    Key.Escape -> {
-                        // Close current sub-screen
-                        currentSubScreen = null
-                        true
-                    }
-                    else -> false
-                }
-            } else false
-        },
-        topBar = {
-            when (currentSubScreen) {
-                SubScreen.EDITOR -> EditorTopBar(
-                    fileName = selectedFile ?: "Untitled",
-                    onSaveClick = {
-                        selectedFile?.let { fileName ->
-                            val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-                            if (!docsDir.exists()) docsDir.mkdirs()
-                            val filePath = File(docsDir, fileName).absolutePath
-                            if (saveFile(filePath, fileContent)) {
-                                if (settings.getAnnounceChanges()) {
-                                    Toast.makeText(context, "File saved successfully", Toast.LENGTH_SHORT).show()
-                                }
-                            } else {
-                                Toast.makeText(context, "Failed to save file", Toast.LENGTH_LONG).show()
-                            }
-                        }
-                    },
-                    onPreviewClick = { currentSubScreen = SubScreen.PREVIEW },
-                    onBackClick = { currentSubScreen = null }
-                )
-                SubScreen.PREVIEW -> PreviewTopBar(
-                    fileName = selectedFile ?: "Untitled",
-                    onEditClick = { currentSubScreen = SubScreen.EDITOR },
-                    onBackClick = { currentSubScreen = null },
-                    onExportClick = { showExportDialog = true }
-                )
-                SubScreen.SETTINGS -> SettingsTopBar(
-                    onBackClick = { currentSubScreen = null }
-                )
-                null -> {
-                    when (currentScreen) {
-                        Screen.FILES -> FilesTopBar(
-                            onSearchClick = { showFileSearch = !showFileSearch },
-                            onSortClick = {
-                                fileSortBy = when (fileSortBy) {
-                                    "name" -> "date"
-                                    "date" -> "size"
-                                    "size" -> "name"
-                                    else -> "name"
-                                }
-                            },
-                            onMoreClick = { currentSubScreen = SubScreen.SETTINGS }
-                        )
-                        Screen.TODO -> TodoTopBar(
-                            onSearchClick = { showTodoSearch = !showTodoSearch },
-                            onFilterClick = { showTodoFilter = !showTodoFilter },
-                            onMoreClick = { currentSubScreen = SubScreen.SETTINGS }
-                        )
-                        Screen.QUICKNOTE -> QuickNoteTopBar(
-                            onSaveClick = {
-                                val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-                                if (!docsDir.exists()) docsDir.mkdirs()
-                                val filePath = File(docsDir, "quicknote.md").absolutePath
-                                if (saveFile(filePath, quickNoteContent)) {
-                                    if (settings.getAnnounceChanges()) {
-                                        Toast.makeText(context, "Quick note saved", Toast.LENGTH_SHORT).show()
-                                    }
-                                } else {
-                                    Toast.makeText(context, "Failed to save quick note", Toast.LENGTH_LONG).show()
-                                }
-                            },
-                            onMoreClick = { currentSubScreen = SubScreen.SETTINGS }
-                        )
-                        Screen.MORE -> MoreTopBar()
-                    }
-                }
-                else -> {} // Exhaustive when
-            }
-        },
-        bottomBar = {
-            BottomNavigationBar(
-                currentScreen = currentScreen,
-                onScreenSelected = { currentScreen = it }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    when (currentScreen) {
-                        Screen.FILES -> {
-                            // Create new file
-                            selectedFile = "untitled.txt"
-                            fileContent = ""
-                            currentSubScreen = SubScreen.EDITOR
-                        }
-                        Screen.TODO -> {
-                            // Add new todo item
-                            val newItem = TodoItem(
-                                id = System.currentTimeMillis().toString(),
-                                text = "New task",
-                                completed = false,
-                                priority = null,
-                                projects = emptyList(),
-                                contexts = emptyList(),
-                                dueDate = null
-                            )
-                            todoItems = todoItems + newItem
-                        }
-                        Screen.QUICKNOTE -> {
-                            // Quick note functionality - clear content
-                            quickNoteContent = ""
-                        }
-                        Screen.MORE -> {
-                            // More options - navigate to settings
-                            currentSubScreen = SubScreen.SETTINGS
-                        }
-                    }
-                }
+    // Navigation drawer with file explorer
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                modifier = Modifier.width(300.dp),
+                drawerContainerColor = surface
             ) {
-                Icon(Icons.Filled.Add, contentDescription = "Add")
+                IdeDrawerContent(
+                    isDarkTheme = isDarkTheme,
+                    surface = surface,
+                    border = border,
+                    textColor = textColor,
+                    textSecondary = textSecondary,
+                    accent = accent,
+                    openTabs = openTabs,
+                    activeTabIndex = activeTabIndex,
+                    onNewDocument = { showNewDocDialog = true },
+                    onTabSelected = { index ->
+                        activeTabIndex = index
+                        selectedFile = openTabs[index].fileName
+                        fileContent = openTabs[index].content
+                        currentSubScreen = SubScreen.EDITOR
+                        coroutineScope.launch { drawerState.close() }
+                    },
+                    onTabDeleted = { index ->
+                        val tab = openTabs[index]
+                        val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
+                        val filePath = File(docsDir, tab.fileName).absolutePath
+                        deleteFile(filePath)
+                        openTabs = openTabs.toMutableList().also { it.removeAt(index) }
+                        if (activeTabIndex >= openTabs.size) {
+                            activeTabIndex = (openTabs.size - 1).coerceAtLeast(0)
+                        }
+                        Toast.makeText(context, "Deleted: ${tab.fileName}", Toast.LENGTH_SHORT).show()
+                    },
+                    onOpenFileBrowser = {
+                        currentSubScreen = SubScreen.FILE_BROWSER
+                        coroutineScope.launch { drawerState.close() }
+                    },
+                    onSettingsClick = {
+                        currentSubScreen = SubScreen.SETTINGS
+                        coroutineScope.launch { drawerState.close() }
+                    },
+                    onBackupClick = {
+                        showBackupDialog = true
+                        coroutineScope.launch { drawerState.close() }
+                    },
+                    onAboutClick = {
+                        showAboutDialog = true
+                        coroutineScope.launch { drawerState.close() }
+                    }
+                )
             }
         }
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
-            if (animationsEnabled) {
-                AnimatedContent(
-                    targetState = currentSubScreen,
-                    transitionSpec = {
-                        if (targetState != null && initialState == null) {
-                            // Entering sub-screen (slide in from right) - enhanced with shared animations
-                            ScreenTransitions.slideIn(durationMillis = 600) togetherWith
-                            ScreenTransitions.slideOut(durationMillis = 600)
-                        } else if (targetState == null && initialState != null) {
-                            // Exiting sub-screen (slide back) - enhanced with shared animations
-                            slideInHorizontally(animationSpec = tween(600)) { -it } togetherWith
-                            slideOutHorizontally(animationSpec = tween(600)) { it }
-                        } else {
-                            // Same level transitions or null to null - faster fade
-                            ScreenTransitions.fade(durationMillis = 250) togetherWith
-                            fadeOut(animationSpec = tween(250))
+    ) {
+        Scaffold(
+            modifier = Modifier.onKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown) {
+                    when (event.key) {
+                        Key.S -> {
+                            if (currentSubScreen == SubScreen.EDITOR) {
+                                selectedFile?.let { file ->
+                                    val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
+                                    if (!docsDir.exists()) docsDir.mkdirs()
+                                    val filePath = File(docsDir, file).absolutePath
+                                    try {
+                                        File(filePath).writeText(fileContent)
+                                        if (settings.getAnnounceChanges()) {
+                                            Toast.makeText(context, "File saved: $file", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Failed to save file: ${e.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            }
+                            true
                         }
-                    },
-                    label = "SubScreenTransition"
-                ) { subScreen ->
-                    when (subScreen) {
-                        SubScreen.EDITOR -> EditorScreen(
+                        Key.N -> {
+                            selectedFile = null
+                            fileContent = ""
+                            currentSubScreen = SubScreen.EDITOR
+                            true
+                        }
+                        Key.O -> {
+                            currentSubScreen = SubScreen.FILE_BROWSER
+                            true
+                        }
+                        Key.Escape -> {
+                            currentSubScreen = null
+                            true
+                        }
+                        else -> false
+                    }
+                } else false
+            },
+            topBar = {
+                Column {
+                    // IDE App Bar
+                    when (currentSubScreen) {
+                        SubScreen.EDITOR -> IdeEditorTopBar(
+                            fileName = selectedFile ?: "Untitled",
+                            isDarkTheme = isDarkTheme,
+                            onMenuClick = { coroutineScope.launch { drawerState.open() } },
+                            onSaveClick = {
+                                selectedFile?.let { fileName ->
+                                    val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
+                                    if (!docsDir.exists()) docsDir.mkdirs()
+                                    val filePath = File(docsDir, fileName).absolutePath
+                                    if (saveFile(filePath, fileContent)) {
+                                        if (settings.getAnnounceChanges()) {
+                                            Toast.makeText(context, "File saved successfully", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "Failed to save file", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            },
+                            onPreviewClick = { currentSubScreen = SubScreen.PREVIEW },
+                            onBackClick = { currentSubScreen = null }
+                        )
+                        SubScreen.PREVIEW -> PreviewTopBar(
+                            fileName = selectedFile ?: "Untitled",
+                            onEditClick = { currentSubScreen = SubScreen.EDITOR },
+                            onBackClick = { currentSubScreen = null },
+                            onExportClick = { showExportDialog = true }
+                        )
+                        SubScreen.SETTINGS -> SettingsTopBar(
+                            onBackClick = { currentSubScreen = null }
+                        )
+                        null -> {
+                            IdeMainTopBar(
+                                currentScreen = currentScreen,
+                                isDarkTheme = isDarkTheme,
+                                onMenuClick = { coroutineScope.launch { drawerState.open() } },
+                                onSearchClick = {
+                                    when (currentScreen) {
+                                        Screen.FILES -> showFileSearch = !showFileSearch
+                                        Screen.TODO -> showTodoSearch = !showTodoSearch
+                                        else -> {}
+                                    }
+                                },
+                                onMoreClick = { currentSubScreen = SubScreen.SETTINGS }
+                            )
+                        }
+                        else -> {}
+                    }
+
+                    // Tab Bar (when in editor or files mode with open tabs)
+                    if (openTabs.isNotEmpty() && (currentSubScreen == SubScreen.EDITOR || currentSubScreen == null)) {
+                        IdeTabBar(
+                            tabs = openTabs,
+                            activeIndex = activeTabIndex,
+                            isDarkTheme = isDarkTheme,
+                            tabActive = tabActive,
+                            tabInactive = tabInactive,
+                            border = border,
+                            textColor = textColor,
+                            textSecondary = textSecondary,
+                            onTabSelected = { index ->
+                                activeTabIndex = index
+                                selectedFile = openTabs[index].fileName
+                                fileContent = openTabs[index].content
+                                currentSubScreen = SubScreen.EDITOR
+                            },
+                            onTabClosed = { index ->
+                                openTabs = openTabs.toMutableList().also { it.removeAt(index) }
+                                if (activeTabIndex >= openTabs.size) {
+                                    activeTabIndex = (openTabs.size - 1).coerceAtLeast(0)
+                                }
+                                if (openTabs.isEmpty()) {
+                                    currentSubScreen = null
+                                    selectedFile = null
+                                    fileContent = ""
+                                }
+                            },
+                            onNewTab = { showNewDocDialog = true }
+                        )
+                    }
+                }
+            },
+            bottomBar = {
+                Column {
+                    // Status Bar
+                    if (currentSubScreen == SubScreen.EDITOR && selectedFile != null) {
+                        IdeStatusBar(
+                            content = fileContent,
+                            fileName = selectedFile ?: "",
+                            isDarkTheme = isDarkTheme,
+                            statusBarBg = statusBarBg
+                        )
+                    }
+
+                    // Bottom Navigation
+                    IdeBottomNavBar(
+                        currentScreen = currentScreen,
+                        isDarkTheme = isDarkTheme,
+                        onScreenSelected = { currentScreen = it }
+                    )
+                }
+            },
+            floatingActionButton = {
+                if (currentSubScreen == null) {
+                    FloatingActionButton(
+                        onClick = {
+                            when (currentScreen) {
+                                Screen.FILES -> {
+                                    showNewDocDialog = true
+                                }
+                                Screen.TODO -> {
+                                    val newItem = TodoItem(
+                                        id = System.currentTimeMillis().toString(),
+                                        text = "New task",
+                                        completed = false,
+                                        priority = null,
+                                        projects = emptyList(),
+                                        contexts = emptyList(),
+                                        dueDate = null
+                                    )
+                                    todoItems = todoItems + newItem
+                                }
+                                Screen.QUICKNOTE -> {
+                                    quickNoteContent = ""
+                                }
+                                Screen.MORE -> {
+                                    currentSubScreen = SubScreen.SETTINGS
+                                }
+                            }
+                        },
+                        containerColor = accent
+                    ) {
+                        Icon(Icons.Filled.Add, contentDescription = "Add", tint = Color.White)
+                    }
+                }
+            }
+        ) { padding ->
+            Box(modifier = Modifier.padding(padding)) {
+                if (animationsEnabled) {
+                    AnimatedContent(
+                        targetState = currentSubScreen,
+                        transitionSpec = {
+                            if (targetState != null && initialState == null) {
+                                ScreenTransitions.slideIn(durationMillis = 600) togetherWith
+                                ScreenTransitions.slideOut(durationMillis = 600)
+                            } else if (targetState == null && initialState != null) {
+                                slideInHorizontally(animationSpec = tween(600)) { -it } togetherWith
+                                slideOutHorizontally(animationSpec = tween(600)) { it }
+                            } else {
+                                ScreenTransitions.fade(durationMillis = 250) togetherWith
+                                fadeOut(animationSpec = tween(250))
+                            }
+                        },
+                        label = "SubScreenTransition"
+                    ) { subScreen ->
+                        when (subScreen) {
+                            SubScreen.EDITOR -> IdeEditorScreen(
+                                fileName = selectedFile ?: "Untitled",
+                                content = fileContent,
+                                onContentChanged = {
+                                    fileContent = it
+                                    // Update tab content
+                                    if (activeTabIndex in openTabs.indices) {
+                                        openTabs = openTabs.toMutableList().also { list ->
+                                            list[activeTabIndex] = list[activeTabIndex].copy(
+                                                content = it,
+                                                isDirty = true
+                                            )
+                                        }
+                                    }
+                                },
+                                showLineNumbers = showLineNumbers,
+                                isDarkTheme = isDarkTheme,
+                                onBackClick = { currentSubScreen = null },
+                                onSaveClick = {
+                                    selectedFile?.let { fileName ->
+                                        val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
+                                        if (!docsDir.exists()) docsDir.mkdirs()
+                                        val filePath = File(docsDir, fileName).absolutePath
+                                        saveFile(filePath, fileContent)
+                                    }
+                                }
+                            )
+                            SubScreen.PREVIEW -> PreviewScreen(
+                                fileName = selectedFile ?: "Untitled",
+                                content = fileContent,
+                                onBackClick = { currentSubScreen = null },
+                                onExportClick = { showExportDialog = true }
+                            )
+                            SubScreen.SETTINGS -> SettingsScreen(
+                                onBackClick = { currentSubScreen = null },
+                                themeMode = themeMode,
+                                onThemeModeChanged = {
+                                    themeMode = it
+                                    settings.setThemeMode(it)
+                                },
+                                showLineNumbers = showLineNumbers,
+                                onShowLineNumbersChanged = {
+                                    showLineNumbers = it
+                                    settings.setShowLineNumbers(it)
+                                },
+                                autoSave = autoSave,
+                                onAutoSaveChanged = {
+                                    autoSave = it
+                                    settings.setAutoSave(it)
+                                },
+                                animationsEnabled = animationsEnabled,
+                                onAnimationsEnabledChanged = {
+                                    animationsEnabled = it
+                                    settings.setAnimationsEnabled(it)
+                                }
+                            )
+                            null -> {
+                                AnimatedContent(
+                                    targetState = currentScreen,
+                                    transitionSpec = {
+                                        if (targetState.ordinal > initialState.ordinal) {
+                                            ScreenTransitions.slideIn(durationMillis = 450) togetherWith
+                                            ScreenTransitions.slideOut(durationMillis = 450)
+                                        } else {
+                                            slideInHorizontally(animationSpec = tween(450)) { it } togetherWith
+                                            slideOutHorizontally(animationSpec = tween(450)) { -it }
+                                        }
+                                    },
+                                    label = "MainScreenTransition"
+                                ) { screen ->
+                                    when (screen) {
+                                        Screen.FILES -> FilesScreen(
+                                            searchQuery = fileSearchQuery,
+                                            sortBy = fileSortBy,
+                                            onSearchQueryChanged = { fileSearchQuery = it },
+                                            onSortChanged = { fileSortBy = it },
+                                            showSearch = showFileSearch,
+                                            onShowSearchChanged = { showFileSearch = it },
+                                            onFileSelected = { file, content ->
+                                                openFileInTab(file, content)
+                                            },
+                                            onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
+                                        )
+                                        Screen.TODO -> TodoScreen(
+                                            searchQuery = todoSearchQuery,
+                                            filterType = todoFilterType,
+                                            showSearch = showTodoSearch,
+                                            showFilter = showTodoFilter,
+                                            onSearchQueryChanged = { todoSearchQuery = it },
+                                            onFilterTypeChanged = { todoFilterType = it },
+                                            onShowSearchChanged = { showTodoSearch = it },
+                                            onShowFilterChanged = { showTodoFilter = it },
+                                            todoItems = todoItems,
+                                            onTodoItemsChanged = { todoItems = it }
+                                        )
+                                        Screen.QUICKNOTE -> QuickNoteScreen(
+                                            content = quickNoteContent,
+                                            onContentChanged = { quickNoteContent = it },
+                                            onSaveClick = {
+                                                val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
+                                                if (!docsDir.exists()) docsDir.mkdirs()
+                                                val filePath = File(docsDir, "quicknote.md").absolutePath
+                                                saveFile(filePath, quickNoteContent)
+                                            }
+                                        )
+                                        Screen.MORE -> MoreScreen(
+                                            onSettingsClick = { currentSubScreen = SubScreen.SETTINGS },
+                                            onFileBrowserClick = { currentSubScreen = SubScreen.FILE_BROWSER },
+                                            onSearchClick = { showFileSearch = true },
+                                            onBackupClick = { showBackupDialog = true },
+                                            onAboutClick = { showAboutDialog = true }
+                                        )
+                                    }
+                                }
+                            }
+                            else -> {}
+                        }
+                    }
+                } else {
+                    // No animations - direct content switching
+                    when (currentSubScreen) {
+                        SubScreen.EDITOR -> IdeEditorScreen(
                             fileName = selectedFile ?: "Untitled",
                             content = fileContent,
-                            onContentChanged = { fileContent = it },
+                            onContentChanged = {
+                                fileContent = it
+                                if (activeTabIndex in openTabs.indices) {
+                                    openTabs = openTabs.toMutableList().also { list ->
+                                        list[activeTabIndex] = list[activeTabIndex].copy(
+                                            content = it,
+                                            isDirty = true
+                                        )
+                                    }
+                                }
+                            },
+                            showLineNumbers = showLineNumbers,
+                            isDarkTheme = isDarkTheme,
                             onBackClick = { currentSubScreen = null },
                             onSaveClick = {
                                 selectedFile?.let { fileName ->
@@ -486,332 +771,1003 @@ fun MainScreen() {
                             }
                         )
                         null -> {
-                            AnimatedContent(
-                                targetState = currentScreen,
-                                transitionSpec = {
-                                    // Enhanced tab transitions - smoother with shared animations
-                                    if (targetState.ordinal > initialState.ordinal) {
-                                        // Swipe left (moving forward)
-                                        ScreenTransitions.slideIn(durationMillis = 450) togetherWith
-                                        ScreenTransitions.slideOut(durationMillis = 450)
-                                    } else {
-                                        // Swipe right (moving backward)
-                                        slideInHorizontally(animationSpec = tween(450)) { it } togetherWith
-                                        slideOutHorizontally(animationSpec = tween(450)) { -it }
+                            when (currentScreen) {
+                                Screen.FILES -> FilesScreen(
+                                    searchQuery = fileSearchQuery,
+                                    sortBy = fileSortBy,
+                                    onSearchQueryChanged = { fileSearchQuery = it },
+                                    onSortChanged = { fileSortBy = it },
+                                    showSearch = showFileSearch,
+                                    onShowSearchChanged = { showFileSearch = it },
+                                    onFileSelected = { file, content ->
+                                        openFileInTab(file, content)
+                                    },
+                                    onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
+                                )
+                                Screen.TODO -> TodoScreen(
+                                    searchQuery = todoSearchQuery,
+                                    filterType = todoFilterType,
+                                    showSearch = showTodoSearch,
+                                    showFilter = showTodoFilter,
+                                    onSearchQueryChanged = { todoSearchQuery = it },
+                                    onFilterTypeChanged = { todoFilterType = it },
+                                    onShowSearchChanged = { showTodoSearch = it },
+                                    onShowFilterChanged = { showTodoFilter = it },
+                                    todoItems = todoItems,
+                                    onTodoItemsChanged = { todoItems = it }
+                                )
+                                Screen.QUICKNOTE -> QuickNoteScreen(
+                                    content = quickNoteContent,
+                                    onContentChanged = { quickNoteContent = it },
+                                    onSaveClick = {
+                                        val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
+                                        if (!docsDir.exists()) docsDir.mkdirs()
+                                        val filePath = File(docsDir, "quicknote.md").absolutePath
+                                        saveFile(filePath, quickNoteContent)
                                     }
-                                },
-                                label = "MainScreenTransition"
-                            ) { screen ->
-                                when (screen) {
-                                    Screen.FILES -> FilesScreen(
-                                        searchQuery = fileSearchQuery,
-                                        sortBy = fileSortBy,
-                                        onSearchQueryChanged = { fileSearchQuery = it },
-                                        onSortChanged = { fileSortBy = it },
-                                        showSearch = showFileSearch,
-                                        onShowSearchChanged = { showFileSearch = it },
-                                        onFileSelected = { file, content ->
-                                            selectedFile = file
-                                            fileContent = content
-                                            currentSubScreen = SubScreen.EDITOR
-                                        },
-                                        onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
-                                    )
-                                    Screen.TODO -> TodoScreen(
-                                        searchQuery = todoSearchQuery,
-                                        filterType = todoFilterType,
-                                        showSearch = showTodoSearch,
-                                        showFilter = showTodoFilter,
-                                        onSearchQueryChanged = { todoSearchQuery = it },
-                                        onFilterTypeChanged = { todoFilterType = it },
-                                        onShowSearchChanged = { showTodoSearch = it },
-                                        onShowFilterChanged = { showTodoFilter = it },
-                                        todoItems = todoItems,
-                                        onTodoItemsChanged = { todoItems = it }
-                                    )
-                                    Screen.QUICKNOTE -> QuickNoteScreen(
-                                        content = quickNoteContent,
-                                        onContentChanged = { quickNoteContent = it },
-                                        onSaveClick = {
-                                            val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-                                            if (!docsDir.exists()) docsDir.mkdirs()
-                                            val filePath = File(docsDir, "quicknote.md").absolutePath
-                                            saveFile(filePath, quickNoteContent)
-                                        }
-                                    )
-                                    Screen.MORE -> MoreScreen(
-                                        onSettingsClick = { currentSubScreen = SubScreen.SETTINGS },
-                                        onFileBrowserClick = { currentSubScreen = SubScreen.FILE_BROWSER },
-                                        onSearchClick = { showFileSearch = true },
-                                        onBackupClick = { showBackupDialog = true },
-                                        onAboutClick = { showAboutDialog = true }
-                                    )
-                                }
+                                )
+                                Screen.MORE -> MoreScreen(
+                                    onSettingsClick = { currentSubScreen = SubScreen.SETTINGS },
+                                    onFileBrowserClick = { currentSubScreen = SubScreen.FILE_BROWSER },
+                                    onSearchClick = { showFileSearch = true },
+                                    onBackupClick = { showBackupDialog = true },
+                                    onAboutClick = { showAboutDialog = true }
+                                )
                             }
                         }
-                        else -> {} // Exhaustive when
+                        else -> {}
                     }
-                }
-            } else {
-                // No animations - direct content switching
-                when (currentSubScreen) {
-                    SubScreen.EDITOR -> EditorScreen(
-                        fileName = selectedFile ?: "Untitled",
-                        content = fileContent,
-                        onContentChanged = { fileContent = it },
-                        onBackClick = { currentSubScreen = null },
-                        onSaveClick = {
-                            selectedFile?.let { fileName ->
-                                val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-                                if (!docsDir.exists()) docsDir.mkdirs()
-                                val filePath = File(docsDir, fileName).absolutePath
-                                saveFile(filePath, fileContent)
-                            }
-                        }
-                    )
-                    SubScreen.PREVIEW -> PreviewScreen(
-                        fileName = selectedFile ?: "Untitled",
-                        content = fileContent,
-                        onBackClick = { currentSubScreen = null },
-                        onExportClick = { showExportDialog = true }
-                    )
-                    SubScreen.SETTINGS -> SettingsScreen(
-                        onBackClick = { currentSubScreen = null },
-                        themeMode = themeMode,
-                        onThemeModeChanged = {
-                            themeMode = it
-                            settings.setThemeMode(it)
-                        },
-                        showLineNumbers = showLineNumbers,
-                        onShowLineNumbersChanged = {
-                            showLineNumbers = it
-                            settings.setShowLineNumbers(it)
-                        },
-                        autoSave = autoSave,
-                        onAutoSaveChanged = {
-                            autoSave = it
-                            settings.setAutoSave(it)
-                        },
-                        animationsEnabled = animationsEnabled,
-                        onAnimationsEnabledChanged = {
-                            animationsEnabled = it
-                            settings.setAnimationsEnabled(it)
-                        }
-                    )
-                    null -> {
-                        when (currentScreen) {
-                            Screen.FILES -> FilesScreen(
-                                searchQuery = fileSearchQuery,
-                                sortBy = fileSortBy,
-                                onSearchQueryChanged = { fileSearchQuery = it },
-                                onSortChanged = { fileSortBy = it },
-                                showSearch = showFileSearch,
-                                onShowSearchChanged = { showFileSearch = it },
-                                onFileSelected = { file, content ->
-                                    selectedFile = file
-                                    fileContent = content
-                                    currentSubScreen = SubScreen.EDITOR
-                                },
-                                onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
-                            )
-                            Screen.TODO -> TodoScreen(
-                                searchQuery = todoSearchQuery,
-                                filterType = todoFilterType,
-                                showSearch = showTodoSearch,
-                                showFilter = showTodoFilter,
-                                onSearchQueryChanged = { todoSearchQuery = it },
-                                onFilterTypeChanged = { todoFilterType = it },
-                                onShowSearchChanged = { showTodoSearch = it },
-                                onShowFilterChanged = { showTodoFilter = it },
-                                todoItems = todoItems,
-                                onTodoItemsChanged = { todoItems = it }
-                            )
-                            Screen.QUICKNOTE -> QuickNoteScreen(
-                                content = quickNoteContent,
-                                onContentChanged = { quickNoteContent = it },
-                                onSaveClick = {
-                                    val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-                                    if (!docsDir.exists()) docsDir.mkdirs()
-                                    val filePath = File(docsDir, "quicknote.md").absolutePath
-                                    saveFile(filePath, quickNoteContent)
-                                }
-                            )
-                            Screen.MORE -> MoreScreen(
-                                onSettingsClick = { currentSubScreen = SubScreen.SETTINGS },
-                                onFileBrowserClick = { currentSubScreen = SubScreen.FILE_BROWSER },
-                                onSearchClick = { showFileSearch = true },
-                                onBackupClick = { showBackupDialog = true },
-                                onAboutClick = { showAboutDialog = true }
-                            )
-                        }
-                    }
-                    else -> {} // Exhaustive when
                 }
             }
-        }
 
-        // About Dialog
-        if (showAboutDialog) {
-            AlertDialog(
-                onDismissRequest = { showAboutDialog = false },
-                title = { Text("About Yole") },
-                text = {
-                    Column {
-                        Text("Yole - Universal Text Editor")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Version: 2.15.1")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Platforms: Android, Desktop, iOS, Web")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Supports 17+ text formats including Markdown, LaTeX, CSV, and more.")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("© 2025 Milos Vasic")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Apache-2.0 License")
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showAboutDialog = false }) {
-                        Text("Close")
-                    }
-                }
-            )
-        }
+            // ===== DIALOGS =====
 
-        // Export Dialog
-        if (showExportDialog) {
-            AlertDialog(
-                onDismissRequest = { showExportDialog = false },
-                title = { Text("Export to PDF") },
-                text = {
-                    Column {
-                        Text("Export your document as a PDF file that can be shared or printed.")
-                        Spacer(modifier = Modifier.height(16.dp))
-                        if (exportInProgress) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Text("Exporting...")
-                            }
-                        } else {
-                            Text("Choose export format:")
+            // New Document Dialog
+            if (showNewDocDialog) {
+                IdeNewDocumentDialog(
+                    selectedFormat = newDocFormat,
+                    onFormatSelected = { newDocFormat = it },
+                    onConfirm = {
+                        val ext = when (newDocFormat) {
+                            "markdown" -> ".md"
+                            "todotxt" -> ".txt"
+                            "csv" -> ".csv"
+                            "latex" -> ".tex"
+                            "orgmode" -> ".org"
+                            else -> ".txt"
+                        }
+                        val fileName = "untitled$ext"
+                        val template = when (newDocFormat) {
+                            "markdown" -> "# New Document\n\nStart writing..."
+                            "todotxt" -> "(A) New task @work +project"
+                            "csv" -> "Name,Email,Phone\n"
+                            "latex" -> "\\documentclass{article}\n\\begin{document}\n\n\\end{document}"
+                            else -> ""
+                        }
+                        openFileInTab(fileName, template)
+                        showNewDocDialog = false
+                    },
+                    onDismiss = { showNewDocDialog = false }
+                )
+            }
+
+            // About Dialog
+            if (showAboutDialog) {
+                AlertDialog(
+                    onDismissRequest = { showAboutDialog = false },
+                    title = { Text("About Yole") },
+                    text = {
+                        Column {
+                            Text("Yole - Universal Text Editor")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Version: 2.15.1")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Platforms: Android, Desktop, iOS, Web")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Supports 17+ text formats including Markdown, LaTeX, CSV, and more.")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("(c) 2025 Milos Vasic")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Apache-2.0 License")
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showAboutDialog = false }) {
+                            Text("Close")
                         }
                     }
-                },
-                confirmButton = {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(
-                            onClick = {
-                                if (!exportInProgress) {
-                                    selectedFile?.let { file ->
-                                        exportInProgress = true
-                                        coroutineScope.launch {
-                                            val format = FormatRegistry.detectByFilename(file)
-                                            val result = PdfExportUtil.exportToPdf(
-                                                context = context,
-                                                content = fileContent,
-                                                fileName = file,
-                                                format = format.id
-                                            )
+                )
+            }
 
-                                            exportInProgress = false
-                                            showExportDialog = false
+            // Export Dialog
+            if (showExportDialog) {
+                AlertDialog(
+                    onDismissRequest = { showExportDialog = false },
+                    title = { Text("Export to PDF") },
+                    text = {
+                        Column {
+                            Text("Export your document as a PDF file that can be shared or printed.")
+                            Spacer(modifier = Modifier.height(16.dp))
+                            if (exportInProgress) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Text("Exporting...")
+                                }
+                            } else {
+                                Text("Choose export format:")
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(
+                                onClick = {
+                                    if (!exportInProgress) {
+                                        selectedFile?.let { file ->
+                                            exportInProgress = true
+                                            coroutineScope.launch {
+                                                val format = FormatRegistry.detectByFilename(file)
+                                                val result = PdfExportUtil.exportToPdf(
+                                                    context = context,
+                                                    content = fileContent,
+                                                    fileName = file,
+                                                    format = format.id
+                                                )
 
-                                            if (result.isSuccess) {
-                                                val pdfUri = result.getOrNull()
-                                                if (pdfUri != null) {
-                                                    // Share the PDF
-                                                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                                        type = "application/pdf"
-                                                        putExtra(Intent.EXTRA_STREAM, pdfUri)
-                                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                                        putExtra(Intent.EXTRA_SUBJECT, "Yole Document: $file")
-                                                        putExtra(Intent.EXTRA_TEXT, "Here's the PDF export of my document from Yole.")
+                                                exportInProgress = false
+                                                showExportDialog = false
+
+                                                if (result.isSuccess) {
+                                                    val pdfUri = result.getOrNull()
+                                                    if (pdfUri != null) {
+                                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                                            type = "application/pdf"
+                                                            putExtra(Intent.EXTRA_STREAM, pdfUri)
+                                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                            putExtra(Intent.EXTRA_SUBJECT, "Yole Document: $file")
+                                                            putExtra(Intent.EXTRA_TEXT, "Here's the PDF export of my document from Yole.")
+                                                        }
+                                                        context.startActivity(Intent.createChooser(shareIntent, "Share PDF"))
+                                                        Toast.makeText(context, "PDF exported successfully", Toast.LENGTH_SHORT).show()
                                                     }
-                                                    context.startActivity(Intent.createChooser(shareIntent, "Share PDF"))
-                                                    Toast.makeText(context, "PDF exported successfully", Toast.LENGTH_SHORT).show()
+                                                } else {
+                                                    Toast.makeText(context, "Failed to export PDF: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
                                                 }
-                                            } else {
-                                                Toast.makeText(context, "Failed to export PDF: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
                                             }
                                         }
                                     }
-                                }
-                            },
-                            enabled = !exportInProgress
-                        ) {
-                            Text("Export")
+                                },
+                                enabled = !exportInProgress
+                            ) {
+                                Text("Export")
+                            }
+                            TextButton(
+                                onClick = { showExportDialog = false },
+                                enabled = !exportInProgress
+                            ) {
+                                Text("Cancel")
+                            }
                         }
-                        TextButton(
-                            onClick = { showExportDialog = false },
-                            enabled = !exportInProgress
-                        ) {
+                    }
+                )
+            }
+
+            // Backup & Restore Dialog
+            if (showBackupDialog) {
+                AlertDialog(
+                    onDismissRequest = { showBackupDialog = false },
+                    title = { Text("Backup & Restore") },
+                    text = {
+                        Column {
+                            Text("Backup your documents and settings to ensure you never lose your work.")
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text("Choose an option:")
+                        }
+                    },
+                    confirmButton = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = {
+                                coroutineScope.launch {
+                                    val result = BackupRestoreUtil.createBackup(context, settings)
+                                    showBackupDialog = false
+                                    if (result.isSuccess) {
+                                        val backupUri = result.getOrNull()
+                                        if (backupUri != null) {
+                                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                                type = "application/zip"
+                                                putExtra(Intent.EXTRA_STREAM, backupUri)
+                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                putExtra(Intent.EXTRA_SUBJECT, "Yole Backup")
+                                                putExtra(Intent.EXTRA_TEXT, "Here's my Yole backup file.")
+                                            }
+                                            context.startActivity(Intent.createChooser(shareIntent, "Share Backup"))
+                                            Toast.makeText(context, "Backup created successfully", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "Failed to create backup: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            }) {
+                                Text("Backup Now")
+                            }
+                            TextButton(onClick = {
+                                backupFilePicker.launch(arrayOf("application/zip"))
+                                showBackupDialog = false
+                            }) {
+                                Text("Restore")
+                            }
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showBackupDialog = false }) {
                             Text("Cancel")
                         }
                     }
+                )
+            }
+        }
+    }
+}
+
+// ===== IDE MAIN TOP BAR =====
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun IdeMainTopBar(
+    currentScreen: Screen,
+    isDarkTheme: Boolean,
+    onMenuClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onMoreClick: () -> Unit
+) {
+    val bg = if (isDarkTheme) IdeTheme.darkSurface else IdeTheme.lightSurface
+    TopAppBar(
+        title = {
+            Text(
+                "Yole",
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 18.sp
+            )
+        },
+        navigationIcon = {
+            IconButton(
+                onClick = onMenuClick,
+                modifier = Modifier.semantics { contentDescription = "Open file explorer" }
+            ) {
+                Icon(Icons.Filled.Menu, contentDescription = "Menu")
+            }
+        },
+        actions = {
+            IconButton(
+                onClick = onSearchClick,
+                modifier = Modifier.semantics { contentDescription = "Search" }
+            ) {
+                Icon(Icons.Outlined.Search, contentDescription = "Search")
+            }
+            IconButton(
+                onClick = onMoreClick,
+                modifier = Modifier.semantics { contentDescription = "Settings" }
+            ) {
+                Icon(Icons.Outlined.MoreVert, contentDescription = "More")
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = bg
+        )
+    )
+}
+
+// ===== IDE EDITOR TOP BAR =====
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun IdeEditorTopBar(
+    fileName: String,
+    isDarkTheme: Boolean,
+    onMenuClick: () -> Unit,
+    onSaveClick: () -> Unit,
+    onPreviewClick: () -> Unit,
+    onBackClick: () -> Unit
+) {
+    val bg = if (isDarkTheme) IdeTheme.darkSurface else IdeTheme.lightSurface
+    TopAppBar(
+        title = {
+            Text(
+                fileName,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 14.sp
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            }
+        },
+        actions = {
+            IconButton(
+                onClick = onMenuClick,
+                modifier = Modifier.semantics { contentDescription = "File explorer" }
+            ) {
+                Icon(Icons.Filled.Menu, contentDescription = "Explorer")
+            }
+            IconButton(
+                onClick = onSaveClick,
+                modifier = Modifier.semantics { contentDescription = "Save file" }
+            ) {
+                Icon(Icons.Filled.Check, contentDescription = "Save")
+            }
+            IconButton(
+                onClick = onPreviewClick,
+                modifier = Modifier.semantics { contentDescription = "Preview document" }
+            ) {
+                Icon(Icons.Filled.Info, contentDescription = "Preview")
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = bg
+        )
+    )
+}
+
+// ===== IDE TAB BAR =====
+
+@Composable
+fun IdeTabBar(
+    tabs: List<EditorTab>,
+    activeIndex: Int,
+    isDarkTheme: Boolean,
+    tabActive: Color,
+    tabInactive: Color,
+    border: Color,
+    textColor: Color,
+    textSecondary: Color,
+    onTabSelected: (Int) -> Unit,
+    onTabClosed: (Int) -> Unit,
+    onNewTab: () -> Unit
+) {
+    val surfaceVar = if (isDarkTheme) IdeTheme.darkSurfaceVariant else IdeTheme.lightSurfaceVariant
+
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(36.dp)
+                .background(surfaceVar)
+                .horizontalScroll(rememberScrollState()),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            tabs.forEachIndexed { index, tab ->
+                val isActive = index == activeIndex
+                val bg = if (isActive) tabActive else tabInactive
+                val txt = if (isActive) textColor else textSecondary
+
+                Row(
+                    modifier = Modifier
+                        .height(34.dp)
+                        .clickable { onTabSelected(index) }
+                        .background(bg)
+                        .padding(horizontal = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        tab.fileName + if (tab.isDirty) " *" else "",
+                        color = txt,
+                        fontSize = 12.sp,
+                        fontFamily = FontFamily.Monospace,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .widthIn(max = 120.dp)
+                            .semantics { contentDescription = "Tab: ${tab.fileName}" }
+                    )
+                    Box(
+                        modifier = Modifier
+                            .clickable { onTabClosed(index) }
+                            .padding(start = 2.dp)
+                            .semantics { contentDescription = "Close tab ${tab.fileName}" }
+                    ) {
+                        Text(
+                            "x",
+                            color = textSecondary.copy(alpha = if (isActive) 0.7f else 0.4f),
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            }
+
+            // New tab button
+            Box(
+                modifier = Modifier
+                    .height(34.dp)
+                    .clickable(onClick = onNewTab)
+                    .padding(horizontal = 10.dp)
+                    .semantics { contentDescription = "New tab" },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "+",
+                    color = textSecondary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(border))
+    }
+}
+
+// ===== IDE EDITOR SCREEN =====
+
+@Composable
+fun IdeEditorScreen(
+    fileName: String,
+    content: String,
+    onContentChanged: (String) -> Unit,
+    showLineNumbers: Boolean,
+    isDarkTheme: Boolean,
+    onBackClick: () -> Unit = {},
+    onSaveClick: () -> Unit = {}
+) {
+    var text by remember(content) { mutableStateOf(content) }
+    val format = remember(fileName) { FormatRegistry.detectByFilename(fileName) }
+    val bg = if (isDarkTheme) IdeTheme.darkBackground else IdeTheme.lightBackground
+    val textColor = if (isDarkTheme) IdeTheme.darkText else IdeTheme.lightText
+    val lineNumColor = if (isDarkTheme) IdeTheme.darkLineNumbers else IdeTheme.lightLineNumbers
+    val borderColor = if (isDarkTheme) IdeTheme.darkBorder else IdeTheme.lightBorder
+
+    // Undo/Redo history
+    var history by remember { mutableStateOf(listOf(content)) }
+    var historyIndex by remember { mutableStateOf(0) }
+
+    fun addToHistory(newText: String) {
+        val newHistory = history.take(historyIndex + 1) + newText
+        history = newHistory.takeLast(50)
+        historyIndex = (history.size - 1).coerceAtLeast(0)
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(bg)) {
+        // Compact toolbar for format actions
+        if (format.id == "markdown") {
+            IdeMarkdownToolbar(
+                isDarkTheme = isDarkTheme,
+                onInsert = { action ->
+                    val insertText = when (action) {
+                        "bold" -> "**bold**"
+                        "italic" -> "*italic*"
+                        "header" -> "# "
+                        "link" -> "[text](url)"
+                        "code" -> "`code`"
+                        "list" -> "- "
+                        else -> ""
+                    }
+                    text += insertText
+                    onContentChanged(text)
                 }
             )
         }
 
-        // Backup & Restore Dialog
-        if (showBackupDialog) {
-            AlertDialog(
-                onDismissRequest = { showBackupDialog = false },
-                title = { Text("Backup & Restore") },
-                text = {
-                    Column {
-                        Text("Backup your documents and settings to ensure you never lose your work.")
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("Choose an option:")
-                    }
-                },
-                confirmButton = {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = {
-                            coroutineScope.launch {
-                                val result = BackupRestoreUtil.createBackup(context, settings)
-                                showBackupDialog = false
-                                if (result.isSuccess) {
-                                    val backupUri = result.getOrNull()
-                                    if (backupUri != null) {
-                                        // Share the backup
-                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                            type = "application/zip"
-                                            putExtra(Intent.EXTRA_STREAM, backupUri)
-                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                            putExtra(Intent.EXTRA_SUBJECT, "Yole Backup")
-                                            putExtra(Intent.EXTRA_TEXT, "Here's my Yole backup file.")
-                                        }
-                                        context.startActivity(Intent.createChooser(shareIntent, "Share Backup"))
-                                        Toast.makeText(context, "Backup created successfully", Toast.LENGTH_SHORT).show()
-                                    }
-                                } else {
-                                    Toast.makeText(context, "Failed to create backup: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
-                                }
+        // Editor with line numbers
+        Row(modifier = Modifier.weight(1f)) {
+            // Line number gutter
+            if (showLineNumbers) {
+                val lines = text.lines()
+                val gutterBg = if (isDarkTheme) Color(0xFF1E1E1E) else Color(0xFFF8F8F8)
+                val gutterWidth = when {
+                    lines.size >= 1000 -> 48.dp
+                    lines.size >= 100 -> 40.dp
+                    else -> 32.dp
+                }
+
+                Column(
+                    modifier = Modifier
+                        .width(gutterWidth)
+                        .fillMaxHeight()
+                        .background(gutterBg)
+                        .verticalScroll(rememberScrollState())
+                        .padding(top = 8.dp, end = 4.dp),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    lines.forEachIndexed { index, _ ->
+                        Text(
+                            text = "${index + 1}",
+                            color = lineNumColor,
+                            fontSize = 13.sp,
+                            fontFamily = FontFamily.Monospace,
+                            lineHeight = 20.sp,
+                            modifier = Modifier.semantics {
+                                contentDescription = "Line ${index + 1}"
                             }
-                        }) {
-                            Text("Backup Now")
-                        }
-                        TextButton(onClick = {
-                            backupFilePicker.launch(arrayOf("application/zip"))
-                            showBackupDialog = false
-                        }) {
-                            Text("Restore")
-                        }
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showBackupDialog = false }) {
-                        Text("Cancel")
+                        )
                     }
                 }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(1.dp)
+                        .background(borderColor)
+                )
+            }
+
+            // Text editor
+            OutlinedTextField(
+                value = text,
+                onValueChange = { newText ->
+                    val oldText = text
+                    text = newText
+                    onContentChanged(newText)
+                    if (newText.length - oldText.length > 5 || oldText.length - newText.length > 5 ||
+                        newText.endsWith(" ") || newText.endsWith("\n")) {
+                        addToHistory(newText)
+                    }
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .semantics { contentDescription = "Code editor for $fileName" },
+                placeholder = { Text("Start typing...") },
+                textStyle = TextStyle(
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    color = textColor
+                ),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = bg,
+                    unfocusedContainerColor = bg,
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent
+                )
             )
         }
     }
 }
+
+// ===== IDE MARKDOWN TOOLBAR =====
+
+@Composable
+fun IdeMarkdownToolbar(
+    isDarkTheme: Boolean,
+    onInsert: (String) -> Unit
+) {
+    val surface = if (isDarkTheme) IdeTheme.darkSurface else IdeTheme.lightSurface
+    val textColor = if (isDarkTheme) IdeTheme.darkText else IdeTheme.lightText
+    val border = if (isDarkTheme) IdeTheme.darkBorder else IdeTheme.lightBorder
+
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(36.dp)
+                .background(surface)
+                .padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IdeToolbarButton("B", "Bold", textColor) { onInsert("bold") }
+            IdeToolbarButton("I", "Italic", textColor) { onInsert("italic") }
+            IdeToolbarButton("H", "Header", textColor) { onInsert("header") }
+            IdeToolbarButton("Lk", "Link", textColor) { onInsert("link") }
+            IdeToolbarButton("<>", "Code", textColor) { onInsert("code") }
+            IdeToolbarButton("Li", "List", textColor) { onInsert("list") }
+        }
+        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(border))
+    }
+}
+
+@Composable
+fun IdeToolbarButton(label: String, description: String, textColor: Color, onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier
+            .height(28.dp)
+            .semantics { contentDescription = description },
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+    ) {
+        Text(label, fontSize = 11.sp, color = textColor, fontFamily = FontFamily.Monospace)
+    }
+}
+
+// ===== IDE STATUS BAR =====
+
+@Composable
+fun IdeStatusBar(
+    content: String,
+    fileName: String,
+    isDarkTheme: Boolean,
+    statusBarBg: Color
+) {
+    val lines = content.lines()
+    val lineCount = lines.size
+    val cursorLine = lineCount
+    val cursorCol = (lines.lastOrNull()?.length ?: 0) + 1
+    val wordCount = content.split(Regex("\\s+")).filter { it.isNotEmpty() }.size
+    val format = remember(fileName) { FormatRegistry.detectByFilename(fileName) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(22.dp)
+            .background(statusBarBg)
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Left side
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Ln $cursorLine, Col $cursorCol",
+                color = Color.White,
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier.semantics {
+                    contentDescription = "Line $cursorLine, Column $cursorCol"
+                }
+            )
+            Text(
+                "$wordCount words",
+                color = Color.White.copy(alpha = 0.8f),
+                fontSize = 10.sp
+            )
+        }
+
+        // Right side
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                format.name,
+                color = Color.White,
+                fontSize = 10.sp,
+                modifier = Modifier.semantics { contentDescription = "Format: ${format.name}" }
+            )
+            Text("UTF-8", color = Color.White.copy(alpha = 0.8f), fontSize = 10.sp)
+        }
+    }
+}
+
+// ===== IDE BOTTOM NAVIGATION =====
+
+@Composable
+fun IdeBottomNavBar(
+    currentScreen: Screen,
+    isDarkTheme: Boolean,
+    onScreenSelected: (Screen) -> Unit
+) {
+    val bg = if (isDarkTheme) IdeTheme.darkSurface else IdeTheme.lightSurface
+    val border = if (isDarkTheme) IdeTheme.darkBorder else IdeTheme.lightBorder
+    val accent = if (isDarkTheme) IdeTheme.darkAccent else IdeTheme.lightAccent
+
+    Column {
+        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(border))
+        NavigationBar(
+            containerColor = bg
+        ) {
+            NavigationBarItem(
+                icon = { Icon(Icons.Filled.List, contentDescription = "Files") },
+                label = { Text("Files", fontSize = 10.sp) },
+                selected = currentScreen == Screen.FILES,
+                onClick = { onScreenSelected(Screen.FILES) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = accent,
+                    indicatorColor = accent.copy(alpha = 0.15f)
+                )
+            )
+            NavigationBarItem(
+                icon = { Icon(Icons.Filled.CheckCircle, contentDescription = "To-Do") },
+                label = { Text("To-Do", fontSize = 10.sp) },
+                selected = currentScreen == Screen.TODO,
+                onClick = { onScreenSelected(Screen.TODO) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = accent,
+                    indicatorColor = accent.copy(alpha = 0.15f)
+                )
+            )
+            NavigationBarItem(
+                icon = { Icon(Icons.Filled.Edit, contentDescription = "QuickNote") },
+                label = { Text("Edit", fontSize = 10.sp) },
+                selected = currentScreen == Screen.QUICKNOTE,
+                onClick = { onScreenSelected(Screen.QUICKNOTE) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = accent,
+                    indicatorColor = accent.copy(alpha = 0.15f)
+                )
+            )
+            NavigationBarItem(
+                icon = { Icon(Icons.Filled.Settings, contentDescription = "Settings") },
+                label = { Text("More", fontSize = 10.sp) },
+                selected = currentScreen == Screen.MORE,
+                onClick = { onScreenSelected(Screen.MORE) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = accent,
+                    indicatorColor = accent.copy(alpha = 0.15f)
+                )
+            )
+        }
+    }
+}
+
+// ===== IDE DRAWER CONTENT =====
+
+@Composable
+fun IdeDrawerContent(
+    isDarkTheme: Boolean,
+    surface: Color,
+    border: Color,
+    textColor: Color,
+    textSecondary: Color,
+    accent: Color,
+    openTabs: List<EditorTab>,
+    activeTabIndex: Int,
+    onNewDocument: () -> Unit,
+    onTabSelected: (Int) -> Unit,
+    onTabDeleted: (Int) -> Unit,
+    onOpenFileBrowser: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onBackupClick: () -> Unit,
+    onAboutClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxHeight()
+            .background(surface)
+    ) {
+        // Drawer header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .background(accent)
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                "EXPLORER",
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
+                fontFamily = FontFamily.Monospace
+            )
+            IconButton(
+                onClick = onNewDocument,
+                modifier = Modifier.semantics { contentDescription = "New document" }
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "New", tint = Color.White)
+            }
+        }
+
+        // Open documents section
+        Text(
+            "OPEN DOCUMENTS",
+            color = textSecondary,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.5.sp,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
+        if (openTabs.isEmpty()) {
+            Text(
+                "No documents open",
+                color = textSecondary.copy(alpha = 0.6f),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+        } else {
+            openTabs.forEachIndexed { index, tab ->
+                val isActive = index == activeTabIndex
+                val itemBg = if (isActive) accent.copy(alpha = 0.15f) else Color.Transparent
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onTabSelected(index) }
+                        .background(itemBg)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = if (isActive) accent else textSecondary
+                        )
+                        Text(
+                            tab.fileName + if (tab.isDirty) " *" else "",
+                            color = if (isActive) textColor else textSecondary,
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    IconButton(
+                        onClick = { onTabDeleted(index) },
+                        modifier = Modifier
+                            .size(24.dp)
+                            .semantics { contentDescription = "Delete ${tab.fileName}" }
+                    ) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = "Delete",
+                            modifier = Modifier.size(14.dp),
+                            tint = textSecondary.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider(color = border)
+
+        // Actions section
+        Text(
+            "ACTIONS",
+            color = textSecondary,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.5.sp,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
+        DrawerActionItem(
+            icon = Icons.Filled.List,
+            label = "Browse Files",
+            textColor = textColor,
+            onClick = onOpenFileBrowser
+        )
+        DrawerActionItem(
+            icon = Icons.Filled.Add,
+            label = "New Document",
+            textColor = textColor,
+            onClick = onNewDocument
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider(color = border)
+
+        // Settings section
+        Text(
+            "CONFIGURATION",
+            color = textSecondary,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.5.sp,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
+        DrawerActionItem(
+            icon = Icons.Filled.Settings,
+            label = "Settings",
+            textColor = textColor,
+            onClick = onSettingsClick
+        )
+        DrawerActionItem(
+            icon = Icons.Filled.Check,
+            label = "Backup & Restore",
+            textColor = textColor,
+            onClick = onBackupClick
+        )
+        DrawerActionItem(
+            icon = Icons.Filled.Info,
+            label = "About Yole",
+            textColor = textColor,
+            onClick = onAboutClick
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Version info at bottom
+        Text(
+            "Yole v2.15.1",
+            color = textSecondary.copy(alpha = 0.5f),
+            fontSize = 10.sp,
+            modifier = Modifier.padding(16.dp)
+        )
+    }
+}
+
+@Composable
+fun DrawerActionItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    textColor: Color,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            icon,
+            contentDescription = label,
+            modifier = Modifier.size(20.dp),
+            tint = textColor.copy(alpha = 0.7f)
+        )
+        Text(label, color = textColor, fontSize = 14.sp)
+    }
+}
+
+// ===== NEW DOCUMENT DIALOG =====
+
+@Composable
+fun IdeNewDocumentDialog(
+    selectedFormat: String,
+    onFormatSelected: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val formats = listOf(
+        "markdown" to "Markdown (.md)",
+        "plaintext" to "Plain Text (.txt)",
+        "todotxt" to "Todo.txt",
+        "csv" to "CSV (.csv)",
+        "latex" to "LaTeX (.tex)",
+        "orgmode" to "Org Mode (.org)"
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("New Document") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                formats.forEach { (id, label) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onFormatSelected(id) }
+                            .background(
+                                if (selectedFormat == id) Color(0xFF007ACC).copy(alpha = 0.2f)
+                                else Color.Transparent
+                            )
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedFormat == id,
+                            onClick = { onFormatSelected(id) }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(label, fontSize = 14.sp)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onConfirm) { Text("Create") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
+}
+
+// ===== EXISTING COMPONENTS (preserved with IDE styling) =====
 
 /**
  * Generic empty state component
@@ -862,9 +1818,6 @@ fun EmptyState(
     }
 }
 
-/**
- * Empty file list state
- */
 @Composable
 fun EmptyFileListState(onCreateFile: () -> Unit) {
     EmptyState(
@@ -876,9 +1829,6 @@ fun EmptyFileListState(onCreateFile: () -> Unit) {
     )
 }
 
-/**
- * Empty search results state
- */
 @Composable
 fun EmptySearchState(searchQuery: String) {
     EmptyState(
@@ -888,9 +1838,6 @@ fun EmptySearchState(searchQuery: String) {
     )
 }
 
-/**
- * Empty todo list state
- */
 @Composable
 fun EmptyTodoListState() {
     EmptyState(
@@ -900,9 +1847,6 @@ fun EmptyTodoListState() {
     )
 }
 
-/**
- * Error state component
- */
 @Composable
 fun ErrorState(
     title: String = "Something went wrong",
@@ -919,13 +1863,10 @@ fun ErrorState(
     )
 }
 
-/**
- * Shimmer skeleton for file cards (loading state)
- */
 @Composable
 fun FileCardSkeleton() {
     val shimmerProgress = LoadingAnimations.rememberShimmer()
-    val shimmerAlpha = 0.3f + (shimmerProgress * 0.3f) // Animate between 0.3 and 0.6
+    val shimmerAlpha = 0.3f + (shimmerProgress * 0.3f)
 
     Card(
         modifier = Modifier
@@ -939,7 +1880,6 @@ fun FileCardSkeleton() {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(horizontalArrangement = Arrangement.Start) {
-                // Icon placeholder
                 Box(
                     modifier = Modifier
                         .size(24.dp)
@@ -949,7 +1889,6 @@ fun FileCardSkeleton() {
                         )
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                // Filename placeholder
                 Box(
                     modifier = Modifier
                         .width(150.dp)
@@ -960,7 +1899,6 @@ fun FileCardSkeleton() {
                         )
                 )
             }
-            // File size placeholder
             Box(
                 modifier = Modifier
                     .width(60.dp)
@@ -991,35 +1929,30 @@ fun FileBrowserScreen(
     var allFiles by remember { mutableStateOf<List<File>>(emptyList()) }
     var isLoadingFiles by remember { mutableStateOf(true) }
 
-    // Initialize with documents directory
     LaunchedEffect(Unit) {
         isLoadingFiles = true
-        kotlinx.coroutines.delay(300) // Simulate file system access delay
+        kotlinx.coroutines.delay(300)
         val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
         if (docsDir.exists()) {
             currentDirectory = docsDir
             allFiles = docsDir.listFiles()?.toList() ?: emptyList()
         } else {
-            // Fallback to app's private directory
             currentDirectory = context.filesDir
             allFiles = context.filesDir.listFiles()?.toList() ?: emptyList()
         }
         isLoadingFiles = false
     }
 
-    // Filter and sort files
     val files = remember(allFiles, searchQuery, sortBy) {
         var filtered = allFiles.filter { file ->
             searchQuery.isEmpty() || file.name.contains(searchQuery, ignoreCase = true)
         }
-
         filtered = when (sortBy) {
             "name" -> filtered.sortedBy { it.name.lowercase() }
             "date" -> filtered.sortedByDescending { it.lastModified() }
             "size" -> filtered.sortedByDescending { if (it.isFile) it.length() else 0L }
             else -> filtered
         }
-
         filtered
     }
 
@@ -1028,13 +1961,11 @@ fun FileBrowserScreen(
     ) { uri ->
         uri?.let {
             val documentFile = DocumentFile.fromTreeUri(context, it)
-            // For now, just show a message - full implementation would require more work
             Toast.makeText(context, "Directory selected: ${documentFile?.name}", Toast.LENGTH_SHORT).show()
         }
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        // Search bar
         if (showSearch) {
             OutlinedTextField(
                 value = searchQuery,
@@ -1063,51 +1994,46 @@ fun FileBrowserScreen(
                 text = "File Browser",
                 style = MaterialTheme.typography.headlineMedium
             )
-
             TextButton(onClick = { directoryPicker.launch(null) }) {
-                Text("📂 Open Folder")
+                Icon(Icons.Filled.List, contentDescription = "Open Folder", modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Open Folder")
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Current directory path
         currentDirectory?.let { dir ->
             Text(
-                text = "📁 ${dir.absolutePath}",
+                text = dir.absolutePath,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // File list with loading state
         LoadingStateWrapper(
             isLoading = isLoadingFiles,
             loadingContent = {
-                // Show shimmer skeleton cards while loading
                 LazyColumn(modifier = Modifier.weight(1f)) {
-                    items(5) { // Show 5 skeleton cards
+                    items(5) {
                         FileCardSkeleton()
                     }
                 }
             }
         ) {
-            // Actual file list or empty state
             if (files.isEmpty()) {
-                // Show appropriate empty state
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     if (searchQuery.isNotEmpty()) {
-                        // Empty search results
                         EmptySearchState(searchQuery = searchQuery)
                     } else {
-                        // Empty folder
                         EmptyFileListState(onCreateFile = { onFileSelected("untitled.txt", "") })
                     }
                 }
             } else {
-                // File list with staggered animations
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     itemsIndexed(
                         items = files,
@@ -1117,7 +2043,6 @@ fun FileBrowserScreen(
                         val fileName = file.name
                         val fileSize = if (file.isFile) "${file.length()} bytes" else ""
 
-                        // Animated list item with staggered entrance
                         androidx.compose.animation.AnimatedVisibility(
                             visible = true,
                             enter = ListAnimations.itemEnter(index),
@@ -1127,24 +2052,21 @@ fun FileBrowserScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 2.dp)
-                                    .pressScale(scale = 0.97f), // Add press animation
+                                    .pressScale(scale = 0.97f),
                                 onClick = {
                                     if (isDirectory) {
-                                        // Navigate into directory with loading state
                                         isLoadingFiles = true
                                         currentDirectory = file
                                         coroutineScope.launch {
-                                            delay(200) // Brief delay for loading animation
+                                            delay(200)
                                             allFiles = file.listFiles()?.toList() ?: emptyList()
                                             isLoadingFiles = false
                                         }
                                     } else {
-                                        // Try to read file content
                                         try {
                                             val content = file.readText()
                                             onFileSelected(fileName, content)
                                         } catch (e: Exception) {
-                                            // If reading fails, show empty content
                                             onFileSelected(fileName, "")
                                         }
                                     }
@@ -1156,18 +2078,17 @@ fun FileBrowserScreen(
                                         .padding(16.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Row(horizontalArrangement = Arrangement.Start) {
-                                        Text(
-                                            text = if (isDirectory) "📁" else "📄",
-                                            style = MaterialTheme.typography.bodyLarge
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Icon(
+                                            if (isDirectory) Icons.Filled.List else Icons.Filled.Edit,
+                                            contentDescription = if (isDirectory) "Folder" else "File",
+                                            modifier = Modifier.size(20.dp)
                                         )
-                                        Spacer(modifier = Modifier.width(8.dp))
                                         Text(
                                             text = fileName,
                                             style = MaterialTheme.typography.bodyLarge
                                         )
                                     }
-
                                     if (!isDirectory && fileSize.isNotEmpty()) {
                                         Text(
                                             text = fileSize,
@@ -1185,38 +2106,37 @@ fun FileBrowserScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Quick access buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             OutlinedButton(
                 onClick = {
-                    // Go up one directory with loading state
                     currentDirectory?.parentFile?.let { parent ->
                         isLoadingFiles = true
                         currentDirectory = parent
                         coroutineScope.launch {
-                            delay(200) // Brief delay for loading animation
+                            delay(200)
                             allFiles = parent.listFiles()?.toList() ?: emptyList()
                             isLoadingFiles = false
                         }
                     }
                 },
                 enabled = currentDirectory?.parentFile != null && !isLoadingFiles,
-                modifier = Modifier.pressScale() // Add press animation
+                modifier = Modifier.pressScale()
             ) {
-                Text("⬆️ Up")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Up", modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Up")
             }
 
             OutlinedButton(
-                onClick = {
-                    // Create new file
-                    onFileSelected("untitled.txt", "")
-                },
-                modifier = Modifier.pressScale() // Add press animation
+                onClick = { onFileSelected("untitled.txt", "") },
+                modifier = Modifier.pressScale()
             ) {
-                Text("➕ New File")
+                Icon(Icons.Filled.Add, contentDescription = "New File", modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("New File")
             }
         }
 
@@ -1238,134 +2158,24 @@ fun EditorScreen(
     onBackClick: () -> Unit = {},
     onSaveClick: () -> Unit = {}
 ) {
-    var text by remember { mutableStateOf(content) }
-    val format = remember(fileName) { FormatRegistry.detectByFilename(fileName) }
-
-    // Undo/Redo history
-    var history by remember { mutableStateOf(listOf(content)) }
-    var historyIndex by remember { mutableStateOf(0) }
-
-    // Update history when text changes
-    fun addToHistory(newText: String) {
-        // Remove any forward history if we're not at the end
-        val newHistory = history.take(historyIndex + 1) + newText
-        history = newHistory.takeLast(50) // Keep last 50 changes
-        historyIndex = (history.size - 1).coerceAtLeast(0)
-    }
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Toolbar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text(
-                    text = "Editing: $fileName",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-                Text(
-                    text = "Format: ${format.name}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Row {
-                TextButton(onClick = {
-                    onContentChanged(text)
-                    onSaveClick()
-                }) {
-                    Text("💾 Save")
-                }
-                TextButton(
-                    onClick = {
-                        if (historyIndex > 0) {
-                            historyIndex--
-                            text = history[historyIndex]
-                            onContentChanged(text)
-                        }
-                    },
-                    enabled = historyIndex > 0
-                ) {
-                    Text("↶ Undo")
-                }
-                TextButton(
-                    onClick = {
-                        if (historyIndex < history.size - 1) {
-                            historyIndex++
-                            text = history[historyIndex]
-                            onContentChanged(text)
-                        }
-                    },
-                    enabled = historyIndex < history.size - 1
-                ) {
-                    Text("↷ Redo")
-                }
-            }
-        }
-
-        // Action buttons for format-specific actions
-        if (format.id == "markdown") {
-            MarkdownActionButtons(
-                onInsert = { action ->
-                    val insertText = when (action) {
-                        "bold" -> "**bold text**"
-                        "italic" -> "*italic text*"
-                        "header" -> "# Header"
-                        "link" -> "[link text](url)"
-                        "code" -> "`code`"
-                        "list" -> "- List item"
-                        else -> ""
-                    }
-                    text += insertText
-                    onContentChanged(text)
-                }
-            )
-        }
-
-        // Editor
-        OutlinedTextField(
-            value = text,
-            onValueChange = { newText ->
-                val oldText = text
-                text = newText
-                onContentChanged(newText)
-
-                // Add to history on significant changes (word boundaries)
-                if (newText.length - oldText.length > 5 || oldText.length - newText.length > 5 ||
-                    newText.endsWith(" ") || newText.endsWith("\n")) {
-                    addToHistory(newText)
-                }
-            },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            placeholder = { Text("Start typing...") },
-            textStyle = MaterialTheme.typography.bodyMedium.copy(
-                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-            )
-        )
-    }
+    // Redirect to IDE editor
+    IdeEditorScreen(
+        fileName = fileName,
+        content = content,
+        onContentChanged = onContentChanged,
+        showLineNumbers = true,
+        isDarkTheme = isSystemInDarkTheme(),
+        onBackClick = onBackClick,
+        onSaveClick = onSaveClick
+    )
 }
 
 @Composable
 fun MarkdownActionButtons(onInsert: (String) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        ActionButton("B", "Bold") { onInsert("bold") }
-        ActionButton("I", "Italic") { onInsert("italic") }
-        ActionButton("H", "Header") { onInsert("header") }
-        ActionButton("🔗", "Link") { onInsert("link") }
-        ActionButton("</>", "Code") { onInsert("code") }
-        ActionButton("•", "List") { onInsert("list") }
-    }
+    IdeMarkdownToolbar(
+        isDarkTheme = isSystemInDarkTheme(),
+        onInsert = onInsert
+    )
 }
 
 @Composable
@@ -1373,7 +2183,7 @@ fun ActionButton(text: String, description: String, onClick: () -> Unit) {
     OutlinedButton(
         onClick = onClick,
         modifier = Modifier
-            .height(48.dp) // Increased for accessibility
+            .height(48.dp)
             .semantics { contentDescription = description },
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
     ) {
@@ -1383,16 +2193,15 @@ fun ActionButton(text: String, description: String, onClick: () -> Unit) {
 
 @Composable
 fun PreviewScreen(
-    fileName: String, 
-    content: String, 
-    onBackClick: () -> Unit = {}, 
+    fileName: String,
+    content: String,
+    onBackClick: () -> Unit = {},
     onExportClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val format = remember(fileName) { FormatRegistry.detectByFilename(fileName) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1413,18 +2222,18 @@ fun PreviewScreen(
 
             Row {
                 TextButton(onClick = { onExportClick() }) {
-                    Text("📤 Export to PDF")
+                    Icon(Icons.Filled.Share, contentDescription = "Export", modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Export PDF")
                 }
             }
         }
 
-        // Preview content
         val isDarkTheme = isSystemInDarkTheme()
         val htmlContent = remember(content, format, isDarkTheme) {
             generateHtmlPreview(content, format, isDarkTheme)
         }
 
-        // For now, show as text. In a full implementation, this would be a WebView
         Text(
             text = htmlContent,
             modifier = Modifier
@@ -1495,12 +2304,11 @@ fun convertToHtml(content: String, format: digital.vasic.yole.format.TextFormat)
         "markdown" -> convertMarkdownToHtml(content)
         "plaintext" -> "<pre>$content</pre>"
         "todotxt" -> convertTodoTxtToHtml(content)
-        else -> "<pre>$content</pre>" // Fallback
+        else -> "<pre>$content</pre>"
     }
 }
 
 fun convertMarkdownToHtml(content: String): String {
-    // Basic markdown conversion - in a real implementation, this would use a proper parser
     return content
         .replace(Regex("^### (.*)$", RegexOption.MULTILINE), "<h3>$1</h3>")
         .replace(Regex("^## (.*)$", RegexOption.MULTILINE), "<h2>$1</h2>")
@@ -1537,19 +2345,30 @@ fun SettingsScreen(
     animationsEnabled: Boolean,
     onAnimationsEnabledChanged: (Boolean) -> Unit
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
+    val bg = if (isDarkTheme) IdeTheme.darkBackground else IdeTheme.lightBackground
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(bg)
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
         Text(
             text = "Settings",
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
+            fontFamily = FontFamily.Monospace
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // Theme settings
         Text(
-            text = "Appearance",
-            style = MaterialTheme.typography.titleMedium
+            text = "APPEARANCE",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.sp
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -1560,7 +2379,7 @@ fun SettingsScreen(
                 onClick = { onThemeModeChanged("system") }
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("System theme (follows system setting)")
+            Text("System theme")
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1578,15 +2397,17 @@ fun SettingsScreen(
                 onClick = { onThemeModeChanged("dark") }
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Dark theme")
+            Text("Dark theme (IDE)")
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // Editor settings
         Text(
-            text = "Editor",
-            style = MaterialTheme.typography.titleMedium
+            text = "EDITOR",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.sp
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -1619,8 +2440,10 @@ fun SettingsScreen(
 
         // Animation settings
         Text(
-            text = "Animations",
-            style = MaterialTheme.typography.titleMedium
+            text = "ANIMATIONS",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.sp
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -1641,8 +2464,10 @@ fun SettingsScreen(
 
         // Format settings
         Text(
-            text = "Formats",
-            style = MaterialTheme.typography.titleMedium
+            text = "FORMATS",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.sp
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -1656,15 +2481,16 @@ fun SettingsScreen(
 
         FormatRegistry.formats.take(5).forEach { format ->
             Text(
-                text = "• ${format.name} (${format.extensions.joinToString(", ")})",
+                text = "  ${format.name} (${format.extensions.joinToString(", ")})",
                 style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily.Monospace,
                 modifier = Modifier.padding(vertical = 2.dp)
             )
         }
 
         if (FormatRegistry.formats.size > 5) {
             Text(
-                text = "... and ${FormatRegistry.formats.size - 5} more",
+                text = "  ... and ${FormatRegistry.formats.size - 5} more",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -1674,8 +2500,10 @@ fun SettingsScreen(
 
         // About
         Text(
-            text = "About Yole",
-            style = MaterialTheme.typography.titleMedium
+            text = "ABOUT",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.sp
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -1690,44 +2518,46 @@ fun SettingsScreen(
         Text(
             text = "Version: 2.15.1",
             style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
+
+        // Storage settings section
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "STORAGE",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.sp
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Local file system storage is used for documents.",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Text(
+            text = "Cloud storage protocols: Dropbox, Google Drive, OneDrive, FTP, SFTP, SMB, WebDAV",
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
     }
 }
 
-// Bottom Navigation Bar
+// Bottom Navigation Bar - now redirects to IDE bottom nav
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BottomNavigationBar(
     currentScreen: Screen,
     onScreenSelected: (Screen) -> Unit
 ) {
-    NavigationBar {
-        NavigationBarItem(
-            icon = { Icon(Icons.Filled.List, contentDescription = "Files") },
-            label = { Text("Files") },
-            selected = currentScreen == Screen.FILES,
-            onClick = { onScreenSelected(Screen.FILES) }
-        )
-        NavigationBarItem(
-            icon = { Icon(Icons.Filled.CheckCircle, contentDescription = "To-Do") },
-            label = { Text("To-Do") },
-            selected = currentScreen == Screen.TODO,
-            onClick = { onScreenSelected(Screen.TODO) }
-        )
-        NavigationBarItem(
-            icon = { Icon(Icons.Filled.Edit, contentDescription = "QuickNote") },
-            label = { Text("QuickNote") },
-            selected = currentScreen == Screen.QUICKNOTE,
-            onClick = { onScreenSelected(Screen.QUICKNOTE) }
-        )
-        NavigationBarItem(
-            icon = { Icon(Icons.Filled.Menu, contentDescription = "More") },
-            label = { Text("More") },
-            selected = currentScreen == Screen.MORE,
-            onClick = { onScreenSelected(Screen.MORE) }
-        )
-    }
+    IdeBottomNavBar(
+        currentScreen = currentScreen,
+        isDarkTheme = isSystemInDarkTheme(),
+        onScreenSelected = onScreenSelected
+    )
 }
 
 // Top Bars
@@ -1739,7 +2569,7 @@ fun FilesTopBar(
     onMoreClick: () -> Unit
 ) {
     TopAppBar(
-        title = { Text("Files") },
+        title = { Text("Files", fontFamily = FontFamily.Monospace) },
         actions = {
             IconButton(onClick = onSearchClick) {
                 Icon(Icons.Outlined.Search, contentDescription = "Search")
@@ -1762,7 +2592,7 @@ fun TodoTopBar(
     onMoreClick: () -> Unit
 ) {
     TopAppBar(
-        title = { Text("To-Do") },
+        title = { Text("To-Do", fontFamily = FontFamily.Monospace) },
         actions = {
             IconButton(onClick = onSearchClick) {
                 Icon(Icons.Outlined.Search, contentDescription = "Search")
@@ -1784,7 +2614,7 @@ fun QuickNoteTopBar(
     onMoreClick: () -> Unit
 ) {
     TopAppBar(
-        title = { Text("QuickNote") },
+        title = { Text("QuickNote", fontFamily = FontFamily.Monospace) },
         actions = {
             IconButton(onClick = onSaveClick) {
                 Icon(Icons.Filled.Check, contentDescription = "Save")
@@ -1800,7 +2630,7 @@ fun QuickNoteTopBar(
 @Composable
 fun MoreTopBar() {
     TopAppBar(
-        title = { Text("More") }
+        title = { Text("More", fontFamily = FontFamily.Monospace) }
     )
 }
 
@@ -1813,10 +2643,10 @@ fun EditorTopBar(
     onBackClick: () -> Unit
 ) {
     TopAppBar(
-        title = { Text(fileName, maxLines = 1) },
+        title = { Text(fileName, maxLines = 1, fontFamily = FontFamily.Monospace, fontSize = 14.sp) },
         navigationIcon = {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
             }
         },
         actions = {
@@ -1839,10 +2669,10 @@ fun PreviewTopBar(
     onExportClick: () -> Unit
 ) {
     TopAppBar(
-        title = { Text("$fileName (Preview)", maxLines = 1) },
+        title = { Text("$fileName (Preview)", maxLines = 1, fontFamily = FontFamily.Monospace, fontSize = 14.sp) },
         navigationIcon = {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
             }
         },
         actions = {
@@ -1860,10 +2690,10 @@ fun PreviewTopBar(
 @Composable
 fun SettingsTopBar(onBackClick: () -> Unit) {
     TopAppBar(
-        title = { Text("Settings") },
+        title = { Text("Settings", fontFamily = FontFamily.Monospace) },
         navigationIcon = {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
             }
         }
     )
@@ -1937,10 +2767,10 @@ fun TodoScreen(
                         }
                     )
                 }
-                
+
                 if (showFilter) {
                     var expanded by remember { mutableStateOf(false) }
-                    
+
                     Box {
                         OutlinedButton(onClick = { expanded = true }) {
                             Text(
@@ -1957,7 +2787,7 @@ fun TodoScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                         }
-                        
+
                         DropdownMenu(
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
@@ -1999,11 +2829,12 @@ fun TodoScreen(
         ) {
             Text(
                 text = "To-Do List",
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
+                fontFamily = FontFamily.Monospace
             )
 
             Row {
-                TextButton(onClick = { 
+                TextButton(onClick = {
                     onFilterTypeChanged(
                         when (filterType) {
                             "all" -> "active"
@@ -2056,34 +2887,32 @@ fun TodoScreen(
                         newTodoText = ""
                     }
                 },
-                modifier = Modifier.pressScale() // Add press animation
+                modifier = Modifier.pressScale()
             ) {
                 Text("Add")
             }
         }
 
-        // Filter todos based on search and filter type
+        // Filter todos
         val filteredTodos = todoItems.filter { item ->
-            val matchesSearch = searchQuery.isEmpty() || 
+            val matchesSearch = searchQuery.isEmpty() ||
                 item.text.contains(searchQuery, ignoreCase = true)
-            
+
             val matchesFilter = when (filterType) {
                 "active" -> !item.completed
                 "completed" -> item.completed
-                else -> true // "all"
+                else -> true
             }
-            
+
             matchesSearch && matchesFilter
         }
 
         // Todo list or empty state
         if (filteredTodos.isEmpty() && todoItems.isEmpty()) {
-            // No todos at all
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 EmptyTodoListState()
             }
         } else if (filteredTodos.isEmpty()) {
-            // All todos are completed and hidden or no search results
             Box(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentAlignment = Alignment.Center
@@ -2099,7 +2928,6 @@ fun TodoScreen(
                 )
             }
         } else {
-            // Show todo list with staggered animations
             LazyColumn(modifier = Modifier.weight(1f)) {
                 itemsIndexed(
                     items = filteredTodos,
@@ -2151,7 +2979,7 @@ fun TodoItemRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
-            .pressScale(scale = 0.98f) // Add press animation
+            .pressScale(scale = 0.98f)
     ) {
         Row(
             modifier = Modifier
@@ -2183,7 +3011,6 @@ fun TodoItemRow(
                     }
                 )
 
-                // Show projects and contexts
                 val tags = (item.projects.map { "+$it" } + item.contexts.map { "@$it" }).joinToString(" ")
                 if (tags.isNotEmpty()) {
                     Text(
@@ -2206,8 +3033,9 @@ fun QuickNoteScreen(content: String, onContentChanged: (String) -> Unit, onSaveC
     var noteContent by remember { mutableStateOf(content) }
     var isPreviewMode by remember { mutableStateOf(false) }
     val isDarkTheme = isSystemInDarkTheme()
+    val bg = if (isDarkTheme) IdeTheme.darkBackground else IdeTheme.lightBackground
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().background(bg)) {
         // Quick actions toolbar
         Row(
             modifier = Modifier
@@ -2218,7 +3046,8 @@ fun QuickNoteScreen(content: String, onContentChanged: (String) -> Unit, onSaveC
         ) {
             Text(
                 text = "QuickNote",
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
+                fontFamily = FontFamily.Monospace
             )
 
             Row {
@@ -2235,7 +3064,6 @@ fun QuickNoteScreen(content: String, onContentChanged: (String) -> Unit, onSaveC
         }
 
         if (isPreviewMode) {
-            // Preview mode
             val format = remember { FormatRegistry.detectByFilename("quicknote.md") }
             val htmlContent = remember(noteContent, format, isDarkTheme) {
                 generateHtmlPreview(noteContent, format, isDarkTheme)
@@ -2249,7 +3077,6 @@ fun QuickNoteScreen(content: String, onContentChanged: (String) -> Unit, onSaveC
                 style = MaterialTheme.typography.bodyMedium
             )
         } else {
-            // Edit mode
             OutlinedTextField(
                 value = noteContent,
                 onValueChange = {
@@ -2259,7 +3086,11 @@ fun QuickNoteScreen(content: String, onContentChanged: (String) -> Unit, onSaveC
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp),
-                placeholder = { Text("Start writing your quick note...") }
+                placeholder = { Text("Start writing your quick note...") },
+                textStyle = TextStyle(
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 14.sp
+                )
             )
         }
     }
@@ -2273,14 +3104,19 @@ fun MoreScreen(
     onBackupClick: () -> Unit = {},
     onAboutClick: () -> Unit = {}
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
+    val bg = if (isDarkTheme) IdeTheme.darkBackground else IdeTheme.lightBackground
+
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(bg)
             .padding(16.dp)
     ) {
         Text(
             text = "More Options",
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
+            fontFamily = FontFamily.Monospace
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -2288,7 +3124,7 @@ fun MoreScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .pressScale(scale = 0.98f), // Add press animation
+                .pressScale(scale = 0.98f),
             onClick = onSettingsClick
         ) {
             Row(
@@ -2316,7 +3152,7 @@ fun MoreScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .pressScale(scale = 0.98f), // Add press animation
+                .pressScale(scale = 0.98f),
             onClick = onFileBrowserClick
         ) {
             Row(
@@ -2344,7 +3180,7 @@ fun MoreScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .pressScale(scale = 0.98f), // Add press animation
+                .pressScale(scale = 0.98f),
             onClick = onSearchClick
         ) {
             Row(
@@ -2372,7 +3208,7 @@ fun MoreScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .pressScale(scale = 0.98f), // Add press animation
+                .pressScale(scale = 0.98f),
             onClick = onBackupClick
         ) {
             Row(
@@ -2400,7 +3236,7 @@ fun MoreScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .pressScale(scale = 0.98f), // Add press animation
+                .pressScale(scale = 0.98f),
             onClick = onAboutClick
         ) {
             Row(
