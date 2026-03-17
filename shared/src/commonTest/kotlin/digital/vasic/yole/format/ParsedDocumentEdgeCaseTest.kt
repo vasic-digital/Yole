@@ -400,7 +400,7 @@ class ParsedDocumentEdgeCaseTest {
     }
 
     @Test
-    fun testParserRegistryDuplicateLazyRegistrationThrows() {
+    fun testParserRegistryDuplicateLazyRegistrationSilentlySkips() {
         ParserRegistry.clear()
         val format = TextFormat(id = "duptest", name = "DupTest", defaultExtension = ".dup")
         ParserRegistry.registerLazy(format.id) {
@@ -411,21 +411,22 @@ class ParsedDocumentEdgeCaseTest {
                 }
             }
         }
-        assertFailsWith<IllegalArgumentException> {
-            ParserRegistry.registerLazy(format.id) {
-                object : TextParser {
-                    override val supportedFormat = format
-                    override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
-                        return ParsedDocument(format = supportedFormat, rawContent = content, parsedContent = content)
-                    }
+        // Should not throw — silently skips already-registered format
+        ParserRegistry.registerLazy(format.id) {
+            object : TextParser {
+                override val supportedFormat = format
+                override fun parse(content: String, options: Map<String, Any>): ParsedDocument {
+                    return ParsedDocument(format = supportedFormat, rawContent = content, parsedContent = content)
                 }
             }
         }
+        // Verify the original parser still works
+        assertNotNull(ParserRegistry.getParser(format))
         ParserRegistry.clear()
     }
 
     @Test
-    fun testParserRegistryMixEagerAndLazyThrows() {
+    fun testParserRegistryMixEagerAndLazySilentlySkips() {
         ParserRegistry.clear()
         val format = TextFormat(id = "mixtest", name = "MixTest", defaultExtension = ".mix")
         val parser = object : TextParser {
@@ -435,9 +436,10 @@ class ParsedDocumentEdgeCaseTest {
             }
         }
         ParserRegistry.register(parser)
-        assertFailsWith<IllegalArgumentException> {
-            ParserRegistry.registerLazy(format.id) { parser }
-        }
+        // Should not throw — silently skips already-registered format
+        ParserRegistry.registerLazy(format.id) { parser }
+        // Verify the original eager parser still works
+        assertNotNull(ParserRegistry.getParser(format))
         ParserRegistry.clear()
     }
 

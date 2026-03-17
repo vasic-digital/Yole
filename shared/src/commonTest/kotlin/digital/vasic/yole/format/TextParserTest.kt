@@ -239,12 +239,13 @@ class ParserRegistryTest {
     }
 
     @Test
-    fun testDuplicateRegistrationThrows() {
+    fun testDuplicateRegistrationSilentlySkips() {
         ParserRegistry.clear()
         ParserRegistry.register(StubParser(testFormat))
-        assertFailsWith<IllegalArgumentException> {
-            ParserRegistry.register(StubParser(testFormat))
-        }
+        // Should not throw — silently skips already-registered format
+        ParserRegistry.register(StubParser(testFormat))
+        // Verify parser still works
+        assertNotNull(ParserRegistry.getParser(testFormat))
         ParserRegistry.clear()
     }
 

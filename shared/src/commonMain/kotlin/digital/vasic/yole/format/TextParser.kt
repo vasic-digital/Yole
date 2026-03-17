@@ -394,9 +394,9 @@ object ParserRegistry {
     fun register(parser: TextParser) = platformSynchronized(lock) {
         val formatId = parser.supportedFormat.id
 
-        // Check for duplicate format registration
+        // Skip if already registered — safe for repeated calls from Compose recomposition
         if (parsers.containsKey(formatId) || parserFactories.containsKey(formatId)) {
-            throw IllegalArgumentException("Parser for format '$formatId' is already registered")
+            return@platformSynchronized
         }
 
         parsers[formatId] = parser
@@ -418,9 +418,9 @@ object ParserRegistry {
      * ```
      */
     fun registerLazy(formatId: String, factory: () -> TextParser) = platformSynchronized(lock) {
-        // Check for duplicate format registration
+        // Skip if already registered — safe for repeated calls from Compose recomposition
         if (parsers.containsKey(formatId) || parserFactories.containsKey(formatId)) {
-            throw IllegalArgumentException("Parser for format '$formatId' is already registered")
+            return@platformSynchronized
         }
 
         parserFactories[formatId] = factory

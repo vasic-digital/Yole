@@ -427,47 +427,38 @@ class ParserInitializerTest {
     }
 
     @Test
-    fun `duplicate eager registration without clear throws exception`() {
+    fun `duplicate eager registration silently skips`() {
         ParserInitializer.registerAllParsers()
 
-        assertFailsWith<IllegalArgumentException>(
-            "Duplicate eager registration should throw IllegalArgumentException"
-        ) {
-            ParserInitializer.registerAllParsers()
-        }
-    }
-
-    @Test
-    fun `duplicate lazy registration without clear throws exception`() {
-        ParserInitializer.registerAllParsersLazy()
-
-        assertFailsWith<IllegalArgumentException>(
-            "Duplicate lazy registration should throw IllegalArgumentException"
-        ) {
-            ParserInitializer.registerAllParsersLazy()
-        }
-    }
-
-    @Test
-    fun `lazy then eager registration without clear throws exception`() {
-        ParserInitializer.registerAllParsersLazy()
-
-        assertFailsWith<IllegalArgumentException>(
-            "Mixing lazy then eager registration should throw IllegalArgumentException"
-        ) {
-            ParserInitializer.registerAllParsers()
-        }
-    }
-
-    @Test
-    fun `eager then lazy registration without clear throws exception`() {
+        // Should not throw — silently skips already-registered parsers
         ParserInitializer.registerAllParsers()
 
-        assertFailsWith<IllegalArgumentException>(
-            "Mixing eager then lazy registration should throw IllegalArgumentException"
-        ) {
-            ParserInitializer.registerAllParsersLazy()
-        }
+        // Verify parsers still work after duplicate registration
+        assertNotNull(ParserRegistry.getParser(FormatRegistry.ID_MARKDOWN))
+    }
+
+    @Test
+    fun `duplicate lazy registration silently skips`() {
+        ParserInitializer.registerAllParsersLazy()
+
+        // Should not throw — silently skips already-registered parsers
+        ParserInitializer.registerAllParsersLazy()
+    }
+
+    @Test
+    fun `lazy then eager registration silently skips`() {
+        ParserInitializer.registerAllParsersLazy()
+
+        // Should not throw — silently skips already-registered parsers
+        ParserInitializer.registerAllParsers()
+    }
+
+    @Test
+    fun `eager then lazy registration silently skips`() {
+        ParserInitializer.registerAllParsers()
+
+        // Should not throw — silently skips already-registered parsers
+        ParserInitializer.registerAllParsersLazy()
     }
 
     @Test
