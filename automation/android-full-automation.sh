@@ -10,7 +10,10 @@
 #
 # Requirements: adb in PATH, physical Android device connected, APK built.
 
-set -euo pipefail
+set -uo pipefail
+# Note: we intentionally do NOT use 'set -e' because many ADB commands
+# return non-zero exit codes in normal operation (e.g., pidof when process
+# is not running, pm clear after force-stop, screencap display warnings).
 
 ###############################################################################
 # Configuration
@@ -277,6 +280,7 @@ ms_sleep() {
 tap() {
     local x="$1" y="$2"
     adb_shell input tap "$x" "$y"
+    capture_frame
     ms_sleep "$TAP_DELAY"
 }
 
@@ -289,6 +293,7 @@ long_press() {
 swipe() {
     local x1="$1" y1="$2" x2="$3" y2="$4"
     adb_shell input swipe "$x1" "$y1" "$x2" "$y2" "$SWIPE_DUR"
+    capture_frame
     ms_sleep "$TAP_DELAY"
 }
 
@@ -382,6 +387,10 @@ SCREENSHOT_DIR=""
 SCREENSHOT_COUNTER=0
 RECORDING_PID=""
 CURRENT_RECORDING_FILE=""
+FRAME_DIR=""
+FRAME_COUNTER=0
+FRAME_CAPTURE_ACTIVE=0
+FFMPEG_BIN="$(which ffmpeg 2>/dev/null || true)"
 
 init_output_dirs() {
     local speed="$1"
@@ -403,46 +412,84 @@ screenshot() {
     adb_cmd pull "$device_path" "$local_path" > /dev/null 2>&1
     adb_shell rm -f "$device_path"
     log "  Screenshot: ${fname}"
+
+    # Also copy to frame directory for video assembly
+    if [[ "$FRAME_CAPTURE_ACTIVE" -eq 1 && -n "$FRAME_DIR" ]]; then
+        FRAME_COUNTER=$(( FRAME_COUNTER + 1 ))
+        local frame_fname
+        frame_fname="$(printf 'frame_%05d.png' $FRAME_COUNTER)"
+        cp "$local_path" "${FRAME_DIR}/${frame_fname}"
+    fi
+}
+
+# Capture an extra frame for video (without saving as named screenshot)
+capture_frame() {
+    if [[ "$FRAME_CAPTURE_ACTIVE" -eq 1 && -n "$FRAME_DIR" ]]; then
+        FRAME_COUNTER=$(( FRAME_COUNTER + 1 ))
+        local frame_fname
+        frame_fname="$(printf 'frame_%05d.png' $FRAME_COUNTER)"
+        local device_path="/sdcard/yole-frame.png"
+
+        adb_shell screencap -p "$device_path" 2>/dev/null || true
+        adb_cmd pull "$device_path" "${FRAME_DIR}/${frame_fname}" > /dev/null 2>&1 || true
+        adb_shell rm -f "$device_path" 2>/dev/null || true
+    fi
 }
 
 start_recording() {
     local speed="$1" phase="$2"
-    local device_path="/sdcard/yole-test-${speed}-${phase}.mp4"
     local local_dir="${RECORDINGS_ROOT}/${speed}"
     CURRENT_RECORDING_FILE="${local_dir}/yole-test-${speed}-${phase}.mp4"
 
-    # Kill any existing screenrecord
-    adb_shell "killall screenrecord 2>/dev/null || true"
-    ms_sleep 300
+    # Use screenshot-based frame capture (hardware encoder not available on this device)
+    FRAME_DIR=$(mktemp -d "/tmp/yole-frames-XXXXXX")
+    FRAME_COUNTER=0
+    FRAME_CAPTURE_ACTIVE=1
+    RECORDING_PID=""
 
-    # Start recording in background (max 180s)
-    adb_shell "screenrecord --time-limit 180 ${device_path}" &
-    RECORDING_PID=$!
-    ms_sleep 500
-    log "  Recording started: ${device_path} (PID ${RECORDING_PID})"
+    log "  Recording started (frame capture mode): ${CURRENT_RECORDING_FILE}"
 }
 
 stop_recording() {
     local speed="$1" phase="$2"
-    local device_path="/sdcard/yole-test-${speed}-${phase}.mp4"
 
-    # Send SIGINT to screenrecord on device
-    adb_shell "killall -2 screenrecord 2>/dev/null || true"
-    ms_sleep 1500
+    FRAME_CAPTURE_ACTIVE=0
 
-    # Wait for background process
-    if [[ -n "$RECORDING_PID" ]]; then
-        wait "$RECORDING_PID" 2>/dev/null || true
-        RECORDING_PID=""
-    fi
+    if [[ -n "$FRAME_DIR" && -d "$FRAME_DIR" ]]; then
+        local frame_count
+        frame_count=$(find "$FRAME_DIR" -name "frame_*.png" 2>/dev/null | wc -l)
 
-    # Pull the recording
-    if adb_shell "ls ${device_path}" > /dev/null 2>&1; then
-        adb_cmd pull "$device_path" "$CURRENT_RECORDING_FILE" > /dev/null 2>&1
-        adb_shell rm -f "$device_path"
-        log "  Recording saved: ${CURRENT_RECORDING_FILE}"
-    else
-        warn "Recording file not found on device: ${device_path}"
+        if [[ "$frame_count" -gt 0 && -n "$FFMPEG_BIN" ]]; then
+            # Assemble frames into video using ffmpeg
+            # Use 2 fps for slow, 4 for normal, 6 for fast
+            local fps=2
+            case "$speed" in
+                slow)   fps=2 ;;
+                normal) fps=3 ;;
+                fast)   fps=4 ;;
+            esac
+
+            "$FFMPEG_BIN" -y -framerate "$fps" \
+                -i "${FRAME_DIR}/frame_%05d.png" \
+                -c:v libx264 -pix_fmt yuv420p -crf 23 \
+                -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" \
+                "$CURRENT_RECORDING_FILE" \
+                > /dev/null 2>&1
+
+            if [[ -s "$CURRENT_RECORDING_FILE" ]]; then
+                log "  Recording saved (${frame_count} frames): ${CURRENT_RECORDING_FILE}"
+            else
+                warn "ffmpeg failed to create video from ${frame_count} frames"
+            fi
+        elif [[ "$frame_count" -gt 0 ]]; then
+            warn "ffmpeg not available — ${frame_count} frames captured but no video created"
+        else
+            warn "No frames captured for this phase"
+        fi
+
+        # Clean up frame directory
+        rm -rf "$FRAME_DIR"
+        FRAME_DIR=""
     fi
 }
 
@@ -492,14 +539,16 @@ install_apk() {
     fi
 
     # Check if already installed with same version
-    if adb_shell pm list packages | grep -q "$PACKAGE"; then
+    local installed
+    installed=$(adb_shell pm list packages 2>/dev/null | grep "$PACKAGE" || true)
+    if [[ -n "$installed" ]]; then
         log "Package ${PACKAGE} already installed — reinstalling"
         adb_cmd install -r -g "$APK_PATH" > /dev/null 2>&1 || \
-            adb_cmd install -r "$APK_PATH" > /dev/null 2>&1
+            adb_cmd install -r "$APK_PATH" > /dev/null 2>&1 || true
     else
         log "Installing ${APK_PATH}"
         adb_cmd install -g "$APK_PATH" > /dev/null 2>&1 || \
-            adb_cmd install "$APK_PATH" > /dev/null 2>&1
+            adb_cmd install "$APK_PATH" > /dev/null 2>&1 || true
     fi
     log "APK installed successfully"
 }
@@ -514,8 +563,10 @@ launch_app() {
 }
 
 ensure_app_running() {
-    # Check if the app process is alive
-    if ! adb_shell "pidof ${PACKAGE}" > /dev/null 2>&1; then
+    # Check if the app process is alive (pidof may fail on some devices)
+    local running
+    running=$(adb_shell "pidof ${PACKAGE}" 2>/dev/null || true)
+    if [[ -z "$running" ]]; then
         warn "App not running — relaunching"
         launch_app
     fi
@@ -1180,8 +1231,8 @@ run_all_phases() {
     init_output_dirs "$speed"
 
     # Clean app state for fresh run
-    adb_shell am force-stop "$PACKAGE" 2>/dev/null || true
-    adb_shell pm clear "$PACKAGE" 2>/dev/null || true
+    adb_shell "am force-stop ${PACKAGE}" 2>/dev/null || true
+    adb_shell "pm clear ${PACKAGE}" 2>/dev/null || true
     ms_sleep 500
 
     local phase_start phase_end elapsed
@@ -1271,7 +1322,7 @@ main() {
     # Print summary
     local total_screenshots total_videos
     total_screenshots=$(find "${RECORDINGS_ROOT}" -name "*.png" 2>/dev/null | wc -l)
-    total_videos=$(find "${RECORDINGS_ROOT}" -name "*.mp4" 2>/dev/null | wc -l)
+    total_videos=$(find "${RECORDINGS_ROOT}" -name "*.mp4" -size +0c 2>/dev/null | wc -l)
 
     log "Results:"
     log "  Screenshots: ${total_screenshots} files"
@@ -1283,7 +1334,7 @@ main() {
         if [[ -d "${RECORDINGS_ROOT}/${spd}/screenshots" ]]; then
             local sc vc
             sc=$(find "${RECORDINGS_ROOT}/${spd}/screenshots" -name "*.png" 2>/dev/null | wc -l)
-            vc=$(find "${RECORDINGS_ROOT}/${spd}" -maxdepth 1 -name "*.mp4" 2>/dev/null | wc -l)
+            vc=$(find "${RECORDINGS_ROOT}/${spd}" -maxdepth 1 -name "*.mp4" -size +0c 2>/dev/null | wc -l)
             log "  ${spd}: ${sc} screenshots, ${vc} videos"
         fi
     done
