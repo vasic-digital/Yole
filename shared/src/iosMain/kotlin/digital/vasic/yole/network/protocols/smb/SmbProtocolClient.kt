@@ -1,68 +1,111 @@
 /*#######################################################
  *
- * SPDX-FileCopyrightText: 2025 Milos Vasic
+ * SPDX-FileCopyrightText: 2025-2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  *
- * iOS SMB client stub -- SMB is not supported on iOS.
+ * iOS SMB client stub — SMB is not supported on iOS.
  *
  *########################################################*/
 package digital.vasic.yole.network.protocols.smb
 
+import digital.vasic.yole.network.common.PlatformNotSupportedException
+
 /**
  * iOS implementation of [SmbProtocolClient].
  *
- * SMB/CIFS is not currently supported on iOS because the smbj library
- * is JVM-only. All methods return [UnsupportedOperationException] failures.
+ * ## Why SMB Is Not Supported on iOS
  *
- * TODO: Implement using libsmb2 via Kotlin/Native cinterop for SMB2/3 support.
- *       Steps:
- *       1. Create a .def file for libsmb2 C headers in the cinterop/ directory
- *       2. Implement SMB2 session setup (connect, authenticate via NTLM/Kerberos)
- *       3. Implement share tree connect and file operations (list, read, write, delete)
- *       4. Support SMB3 encryption for secure communication
- *       5. Handle reconnection on network changes (iOS can switch networks frequently)
+ * SMB/CIFS (Server Message Block) requires a complex binary protocol implementation
+ * including NTLM or Kerberos authentication, tree connect negotiation, and file
+ * operation framing. On JVM platforms (Desktop/Android), Yole uses the
+ * [smbj](https://github.com/hierynomus/smbj) library which is JVM-only and
+ * cannot be used with Kotlin/Native.
  *
- * TODO: Alternatively, use iOS's built-in NetFS framework (if available) or
- *       SMBClient framework for macOS Catalyst builds.
+ * iOS does not expose a public SMB client API. While macOS has `NetFS.framework`
+ * and the `SMBClient` framework, these are not available on iOS. The Files app
+ * supports SMB mounting internally, but this functionality is not exposed to
+ * third-party apps via a public SDK.
+ *
+ * ## Future Implementation Plan
+ *
+ * **Option A (Recommended): libsmb2 via Kotlin/Native cinterop**
+ * 1. Create a `.def` file for [libsmb2](https://github.com/sahlberg/libsmb2) C headers
+ *    in the `cinterop/` directory
+ * 2. Implement SMB2/3 session setup: `smb2_connect_share()`,
+ *    `smb2_set_authentication()` with NTLM credentials
+ * 3. Implement file operations: `smb2_opendir()`, `smb2_readdir()`,
+ *    `smb2_open()`, `smb2_read()`, `smb2_write()`, `smb2_unlink()`,
+ *    `smb2_mkdir()`, `smb2_rmdir()`, `smb2_rename()`
+ * 4. Support SMB3 encryption for secure communication
+ * 5. Handle reconnection on network changes (iOS switches networks frequently
+ *    between Wi-Fi and cellular, which can drop TCP connections)
+ * Reference: [libsmb2 GitHub](https://github.com/sahlberg/libsmb2)
+ *
+ * **Option B: SMBClient framework for macOS Catalyst**
+ * 1. Use Apple's `SMBClient` framework via Kotlin/Native Objective-C interop
+ * 2. Only available for macOS Catalyst builds (iPad apps running on Mac)
+ * 3. Would require conditional compilation for Catalyst vs. native iOS
+ * Reference: [Apple SMBClient](https://developer.apple.com/documentation/smbclient)
+ *
+ * All methods return [Result.failure] with [PlatformNotSupportedException].
  */
 actual class SmbProtocolClient actual constructor() {
+
+    private val notSupported: PlatformNotSupportedException
+        get() = PlatformNotSupportedException.ios(
+            protocol = "SMB/CIFS",
+            reason = "The smbj library is JVM-only; iOS requires libsmb2 integration via Kotlin/Native cinterop",
+            alternativeApproach = "Use cloud storage protocols (Dropbox, Google Drive, OneDrive) which work via HTTPS REST APIs on all platforms"
+        )
 
     actual val isConnected: Boolean
         get() = false
 
+    /** @return [Result.failure] — SMB requires libsmb2 cinterop not yet implemented on iOS. */
     actual suspend fun connect(host: String, port: Int, shareName: String): Result<Unit> =
-        Result.failure(UnsupportedOperationException("SMB not supported on iOS"))
+        Result.failure(notSupported)
 
+    /** @return [Result.failure] — SMB requires libsmb2 cinterop not yet implemented on iOS. */
     actual suspend fun authenticate(domain: String, username: String, password: String): Result<Unit> =
-        Result.failure(UnsupportedOperationException("SMB not supported on iOS"))
+        Result.failure(notSupported)
 
+    /** @return [Result.failure] — SMB requires libsmb2 cinterop not yet implemented on iOS. */
     actual suspend fun disconnect(): Result<Unit> =
-        Result.failure(UnsupportedOperationException("SMB not supported on iOS"))
+        Result.failure(notSupported)
 
+    /** @return [Result.failure] — SMB requires libsmb2 cinterop not yet implemented on iOS. */
     actual suspend fun list(path: String): Result<List<SmbEntry>> =
-        Result.failure(UnsupportedOperationException("SMB not supported on iOS"))
+        Result.failure(notSupported)
 
+    /** @return [Result.failure] — SMB requires libsmb2 cinterop not yet implemented on iOS. */
     actual suspend fun read(path: String): Result<ByteArray> =
-        Result.failure(UnsupportedOperationException("SMB not supported on iOS"))
+        Result.failure(notSupported)
 
+    /** @return [Result.failure] — SMB requires libsmb2 cinterop not yet implemented on iOS. */
     actual suspend fun write(path: String, data: ByteArray): Result<Unit> =
-        Result.failure(UnsupportedOperationException("SMB not supported on iOS"))
+        Result.failure(notSupported)
 
+    /** @return [Result.failure] — SMB requires libsmb2 cinterop not yet implemented on iOS. */
     actual suspend fun delete(path: String): Result<Unit> =
-        Result.failure(UnsupportedOperationException("SMB not supported on iOS"))
+        Result.failure(notSupported)
 
+    /** @return [Result.failure] — SMB requires libsmb2 cinterop not yet implemented on iOS. */
     actual suspend fun mkdir(path: String): Result<Unit> =
-        Result.failure(UnsupportedOperationException("SMB not supported on iOS"))
+        Result.failure(notSupported)
 
+    /** @return [Result.failure] — SMB requires libsmb2 cinterop not yet implemented on iOS. */
     actual suspend fun rmdir(path: String): Result<Unit> =
-        Result.failure(UnsupportedOperationException("SMB not supported on iOS"))
+        Result.failure(notSupported)
 
+    /** @return [Result.failure] — SMB requires libsmb2 cinterop not yet implemented on iOS. */
     actual suspend fun rename(fromPath: String, toPath: String): Result<Unit> =
-        Result.failure(UnsupportedOperationException("SMB not supported on iOS"))
+        Result.failure(notSupported)
 
+    /** @return [Result.failure] — SMB requires libsmb2 cinterop not yet implemented on iOS. */
     actual suspend fun stat(path: String): Result<SmbFileInfo> =
-        Result.failure(UnsupportedOperationException("SMB not supported on iOS"))
+        Result.failure(notSupported)
 
+    /** @return [Result.failure] — SMB requires libsmb2 cinterop not yet implemented on iOS. */
     actual suspend fun getShareInfo(): Result<SmbShareInfo> =
-        Result.failure(UnsupportedOperationException("SMB not supported on iOS"))
+        Result.failure(notSupported)
 }

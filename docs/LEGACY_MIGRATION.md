@@ -216,3 +216,95 @@ When removing legacy modules, update these files:
 | `app/` | None | No code, only raw resources, not in settings.gradle.kts |
 | `core/` | None | No active consumers; can remove immediately |
 | `commons/` | Low | Only 1 class referenced by androidApp; easy to copy locally |
+
+---
+
+## Current Deprecation Status (as of March 2026)
+
+### `commons/` Module — `GsContextUtils` and Related Classes
+
+**Status:** Deprecated, scheduled for removal in Q2 2026.
+
+The `commons/` module originated from the [opoc](https://github.com/gsantner/opoc) library
+bundled with the original Markor project. It contains 25 Kotlin/Java source files under the
+`net.gsantner.opoc` namespace, of which only **one** is still actively referenced:
+
+- **`GsSharedPreferencesPropertyBackend`** — Used by `YoleApp.kt` for SharedPreferences-backed
+  application settings storage. This is the sole remaining dependency between `androidApp/` and
+  `commons/`.
+
+All other classes in `commons/` have been superseded by KMP equivalents:
+
+| Legacy Class | Replacement | Status |
+|-------------|-------------|--------|
+| `GsSimpleMarkdownParser` | `Formatters-KMP` module | Superseded |
+| `GsTextUtils` | Kotlin stdlib extensions | Superseded |
+| `GsPropertyBackend` | `Config-KMP` module | Superseded (except as interface for GsSharedPreferences) |
+| `GsFileUtils`, `GsStorageUtils` | `PlatformFileIOFactory` | Superseded |
+| `GsContextUtils` | Android Compose + KMP utilities | Superseded |
+| `GsNetworkUtils` | Ktor client | Superseded |
+| `GsUiUtils` | Compose Multiplatform | Superseded |
+| `GsCallback`, `GsHashMap` | Kotlin Flow, stdlib Map | Superseded |
+
+**Migration path for remaining callers:**
+1. `YoleApp.kt` imports `GsSharedPreferencesPropertyBackend` for settings
+2. Copy `GsSharedPreferencesPropertyBackend.kt` + `GsPropertyBackend.kt` into `androidApp/`
+3. Update the import path in `YoleApp.kt`
+4. Remove `implementation(project(":commons"))` from `androidApp/build.gradle.kts`
+
+### `core/` Module — Java Format System
+
+**Status:** Deprecated, **ready for immediate removal**.
+
+The `core/` module contains 12 Java source files that were the original format parsing system.
+Every class has been fully superseded by Kotlin equivalents in the `shared` module:
+
+- `FormatRegistry.java` / `FormatRegistryImpl.java` -> `shared/.../format/FormatRegistry.kt`
+- `TextConverterBase.java` -> `shared/.../format/TextParser.kt`
+- `TextFormat.java` -> `shared/.../format/TextFormat.kt`
+- `Document.java` -> `shared/.../model/Document.kt`
+- `JavaPasswordbasedCryption.java` / `PasswordStore.java` -> `Security-KMP` module
+
+**No code in the project imports from `core/`.** The module is included in `settings.gradle.kts`
+but is not listed as a dependency in any `build.gradle.kts`. It can be deleted without any code
+changes.
+
+### `app/` Module — Empty Resource Shell
+
+**Status:** Deprecated, **ready for immediate removal**.
+
+The `app/` directory contains only four raw resource files (readme, changelog, contributors,
+license). It has no `build.gradle.kts` and is not registered in `settings.gradle.kts`. These
+resource files are artifacts of the original Markor project structure and are not referenced by
+the current `androidApp/` module.
+
+---
+
+## Deprecation Timeline
+
+| Module | Deprecation Date | Removal Target | Blocking Dependencies | Current Status |
+|--------|-----------------|----------------|----------------------|----------------|
+| `core/` | March 2026 | **Q2 2026** | None | Ready for removal |
+| `app/` | March 2026 | **Q2 2026** | None | Ready for removal |
+| `commons/` | March 2026 | **Q2 2026** | `GsSharedPreferencesPropertyBackend` in YoleApp.kt | Requires Phase 3 migration first |
+
+### Post-Removal Cleanup
+
+After all three legacy modules are removed:
+
+1. **Build configuration cleanup:**
+   - Remove `include(":commons")` and `include(":core")` from `settings.gradle.kts`
+   - Remove `implementation(project(":commons"))` from `androidApp/build.gradle.kts`
+   - Delete `core/build.gradle.kts` and `commons/build.gradle.kts`
+
+2. **Namespace cleanup:**
+   - The `net.gsantner.opoc` namespace will be fully retired
+   - All code will live under `digital.vasic.yole.*` or extracted KMP module packages
+
+3. **CI/CD updates:**
+   - Remove any legacy module references from CI workflows
+   - Update Detekt/lint configurations if they reference legacy module paths
+
+4. **Documentation updates:**
+   - Update `CLAUDE.md` architecture section to remove legacy module references
+   - Update video course scripts and website content if they reference legacy modules
