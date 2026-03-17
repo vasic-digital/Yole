@@ -48,14 +48,14 @@ class OwaspSecurityTest {
 
     @Test
     fun pathTraversalBasicDotDot() {
-        assertFailsWith<SecurityException> {
+        assertFailsWith<IllegalArgumentException> {
             PathUtils.normalizePath("../../etc/passwd", "/home/user")
         }
     }
 
     @Test
     fun pathTraversalDeep() {
-        assertFailsWith<SecurityException> {
+        assertFailsWith<IllegalArgumentException> {
             PathUtils.normalizePath("../../../root/secret", "/home/user")
         }
     }
@@ -63,14 +63,14 @@ class OwaspSecurityTest {
     @Test
     fun pathTraversalEncodedDots() {
         // Direct ../ in path segments
-        assertFailsWith<SecurityException> {
+        assertFailsWith<IllegalArgumentException> {
             PathUtils.normalizePath("subdir/../../etc/shadow", "/home/user")
         }
     }
 
     @Test
     fun pathTraversalMixedWithValidSegments() {
-        assertFailsWith<SecurityException> {
+        assertFailsWith<IllegalArgumentException> {
             PathUtils.normalizePath("valid/dir/../../../etc/hosts", "/home/user")
         }
     }
@@ -97,7 +97,7 @@ class OwaspSecurityTest {
 
     @Test
     fun pathTraversalOneAboveRoot() {
-        assertFailsWith<SecurityException> {
+        assertFailsWith<IllegalArgumentException> {
             PathUtils.normalizePath("..", "/home/user")
         }
     }

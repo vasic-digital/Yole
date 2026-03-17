@@ -22,45 +22,72 @@ import kotlinx.coroutines.yield
  */
 class DocumentCache(private val maxSize: Int = 100) {
     private val mutex = Mutex()
-    private val cache = LinkedHashMap<String, ParsedDocument>(maxSize + 1, 0.75f, true)
+    // Use MutableMap + accessOrder list for LRU — LinkedHashMap(accessOrder=true) is JVM-only
+    private val cache = mutableMapOf<String, ParsedDocument>()
+    private val accessOrder = mutableListOf<String>()
 
+    @kotlin.concurrent.Volatile
     private var _hits = 0L
+    @kotlin.concurrent.Volatile
     private var _misses = 0L
+    @kotlin.concurrent.Volatile
+    private var _size = 0
 
-    val size: Int get() = kotlinx.coroutines.runBlocking { mutex.withLock { cache.size } }
-    val hits: Long get() = kotlinx.coroutines.runBlocking { mutex.withLock { _hits } }
-    val misses: Long get() = kotlinx.coroutines.runBlocking { mutex.withLock { _misses } }
-    val hitRate: Double get() = kotlinx.coroutines.runBlocking {
-        mutex.withLock {
-            if (_hits + _misses == 0L) 0.0 else _hits.toDouble() / (_hits + _misses)
-        }
+    /** Current number of cached entries. Volatile read — safe without lock. */
+    val size: Int get() = _size
+    /** Total cache hits. Volatile read — safe without lock. */
+    val hits: Long get() = _hits
+    /** Total cache misses. Volatile read — safe without lock. */
+    val misses: Long get() = _misses
+    /** Hit rate as a ratio [0.0, 1.0]. Volatile reads — may be slightly stale. */
+    val hitRate: Double get() {
+        val h = _hits
+        val m = _misses
+        return if (h + m == 0L) 0.0 else h.toDouble() / (h + m)
     }
 
     suspend fun get(key: String): ParsedDocument? {
         yield()
         return mutex.withLock {
             val value = cache[key]
-            if (value != null) _hits++ else _misses++
+            if (value != null) {
+                _hits++
+                // Move to end of access order (most recently used)
+                accessOrder.remove(key)
+                accessOrder.add(key)
+            } else {
+                _misses++
+            }
             value
         }
     }
 
     suspend fun put(key: String, document: ParsedDocument) = mutex.withLock {
-        cache[key] = document
-        if (cache.size > maxSize) {
-            val eldest = cache.entries.first()
-            cache.remove(eldest.key)
+        if (cache.containsKey(key)) {
+            accessOrder.remove(key)
         }
+        cache[key] = document
+        accessOrder.add(key)
+        // Evict least recently used (first in accessOrder)
+        while (cache.size > maxSize && accessOrder.isNotEmpty()) {
+            val eldest = accessOrder.removeFirst()
+            cache.remove(eldest)
+        }
+        _size = cache.size
     }
 
     suspend fun invalidate(key: String) = mutex.withLock {
         cache.remove(key)
+        accessOrder.remove(key)
+        _size = cache.size
     }
 
     suspend fun clear() = mutex.withLock {
         cache.clear()
+        accessOrder.clear()
         _hits = 0
         _misses = 0
+        _size = 0
     }
 
     suspend fun contains(key: String): Boolean = mutex.withLock {

@@ -106,14 +106,14 @@ class PathUtilsTest {
 
     @Test
     fun pathTraversalBeyondRootThrowsSecurityException() {
-        assertFailsWith<SecurityException> {
+        assertFailsWith<IllegalArgumentException> {
             PathUtils.normalizePath("../../etc/passwd", "/home/user")
         }
     }
 
     @Test
     fun pathTraversalWithDoubleDotThrowsSecurityException() {
-        assertFailsWith<SecurityException> {
+        assertFailsWith<IllegalArgumentException> {
             PathUtils.normalizePath("../../../root/secret", "/home/user")
         }
     }

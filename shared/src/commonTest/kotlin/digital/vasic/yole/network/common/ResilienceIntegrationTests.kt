@@ -442,7 +442,7 @@ class CombinedResiliencePatternTests {
 
     @Test
     fun pathUtilsThrowsOnTraversal() {
-        assertFailsWith<SecurityException> {
+        assertFailsWith<IllegalArgumentException> {
             PathUtils.normalizePath("../../etc/passwd", "/home/user")
         }
     }

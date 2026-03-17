@@ -48,7 +48,7 @@ object PathUtils {
 
         val rootPrefix = rootPath.ifBlank { "/" }
         if (rootPrefix != "/" && !result.startsWith(rootPrefix)) {
-            throw SecurityException("Path traversal detected: '$path' escapes root '$rootPath'")
+            throw IllegalArgumentException("Path traversal detected: '$path' escapes root '$rootPath'")
         }
         return result
     }
