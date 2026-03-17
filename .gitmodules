@@ -4,3 +4,6 @@
 [submodule "Containers"]
 	path = Containers
 	url = git@github.com:vasic-digital/Containers.git
+[submodule "HelixQA"]
+	path = HelixQA
+	url = git@github.com:vasic-digital/HelixQA.git

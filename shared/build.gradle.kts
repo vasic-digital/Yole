@@ -351,6 +351,27 @@ tasks.register<Exec>("runChallenges") {
     commandLine("go", "test", "./...", "-race", "-count=1")
 }
 
+// Task to run HelixQA orchestrated testing
+tasks.register<Exec>("runHelixQA") {
+    group = "verification"
+    description = "Run HelixQA orchestrated QA across all platforms (requires Go 1.24+)"
+
+    val helixqaDir = file("${rootDir}/HelixQA")
+    val banksDir = file("${rootDir}/Challenges/banks/yole")
+
+    doFirst {
+        if (!helixqaDir.exists()) {
+            throw GradleException(
+                "HelixQA/ directory not found. " +
+                "Run 'git submodule update --init --recursive' first."
+            )
+        }
+    }
+
+    workingDir = helixqaDir
+    commandLine("go", "test", "./...", "-race", "-count=1")
+}
+
 android {
     namespace = "digital.vasic.yole.shared"
     compileSdk = 35
