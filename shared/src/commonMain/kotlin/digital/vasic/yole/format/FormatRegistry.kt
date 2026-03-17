@@ -432,6 +432,35 @@ object FormatRegistry {
     val documentCache = DocumentCache()
 
     /**
+     * Semaphore to limit concurrent parsing operations, preventing resource
+     * exhaustion when many documents are parsed simultaneously.
+     * Permits set to 4 to balance throughput with memory/CPU constraints.
+     */
+    private val parseSemaphore = kotlinx.coroutines.sync.Semaphore(permits = 4)
+
+    /**
+     * Parse content with caching and concurrency control via semaphore.
+     *
+     * Limits the number of concurrent parse operations to prevent resource
+     * exhaustion. Uses [parseSemaphore] to enforce a maximum of 4 concurrent
+     * parse operations. Callers that need unconstrained parsing should use
+     * [parseWithCache] directly.
+     *
+     * @param content The raw text content to parse
+     * @param format The [TextFormat] to use for parsing
+     * @param options Optional parsing options passed to the parser
+     * @return The parsed document (possibly from cache)
+     */
+    suspend fun parseWithCacheConcurrent(content: String, format: TextFormat, options: Map<String, Any> = emptyMap()): ParsedDocument {
+        parseSemaphore.acquire()
+        try {
+            return parseWithCache(content, format, options)
+        } finally {
+            parseSemaphore.release()
+        }
+    }
+
+    /**
      * Parse content using the appropriate parser, with caching.
      *
      * If a [ParsedDocument] with the same format and content hash is already
