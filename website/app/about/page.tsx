@@ -5,6 +5,10 @@ const stats = [
   { label: "Text Formats", value: "17" },
   { label: "Tests", value: "9,400+" },
   { label: "Platforms", value: "4" },
+  { label: "KMP Modules", value: "10" },
+  { label: "Protocols", value: "8" },
+  { label: "Security Tools", value: "6" },
+  { label: "Test Types", value: "16" },
   { label: "License", value: "Apache-2.0" },
 ];
 
@@ -14,6 +18,7 @@ const timeline = [
   { year: "2025", event: "17 text format parsers implemented with full test coverage" },
   { year: "2025", event: "Cloud storage protocols (Dropbox, Google Drive, OneDrive, FTP, SFTP, WebDAV)" },
   { year: "2026", event: "iOS target, comprehensive CI/CD, video courses, documentation website" },
+  { year: "2026", event: "Concurrency safety hardening, 6-tool security scanning pipeline, 9,400+ tests across 16 test types" },
 ];
 
 export default function AboutPage() {
@@ -27,7 +32,7 @@ export default function AboutPage() {
       </p>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-16">
         {stats.map((stat) => (
           <div key={stat.label} className="card text-center">
             <div className="text-3xl font-bold text-primary-500 mb-1">{stat.value}</div>
@@ -58,9 +63,15 @@ export default function AboutPage() {
           <p className="text-[var(--color-text-secondary)] leading-relaxed mb-4">
             Yole uses Kotlin Multiplatform (KMP) to share business logic across Android,
             Desktop (JVM), iOS (Native), and Web (Wasm). All 17 text format parsers live in
-            the shared module and are tested with a comprehensive suite of 9,400+ tests.
-            The architecture includes 10 independently extracted KMP modules consumed via
-            Gradle composite builds.
+            the shared module and are tested with a comprehensive suite of 9,400+ tests
+            across 215+ test files covering 16 test types. The architecture includes 10
+            independently extracted KMP modules consumed via Gradle composite builds.
+          </p>
+          <p className="text-[var(--color-text-secondary)] leading-relaxed mb-4">
+            All 8 network protocol services are hardened with circuit breakers, connection
+            limiters, Mutex-based concurrency guards, and path traversal protection. A
+            6-tool security scanning pipeline (SonarQube, Snyk, Detekt, Gitleaks, OWASP,
+            CodeQL) runs in CI/CD to catch vulnerabilities before production.
           </p>
           <p className="text-[var(--color-text-secondary)] leading-relaxed">
             Platform-specific code handles UI (Compose Multiplatform), file system access,

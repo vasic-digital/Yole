@@ -29,7 +29,7 @@ const platforms = [
 ];
 
 const stats = [
-  { label: "Tests", value: "11,000+" },
+  { label: "Tests", value: "9,400+" },
   { label: "Text Formats", value: "17" },
   { label: "Protocols", value: "8" },
   { label: "Platforms", value: "4" },
@@ -38,13 +38,15 @@ const stats = [
 const features = [
   { title: "17 Text Formats", description: "From Markdown and todo.txt to LaTeX and Jupyter notebooks. One editor for all your text files." },
   { title: "Offline-First", description: "Everything works without an internet connection. Your data stays on your device by default." },
-  { title: "8 Cloud Protocols", description: "Optional integration with Dropbox, Google Drive, OneDrive, WebDAV, FTP, SFTP, Git, and S3." },
+  { title: "8 Cloud Protocols", description: "Optional integration with Dropbox, Google Drive, OneDrive, WebDAV, FTP, SFTP, SMB, and Git. Each with circuit breaker and connection limiter resilience." },
   { title: "Cross-Platform", description: "Built with Kotlin Multiplatform. Write once, run on Android, Desktop, iOS, and Web." },
   { title: "Open Source", description: "Apache-2.0 licensed. Inspect the code, contribute, and build on top of it." },
   { title: "Syntax Highlighting", description: "Context-aware highlighting for every supported format with customizable themes." },
   { title: "Modular Architecture", description: "10 independently extracted KMP modules. Clean separation of concerns with facade bridges." },
-  { title: "Comprehensive Testing", description: "11,000+ tests across 225+ test files with 63% line coverage. Includes stress, monitoring, fuzz, snapshot, and load tests for all protocols." },
-  { title: "Video Course", description: "21 free video tutorials from beginner to expert. Learn Yole at your own pace." },
+  { title: "Security First", description: "6 integrated security scanning tools: SonarQube, Snyk, Detekt, Gitleaks, OWASP Dependency Check, and CodeQL. Continuous vulnerability detection in CI/CD." },
+  { title: "Concurrency Safe", description: "Thread-safe by design with Mutex, Semaphore, @Volatile, StateFlow.update{}, and atomic patterns across all protocol services and shared state." },
+  { title: "Comprehensive Testing", description: "9,400+ tests across 215+ test files covering 16 test types: unit, integration, stress, fuzz, snapshot, load, E2E, accessibility, and more." },
+  { title: "Video Course", description: "25 free video tutorials from beginner to expert. Learn Yole at your own pace." },
 ];
 
 export default function HomePage() {
@@ -187,7 +189,7 @@ export default function HomePage() {
             </a>
             <a href="/video-course" className="card text-center group">
               <h3 className="font-semibold text-lg mb-2 group-hover:text-primary-500 transition-colors">Video Course</h3>
-              <p className="text-sm text-[var(--color-text-secondary)]">21 free videos from beginner to expert level.</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">25 free videos from beginner to expert level.</p>
             </a>
             <a href="/architecture" className="card text-center group">
               <h3 className="font-semibold text-lg mb-2 group-hover:text-primary-500 transition-colors">Architecture</h3>

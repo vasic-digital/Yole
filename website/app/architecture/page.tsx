@@ -88,7 +88,7 @@ export default function ArchitecturePage() {
           <pre className="text-sm bg-[var(--color-bg-secondary)] rounded-lg p-4 overflow-x-auto border border-[var(--color-border)]"><code>{`Yole/
 ├── shared/                  # Shared KMP module (depends on extracted modules)
 │   ├── src/commonMain/      # Common Kotlin code
-│   ├── src/commonTest/      # 11,000+ tests
+│   ├── src/commonTest/      # 9,400+ tests
 │   ├── src/androidMain/     # Android expect/actual
 │   ├── src/desktopMain/     # Desktop (JVM) expect/actual
 │   ├── src/iosMain/         # iOS expect/actual
@@ -223,8 +223,8 @@ export default function ArchitecturePage() {
 ├── WebDavService       -- WebDAV (PROPFIND, GET, PUT, DELETE)
 ├── FtpService          -- FTP with active/passive mode
 ├── SftpService         -- SFTP over SSH
-├── GitService          -- Git clone/pull/push via HTTPS/SSH
-└── S3Service           -- S3-compatible object storage (planned)`}</code></pre>
+├── SmbService          -- SMB/CIFS network file shares
+└── GitService          -- Git clone/pull/push via HTTPS/SSH`}</code></pre>
         </div>
       </section>
 
@@ -264,6 +264,82 @@ export default function ArchitecturePage() {
         </div>
       </section>
 
+      {/* Concurrency Safety */}
+      <section className="mb-16">
+        <h2 className="text-3xl font-bold tracking-tight mb-4">Concurrency Safety</h2>
+        <div className="card">
+          <p className="text-[var(--color-text-secondary)] leading-relaxed mb-4">
+            Yole enforces thread safety across all shared state and protocol services using
+            a layered concurrency strategy. Critical sections are protected by Kotlin coroutine
+            Mutex guards, ensuring that concurrent operations on shared resources are serialized
+            without blocking threads.
+          </p>
+          <p className="text-[var(--color-text-secondary)] leading-relaxed mb-4">
+            All 8 network protocol services use scopeMutex for lifecycle management and
+            pauseFlagsMutex for pause/resume state. Volatile annotations on shared fields
+            ensure visibility across threads. StateFlow.update&#123;&#125; provides atomic state
+            transitions for UI state. Semaphore-based connection limiters cap concurrent
+            connections per protocol.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">Mutex</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Coroutine-safe critical sections</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">@Volatile</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Cross-thread field visibility</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">StateFlow</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Atomic state transitions</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">Semaphore</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Connection pool limiting</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Security Scanning Pipeline */}
+      <section className="mb-16">
+        <h2 className="text-3xl font-bold tracking-tight mb-4">Security Scanning Pipeline</h2>
+        <div className="card">
+          <p className="text-[var(--color-text-secondary)] leading-relaxed mb-4">
+            Yole integrates 6 security scanning tools into its CI/CD pipeline to detect
+            vulnerabilities, secrets, and code quality issues before they reach production.
+            Scans run automatically on every pull request and release build.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">SonarQube</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Code quality and security hotspots</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">Snyk</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Dependency vulnerability scanning</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">Detekt</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Kotlin static analysis</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">Gitleaks</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Secret and credential detection</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">OWASP</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Dependency check for known CVEs</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary-500">CodeQL</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Semantic code analysis</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Key Dependencies */}
       <section className="mb-16">
         <h2 className="text-3xl font-bold tracking-tight mb-4">Key Dependencies</h2>
@@ -298,18 +374,18 @@ export default function ArchitecturePage() {
         <h2 className="text-3xl font-bold tracking-tight mb-4">Testing</h2>
         <div className="card">
           <p className="text-[var(--color-text-secondary)] leading-relaxed mb-4">
-            Yole has a comprehensive test suite of 11,000+ tests across 225+ test files.
+            Yole has a comprehensive test suite of 9,400+ tests across 215+ test files.
             Tests cover all 17 format parsers, network protocol clients, authentication
             flows, rate limiting, concurrency, UI components, stress testing, monitoring
             metrics, fuzz testing, snapshot testing, and load testing.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary-500">11,000+</div>
+              <div className="text-2xl font-bold text-primary-500">9,400+</div>
               <div className="text-xs text-[var(--color-text-secondary)]">Total Tests</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary-500">225+</div>
+              <div className="text-2xl font-bold text-primary-500">215+</div>
               <div className="text-xs text-[var(--color-text-secondary)]">Test Files</div>
             </div>
             <div className="text-center">

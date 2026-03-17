@@ -59,13 +59,24 @@ const contributionTypes = [
   },
   {
     title: "Testing",
-    description: "Run tests, report test failures, write new tests, or help improve test coverage.",
+    description: "Run tests, report test failures, write new tests, or help improve test coverage. Yole has 9,400+ tests across 16 test types.",
     steps: [
-      "Run the full test suite with ./gradlew test",
+      "Run the full test suite with ./gradlew :shared:desktopTest",
       "Write unit tests for new features",
       "Test on different platforms and devices",
       "Report flaky or failing tests",
-      "Contribute stress and edge case tests",
+      "Contribute stress, fuzz, snapshot, load, E2E, and accessibility tests",
+    ],
+  },
+  {
+    title: "Security",
+    description: "Help improve security by running scans, reporting vulnerabilities, or improving security-related code.",
+    steps: [
+      "Run Detekt static analysis with ./gradlew detekt",
+      "Run the full security scan pipeline in containers",
+      "Report security vulnerabilities via GitHub Security Advisories",
+      "Review and fix code flagged by SonarQube or Snyk",
+      "Contribute to path traversal and input validation hardening",
     ],
   },
 ];

@@ -80,33 +80,33 @@ const protocols = [
     platforms: { android: true, desktop: true, ios: false, web: false },
   },
   {
-    id: "s3",
-    name: "S3-Compatible",
-    icon: "3",
+    id: "smb",
+    name: "SMB",
+    icon: "S",
     color: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
-    description: "Connect to Amazon S3 or any S3-compatible storage (MinIO, DigitalOcean Spaces, Backblaze B2). Access text files stored in cloud object storage.",
-    features: ["Access key authentication", "Bucket browsing", "Object read/write", "Custom endpoints", "Region selection", "S3-compatible providers"],
-    auth: "Access Key / Secret Key",
-    encryption: "TLS 1.2+",
-    platforms: { android: false, desktop: false, ios: false, web: false },
+    description: "Connect to SMB/CIFS network file shares for browsing and editing text files on Windows shared drives, NAS devices, and Samba servers.",
+    features: ["Username/password authentication", "Share browsing", "File read/write", "Directory listing", "Connection pooling", "Windows and NAS compatible"],
+    auth: "Username / Password",
+    encryption: "SMB 3.0 encryption",
+    platforms: { android: true, desktop: true, ios: false, web: false },
   },
 ];
 
 const featureComparison = [
-  { feature: "Browse files", dropbox: true, googledrive: true, onedrive: true, webdav: true, ftp: true, sftp: true, git: true, s3: true },
-  { feature: "Read files", dropbox: true, googledrive: true, onedrive: true, webdav: true, ftp: true, sftp: true, git: true, s3: true },
-  { feature: "Write files", dropbox: true, googledrive: true, onedrive: true, webdav: true, ftp: true, sftp: true, git: true, s3: true },
-  { feature: "Delete files", dropbox: true, googledrive: true, onedrive: true, webdav: true, ftp: true, sftp: true, git: false, s3: true },
-  { feature: "Create directories", dropbox: true, googledrive: true, onedrive: true, webdav: true, ftp: true, sftp: true, git: false, s3: true },
-  { feature: "OAuth2 authentication", dropbox: true, googledrive: true, onedrive: true, webdav: false, ftp: false, sftp: false, git: false, s3: false },
-  { feature: "SSH key authentication", dropbox: false, googledrive: false, onedrive: false, webdav: false, ftp: false, sftp: true, git: true, s3: false },
-  { feature: "Encrypted transfer", dropbox: true, googledrive: true, onedrive: true, webdav: true, ftp: false, sftp: true, git: true, s3: true },
-  { feature: "Self-hosted option", dropbox: false, googledrive: false, onedrive: false, webdav: true, ftp: true, sftp: true, git: true, s3: true },
-  { feature: "Version history", dropbox: true, googledrive: true, onedrive: true, webdav: false, ftp: false, sftp: false, git: true, s3: false },
-  { feature: "Rate limiting", dropbox: true, googledrive: true, onedrive: true, webdav: false, ftp: false, sftp: false, git: false, s3: true },
+  { feature: "Browse files", dropbox: true, googledrive: true, onedrive: true, webdav: true, ftp: true, sftp: true, git: true, smb: true },
+  { feature: "Read files", dropbox: true, googledrive: true, onedrive: true, webdav: true, ftp: true, sftp: true, git: true, smb: true },
+  { feature: "Write files", dropbox: true, googledrive: true, onedrive: true, webdav: true, ftp: true, sftp: true, git: true, smb: true },
+  { feature: "Delete files", dropbox: true, googledrive: true, onedrive: true, webdav: true, ftp: true, sftp: true, git: false, smb: true },
+  { feature: "Create directories", dropbox: true, googledrive: true, onedrive: true, webdav: true, ftp: true, sftp: true, git: false, smb: true },
+  { feature: "OAuth2 authentication", dropbox: true, googledrive: true, onedrive: true, webdav: false, ftp: false, sftp: false, git: false, smb: false },
+  { feature: "SSH key authentication", dropbox: false, googledrive: false, onedrive: false, webdav: false, ftp: false, sftp: true, git: true, smb: false },
+  { feature: "Encrypted transfer", dropbox: true, googledrive: true, onedrive: true, webdav: true, ftp: false, sftp: true, git: true, smb: true },
+  { feature: "Self-hosted option", dropbox: false, googledrive: false, onedrive: false, webdav: true, ftp: true, sftp: true, git: true, smb: true },
+  { feature: "Version history", dropbox: true, googledrive: true, onedrive: true, webdav: false, ftp: false, sftp: false, git: true, smb: false },
+  { feature: "Rate limiting", dropbox: true, googledrive: true, onedrive: true, webdav: false, ftp: false, sftp: false, git: false, smb: true },
 ];
 
-const protocolKeys = ["dropbox", "googledrive", "onedrive", "webdav", "ftp", "sftp", "git", "s3"] as const;
+const protocolKeys = ["dropbox", "googledrive", "onedrive", "webdav", "ftp", "sftp", "git", "smb"] as const;
 const protocolLabels: Record<string, string> = {
   dropbox: "Dropbox",
   googledrive: "Google Drive",
@@ -115,7 +115,7 @@ const protocolLabels: Record<string, string> = {
   ftp: "FTP",
   sftp: "SFTP",
   git: "Git",
-  s3: "S3",
+  smb: "SMB",
 };
 
 export default function CloudStoragePage() {
@@ -258,6 +258,65 @@ export default function CloudStoragePage() {
               ))}
             </tbody>
           </table>
+        </div>
+      </section>
+
+      {/* Resilience and Concurrency */}
+      <section className="mb-16">
+        <h2 className="section-heading">Resilience and Concurrency Safety</h2>
+        <p className="section-subheading">
+          Every protocol service is hardened with resilience patterns and thread-safe concurrency guards.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="card">
+            <h3 className="font-semibold text-lg mb-2">Circuit Breaker</h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+              All 8 protocol services use a circuit breaker pattern to prevent cascading failures.
+              When a protocol encounters repeated errors, the circuit opens and subsequent requests
+              fail fast without attempting the connection, protecting system resources.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Closed: Normal operation</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">Half-Open: Testing recovery</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Open: Fail fast</span>
+            </div>
+          </div>
+          <div className="card">
+            <h3 className="font-semibold text-lg mb-2">Connection Limiter</h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+              A Semaphore-based connection limiter caps the number of concurrent connections per
+              protocol. This prevents resource exhaustion on both the client and server side,
+              especially important for FTP, SFTP, and SMB connections.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-secondary)]">Semaphore-based</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-secondary)]">Configurable per protocol</span>
+            </div>
+          </div>
+          <div className="card">
+            <h3 className="font-semibold text-lg mb-2">Concurrency Guards</h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+              Each protocol service uses scopeMutex for lifecycle management (connect/disconnect)
+              and pauseFlagsMutex for pause/resume state. CancellationException is always rethrown
+              to support cooperative cancellation.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-secondary)]">Mutex guards</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-secondary)]">Cooperative cancellation</span>
+            </div>
+          </div>
+          <div className="card">
+            <h3 className="font-semibold text-lg mb-2">Path Traversal Protection</h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+              All protocol services use centralized normalizePath() from PathUtils.kt to prevent
+              path traversal attacks. Input paths are sanitized before any file system or network
+              operation.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-secondary)]">Centralized in PathUtils.kt</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-secondary)]">All 8 protocols</span>
+            </div>
+          </div>
         </div>
       </section>
 

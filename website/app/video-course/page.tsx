@@ -35,7 +35,7 @@ const levels = [
     level: "Expert",
     color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
     description: "Dive into the architecture, contribute to the project, and extend Yole with custom formats.",
-    prerequisites: "Advanced videos (8-13), Kotlin knowledge recommended",
+    prerequisites: "Advanced videos (8-13), Kotlin knowledge recommended for 14-21, production experience recommended for 22-25",
     videos: [
       { id: 14, title: "Architecture Deep Dive", duration: "18 min", description: "Kotlin Multiplatform architecture, module structure, shared code organization, and platform targets." },
       { id: 15, title: "Building from Source", duration: "12 min", description: "Setting up the development environment. Building for Android, Desktop, and Web. Running the test suite." },
@@ -45,6 +45,10 @@ const levels = [
       { id: 19, title: "Contributing to Yole", duration: "10 min", description: "Git workflow, commit conventions, pull request process, code review, and community guidelines." },
       { id: 20, title: "Platform-Specific Development", duration: "16 min", description: "Implementing expect/actual declarations for Android, Desktop, iOS, and Wasm. Platform-specific UI, networking, and secure storage." },
       { id: 21, title: "Stress Testing and Monitoring", duration: "14 min", description: "Writing stress tests, fuzz tests, load tests, and snapshot tests. Performance baselines, monitoring metrics, and CI integration." },
+      { id: 22, title: "Concurrency Safety Patterns", duration: "16 min", description: "Thread safety with Mutex, Semaphore, @Volatile, and StateFlow.update{}. Protecting shared state in protocol services and preventing race conditions." },
+      { id: 23, title: "Security Scanning Deep Dive", duration: "18 min", description: "Setting up and configuring SonarQube, Snyk, Detekt, Gitleaks, OWASP Dependency Check, and CodeQL. Interpreting scan results and fixing vulnerabilities." },
+      { id: 24, title: "Performance Optimization", duration: "14 min", description: "FormatRegistry lazy initialization, StyleSheets caching, DocumentCache LRU strategy, and parsing throughput benchmarks. Profiling and optimization techniques." },
+      { id: 25, title: "Complete Test Coverage", duration: "16 min", description: "Achieving comprehensive coverage with 16 test types: unit, integration, stress, fuzz, snapshot, load, E2E, accessibility, non-blocking, and more. Test organization and CI best practices." },
     ],
   },
 ];
@@ -125,7 +129,7 @@ export default function VideoCoursePage() {
       <section className="mb-16">
         <h2 className="text-3xl font-bold tracking-tight mb-4">Recommended Learning Path</h2>
         <div className="card">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
               <h3 className="font-semibold text-lg mb-2 text-green-600 dark:text-green-400">Week 1: Foundations</h3>
               <p className="text-sm text-[var(--color-text-secondary)] mb-3">
@@ -143,12 +147,20 @@ export default function VideoCoursePage() {
               <p className="text-xs text-[var(--color-text-secondary)]">~65 minutes total</p>
             </div>
             <div>
-              <h3 className="font-semibold text-lg mb-2 text-red-600 dark:text-red-400">Week 3: Mastery</h3>
+              <h3 className="font-semibold text-lg mb-2 text-red-600 dark:text-red-400">Week 3: Architecture</h3>
               <p className="text-sm text-[var(--color-text-secondary)] mb-3">
                 Dive into the Expert videos (14-21). Understand the architecture,
                 contribute to the project, and build custom extensions.
               </p>
               <p className="text-xs text-[var(--color-text-secondary)]">~120 minutes total</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg mb-2 text-red-600 dark:text-red-400">Week 4: Mastery</h3>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+                Complete the advanced Expert videos (22-25). Master concurrency safety,
+                security scanning, performance optimization, and complete test coverage.
+              </p>
+              <p className="text-xs text-[var(--color-text-secondary)]">~64 minutes total</p>
             </div>
           </div>
         </div>

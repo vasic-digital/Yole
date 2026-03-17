@@ -3,6 +3,24 @@
 
 const releases = [
   {
+    version: "2.17.0",
+    date: "2026-03-17",
+    title: "Concurrency Safety, Security Pipeline, and Comprehensive Completion",
+    highlights: [
+      "Concurrency safety hardening: Mutex guards, @Volatile, StateFlow.update{}, Semaphore-based connection limiters across all 8 protocol services",
+      "6-tool security scanning pipeline: SonarQube, Snyk, Detekt, Gitleaks, OWASP Dependency Check, CodeQL",
+      "Circuit breaker and connection limiter resilience patterns in all protocol services",
+      "Path traversal protection via centralized normalizePath() in PathUtils.kt",
+      "9,400+ tests across 215+ test files covering 16 test types",
+      "25 video course episodes (added Concurrency Safety, Security Scanning, Performance Optimization, Complete Test Coverage)",
+      "User manuals for Android, Desktop, and Web platforms",
+      "Updated website with concurrency, security, and resilience documentation",
+      "21+ challenge banks for security, format edge cases, and protocol resilience",
+      "FormatRegistry lazy initialization and StyleSheets caching for performance",
+    ],
+    breaking: false,
+  },
+  {
     version: "2.16.0",
     date: "2026-03-16",
     title: "Comprehensive Audit, Stress Testing, and Documentation Overhaul",

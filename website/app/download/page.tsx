@@ -5,7 +5,7 @@ const downloads = [
   {
     platform: "Android",
     status: "production" as const,
-    description: "Full-featured editor available on Google Play and F-Droid. Supports all 17+ text formats with Material Design UI.",
+    description: "Full-featured editor available on Google Play and F-Droid. Supports all 17 text formats with Material Design UI. All 8 cloud protocols with circuit breaker resilience.",
     requirements: "Android 7.0 (API 24) or later",
     links: [
       { label: "Google Play", href: "#", note: "Coming soon", comingSoon: true },

@@ -232,8 +232,31 @@ export default function DocsPage() {
         ))}
       </div>
 
-      {/* Additional Documentation */}
+      {/* User Manuals */}
       <section className="mt-16 mb-16">
+        <h2 className="text-3xl font-bold tracking-tight mb-6">User Manuals</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <a href="https://github.com/vasic-digital/Yole/blob/master/docs/USER_MANUAL_ANDROID.md" target="_blank" rel="noopener noreferrer" className="card group">
+            <h3 className="font-semibold text-lg mb-1 group-hover:text-primary-500 transition-colors">Android Manual</h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">Complete guide for the Android app including installation, file management, and cloud storage setup.</p>
+          </a>
+          <a href="https://github.com/vasic-digital/Yole/blob/master/docs/USER_MANUAL_DESKTOP.md" target="_blank" rel="noopener noreferrer" className="card group">
+            <h3 className="font-semibold text-lg mb-1 group-hover:text-primary-500 transition-colors">Desktop Manual</h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">Guide for the Desktop app on Windows, macOS, and Linux. Keyboard shortcuts and configuration.</p>
+          </a>
+          <a href="https://github.com/vasic-digital/Yole/blob/master/docs/USER_MANUAL_WEB.md" target="_blank" rel="noopener noreferrer" className="card group">
+            <h3 className="font-semibold text-lg mb-1 group-hover:text-primary-500 transition-colors">Web Manual</h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">Guide for the browser-based Wasm PWA editor. Offline support and browser compatibility.</p>
+          </a>
+          <a href="https://github.com/vasic-digital/Yole/blob/master/docs/API_REFERENCE.md" target="_blank" rel="noopener noreferrer" className="card group">
+            <h3 className="font-semibold text-lg mb-1 group-hover:text-primary-500 transition-colors">API Reference</h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">KDoc API documentation for all public classes, interfaces, and extension functions.</p>
+          </a>
+        </div>
+      </section>
+
+      {/* Additional Documentation */}
+      <section className="mb-16">
         <h2 className="text-3xl font-bold tracking-tight mb-6">Guides and References</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <a href="https://github.com/vasic-digital/Yole/blob/master/TROUBLESHOOTING.md" target="_blank" rel="noopener noreferrer" className="card group">
@@ -247,6 +270,18 @@ export default function DocsPage() {
           <a href="https://github.com/vasic-digital/Yole/blob/master/docs/adr/" target="_blank" rel="noopener noreferrer" className="card group">
             <h3 className="font-semibold text-lg mb-1 group-hover:text-primary-500 transition-colors">Architecture Decision Records</h3>
             <p className="text-sm text-[var(--color-text-secondary)]">ADRs documenting key architectural decisions, trade-offs, and rationale behind the design choices.</p>
+          </a>
+          <a href="https://github.com/vasic-digital/Yole/blob/master/docs/SECURITY_SCANNING.md" target="_blank" rel="noopener noreferrer" className="card group">
+            <h3 className="font-semibold text-lg mb-1 group-hover:text-primary-500 transition-colors">Security Scanning</h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">Configuration and usage of 6 security scanning tools: SonarQube, Snyk, Detekt, Gitleaks, OWASP, and CodeQL.</p>
+          </a>
+          <a href="https://github.com/vasic-digital/Yole/blob/master/docs/CONCURRENCY_SAFETY.md" target="_blank" rel="noopener noreferrer" className="card group">
+            <h3 className="font-semibold text-lg mb-1 group-hover:text-primary-500 transition-colors">Concurrency Safety</h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">Thread safety patterns including Mutex guards, @Volatile fields, StateFlow.update, and Semaphore-based limiters.</p>
+          </a>
+          <a href="https://github.com/vasic-digital/Yole/blob/master/docs/CHALLENGE_FRAMEWORK.md" target="_blank" rel="noopener noreferrer" className="card group">
+            <h3 className="font-semibold text-lg mb-1 group-hover:text-primary-500 transition-colors">Challenge Framework</h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">Go-based cross-platform testing framework with 21+ challenge banks for security, formats, and resilience.</p>
           </a>
         </div>
       </section>

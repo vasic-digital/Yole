@@ -86,7 +86,7 @@ const faqCategories = [
     questions: [
       {
         q: "Which cloud storage providers are supported?",
-        a: "Yole supports Dropbox, Google Drive, OneDrive, WebDAV (Nextcloud, ownCloud, etc.), FTP, SFTP, Git repositories, and S3-compatible storage (planned). Each protocol can be configured independently in the settings.",
+        a: "Yole supports 8 protocols: Dropbox, Google Drive, OneDrive, WebDAV (Nextcloud, ownCloud, etc.), FTP, SFTP, SMB (network file shares), and Git repositories. Each protocol can be configured independently in the settings and includes circuit breaker resilience.",
       },
       {
         q: "Is cloud storage required?",
@@ -116,7 +116,7 @@ const faqCategories = [
       },
       {
         q: "How do I run the tests?",
-        a: "Run './gradlew test' to execute all tests, or './gradlew :shared:desktopTest' for shared module tests. You can run specific test classes with '--tests' flag. For containerized testing, use 'docker compose run --rm build ./docker/scripts/test-all.sh'. Yole has 11,000+ tests across 225+ test files.",
+        a: "Run './gradlew test' to execute all tests, or './gradlew :shared:desktopTest' for shared module tests (recommended for daily development). You can run specific test classes with '--tests' flag. For containerized testing, use 'docker compose run --rm build ./docker/scripts/test-all.sh'. Yole has 9,400+ tests across 215+ test files covering 16 test types.",
       },
       {
         q: "What is the module structure?",
@@ -141,6 +141,50 @@ const faqCategories = [
       {
         q: "My container build exits with code 137. What does that mean?",
         a: "Exit code 137 means the container was killed by the OOM (Out of Memory) killer. Increase the memory limit for your Docker or Podman container. For Docker, use '--memory=4g' or increase the Docker Desktop memory allocation. For Podman on Linux, adjust the cgroup memory limit. A minimum of 4 GB is recommended for full builds and tests.",
+      },
+    ],
+  },
+  {
+    id: "security",
+    name: "Security",
+    questions: [
+      {
+        q: "What security scanning tools does Yole use?",
+        a: "Yole integrates 6 security scanning tools: SonarQube (code quality and security hotspots), Snyk (dependency vulnerability scanning), Detekt (Kotlin static analysis), Gitleaks (secret and credential detection), OWASP Dependency Check (known CVE scanning), and CodeQL (semantic code analysis). These run automatically in CI/CD.",
+      },
+      {
+        q: "How do I run a security scan locally?",
+        a: "For Detekt static analysis, run './gradlew detekt'. For the full security scanning pipeline including SonarQube, run './scripts/run_security_scan.sh' which requires Docker or Podman. SonarQube can be started with 'docker compose --profile security up -d sonarqube' and accessed at localhost:9000.",
+      },
+      {
+        q: "How does Yole protect against path traversal attacks?",
+        a: "All 8 network protocol services use centralized normalizePath() from PathUtils.kt to sanitize input paths before any file system or network operation. This prevents directory traversal attacks (e.g., '../../../etc/passwd') across all cloud storage protocols.",
+      },
+      {
+        q: "How are authentication credentials stored securely?",
+        a: "Yole uses the Security-KMP module which provides platform-specific secure storage: Android Keystore, iOS/macOS Keychain, and encrypted file storage on Desktop and Web. OAuth2 tokens, passwords, and SSH keys are never stored in plain text.",
+      },
+    ],
+  },
+  {
+    id: "concurrency",
+    name: "Concurrency and Performance",
+    questions: [
+      {
+        q: "How does Yole handle thread safety?",
+        a: "Yole uses a layered concurrency strategy: Kotlin coroutine Mutex guards protect critical sections in all protocol services, @Volatile annotations ensure cross-thread field visibility, StateFlow.update{} provides atomic state transitions, and Semaphore-based connection limiters cap concurrent connections per protocol.",
+      },
+      {
+        q: "What is the circuit breaker pattern used for?",
+        a: "All 8 protocol services use a circuit breaker to prevent cascading failures. When a protocol encounters repeated errors, the circuit opens and subsequent requests fail fast. After a configurable timeout, the circuit enters half-open state to test recovery. This protects system resources during outages.",
+      },
+      {
+        q: "How is format parsing performance optimized?",
+        a: "FormatRegistry uses lazy initialization (lazy { createFormats() }) so formats are only loaded when first accessed. ParsedDocument.toHtml() uses lazy caching where the first call generates HTML and subsequent calls return the cached result. StyleSheets.kt uses styleSheetCache with clearCache() for theme CSS. DocumentCache provides LRU caching for parsed documents.",
+      },
+      {
+        q: "What test types does Yole use for quality assurance?",
+        a: "Yole employs 16 test types: unit, integration, stress, supremacy (edge case), mock HTTP, property-based, contract, security, performance, resilience, fuzz (randomized input), snapshot (output regression), load (throughput), E2E (end-to-end), accessibility, and non-blocking tests. This comprehensive suite ensures correctness under all conditions.",
       },
     ],
   },
