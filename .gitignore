@@ -132,3 +132,4 @@ automation-screenshots/
 *.avi
 !website/**/*.mp4
 
+automation/node_modules/
