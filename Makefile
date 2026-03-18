@@ -298,24 +298,40 @@ challenge:
 
 # Run HelixQA orchestrated QA (main QA brain)
 helixqa:
-	cd HelixQA && go run ./cmd/helixqa/ \
-		--banks ../Challenges/banks/yole/ \
+	cd HelixQA && go run ./cmd/helixqa/ run \
+		--banks ../Challenges/banks/yole/,../HelixQA/banks/ \
 		--platform all \
+		--device emulator-5554 \
+		--package digital.vasic.yole.android \
+		--browser-url http://localhost:8080 \
+		--desktop-process java \
 		--output ../qa-results \
 		--report markdown \
 		--validate \
 		--record \
-		--verbose
+		--tickets \
+		--verbose \
+		--timeout 45m
 	@echo "-----------------------------------------------------------------------------------"
 
-# Run HelixQA tests
+# Run HelixQA unit tests
 helixqa-test:
 	cd HelixQA && go test ./... -race -count=1
 	@echo "-----------------------------------------------------------------------------------"
 
-# Run all QA: shared tests + challenges + HelixQA
+# Validate evidence from automation runs via HelixQA
+helixqa-validate:
+	bash automation/helixqa-validate.sh --platform all
+	@echo "-----------------------------------------------------------------------------------"
+
+# Run full QA pipeline: unit tests + Go tests + automation + evidence validation
 qa-all: test-shared challenge helixqa-test
-	@echo "All QA suites passed"
+	bash automation/run-qa-all.sh --skip-unit --skip-build
+	@echo "-----------------------------------------------------------------------------------"
+
+# Run full QA pipeline including builds
+qa-full:
+	bash automation/run-qa-all.sh
 	@echo "-----------------------------------------------------------------------------------"
 
 ####################################################################################

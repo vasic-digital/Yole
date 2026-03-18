@@ -1063,6 +1063,16 @@ async function main() {
     console.log('\n  All tests passed successfully!');
   }
 
+  // Post-automation: Run HelixQA evidence validation
+  const { execFileSync } = await import('child_process');
+  const validatorPath = join(PROJECT_ROOT, 'automation', 'helixqa-validate.sh');
+  try {
+    console.log('\nRunning HelixQA evidence validation...');
+    execFileSync('bash', [validatorPath, '--platform', 'web'], { stdio: 'inherit' });
+  } catch (e) {
+    console.log('HelixQA validation completed with issues (see above)');
+  }
+
   process.exit(totalFail > 0 ? 1 : 0);
 }
 

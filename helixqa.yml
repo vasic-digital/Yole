@@ -1,0 +1,84 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Configuration for Yole
+# Used by: make helixqa, run-qa-all.sh, automation scripts
+
+# Test bank sources (YAML + JSON)
+banks:
+  - Challenges/banks/yole
+  - HelixQA/banks
+
+# Platform configurations
+platforms:
+  android:
+    enabled: true
+    device: emulator-5554
+    package: digital.vasic.yole.android
+    activity: digital.vasic.yole.android.MainActivity
+    apk_debug: releases/android/Yole-Android-1.0.0-Debug-0.0.0.0.1.apk
+    apk_release: releases/android/Yole-Android-1.0.0-Release-0.0.0.0.1.apk
+    automation_script: automation/android-all-formats-automation.sh
+    recordings_dir: recordings/android/formats
+
+  web:
+    enabled: true
+    browser: chromium
+    url: http://localhost:8080
+    fallback_app: automation/yole-fallback-app.html
+    automation_script: automation/web-all-formats-automation.mjs
+    recordings_dir: recordings/web/formats
+
+  desktop:
+    enabled: true
+    process: java
+    jar: releases/desktop/Yole-Desktop-linux-x64-1.0.0-Release-0.0.0.0.1.jar
+    test_class: digital.vasic.yole.desktop.AllFormatsAutomationTest
+    automation_script: automation/desktop-all-formats-runner.sh
+    recordings_dir: recordings/desktop/formats
+
+# Execution settings
+execution:
+  speed: fast
+  timeout: 45m
+  step_timeout: 2m
+  validate_steps: true
+  record_video: true
+  verbose: true
+
+# Evidence validation
+evidence:
+  validate_screenshots: true
+  validate_videos: true
+  reject_black_frames: true
+  min_screenshot_size: 1024        # bytes — reject tiny/empty screenshots
+  min_video_duration: 1            # seconds — reject zero-length videos
+  screenshot_sample_pixels: 10000  # pixels to sample for black-frame detection
+  black_threshold: 10              # RGB value below which a pixel is "black"
+
+# Report settings
+report:
+  format: markdown
+  output_dir: qa-results
+  generate_tickets: true
+  ticket_dir: qa-results/tickets
+
+# Formats under test (all 17)
+formats:
+  - markdown
+  - plaintext
+  - todotxt
+  - csv
+  - latex
+  - orgmode
+  - asciidoc
+  - wikitext
+  - restructuredtext
+  - rmarkdown
+  - taskpaper
+  - textile
+  - creole
+  - tiddlywiki
+  - jupyter
+  - keyvalue
+  - binary

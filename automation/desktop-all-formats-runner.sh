@@ -248,4 +248,12 @@ ls -lh "$RECORDINGS_DIR/"*"${TIMESTAMP}"* 2>/dev/null | while read -r line; do
 done
 echo "============================================="
 
+# Post-automation: Run HelixQA evidence validation
+VALIDATOR="$PROJECT_DIR/automation/helixqa-validate.sh"
+if [[ -x "$VALIDATOR" ]]; then
+    echo ""
+    echo "Running HelixQA evidence validation..."
+    bash "$VALIDATOR" --platform desktop || true
+fi
+
 exit $EXIT_CODE

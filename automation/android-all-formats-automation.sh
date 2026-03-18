@@ -1419,3 +1419,14 @@ main() {
 }
 
 main "$@"
+MAIN_EXIT=$?
+
+# Post-automation: Run HelixQA evidence validation
+VALIDATOR="${PROJECT_ROOT}/automation/helixqa-validate.sh"
+if [[ -x "$VALIDATOR" ]]; then
+    echo ""
+    echo "Running HelixQA evidence validation..."
+    bash "$VALIDATOR" --platform android || true
+fi
+
+exit $MAIN_EXIT
