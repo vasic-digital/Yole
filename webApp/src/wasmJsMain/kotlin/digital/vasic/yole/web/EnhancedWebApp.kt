@@ -23,6 +23,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -284,6 +285,33 @@ fun EnhancedYoleWebApp() {
         modifier = Modifier
             .fillMaxSize()
             .background(bg)
+            .onKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.isCtrlPressed) {
+                    when (event.key) {
+                        Key.S -> {
+                            // Ctrl+S: Save current document
+                            activeTab?.let { tab ->
+                                saveDocumentToLocalStorage(tab.content, tab.format, tab.name)
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Saved: ${tab.name}")
+                                }
+                            }
+                            true
+                        }
+                        Key.N -> {
+                            // Ctrl+N: New document
+                            showNewDocDialog = true
+                            true
+                        }
+                        Key.F -> {
+                            // Ctrl+F: Toggle find bar
+                            showFindReplace = !showFindReplace
+                            true
+                        }
+                        else -> false
+                    }
+                } else false
+            }
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // ===== MENU BAR =====
@@ -677,7 +705,7 @@ fun EnhancedYoleWebApp() {
                 showLineNumbers = showLineNumbers,
                 onThemeToggle = { isDarkTheme = !isDarkTheme },
                 onWordWrapToggle = { wordWrap = !wordWrap },
-                onFontSizeChange = { fontSize = it },
+                onFontSizeChange = { fontSize = it.coerceIn(8, 32) },
                 onLineNumbersToggle = { showLineNumbers = !showLineNumbers },
                 onSave = {
                     saveSettingsToLocalStorage(isDarkTheme, fontSize, wordWrap, showLineNumbers)

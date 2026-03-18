@@ -1239,25 +1239,87 @@ fun IdeEditorScreen(
         historyIndex = (history.size - 1).coerceAtLeast(0)
     }
 
+    var showFindBar by remember { mutableStateOf(false) }
+    var findText by remember { mutableStateOf("") }
+    var findMatchCount by remember { mutableStateOf(0) }
+
     Column(modifier = Modifier.fillMaxSize().background(bg)) {
-        // Compact toolbar for format actions
-        if (format.id == "markdown") {
-            IdeMarkdownToolbar(
-                isDarkTheme = isDarkTheme,
-                onInsert = { action ->
-                    val insertText = when (action) {
-                        "bold" -> "**bold**"
-                        "italic" -> "*italic*"
-                        "header" -> "# "
-                        "link" -> "[text](url)"
-                        "code" -> "`code`"
-                        "list" -> "- "
-                        else -> ""
-                    }
-                    text += insertText
+        // General editor toolbar (undo/redo/find)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(36.dp)
+                .background(if (isDarkTheme) IdeTheme.darkSurface else IdeTheme.lightSurface)
+                .padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IdeToolbarButton("Undo", "Undo", textColor) {
+                if (historyIndex > 0) {
+                    historyIndex--
+                    text = history[historyIndex]
                     onContentChanged(text)
                 }
-            )
+            }
+            IdeToolbarButton("Redo", "Redo", textColor) {
+                if (historyIndex < history.size - 1) {
+                    historyIndex++
+                    text = history[historyIndex]
+                    onContentChanged(text)
+                }
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            IdeToolbarButton("Find", "Find in document", textColor) {
+                showFindBar = !showFindBar
+            }
+
+            // Format-specific tools (markdown)
+            if (format.id == "markdown") {
+                Spacer(modifier = Modifier.width(8.dp))
+                IdeToolbarButton("B", "Bold", textColor) { text += "**bold**"; onContentChanged(text) }
+                IdeToolbarButton("I", "Italic", textColor) { text += "*italic*"; onContentChanged(text) }
+                IdeToolbarButton("H", "Header", textColor) { text += "# "; onContentChanged(text) }
+                IdeToolbarButton("Lk", "Link", textColor) { text += "[text](url)"; onContentChanged(text) }
+            }
+        }
+        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(borderColor))
+
+        // Find bar
+        if (showFindBar) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(if (isDarkTheme) Color(0xFF252526) else Color(0xFFF3F3F3))
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = findText,
+                    onValueChange = { query ->
+                        findText = query
+                        findMatchCount = if (query.isNotEmpty()) {
+                            text.lowercase().split(query.lowercase()).size - 1
+                        } else 0
+                    },
+                    modifier = Modifier.weight(1f).height(40.dp),
+                    placeholder = { Text("Find...", fontSize = 12.sp) },
+                    textStyle = TextStyle(fontSize = 12.sp),
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    if (findText.isNotEmpty()) "$findMatchCount matches" else "",
+                    fontSize = 11.sp,
+                    color = textColor.copy(alpha = 0.7f)
+                )
+                IconButton(
+                    onClick = { showFindBar = false; findText = "" },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(Icons.Filled.Close, "Close find", tint = textColor, modifier = Modifier.size(16.dp))
+                }
+            }
+            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(borderColor))
         }
 
         // Editor with line numbers
