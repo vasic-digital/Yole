@@ -536,7 +536,12 @@ fun MainScreen() {
                     IdeBottomNavBar(
                         currentScreen = currentScreen,
                         isDarkTheme = isDarkTheme,
-                        onScreenSelected = { currentScreen = it }
+                        onScreenSelected = { screen ->
+                            currentScreen = screen
+                            // CRITICAL: Reset sub-screen overlay when switching main tabs
+                            // This prevents Settings/Editor/Preview from staying on top
+                            currentSubScreen = null
+                        }
                     )
                 }
             },
