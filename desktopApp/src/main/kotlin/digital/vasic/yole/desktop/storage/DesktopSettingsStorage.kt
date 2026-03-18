@@ -83,6 +83,7 @@ class DesktopSettingsStorage {
         val enableAutoComplete: Boolean = true,
         val enableAutoPair: Boolean = true,
         val insertSpacesForTabs: Boolean = true,
+        val tabSize: Int = 4,
         val trimTrailingWhitespace: Boolean = true,
         val ensureNewlineAtEnd: Boolean = true
     )

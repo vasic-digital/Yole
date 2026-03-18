@@ -26,7 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -103,11 +105,12 @@ fun EnhancedYoleWebApp() {
     // Document management state
     var openTabs by remember { mutableStateOf(listOf<DocumentTab>()) }
     var activeTabId by remember { mutableStateOf<String?>(null) }
-    var isDarkTheme by remember { mutableStateOf(true) } // IDE dark theme default
+    val savedSettings = remember { loadSettings() }
+    var isDarkTheme by remember { mutableStateOf(savedSettings.isDarkTheme) }
     var showPreview by remember { mutableStateOf(true) }
-    var wordWrap by remember { mutableStateOf(true) }
-    var fontSize by remember { mutableStateOf(14) }
-    var showLineNumbers by remember { mutableStateOf(true) }
+    var wordWrap by remember { mutableStateOf(savedSettings.wordWrap) }
+    var fontSize by remember { mutableStateOf(savedSettings.fontSize) }
+    var showLineNumbers by remember { mutableStateOf(savedSettings.showLineNumbers) }
     var showSidebar by remember { mutableStateOf(true) }
 
     // PWA state
@@ -236,7 +239,9 @@ fun EnhancedYoleWebApp() {
         }
     }
 
-    // Compute cursor position from content
+    // Track cursor position: updated when content changes.
+    // BasicTextField doesn't expose cursor offset directly in KMP/WASM,
+    // so we show total lines and document length as the best approximation.
     LaunchedEffect(activeTab?.content) {
         if (activeTab != null) {
             val lines = activeTab.content.lines()
@@ -244,6 +249,8 @@ fun EnhancedYoleWebApp() {
             cursorCol = (lines.lastOrNull()?.length ?: 0) + 1
         }
     }
+    // Note: Actual per-keystroke cursor tracking requires TextFieldValue
+    // with selection.start, which is wired in the IdeEditor composable.
 
     // IDE color accessors
     val bg = if (isDarkTheme) IdeColors.darkBackground else IdeColors.lightBackground
@@ -401,6 +408,10 @@ fun EnhancedYoleWebApp() {
                                 lineNumColor = lineNumColor,
                                 currentLineBg = currentLineBg,
                                 border = border,
+                                onCursorPositionChange = { line, col ->
+                                    cursorLine = line
+                                    cursorCol = col
+                                },
                                 modifier = Modifier.weight(if (showPreview) 1f else 2f)
                             )
 
@@ -1006,10 +1017,14 @@ fun IdeEditor(
     lineNumColor: Color,
     currentLineBg: Color,
     border: Color,
+    onCursorPositionChange: ((line: Int, col: Int) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val lines = content.lines()
     val editorScrollState = rememberScrollState()
+    var textFieldValue by remember(content) {
+        mutableStateOf(TextFieldValue(content, TextRange(content.length)))
+    }
 
     Row(
         modifier = modifier
@@ -1059,8 +1074,20 @@ fun IdeEditor(
 
         // Text editor
         BasicTextField(
-            value = content,
-            onValueChange = onContentChange,
+            value = textFieldValue,
+            onValueChange = { newValue ->
+                textFieldValue = newValue
+                if (newValue.text != content) {
+                    onContentChange(newValue.text)
+                }
+                // Report cursor position
+                val pos = newValue.selection.start
+                val textBefore = newValue.text.take(pos)
+                val curLine = textBefore.count { it == '\n' } + 1
+                val lastNewline = textBefore.lastIndexOf('\n')
+                val curCol = if (lastNewline >= 0) pos - lastNewline else pos + 1
+                onCursorPositionChange?.invoke(curLine, curCol)
+            },
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
@@ -1657,15 +1684,28 @@ private fun getFormatColor(format: String): Color {
     }
 }
 
-private fun loadSettings() {
+data class SavedSettings(
+    val isDarkTheme: Boolean = true,
+    val fontSize: Int = 14,
+    val wordWrap: Boolean = true,
+    val showLineNumbers: Boolean = true
+)
+
+private fun loadSettings(): SavedSettings {
     val settings = localStorage.getItem("yole_web_settings")
     if (settings != null) {
         try {
-            println("Settings loaded: $settings")
+            val dark = settings.contains("\"theme\":\"dark\"")
+            val fs = Regex("\"fontSize\":(\\d+)").find(settings)
+                ?.groupValues?.get(1)?.toIntOrNull() ?: 14
+            val ww = settings.contains("\"wordWrap\":true")
+            val ln = settings.contains("\"showLineNumbers\":true")
+            return SavedSettings(isDarkTheme = dark, fontSize = fs.coerceIn(8, 32), wordWrap = ww, showLineNumbers = ln)
         } catch (e: Exception) {
             println("ERROR: Failed to load settings: ${e.message}")
         }
     }
+    return SavedSettings()
 }
 
 private fun saveSettingsToLocalStorage(isDarkTheme: Boolean, fontSize: Int, wordWrap: Boolean, showLineNumbers: Boolean) {

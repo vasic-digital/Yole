@@ -33,8 +33,12 @@ fun FindReplaceDialog(
     findText: String,
     replaceText: String,
     matchStatusMessage: String = "",
+    caseSensitive: Boolean = false,
+    wholeWords: Boolean = false,
     onFindTextChange: (String) -> Unit,
     onReplaceTextChange: (String) -> Unit,
+    onCaseSensitiveChange: (Boolean) -> Unit = {},
+    onWholeWordsChange: (Boolean) -> Unit = {},
     onFind: () -> Unit,
     onReplace: () -> Unit,
     onReplaceAll: () -> Unit,
@@ -97,16 +101,16 @@ fun FindReplaceDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
-                        checked = false, // This would come from state
-                        onCheckedChange = { /* Toggle case sensitive */ }
+                        checked = caseSensitive,
+                        onCheckedChange = { onCaseSensitiveChange(it) }
                     )
                     Text("Case sensitive")
 
                     Spacer(modifier = Modifier.width(16.dp))
 
                     Checkbox(
-                        checked = false, // This would come from state
-                        onCheckedChange = { /* Toggle whole words */ }
+                        checked = wholeWords,
+                        onCheckedChange = { onWholeWordsChange(it) }
                     )
                     Text("Whole words only")
                 }
@@ -453,9 +457,14 @@ private fun EditorSettings(
         }
         
         OutlinedTextField(
-            value = "4", // Default tab size
-            onValueChange = {  },
-            label = { Text("Tab Size") },
+            value = settings.tabSize.toString(),
+            onValueChange = { newValue ->
+                val size = newValue.filter { it.isDigit() }.toIntOrNull()
+                if (size != null && size in 1..8) {
+                    onSettingsChanged(settings.copy(tabSize = size))
+                }
+            },
+            label = { Text("Tab Size (1-8)") },
             modifier = Modifier.fillMaxWidth()
         )
     }

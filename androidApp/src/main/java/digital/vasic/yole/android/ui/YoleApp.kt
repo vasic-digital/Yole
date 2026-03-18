@@ -1595,7 +1595,7 @@ fun IdeDrawerContent(
                         Icon(
                             Icons.Filled.Edit,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(20.dp),
                             tint = if (isActive) accent else textSecondary
                         )
                         Text(
@@ -1730,17 +1730,38 @@ fun IdeNewDocumentDialog(
     val formats = listOf(
         "markdown" to "Markdown (.md)",
         "plaintext" to "Plain Text (.txt)",
-        "todotxt" to "Todo.txt",
+        "todotxt" to "Todo.txt (.todo.txt)",
         "csv" to "CSV (.csv)",
         "latex" to "LaTeX (.tex)",
-        "orgmode" to "Org Mode (.org)"
+        "orgmode" to "Org Mode (.org)",
+        "asciidoc" to "AsciiDoc (.adoc)",
+        "wikitext" to "WikiText (.wiki)",
+        "restructuredtext" to "reStructuredText (.rst)",
+        "rmarkdown" to "R Markdown (.Rmd)",
+        "taskpaper" to "TaskPaper (.taskpaper)",
+        "textile" to "Textile (.textile)",
+        "creole" to "Creole (.creole)",
+        "tiddlywiki" to "TiddlyWiki (.tid)",
+        "jupyter" to "Jupyter Notebook (.ipynb)",
+        "keyvalue" to "Key-Value (.properties)",
+        "binary" to "Binary (.bin)"
     )
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("New Document") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                modifier = Modifier.heightIn(max = 400.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    "Choose format (${formats.size} available):",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
                 formats.forEach { (id, label) ->
                     Row(
                         modifier = Modifier
@@ -1755,7 +1776,8 @@ fun IdeNewDocumentDialog(
                     ) {
                         RadioButton(
                             selected = selectedFormat == id,
-                            onClick = { onFormatSelected(id) }
+                            onClick = { onFormatSelected(id) },
+                            modifier = Modifier.size(48.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(label, fontSize = 14.sp)
@@ -2000,7 +2022,7 @@ fun FileBrowserScreen(
                 style = MaterialTheme.typography.headlineMedium
             )
             TextButton(onClick = { directoryPicker.launch(null) }) {
-                Icon(Icons.Filled.List, contentDescription = "Open Folder", modifier = Modifier.size(16.dp))
+                Icon(Icons.Filled.List, contentDescription = "Open Folder", modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Open Folder")
             }
@@ -2130,7 +2152,7 @@ fun FileBrowserScreen(
                 enabled = currentDirectory?.parentFile != null && !isLoadingFiles,
                 modifier = Modifier.pressScale()
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Up", modifier = Modifier.size(16.dp))
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Up", modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Up")
             }
@@ -2139,7 +2161,7 @@ fun FileBrowserScreen(
                 onClick = { onFileSelected("untitled.txt", "") },
                 modifier = Modifier.pressScale()
             ) {
-                Icon(Icons.Filled.Add, contentDescription = "New File", modifier = Modifier.size(16.dp))
+                Icon(Icons.Filled.Add, contentDescription = "New File", modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("New File")
             }
@@ -2227,7 +2249,7 @@ fun PreviewScreen(
 
             Row {
                 TextButton(onClick = { onExportClick() }) {
-                    Icon(Icons.Filled.Share, contentDescription = "Export", modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.Share, contentDescription = "Export", modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Export PDF")
                 }
@@ -2514,7 +2536,7 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Yole is a cross-platform text editor supporting 18+ markup formats including Markdown, todo.txt, CSV, and more.",
+            text = "Yole is a cross-platform text editor supporting 17 text formats including Markdown, Todo.txt, CSV, LaTeX, AsciiDoc, and more.",
             style = MaterialTheme.typography.bodyMedium
         )
 
@@ -2789,7 +2811,7 @@ fun TodoScreen(
                             Icon(
                                 Icons.Filled.ArrowDropDown,
                                 contentDescription = "Filter options",
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
 
