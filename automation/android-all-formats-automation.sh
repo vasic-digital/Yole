@@ -151,6 +151,27 @@ compute_positions() {
 }
 
 ###############################################################################
+# Test result tracking (Fix 7)
+###############################################################################
+
+TESTS_PASSED=0
+TESTS_FAILED=0
+TESTS_CRASHED=0
+EVIDENCE_DIR=""
+
+record_result() {
+    local format="$1" step="$2" status="$3" evidence="${4:-}"
+    echo "{\"format\":\"$format\",\"step\":\"$step\",\"status\":\"$status\",\"evidence\":\"$evidence\"}" >> "${RECORDINGS_ROOT}/results.jsonl"
+    if [ "$status" = "PASS" ]; then
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    elif [ "$status" = "CRASH" ]; then
+        TESTS_CRASHED=$((TESTS_CRASHED + 1))
+    else
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+}
+
+###############################################################################
 # Utility functions
 ###############################################################################
 
@@ -160,6 +181,10 @@ log() {
 
 warn() {
     echo "[$(date '+%H:%M:%S')] WARNING: $*" >&2
+}
+
+error() {
+    echo "[$(date '+%H:%M:%S')] ERROR: $*" >&2
 }
 
 fail() {
@@ -414,9 +439,15 @@ wake_screen() {
 
 launch_app() {
     adb_shell am force-stop "$PACKAGE"
+    ms_sleep 1000
+    # Dismiss any Google overlays that may steal focus
+    adb_shell am force-stop com.google.android.gms 2>/dev/null || true
+    adb_shell am force-stop com.google.android.gms.ui 2>/dev/null || true
+    adb_shell input keyevent KEYCODE_BACK 2>/dev/null || true
     ms_sleep 500
-    adb_shell am start -n "${PACKAGE}/${ACTIVITY}" -a android.intent.action.MAIN -c android.intent.category.LAUNCHER
-    ms_sleep "$SCREEN_WAIT"
+    # Launch with -W to wait for activity to fully display
+    adb_shell am start -W -n "${PACKAGE}/${ACTIVITY}" -a android.intent.action.MAIN -c android.intent.category.LAUNCHER
+    ms_sleep 3000  # Additional settle time for Compose initialization
     log "  App launched"
 }
 
@@ -427,6 +458,80 @@ ensure_app_running() {
         warn "App not running — relaunching"
         launch_app
     fi
+}
+
+# Verify Yole is the foreground app; recover if not (Fix 2)
+verify_foreground() {
+    local fg
+    fg=$(adb_shell "dumpsys window | grep mCurrentFocus" 2>/dev/null | head -1)
+    if echo "$fg" | grep -q "digital.vasic.yole"; then
+        return 0  # Yole is in foreground
+    else
+        warn "YOLE NOT IN FOREGROUND: $fg"
+        # Try to recover: dismiss overlays and relaunch
+        adb_shell input keyevent KEYCODE_BACK 2>/dev/null || true
+        ms_sleep 500
+        adb_shell am force-stop com.google.android.gms 2>/dev/null || true
+        adb_shell am force-stop com.google.android.gms.ui 2>/dev/null || true
+        launch_app
+        # Check again
+        fg=$(adb_shell "dumpsys window | grep mCurrentFocus" 2>/dev/null | head -1)
+        if echo "$fg" | grep -q "digital.vasic.yole"; then
+            return 0
+        else
+            error "FATAL: Cannot bring Yole to foreground after recovery. Focus: $fg"
+            return 1
+        fi
+    fi
+}
+
+# Verify the app process has not crashed (Fix 3)
+verify_no_crash() {
+    local pid
+    pid=$(adb_shell "pidof ${PACKAGE}" 2>/dev/null || true)
+    if [[ -z "$pid" ]]; then
+        error "APP CRASHED! PID not found."
+        # Collect crash evidence
+        if [[ -n "$EVIDENCE_DIR" && -d "$EVIDENCE_DIR" ]]; then
+            adb_shell "logcat -d -s AndroidRuntime:E" > "${EVIDENCE_DIR}/crash-stacktrace-$(date +%s).txt" 2>/dev/null || true
+            adb_shell "logcat -d | grep -i 'digital.vasic.yole'" > "${EVIDENCE_DIR}/crash-logcat-$(date +%s).txt" 2>/dev/null || true
+            screenshot "crash-detected" 2>/dev/null || true
+        fi
+        return 1
+    fi
+    return 0
+}
+
+# Combined check: verify app alive and in foreground (Fix 4)
+verify_app_state() {
+    local context="${1:-unknown-step}"
+    if ! verify_no_crash; then
+        error "Crash detected at: $context"
+        return 1
+    fi
+    if ! verify_foreground; then
+        error "Lost foreground at: $context"
+        return 1
+    fi
+    return 0
+}
+
+# Setup emulator for clean automation (Fix 5)
+setup_emulator() {
+    log "Setting up emulator for automation..."
+    # Dismiss Google setup wizard / MinuteMaidActivity
+    adb_shell am force-stop com.google.android.gms 2>/dev/null || true
+    adb_shell am force-stop com.google.android.gms.ui 2>/dev/null || true
+    adb_shell pm disable-user --user 0 com.google.android.gms/.auth.uiflows.minutemaid.MinuteMaidActivity 2>/dev/null || true
+    # Dismiss any dialogs
+    adb_shell input keyevent KEYCODE_HOME
+    ms_sleep 1000
+    # Set screen always-on for testing
+    adb_shell svc power stayon true 2>/dev/null || true
+    adb_shell settings put system screen_off_timeout 1800000 2>/dev/null || true
+    # Clear logcat for clean crash detection
+    adb_shell logcat -c 2>/dev/null || true
+    log "  Emulator setup complete"
 }
 
 # Navigate to Files tab from any state
@@ -502,23 +607,38 @@ test_format() {
     shift 3
     # Remaining args are content lines to type (if dialog) or full content (if file)
     local content="$*"
+    local format_failed=0
 
     log ""
     log "  === ${format_label} ==="
     init_format_dir "$dir_name"
+    EVIDENCE_DIR="$SCREENSHOT_DIR"
     start_recording "recording"
 
+    # Ensure app is running and in foreground before starting (Fix 4)
     ensure_app_running
+    if ! verify_app_state "pre-${format_label}"; then
+        # Try one more relaunch
+        launch_app
+        if ! verify_app_state "pre-${format_label}-retry"; then
+            error "Cannot start test for ${format_label} — app not available"
+            record_result "$format_label" "launch" "CRASH" ""
+            stop_recording "recording"
+            return
+        fi
+    fi
 
     if [[ "$create_method" == dialog:* ]]; then
         local idx="${create_method#dialog:}"
 
-        # Navigate to Files tab
+        # Navigate to Files tab (Fix 6: navigate, don't force-stop)
         go_to_files
+        verify_app_state "go_to_files-${format_label}" || { record_result "$format_label" "navigate" "CRASH" ""; stop_recording "recording"; launch_app; return; }
         screenshot "01-files-before-create"
 
         # Create via dialog
         create_new_doc_dialog "$idx"
+        verify_app_state "create_dialog-${format_label}" || { record_result "$format_label" "create-dialog" "CRASH" ""; stop_recording "recording"; launch_app; return; }
         screenshot "02-editor-opened"
 
         # The editor is now open with template content
@@ -529,6 +649,7 @@ test_format() {
         # Clear template and type our content
         clear_field "$EDITOR_FIELD_X" "$EDITOR_FIELD_Y"
         ms_sleep 300
+        verify_app_state "clear_field-${format_label}" || { record_result "$format_label" "clear-field" "CRASH" ""; stop_recording "recording"; launch_app; return; }
 
         # Type content line by line
         local IFS=$'\n'
@@ -550,17 +671,22 @@ test_format() {
         # Push file to device
         push_format_file "$filename" "$content"
 
-        # Force-stop and re-launch to refresh file list
-        launch_app
-        screenshot "01-app-relaunched"
-
-        # Navigate to Files
-        tap "$BOTTOM_NAV_FILES_X" "$BOTTOM_NAV_Y"
-        ms_sleep "$NAV_PAUSE"
-        screenshot "02-files-with-pushed-file"
+        # (Fix 6) Navigate to Files tab to pick up the new file instead of force-stop
+        go_to_files
+        # Swipe down to refresh the file list
+        swipe_down
+        ms_sleep "$SETTLE"
+        verify_app_state "refresh-files-${format_label}" || {
+            # If navigate fails, try a full relaunch as fallback
+            launch_app
+            tap "$BOTTOM_NAV_FILES_X" "$BOTTOM_NAV_Y"
+            ms_sleep "$NAV_PAUSE"
+        }
+        screenshot "01-files-with-pushed-file"
 
         # Open the first file (should be the one we pushed, or scroll to find it)
         open_first_file
+        verify_app_state "open_file-${format_label}" || { record_result "$format_label" "open-file" "CRASH" ""; stop_recording "recording"; launch_app; return; }
         screenshot "02-editor-opened"
 
         # The file content is already loaded; tap to focus
@@ -569,18 +695,21 @@ test_format() {
     fi
 
     ms_sleep "$SETTLE"
+    verify_app_state "content-created-${format_label}" || { record_result "$format_label" "content-create" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "03-content-created"
 
     # Save via toolbar (action2 = save icon)
     log "    Saving..."
     tap "$TOPBAR_ACTION2_X" "$TOPBAR_Y"
     ms_sleep "$SETTLE"
+    verify_app_state "save-${format_label}" || { record_result "$format_label" "save" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "04-saved"
 
     # Navigate to Preview (action1 = preview icon)
     log "    Opening preview..."
     tap "$TOPBAR_ACTION1_X" "$TOPBAR_Y"
     ms_sleep "$NAV_PAUSE"
+    verify_app_state "preview-${format_label}" || { record_result "$format_label" "preview" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "05-preview"
 
     # Scroll preview to see more content
@@ -592,6 +721,7 @@ test_format() {
     log "    Back to editor..."
     tap "$TOPBAR_NAV_BACK_X" "$TOPBAR_Y"
     ms_sleep "$NAV_PAUSE"
+    verify_app_state "back-to-editor-${format_label}" || { record_result "$format_label" "back-to-editor" "CRASH" ""; stop_recording "recording"; launch_app; return; }
 
     # Wait for editor to load
     ms_sleep "$SETTLE"
@@ -611,16 +741,19 @@ test_format() {
     type_text "Edited%sby%sautomation%stest"
 
     ms_sleep "$SETTLE"
+    verify_app_state "edit-${format_label}" || { record_result "$format_label" "edit" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "07-edited"
 
     # Save again
     tap "$TOPBAR_ACTION2_X" "$TOPBAR_Y"
     ms_sleep "$SETTLE"
+    verify_app_state "save-after-edit-${format_label}" || { record_result "$format_label" "save-after-edit" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "08-saved-after-edit"
 
     # Preview again
     tap "$TOPBAR_ACTION1_X" "$TOPBAR_Y"
     ms_sleep "$NAV_PAUSE"
+    verify_app_state "preview-after-edit-${format_label}" || { record_result "$format_label" "preview-after-edit" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "09-preview-after-edit"
 
     # Back to Files
@@ -628,11 +761,12 @@ test_format() {
     ms_sleep "$NAV_PAUSE"
     screenshot "10-final"
 
-    # Go back to main files list
+    # Go back to main files list (Fix 6: stay in app, just navigate back)
     tap "$TOPBAR_NAV_BACK_X" "$TOPBAR_Y"
     ms_sleep "$NAV_PAUSE"
 
     stop_recording "recording"
+    record_result "$format_label" "complete" "PASS" ""
     log "  === ${format_label} complete ==="
 }
 
@@ -909,33 +1043,40 @@ test_navigation() {
     log ""
     log "  === Navigation Flow ==="
     init_format_dir "$dir_name"
+    EVIDENCE_DIR="$SCREENSHOT_DIR"
     start_recording "recording"
 
     ensure_app_running
+    verify_app_state "pre-navigation" || { launch_app; }
 
     # Files tab
     tap "$BOTTOM_NAV_FILES_X" "$BOTTOM_NAV_Y"
     ms_sleep "$NAV_PAUSE"
+    verify_app_state "files-tab" || { record_result "Navigation" "files-tab" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "01-files-tab"
 
     # To-Do tab
     tap "$BOTTOM_NAV_TODO_X" "$BOTTOM_NAV_Y"
     ms_sleep "$NAV_PAUSE"
+    verify_app_state "todo-tab" || { record_result "Navigation" "todo-tab" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "02-todo-tab"
 
     # QuickNote tab
     tap "$BOTTOM_NAV_QUICKNOTE_X" "$BOTTOM_NAV_Y"
     ms_sleep "$NAV_PAUSE"
+    verify_app_state "quicknote-tab" || { record_result "Navigation" "quicknote-tab" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "03-quicknote-tab"
 
     # More tab
     tap "$BOTTOM_NAV_MORE_X" "$BOTTOM_NAV_Y"
     ms_sleep "$NAV_PAUSE"
+    verify_app_state "more-tab" || { record_result "Navigation" "more-tab" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "04-more-tab"
 
     # Back to Files
     tap "$BOTTOM_NAV_FILES_X" "$BOTTOM_NAV_Y"
     ms_sleep "$NAV_PAUSE"
+    verify_app_state "back-to-files" || { record_result "Navigation" "back-to-files" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "05-back-to-files"
 
     # Open FAB menu
@@ -961,9 +1102,11 @@ test_navigation() {
     ms_sleep "$NAV_PAUSE"
     press_back
     ms_sleep "$NAV_PAUSE"
+    verify_app_state "back-from-todo" || { record_result "Navigation" "back-from-todo" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "09-back-from-todo"
 
     stop_recording "recording"
+    record_result "Navigation" "complete" "PASS" ""
     log "  === Navigation complete ==="
 }
 
@@ -972,23 +1115,28 @@ test_settings() {
     log ""
     log "  === Settings & Theme Flow ==="
     init_format_dir "$dir_name"
+    EVIDENCE_DIR="$SCREENSHOT_DIR"
     start_recording "recording"
 
     ensure_app_running
+    verify_app_state "pre-settings" || { launch_app; }
 
     # Navigate to More > Settings
     tap "$BOTTOM_NAV_MORE_X" "$BOTTOM_NAV_Y"
     ms_sleep "$NAV_PAUSE"
+    verify_app_state "more-tab-settings" || { record_result "Settings" "more-tab" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "01-more-screen"
 
     tap "$CONTENT_CENTER_X" "$MORE_CARD1_Y"
     ms_sleep "$NAV_PAUSE"
+    verify_app_state "settings-screen" || { record_result "Settings" "settings-screen" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "02-settings-initial"
 
     # Switch to Light theme
     log "    Setting Light theme"
     tap "$SETTINGS_RADIO_X" "$SETTINGS_RADIO_LIGHT_Y"
     ms_sleep "$SETTLE"
+    verify_app_state "light-theme" || { record_result "Settings" "light-theme" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "03-light-theme"
 
     # Go back to see the app in light theme
@@ -996,6 +1144,7 @@ test_settings() {
     ms_sleep "$NAV_PAUSE"
     tap "$BOTTOM_NAV_FILES_X" "$BOTTOM_NAV_Y"
     ms_sleep "$NAV_PAUSE"
+    verify_app_state "files-light" || { record_result "Settings" "files-light" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "04-files-light"
 
     # Open editor in light theme
@@ -1004,6 +1153,7 @@ test_settings() {
     # Tap Create with default format (markdown)
     tap "$DIALOG_CREATE_BTN_X" "$DIALOG_CREATE_BTN_Y"
     ms_sleep "$NAV_PAUSE"
+    verify_app_state "editor-light" || { record_result "Settings" "editor-light" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "05-editor-light"
 
     # Go back
@@ -1019,6 +1169,7 @@ test_settings() {
     log "    Setting Dark theme"
     tap "$SETTINGS_RADIO_X" "$SETTINGS_RADIO_DARK_Y"
     ms_sleep "$SETTLE"
+    verify_app_state "dark-theme" || { record_result "Settings" "dark-theme" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "06-dark-theme"
 
     # Go back to see the app in dark theme
@@ -1026,6 +1177,7 @@ test_settings() {
     ms_sleep "$NAV_PAUSE"
     tap "$BOTTOM_NAV_FILES_X" "$BOTTOM_NAV_Y"
     ms_sleep "$NAV_PAUSE"
+    verify_app_state "files-dark" || { record_result "Settings" "files-dark" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "07-files-dark"
 
     # Open editor in dark theme
@@ -1033,6 +1185,7 @@ test_settings() {
     ms_sleep "$SETTLE"
     tap "$DIALOG_CREATE_BTN_X" "$DIALOG_CREATE_BTN_Y"
     ms_sleep "$NAV_PAUSE"
+    verify_app_state "editor-dark" || { record_result "Settings" "editor-dark" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "08-editor-dark"
 
     # Go back
@@ -1048,6 +1201,7 @@ test_settings() {
     log "    Resetting to System theme"
     tap "$SETTINGS_RADIO_X" "$SETTINGS_RADIO_SYSTEM_Y"
     ms_sleep "$SETTLE"
+    verify_app_state "system-theme-restored" || { record_result "Settings" "system-theme" "CRASH" ""; stop_recording "recording"; launch_app; return; }
     screenshot "09-system-theme-restored"
 
     # Scroll settings
@@ -1062,6 +1216,7 @@ test_settings() {
     ms_sleep "$NAV_PAUSE"
 
     stop_recording "recording"
+    record_result "Settings" "complete" "PASS" ""
     log "  === Settings complete ==="
 }
 
@@ -1090,11 +1245,17 @@ main() {
     # Create output directory
     mkdir -p "$RECORDINGS_ROOT"
 
+    # Initialize results file (Fix 7)
+    : > "${RECORDINGS_ROOT}/results.jsonl"
+
     local total_start
     total_start=$(date +%s)
 
-    # Ensure clean state
+    # Setup emulator for clean automation (Fix 5)
     wake_screen
+    setup_emulator
+
+    # Ensure clean state
     adb_shell "am force-stop ${PACKAGE}" 2>/dev/null || true
     adb_shell "pm clear ${PACKAGE}" 2>/dev/null || true
     ms_sleep 500
@@ -1220,7 +1381,14 @@ main() {
     log "========================================================"
     log ""
 
-    # Print summary
+    # Print test results summary (Fix 7)
+    log "Test Results:"
+    log "  PASSED:  ${TESTS_PASSED}"
+    log "  FAILED:  ${TESTS_FAILED}"
+    log "  CRASHED: ${TESTS_CRASHED}"
+    log ""
+
+    # Print per-directory summary
     local total_screenshots=0
     local total_videos=0
     local dir_count=0
@@ -1240,7 +1408,13 @@ main() {
 
     log ""
     log "Totals: ${total_screenshots} screenshots, ${total_videos} videos across ${dir_count} test directories"
+    log "Results file: ${RECORDINGS_ROOT}/results.jsonl"
     log "Location: ${RECORDINGS_ROOT}/"
+
+    # Return non-zero if any tests crashed or failed
+    if [[ "$TESTS_CRASHED" -gt 0 || "$TESTS_FAILED" -gt 0 ]]; then
+        return 1
+    fi
 }
 
 main "$@"
