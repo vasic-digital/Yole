@@ -313,6 +313,12 @@ validate_desktop() {
             echo "  Found $compose_count Compose screenshots in $found_compose"
             for img in "$found_compose"/*.png; do
                 [[ -f "$img" ]] || continue
+                # Skip x11grab before/after screenshots (always black on Wayland)
+                local basename_img
+                basename_img=$(basename "$img")
+                if [[ "$basename_img" == before-* || "$basename_img" == after-* ]]; then
+                    continue
+                fi
                 validate_screenshot "$img" "desktop/compose" || true
             done
         fi
