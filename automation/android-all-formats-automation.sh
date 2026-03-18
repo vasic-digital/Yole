@@ -100,7 +100,8 @@ compute_positions() {
     local h=$SCREEN_H
 
     TOPBAR_Y=$(( h * 7 / 100 ))
-    BOTTOM_NAV_Y=$(( h - h * 4 / 100 ))
+    # Bottom nav icons are at ~91.5% of screen height (verified via uiautomator)
+    BOTTOM_NAV_Y=$(( h * 915 / 1000 ))
     BOTTOM_NAV_FILES_X=$(( w * 1 / 8 ))
     BOTTOM_NAV_TODO_X=$(( w * 3 / 8 ))
     BOTTOM_NAV_QUICKNOTE_X=$(( w * 5 / 8 ))
