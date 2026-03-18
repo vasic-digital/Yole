@@ -284,12 +284,13 @@ validate_desktop() {
     fi
 
     # Validate Compose-captured screenshots (primary evidence)
-    local compose_dir="$dir/screenshots"
-    local compose_alt="${PROJECT_ROOT}/desktopApp/recordings/desktop/formats/screenshots"
-
+    # Screenshots are saved directly in recordings/desktop/formats/ (consistent
+    # with Android/Web structure). Also check legacy desktopApp/ location.
     local found_compose=""
-    for candidate in "$compose_dir" "$compose_alt"; do
-        if [[ -d "$candidate" ]]; then
+    for candidate in "$dir" "$dir/screenshots" "${PROJECT_ROOT}/desktopApp/recordings/desktop/formats" "${PROJECT_ROOT}/desktopApp/recordings/desktop/formats/screenshots"; do
+        local count
+        count=$(find "$candidate" -maxdepth 1 -name "*.png" 2>/dev/null | wc -l)
+        if [[ "$count" -gt 0 ]]; then
             found_compose="$candidate"
             break
         fi

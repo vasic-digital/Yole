@@ -28,7 +28,15 @@ TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 FFMPEG_BIN="${HOME}/bin/ffmpeg"
 DISPLAY_TARGET="${DISPLAY:-:0}"
 RESOLUTION="${RESOLUTION:-1920x1080}"
-TEST_FILTER="${1:-}"
+# Parse arguments
+TEST_FILTER=""
+SPEED_MODE="normal"
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --speed) SPEED_MODE="$2"; shift 2 ;;
+        *)       TEST_FILTER="$1"; shift ;;
+    esac
+done
 TEST_CLASS="digital.vasic.yole.desktop.AllFormatsAutomationTest"
 
 echo "============================================="
@@ -37,6 +45,7 @@ echo "============================================="
 echo " Project:    $PROJECT_DIR"
 echo " Test class: $TEST_CLASS"
 echo " Filter:     ${TEST_FILTER:-all tests}"
+echo " Speed:      $SPEED_MODE"
 echo " Recording:  $RECORDINGS_DIR"
 echo " Resolution: $RESOLUTION"
 echo " Timestamp:  $TIMESTAMP"
@@ -179,10 +188,11 @@ fi
 echo "INFO: Taking post-test screenshot..."
 take_screenshot "$SCREENSHOT_AFTER"
 
-# Validate Compose-captured screenshots (the real evidence)
-# Compose tests save to desktopApp/recordings/ (relative to test working dir)
-COMPOSE_SCREENSHOTS_DIR="$PROJECT_DIR/desktopApp/recordings/desktop/formats/screenshots"
-COMPOSE_SCREENSHOTS_DIR_ALT="$PROJECT_DIR/recordings/desktop/formats/screenshots"
+# Validate Compose-captured screenshots (PRIMARY evidence)
+# Screenshots are saved to recordings/desktop/formats/ at project root
+# (consistent with Android and Web directory structure)
+COMPOSE_SCREENSHOTS_DIR="$PROJECT_DIR/recordings/desktop/formats"
+COMPOSE_SCREENSHOTS_DIR_ALT="$PROJECT_DIR/desktopApp/recordings/desktop/formats"
 # Check both possible locations for Compose screenshots
 FOUND_COMPOSE_DIR=""
 for candidate in "$COMPOSE_SCREENSHOTS_DIR" "$COMPOSE_SCREENSHOTS_DIR_ALT"; do
@@ -193,7 +203,7 @@ for candidate in "$COMPOSE_SCREENSHOTS_DIR" "$COMPOSE_SCREENSHOTS_DIR_ALT"; do
 done
 
 if [[ -n "$FOUND_COMPOSE_DIR" ]]; then
-    COMPOSE_COUNT=$(find "$FOUND_COMPOSE_DIR" -name "*.png" 2>/dev/null | wc -l)
+    COMPOSE_COUNT=$(find "$FOUND_COMPOSE_DIR" -maxdepth 1 -name "*.png" 2>/dev/null | wc -l)
     echo ""
     echo "INFO: Compose-captured screenshots found: $COMPOSE_COUNT (at $FOUND_COMPOSE_DIR)"
     if [[ "$COMPOSE_COUNT" -eq 0 ]]; then

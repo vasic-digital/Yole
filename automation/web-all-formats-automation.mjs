@@ -28,7 +28,15 @@ const RECORDINGS_BASE = join(PROJECT_ROOT, 'recordings', 'web', 'formats');
 const AUTOMATION_DIR = join(PROJECT_ROOT, 'automation');
 const FALLBACK_APP = join(AUTOMATION_DIR, 'yole-fallback-app.html');
 
-const SPEED = { clickDelay: 400, typeDelay: 20, navPause: 800 };
+// Parse --speed argument: slow, normal (default), fast
+const speedArg = process.argv.find((a, i) => process.argv[i - 1] === '--speed') || 'normal';
+const SPEED_MODES = {
+  slow:   { clickDelay: 1000, typeDelay: 50, navPause: 2000 },
+  normal: { clickDelay: 400,  typeDelay: 20, navPause: 800 },
+  fast:   { clickDelay: 100,  typeDelay: 10, navPause: 300 },
+};
+const SPEED = SPEED_MODES[speedArg] || SPEED_MODES.normal;
+console.log(`Speed mode: ${speedArg} (click=${SPEED.clickDelay}ms, type=${SPEED.typeDelay}ms, nav=${SPEED.navPause}ms)`);
 
 // ============================================================
 // All 17 formats with real content, search terms, and edits

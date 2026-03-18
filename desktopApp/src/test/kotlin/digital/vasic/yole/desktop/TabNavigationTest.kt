@@ -34,7 +34,10 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalTestApi::class)
 class TabNavigationTest {
 
-    private val screenshotDir = File("recordings/desktop/navigation").apply { mkdirs() }
+    private val projectRoot = File(System.getProperty("user.dir")).let { cwd ->
+        if (cwd.name == "desktopApp") cwd.parentFile else cwd
+    }
+    private val screenshotDir = File(projectRoot, "recordings/desktop/navigation").apply { mkdirs() }
 
     // ==================== Screenshot Helper ====================
 

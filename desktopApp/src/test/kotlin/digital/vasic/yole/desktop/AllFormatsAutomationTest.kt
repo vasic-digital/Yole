@@ -62,7 +62,12 @@ data class FormatTestCase(
 @OptIn(ExperimentalTestApi::class)
 class AllFormatsAutomationTest {
 
-    private val screenshotDir = File("recordings/desktop/formats/screenshots").apply { mkdirs() }
+    // Save to project root recordings/ (not desktopApp/recordings/) for
+    // consistency with Android and Web automation directory structure.
+    private val projectRoot = File(System.getProperty("user.dir")).let { cwd ->
+        if (cwd.name == "desktopApp") cwd.parentFile else cwd
+    }
+    private val screenshotDir = File(projectRoot, "recordings/desktop/formats").apply { mkdirs() }
     private var screenshotCount = 0
 
     /**
@@ -778,5 +783,172 @@ class AllFormatsAutomationTest {
         onNodeWithText("Preview: ${format.filename}").assertExists()
 
         println("    PASS: ${format.formatId} (themes)")
+    }
+
+    // ======================== Navigation Tests ========================
+
+    @Test
+    fun testNavigationFilesScreen() = runComposeUiTest {
+        println("=== Navigation: Files Screen ===")
+        setContent {
+            YoleDesktopTheme {
+                MainScreen()
+            }
+        }
+        waitForIdle()
+        saveScreenshot("navigation-files")
+        println("=== Navigation: Files Screen COMPLETE ===")
+    }
+
+    @Test
+    fun testNavigationSettingsScreen() = runComposeUiTest {
+        println("=== Navigation: Settings Screen ===")
+        setContent {
+            YoleDesktopTheme {
+                SettingsScreen(
+                    themeMode = "dark",
+                    onThemeModeChanged = {},
+                    showLineNumbers = true,
+                    onShowLineNumbersChanged = {},
+                    autoSave = true,
+                    onAutoSaveChanged = {},
+                    animationsEnabled = true,
+                    onAnimationsEnabledChanged = {}
+                )
+            }
+        }
+        waitForIdle()
+        onNodeWithText("Theme", substring = true).assertExists()
+        saveScreenshot("navigation-settings")
+        println("=== Navigation: Settings Screen COMPLETE ===")
+    }
+
+    // ======================== Settings Tests ========================
+
+    @Test
+    fun testSettingsThemeOptions() = runComposeUiTest {
+        println("=== Settings: Theme Options ===")
+        var currentTheme = "system"
+
+        setContent {
+            YoleDesktopTheme {
+                SettingsScreen(
+                    themeMode = currentTheme,
+                    onThemeModeChanged = { currentTheme = it },
+                    showLineNumbers = true,
+                    onShowLineNumbersChanged = {},
+                    autoSave = true,
+                    onAutoSaveChanged = {},
+                    animationsEnabled = true,
+                    onAnimationsEnabledChanged = {}
+                )
+            }
+        }
+        waitForIdle()
+        saveScreenshot("settings-theme-system")
+
+        // Verify theme options exist
+        onNodeWithText("System", substring = true).assertExists()
+        onNodeWithText("Light", substring = true).assertExists()
+        onNodeWithText("Dark", substring = true).assertExists()
+        println("=== Settings: Theme Options COMPLETE ===")
+    }
+
+    @Test
+    fun testSettingsLineNumbers() = runComposeUiTest {
+        println("=== Settings: Line Numbers Toggle ===")
+        var showLineNumbers = true
+
+        setContent {
+            YoleDesktopTheme {
+                SettingsScreen(
+                    themeMode = "dark",
+                    onThemeModeChanged = {},
+                    showLineNumbers = showLineNumbers,
+                    onShowLineNumbersChanged = { showLineNumbers = it },
+                    autoSave = true,
+                    onAutoSaveChanged = {},
+                    animationsEnabled = true,
+                    onAnimationsEnabledChanged = {}
+                )
+            }
+        }
+        waitForIdle()
+        onNodeWithText("Line numbers", substring = true, ignoreCase = true).assertExists()
+        saveScreenshot("settings-line-numbers")
+        println("=== Settings: Line Numbers Toggle COMPLETE ===")
+    }
+
+    // ======================== Editor Feature Tests ========================
+
+    @Test
+    fun testEditorWithLineNumbers() = runComposeUiTest {
+        println("=== Editor: With Line Numbers ===")
+        setContent {
+            YoleDesktopTheme {
+                EditorScreen(
+                    fileName = "test.md",
+                    content = "# Title\nLine 2\nLine 3\nLine 4\nLine 5",
+                    onContentChanged = {},
+                    showLineNumbers = true
+                )
+            }
+        }
+        waitForIdle()
+        // Line numbers should be visible
+        onNodeWithText("1", substring = true).assertExists()
+        saveScreenshot("editor-line-numbers-on")
+        println("=== Editor: With Line Numbers COMPLETE ===")
+    }
+
+    @Test
+    fun testEditorWithoutLineNumbers() = runComposeUiTest {
+        println("=== Editor: Without Line Numbers ===")
+        setContent {
+            YoleDesktopTheme {
+                EditorScreen(
+                    fileName = "test.md",
+                    content = "# Title\nLine 2\nLine 3",
+                    onContentChanged = {},
+                    showLineNumbers = false
+                )
+            }
+        }
+        waitForIdle()
+        saveScreenshot("editor-line-numbers-off")
+        println("=== Editor: Without Line Numbers COMPLETE ===")
+    }
+
+    @Test
+    fun testEditorLightTheme() = runComposeUiTest {
+        println("=== Editor: Light Theme ===")
+        setContent {
+            YoleDesktopTheme(themeMode = ThemeMode.LIGHT) {
+                EditorScreen(
+                    fileName = "readme.md",
+                    content = "# Light Theme Test\n\nThis is the light theme.",
+                    onContentChanged = {}
+                )
+            }
+        }
+        waitForIdle()
+        saveScreenshot("editor-light-theme")
+        println("=== Editor: Light Theme COMPLETE ===")
+    }
+
+    @Test
+    fun testPreviewLightTheme() = runComposeUiTest {
+        println("=== Preview: Light Theme ===")
+        setContent {
+            YoleDesktopTheme(themeMode = ThemeMode.LIGHT) {
+                PreviewScreen(
+                    fileName = "test.md",
+                    content = "# Preview Light\n**bold**"
+                )
+            }
+        }
+        waitForIdle()
+        saveScreenshot("preview-light-theme")
+        println("=== Preview: Light Theme COMPLETE ===")
     }
 }

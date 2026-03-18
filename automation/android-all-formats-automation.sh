@@ -34,23 +34,46 @@ DEFAULT_DEVICE="emulator-5554"
 
 # Parse arguments
 DEVICE_SERIAL=""
+SPEED_MODE="normal"
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --device) DEVICE_SERIAL="$2"; shift 2 ;;
+        --speed)  SPEED_MODE="$2"; shift 2 ;;
         *)        echo "Unknown arg: $1"; exit 1 ;;
     esac
 done
 
 ###############################################################################
-# Speed: normal only (400ms tap delay, 50ms type delay)
+# Speed modes: slow, normal, fast
 ###############################################################################
 
-TAP_DELAY=400
-TYPE_DELAY=50
-NAV_PAUSE=1000
-SWIPE_DUR=300
-SETTLE=800
-SCREEN_WAIT=1500
+case "$SPEED_MODE" in
+    slow)
+        TAP_DELAY=1000
+        TYPE_DELAY=100
+        NAV_PAUSE=2000
+        SWIPE_DUR=500
+        SETTLE=1500
+        SCREEN_WAIT=3000
+        ;;
+    fast)
+        TAP_DELAY=100
+        TYPE_DELAY=20
+        NAV_PAUSE=300
+        SWIPE_DUR=150
+        SETTLE=300
+        SCREEN_WAIT=500
+        ;;
+    *)
+        TAP_DELAY=400
+        TYPE_DELAY=50
+        NAV_PAUSE=1000
+        SWIPE_DUR=300
+        SETTLE=800
+        SCREEN_WAIT=1500
+        ;;
+esac
+log "Speed mode: $SPEED_MODE (tap=${TAP_DELAY}ms, type=${TYPE_DELAY}ms, nav=${NAV_PAUSE}ms)"
 
 ###############################################################################
 # Screen geometry — resolved at runtime via `wm size`
