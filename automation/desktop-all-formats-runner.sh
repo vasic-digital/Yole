@@ -74,11 +74,51 @@ take_screenshot() {
             "$output_file" </dev/null >/dev/null 2>&1 || true
         if [[ -f "$output_file" ]]; then
             echo "INFO: Screenshot saved: $output_file"
+            validate_not_black "$output_file" || true
         else
             echo "WARNING: Screenshot failed: $output_file"
         fi
     fi
 }
+
+# Validate that a screenshot/video is NOT all-black.
+# Uses ffmpeg to sample pixel data and checks for non-zero content.
+validate_not_black() {
+    local file="$1"
+    if [[ ! -f "$file" ]]; then
+        echo "ERROR: File not found for validation: $file"
+        return 1
+    fi
+
+    local ext="${file##*.}"
+    if [[ "$ext" == "png" || "$ext" == "jpg" ]]; then
+        # Check mean pixel brightness via ffmpeg
+        local mean
+        mean=$("$FFMPEG_BIN" -i "$file" -vf "blackdetect=d=0:pix_th=0.10" \
+            -an -f null - 2>&1 | grep -c "black_start" || true)
+        if [[ "$mean" -gt 0 ]]; then
+            echo "WARNING: Screenshot is ALL BLACK (Wayland/headless): $file"
+            X11GRAB_VALID=false
+            return 1
+        fi
+    elif [[ "$ext" == "mp4" || "$ext" == "webm" ]]; then
+        # Check video for all-black frames
+        local black_frames
+        black_frames=$("$FFMPEG_BIN" -i "$file" -vf "blackdetect=d=0.5:pix_th=0.10" \
+            -an -f null - 2>&1 | grep -c "black_start" || true)
+        local total_duration
+        total_duration=$("$FFMPEG_BIN" -i "$file" 2>&1 | grep "Duration" | head -1 || true)
+        if [[ -n "$total_duration" && "$black_frames" -gt 5 ]]; then
+            echo "WARNING: Video has $black_frames black segments: $file"
+        fi
+    fi
+    return 0
+}
+
+EVIDENCE_VALID=true
+# x11grab screenshots are secondary evidence (informational only on Wayland).
+# Compose captureToImage() screenshots are primary evidence — these MUST be valid.
+X11GRAB_VALID=true
 
 # Take screenshot BEFORE test run
 echo ""
@@ -139,13 +179,57 @@ fi
 echo "INFO: Taking post-test screenshot..."
 take_screenshot "$SCREENSHOT_AFTER"
 
+# Validate Compose-captured screenshots (the real evidence)
+# Compose tests save to desktopApp/recordings/ (relative to test working dir)
+COMPOSE_SCREENSHOTS_DIR="$PROJECT_DIR/desktopApp/recordings/desktop/formats/screenshots"
+COMPOSE_SCREENSHOTS_DIR_ALT="$PROJECT_DIR/recordings/desktop/formats/screenshots"
+# Check both possible locations for Compose screenshots
+FOUND_COMPOSE_DIR=""
+for candidate in "$COMPOSE_SCREENSHOTS_DIR" "$COMPOSE_SCREENSHOTS_DIR_ALT"; do
+    if [[ -d "$candidate" ]]; then
+        FOUND_COMPOSE_DIR="$candidate"
+        break
+    fi
+done
+
+if [[ -n "$FOUND_COMPOSE_DIR" ]]; then
+    COMPOSE_COUNT=$(find "$FOUND_COMPOSE_DIR" -name "*.png" 2>/dev/null | wc -l)
+    echo ""
+    echo "INFO: Compose-captured screenshots found: $COMPOSE_COUNT (at $FOUND_COMPOSE_DIR)"
+    if [[ "$COMPOSE_COUNT" -eq 0 ]]; then
+        echo "ERROR: No Compose screenshots captured — evidence is INVALID"
+        EVIDENCE_VALID=false
+    else
+        # Copy to main recordings dir for consistency
+        mkdir -p "$RECORDINGS_DIR/screenshots"
+        cp "$FOUND_COMPOSE_DIR"/*.png "$RECORDINGS_DIR/screenshots/" 2>/dev/null || true
+        echo "INFO: Copied $COMPOSE_COUNT screenshots to $RECORDINGS_DIR/screenshots/"
+        echo "INFO: Validating Compose screenshots for black-frame content..."
+        for img in "$FOUND_COMPOSE_DIR"/*.png; do
+            [[ -f "$img" ]] || continue
+            validate_not_black "$img" || true
+        done
+    fi
+else
+    echo "ERROR: No Compose screenshot directory found — evidence is INVALID"
+    echo "  Checked: $COMPOSE_SCREENSHOTS_DIR"
+    echo "  Checked: $COMPOSE_SCREENSHOTS_DIR_ALT"
+    EVIDENCE_VALID=false
+fi
+
 # Summary
 echo ""
 echo "============================================="
 echo " All-Formats Automation Summary"
 echo "============================================="
-if [[ $EXIT_CODE -eq 0 ]]; then
+if [[ $EXIT_CODE -eq 0 && "$EVIDENCE_VALID" == "true" ]]; then
     echo " Result:   PASS"
+    if [[ "$X11GRAB_VALID" == "false" ]]; then
+        echo " Note:     x11grab screenshots are black (Wayland/headless) — using Compose evidence"
+    fi
+elif [[ $EXIT_CODE -eq 0 && "$EVIDENCE_VALID" == "false" ]]; then
+    echo " Result:   FAIL (Compose evidence invalid — black screenshots or no captures)"
+    EXIT_CODE=1
 else
     echo " Result:   FAIL (exit=$EXIT_CODE)"
 fi

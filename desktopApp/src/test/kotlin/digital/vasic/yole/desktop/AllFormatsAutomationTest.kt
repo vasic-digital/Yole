@@ -13,6 +13,7 @@
 package digital.vasic.yole.desktop
 
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.toAwtImage
 import androidx.compose.ui.test.*
 import digital.vasic.yole.desktop.ui.*
 import digital.vasic.yole.desktop.ui.theme.YoleDesktopTheme
@@ -20,6 +21,8 @@ import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.TextFormat
 import digital.vasic.yole.ui.ThemeMode
+import java.io.File
+import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -58,6 +61,49 @@ data class FormatTestCase(
  */
 @OptIn(ExperimentalTestApi::class)
 class AllFormatsAutomationTest {
+
+    private val screenshotDir = File("recordings/desktop/formats/screenshots").apply { mkdirs() }
+    private var screenshotCount = 0
+
+    /**
+     * Captures a screenshot from the Compose rendering pipeline via [captureToImage].
+     * Validates that the screenshot is NOT all-black (prevents false positives
+     * from Wayland/XWayland framebuffer issues).
+     */
+    private fun ComposeUiTest.saveScreenshot(name: String) {
+        try {
+            val imageBitmap = onRoot().captureToImage()
+            val buffered = imageBitmap.toAwtImage()
+            val width = buffered.width
+            val height = buffered.height
+
+            screenshotCount++
+            val file = File(screenshotDir, "%03d-%s.png".format(screenshotCount, name))
+            ImageIO.write(buffered, "png", file)
+            println("    Screenshot saved: ${file.name} (${width}x${height})")
+
+            // Validate NOT all-black
+            var nonBlackPixels = 0
+            val sampleStep = maxOf(1, width * height / 10000)
+            for (i in 0 until width * height step sampleStep) {
+                val px = i % width
+                val py = i / width
+                val argb = buffered.getRGB(px, py)
+                val r = (argb shr 16) and 0xFF
+                val g = (argb shr 8) and 0xFF
+                val b = argb and 0xFF
+                if (r > 10 || g > 10 || b > 10) {
+                    nonBlackPixels++
+                }
+            }
+            assertTrue(
+                nonBlackPixels > 0,
+                "Screenshot '$name' is ALL BLACK — evidence invalid (non-black pixels: $nonBlackPixels)"
+            )
+        } catch (e: IllegalStateException) {
+            println("    Screenshot '$name': ${e.message}")
+        }
+    }
 
     companion object {
         val ALL_FORMATS = listOf(
@@ -619,6 +665,7 @@ class AllFormatsAutomationTest {
         if (firstLine.isNotEmpty()) {
             onNodeWithText(firstLine, substring = true).assertExists()
         }
+        saveScreenshot("${format.formatId}-editor")
 
         // Phase 2: Preview — verify format detection and rendered output
         setContent {
@@ -636,6 +683,7 @@ class AllFormatsAutomationTest {
 
         // Phase 3: Verify detected format name appears in preview (from "Format: <name>")
         onNodeWithText(format.detectedFormatName, substring = true).assertExists()
+        saveScreenshot("${format.formatId}-preview")
 
         println("    PASS: ${format.formatId} (editor + preview)")
     }
