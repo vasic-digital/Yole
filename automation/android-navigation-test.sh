@@ -70,7 +70,7 @@ compute_positions() {
     local w=$SCREEN_W
     local h=$SCREEN_H
 
-    BOTTOM_NAV_Y=$(( h - h * 4 / 100 ))
+    BOTTOM_NAV_Y=$(( h * 915 / 1000 ))
     BOTTOM_NAV_FILES_X=$(( w * 1 / 8 ))
     BOTTOM_NAV_TODO_X=$(( w * 3 / 8 ))
     BOTTOM_NAV_QUICKNOTE_X=$(( w * 5 / 8 ))
