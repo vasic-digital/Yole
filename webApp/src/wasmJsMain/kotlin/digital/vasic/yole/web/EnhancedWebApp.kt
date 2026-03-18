@@ -156,11 +156,23 @@ fun EnhancedYoleWebApp() {
         val ext = getDefaultExtensionForFormat(format)
         val name = "untitled.$ext"
         val template = when (format) {
-            "markdown" -> "# New Document\n\nStart writing..."
-            "todotxt" -> "(A) New task @work +project"
-            "csv" -> "Name,Email,Phone\nJohn,john@example.com,555-0100"
-            "latex" -> "\\documentclass{article}\n\\begin{document}\nHello World\n\\end{document}"
-            "orgmode" -> "#+TITLE: New Document\n* Heading\nContent"
+            "markdown" -> "# New Document\n\nStart writing...\n\n## Section\n\n- Item 1\n- Item 2"
+            "plaintext" -> "New document\n\nStart typing here."
+            "todotxt" -> "(A) New task @work +project\n(B) Another task @home"
+            "csv" -> "Name,Email,Phone\nAlice,alice@example.com,555-0100\nBob,bob@example.com,555-0200"
+            "latex" -> "\\documentclass{article}\n\\title{New Document}\n\\begin{document}\n\\maketitle\nHello World\n\\end{document}"
+            "orgmode" -> "#+TITLE: New Document\n#+AUTHOR: User\n* Heading\n** Subheading\nContent"
+            "asciidoc" -> "= New Document\n:author: User\n\n== Section\n\nContent with *bold* and _italic_."
+            "wikitext" -> "== New Document ==\n\n'''Bold''' and ''italic'' text.\n\n* Item 1\n* Item 2"
+            "restructuredtext" -> "New Document\n============\n\nSection\n-------\n\nContent with **bold**."
+            "rmarkdown" -> "---\ntitle: \"New Document\"\noutput: html_document\n---\n\n# Section\n\nContent."
+            "taskpaper" -> "Project:\n\t- Task 1 @priority(high)\n\t- Task 2 @due(2026-04-01)"
+            "textile" -> "h1. New Document\n\nThis is *bold* and _italic_ text.\n\n* Item 1\n* Item 2"
+            "creole" -> "= New Document =\n\n**Bold** and //italic// text.\n\n* Item 1\n* Item 2"
+            "tiddlywiki" -> "! New Document\n\n''Bold'' and //italic// text.\n\n* Item 1\n* Item 2"
+            "jupyter" -> "{\n  \"cells\": [\n    {\n      \"cell_type\": \"markdown\",\n      \"source\": [\"# New Notebook\"]\n    }\n  ],\n  \"metadata\": {},\n  \"nbformat\": 4\n}"
+            "keyvalue" -> "# Configuration\napp.name=Yole\napp.version=1.0.0\napp.debug=false"
+            "binary" -> "48 65 6C 6C 6F 20 57 6F 72 6C 64"
             else -> ""
         }
         val newTab = DocumentTab(
@@ -1168,11 +1180,41 @@ fun IdePreview(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            // Try shared parsers for all formats, fall back to plain text
+            val detectedFormat = try {
+                val ext = getDefaultExtensionForFormat(format)
+                FormatRegistry.detectByFilename("file.$ext")
+            } catch (_: Exception) { null }
+
+            val parsedContent = if (detectedFormat != null) {
+                try {
+                    val parser = ParserRegistry.getParser(detectedFormat)
+                    parser?.parse(content)?.parsedContent ?: content
+                } catch (_: Exception) { content }
+            } else content
+
             when (format) {
                 "markdown" -> MarkdownPreview(content, format)
                 "todotxt" -> TodoTxtPreviewEnhanced(content, text, textSecondary)
                 "csv" -> CsvPreviewEnhanced(content, text)
-                else -> PlainTextPreviewEnhanced(content, text)
+                else -> {
+                    // Show format name and parsed content
+                    Text(
+                        "Format: ${detectedFormat?.name ?: format}",
+                        color = textSecondary,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    Text(
+                        text = parsedContent,
+                        style = TextStyle(
+                            color = text,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 13.sp,
+                            lineHeight = 20.sp
+                        )
+                    )
+                }
             }
         }
     }

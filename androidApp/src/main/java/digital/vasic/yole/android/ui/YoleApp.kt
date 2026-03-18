@@ -2256,18 +2256,31 @@ fun PreviewScreen(
             }
         }
 
-        val isDarkTheme = isSystemInDarkTheme()
-        val htmlContent = remember(content, format, isDarkTheme) {
-            generateHtmlPreview(content, format, isDarkTheme)
+        // Use shared parsers for proper format rendering
+        val parsedContent = remember(content, format) {
+            try {
+                val parser = digital.vasic.yole.format.ParserRegistry.getParser(format)
+                parser?.parse(content)?.parsedContent ?: content
+            } catch (_: Exception) {
+                content
+            }
         }
 
-        Text(
-            text = htmlContent,
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            style = MaterialTheme.typography.bodyMedium
-        )
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+        ) {
+            Text(
+                text = parsedContent,
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontFamily = FontFamily.Monospace,
+                    lineHeight = 22.sp
+                )
+            )
+        }
     }
 }
 
