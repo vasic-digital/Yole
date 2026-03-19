@@ -292,6 +292,8 @@ data class KeyShortcut(
             Key.Enter -> "Enter"
             Key.Delete -> "Delete"
             Key.Escape -> "Esc"
+            Key.Spacebar -> "Space"
+            Key.Backspace -> "Backspace"
             Key.F1 -> "F1"
             Key.F2 -> "F2"
             Key.F3 -> "F3"
@@ -304,7 +306,13 @@ data class KeyShortcut(
             Key.F10 -> "F10"
             Key.F11 -> "F11"
             Key.F12 -> "F12"
-            else -> key.toString()
+            Key.Slash -> "/"
+            else -> {
+                // Key.toString() returns "Key: X" for letter/symbol keys;
+                // strip the "Key: " prefix to get just the key name.
+                val str = key.toString()
+                if (str.startsWith("Key: ")) str.removePrefix("Key: ") else str
+            }
         }
     }
 }

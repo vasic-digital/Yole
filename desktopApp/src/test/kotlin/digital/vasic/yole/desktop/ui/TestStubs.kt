@@ -18,27 +18,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 /**
- * Stub implementation of MainScreen for testing.
- */
-@Composable
-fun MainScreen(
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .testTag("main_screen")
-            .semantics { contentDescription = "Main application window" }
-    ) {
-        Text("Main Screen", style = MaterialTheme.typography.headlineMedium)
-        FileBrowserScreen(
-            onFileSelected = {},
-            onNavigateToEditor = {}
-        )
-    }
-}
-
-/**
  * Stub implementation of SettingsScreen for testing.
  */
 @Composable

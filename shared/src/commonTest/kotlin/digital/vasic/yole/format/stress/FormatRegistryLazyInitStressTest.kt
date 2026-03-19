@@ -148,11 +148,11 @@ class FormatRegistryLazyInitStressTest {
     }
 
     @Test
-    fun `formats list has expected count of 22 entries`() = runBlocking<Unit> {
+    fun `formats list has expected count of 23 entries`() = runBlocking<Unit> {
         val formats = FormatRegistry.formats
 
-        // 17 text formats + 5 network storage formats = 22
-        assertEquals(22, formats.size, "FormatRegistry should have 22 format entries")
+        // 18 text formats + 5 network storage formats = 23
+        assertEquals(23, formats.size, "FormatRegistry should have 23 format entries")
 
         // Verify key formats exist
         val formatIds = formats.map { it.id }.toSet()

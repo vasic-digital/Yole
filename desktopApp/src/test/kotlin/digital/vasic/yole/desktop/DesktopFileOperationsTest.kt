@@ -262,12 +262,14 @@ class DesktopFileOperationsTest {
     @Test
     fun `should validate file extensions`() {
         val fileManager = DesktopFileManager()
-        
+
         assertTrue(fileManager.isValidExtension(".md"))
         assertTrue(fileManager.isValidExtension(".txt"))
+        assertTrue(fileManager.isValidExtension(".sh"))
+        assertTrue(fileManager.isValidExtension(".bat"))
         assertFalse(fileManager.isValidExtension(".exe"))
-        assertFalse(fileManager.isValidExtension(".bat"))
-        assertFalse(fileManager.isValidExtension(".sh"))
+        assertFalse(fileManager.isValidExtension(".dll"))
+        assertFalse(fileManager.isValidExtension(".bin"))
     }
 
     // ==================== Cross-Platform Tests ====================
@@ -380,30 +382,31 @@ class DesktopFileOperationsTest {
      */
     inner class DesktopFileManager {
         private val recentFiles = mutableListOf<File>()
+        private val recentFilesLock = Any()
         private val maxRecentFiles = 10
-        
+
         fun saveFile(file: File, content: String): Boolean {
             return try {
                 // Validate file path
                 if (!isValidFilePath(file)) {
                     return false
                 }
-                
+
                 // Ensure parent directory exists
                 file.parentFile?.mkdirs()
-                
+
                 // Write content
                 file.writeText(content)
-                
+
                 // Add to recent files
                 addToRecentFiles(file)
-                
+
                 true
             } catch (e: Exception) {
                 false
             }
         }
-        
+
         fun loadFile(file: File): String? {
             return try {
                 if (!file.exists() || !file.isFile) {
@@ -414,25 +417,31 @@ class DesktopFileOperationsTest {
                 null
             }
         }
-        
+
         fun addToRecentFiles(file: File) {
-            recentFiles.remove(file)
-            recentFiles.add(0, file)
-            
-            // Limit to max recent files
-            while (recentFiles.size > maxRecentFiles) {
-                recentFiles.removeAt(recentFiles.size - 1)
+            synchronized(recentFilesLock) {
+                recentFiles.remove(file)
+                recentFiles.add(0, file)
+
+                // Limit to max recent files
+                while (recentFiles.size > maxRecentFiles) {
+                    recentFiles.removeAt(recentFiles.size - 1)
+                }
             }
         }
-        
+
         fun getRecentFiles(): List<File> {
-            return recentFiles.toList()
+            synchronized(recentFilesLock) {
+                return recentFiles.toList()
+            }
         }
-        
+
         fun cleanRecentFiles() {
-            recentFiles.removeIf { !it.exists() }
+            synchronized(recentFilesLock) {
+                recentFiles.removeIf { !it.exists() }
+            }
         }
-        
+
         fun isValidExtension(extension: String): Boolean {
             val validExtensions = setOf(
                 ".md", ".txt", ".csv", ".tex", ".org", ".adoc", ".wiki",
@@ -447,16 +456,16 @@ class DesktopFileOperationsTest {
             )
             return validExtensions.contains(extension.lowercase())
         }
-        
+
         fun sanitizeFileName(fileName: String): String {
             return fileName.replace(Regex("[<>&\"']"), "_")
         }
-        
+
         fun isValidFilePath(file: File): Boolean {
             // Prevent directory traversal
             val canonicalPath = file.canonicalPath
             val tempDirCanonical = tempDir.toFile().canonicalPath
-            
+
             return canonicalPath.startsWith(tempDirCanonical)
         }
     }

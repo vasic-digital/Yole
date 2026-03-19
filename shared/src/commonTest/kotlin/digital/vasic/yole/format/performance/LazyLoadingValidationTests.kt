@@ -66,9 +66,9 @@ class LazyLoadingValidationTests {
     }
 
     @Test
-    fun `FormatRegistry formats list contains all 22 formats`() {
+    fun `FormatRegistry formats list contains all 23 formats`() {
         val formats = FormatRegistry.formats
-        assertEquals(22, formats.size, "Should have 22 formats (17 text + 5 network)")
+        assertEquals(23, formats.size, "Should have 23 formats (18 text + 5 network)")
     }
 
     @Test

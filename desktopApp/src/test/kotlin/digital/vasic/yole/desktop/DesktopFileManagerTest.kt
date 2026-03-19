@@ -242,9 +242,11 @@ class DesktopFileManagerTest {
     fun `should validate file extensions`() {
         assertThat(fileManager.isValidExtension("md")).isTrue()
         assertThat(fileManager.isValidExtension("txt")).isTrue()
+        assertThat(fileManager.isValidExtension("sh")).isTrue()
+        assertThat(fileManager.isValidExtension("bat")).isTrue()
         assertThat(fileManager.isValidExtension("exe")).isFalse()
-        assertThat(fileManager.isValidExtension("bat")).isFalse()
-        assertThat(fileManager.isValidExtension("sh")).isFalse()
+        assertThat(fileManager.isValidExtension("dll")).isFalse()
+        assertThat(fileManager.isValidExtension("bin")).isFalse()
     }
 
     // ==================== Cross-Platform Tests ====================

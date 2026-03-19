@@ -18,6 +18,7 @@ import androidx.compose.ui.test.*
 import digital.vasic.yole.desktop.ui.*
 import digital.vasic.yole.desktop.ui.theme.YoleDesktopTheme
 import digital.vasic.yole.format.FormatRegistry
+import digital.vasic.yole.format.ParserInitializer
 import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.TextFormat
 import digital.vasic.yole.ui.ThemeMode
@@ -61,6 +62,12 @@ data class FormatTestCase(
  */
 @OptIn(ExperimentalTestApi::class)
 class AllFormatsAutomationTest {
+
+    init {
+        // Ensure all parsers are registered so preview rendering uses the
+        // real parsers instead of falling back to raw content display.
+        ParserInitializer.registerAllParsers()
+    }
 
     // Save to project root recordings/ (not desktopApp/recordings/) for
     // consistency with Android and Web automation directory structure.
@@ -230,7 +237,7 @@ class AllFormatsAutomationTest {
                 filename = "notebook.ipynb",
                 content = "{\"cells\":[],\"metadata\":{},\"nbformat\":4,\"nbformat_minor\":5}",
                 editAddition = "",
-                expectedPreviewContains = "cells",
+                expectedPreviewContains = "Cells",
                 expectedFormatName = "Jupyter Notebook"
             ),
             FormatTestCase(

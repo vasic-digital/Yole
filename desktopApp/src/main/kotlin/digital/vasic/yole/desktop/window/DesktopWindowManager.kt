@@ -41,12 +41,20 @@ class DesktopWindowManager {
      */
     fun createWindow(file: File? = null, content: String = ""): DesktopWindow {
         val windowId = "window_${nextWindowId.getAndIncrement()}"
+        // Detect format from file extension when a file is provided
+        val detectedFormat = file?.let { f ->
+            val ext = f.extension.lowercase()
+            if (ext.isNotEmpty()) {
+                digital.vasic.yole.format.FormatRegistry.getByExtension(ext)
+            } else null
+        }
         val window = DesktopWindow(
             id = windowId,
             title = file?.name ?: "Untitled ${windows.size + 1}",
             file = file,
             content = content,
-            isModified = false
+            isModified = false,
+            format = detectedFormat
         )
         
         synchronized(windows) {

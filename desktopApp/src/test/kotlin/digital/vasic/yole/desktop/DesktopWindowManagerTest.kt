@@ -304,32 +304,33 @@ class DesktopWindowManagerTest {
         val threadCount = 10
         val windowsPerThread = 5
         val results = mutableListOf<Boolean>()
-        
+
         val threads = (1..threadCount).map { threadId ->
             Thread {
                 for (i in 1..windowsPerThread) {
                     val file = tempDir.resolve("window_${threadId}_$i.md").toFile()
                     val window = windowManager.createWindow(file, "Content $i")
-                    
-                    // Update window content
-                    windowManager.updateWindowContent(window.id, "Updated content $i", true)
-                    
+
+                    // Update window content without marking as modified,
+                    // so the window can be closed without a save prompt
+                    windowManager.updateWindowContent(window.id, "Updated content $i", false)
+
                     // Try to close window
                     val closeResult = windowManager.closeWindow(window.id)
-                    
+
                     synchronized(results) {
                         results.add(closeResult)
                     }
                 }
             }
         }
-        
+
         // Start all threads
         threads.forEach { it.start() }
-        
+
         // Wait for all threads to complete
         threads.forEach { it.join() }
-        
+
         // All operations should succeed
         assertThat(results).hasSize(threadCount * windowsPerThread)
         assertThat(results).containsOnly(true)

@@ -235,7 +235,7 @@ class ParserInitializerTest {
     fun `getInitializationStatus returns all false when no parsers registered`() {
         val status = ParserInitializer.getInitializationStatus()
 
-        // FormatRegistry has 22 formats total (17 parseable + 5 network storage)
+        // FormatRegistry has 23 formats total (18 text + 5 network storage)
         assertTrue(status.isNotEmpty(), "Status map should not be empty")
 
         // Check that text format parsers show as not registered

@@ -9,6 +9,7 @@
 package digital.vasic.yole.desktop
 
 import digital.vasic.yole.format.FormatRegistry
+import digital.vasic.yole.format.ParserInitializer
 import digital.vasic.yole.format.ParserRegistry
 
 import digital.vasic.yole.format.TextFormat
@@ -46,11 +47,12 @@ class DesktopAppIntegrationTest {
 
     @Before
     fun setUp() {
-        // Format registry is automatically initialized as an object
-        
+        // Register all parsers so ParserRegistry.getParser() can find them
+        ParserInitializer.registerAllParsers()
+
         // Create temporary directory
         tempDir = Files.createTempDirectory("yole_integration_test")
-        
+
         // Initialize desktop app components
         desktopApp = DesktopApplication()
         fileManager = DesktopFileManager()
@@ -170,8 +172,8 @@ class DesktopAppIntegrationTest {
         
         // Step 5: Extract metadata
         val metadata = parsedDocument.metadata
-        assertThat(metadata["rowCount"]).isEqualTo("4")
-        assertThat(metadata["columnCount"]).isEqualTo("4")
+        assertThat(metadata["rows"]).isEqualTo("4")
+        assertThat(metadata["columns"]).isEqualTo("4")
         assertThat(metadata["hasHeader"]).isEqualTo("true")
     }
 
@@ -426,15 +428,18 @@ class DesktopAppIntegrationTest {
      * Mock implementation of DesktopFileManager for testing
      */
     class DesktopFileManager {
+        private val recentFilesList = mutableListOf<File>()
+
         fun saveFile(file: File, content: String): Boolean {
             return try {
+                file.parentFile?.mkdirs()
                 file.writeText(content)
                 true
             } catch (e: Exception) {
                 false
             }
         }
-        
+
         fun loadFile(file: File): String? {
             return try {
                 if (file.exists()) file.readText() else null
@@ -442,85 +447,96 @@ class DesktopAppIntegrationTest {
                 null
             }
         }
-        
+
         fun detectFormatFromFile(file: File): TextFormat? {
+            if (!file.exists()) return null
             return FormatRegistry.getByExtension(file.extension)
         }
-        
+
         fun detectFormatFromContent(file: File): TextFormat? {
             return try {
+                if (!file.exists()) return null
                 val content = file.readText()
                 FormatRegistry.detectByContent(content)
             } catch (e: Exception) {
                 null
             }
         }
-        
+
         fun addToRecentFiles(file: File) {
-            // Implementation would add to recent files list
+            recentFilesList.remove(file)
+            recentFilesList.add(0, file)
         }
-        
+
         fun getRecentFiles(): List<File> {
-            return emptyList() // Mock implementation
+            return recentFilesList.toList()
         }
     }
 
     /**
-     * Mock implementation of DesktopSettingsManager for testing
+     * Mock implementation of DesktopSettingsManager for testing.
+     * Uses a shared companion-level map so settings persist across instances
+     * (simulating application-level persistence).
      */
     class DesktopSettingsManager {
-        private val settings = mutableMapOf<String, Any>()
-        
+        companion object {
+            private val sharedSettings = mutableMapOf<String, Any>()
+            private val VALID_THEME_MODES = setOf("light", "dark", "system")
+        }
+
         fun setThemeMode(mode: String) {
-            settings["theme_mode"] = mode
-        }
-        
-        fun getThemeMode(): String {
-            return settings["theme_mode"] as? String ?: "system"
-        }
-        
-        fun setShowLineNumbers(show: Boolean) {
-            settings["show_line_numbers"] = show
-        }
-        
-        fun getShowLineNumbers(): Boolean {
-            return settings["show_line_numbers"] as? Boolean ?: true
-        }
-        
-        fun setAutoSave(auto: Boolean) {
-            settings["auto_save"] = auto
-        }
-        
-        fun getAutoSave(): Boolean {
-            return settings["auto_save"] as? Boolean ?: true
-        }
-        
-        fun setHighContrastEnabled(enabled: Boolean) {
-            settings["high_contrast"] = enabled
-        }
-        
-        fun getHighContrastEnabled(): Boolean {
-            return settings["high_contrast"] as? Boolean ?: false
-        }
-        
-        fun setAnimationsEnabled(enabled: Boolean) {
-            settings["animations_enabled"] = enabled
-        }
-        
-        fun getAnimationsEnabled(): Boolean {
-            return settings["animations_enabled"] as? Boolean ?: true
-        }
-        
-        fun setAccentColor(color: String?) {
-            if (color != null) {
-                settings["accent_color"] = color
-            } else {
-                settings.remove("accent_color")
+            // Validate theme mode; reject invalid values (keeps current or default)
+            if (mode in VALID_THEME_MODES) {
+                sharedSettings["theme_mode"] = mode
             }
         }
-        
+
+        fun getThemeMode(): String {
+            return sharedSettings["theme_mode"] as? String ?: "system"
+        }
+
+        fun setShowLineNumbers(show: Boolean) {
+            sharedSettings["show_line_numbers"] = show
+        }
+
+        fun getShowLineNumbers(): Boolean {
+            return sharedSettings["show_line_numbers"] as? Boolean ?: true
+        }
+
+        fun setAutoSave(auto: Boolean) {
+            sharedSettings["auto_save"] = auto
+        }
+
+        fun getAutoSave(): Boolean {
+            return sharedSettings["auto_save"] as? Boolean ?: true
+        }
+
+        fun setHighContrastEnabled(enabled: Boolean) {
+            sharedSettings["high_contrast"] = enabled
+        }
+
+        fun getHighContrastEnabled(): Boolean {
+            return sharedSettings["high_contrast"] as? Boolean ?: false
+        }
+
+        fun setAnimationsEnabled(enabled: Boolean) {
+            sharedSettings["animations_enabled"] = enabled
+        }
+
+        fun getAnimationsEnabled(): Boolean {
+            return sharedSettings["animations_enabled"] as? Boolean ?: true
+        }
+
+        fun setAccentColor(color: String?) {
+            if (color != null) {
+                sharedSettings["accent_color"] = color
+            } else {
+                sharedSettings.remove("accent_color")
+            }
+        }
+
         fun getAccentColor(): String? {
-            return settings["accent_color"] as? String
+            return sharedSettings["accent_color"] as? String
         }
     }
 }

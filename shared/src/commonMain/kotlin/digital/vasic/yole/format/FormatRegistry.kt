@@ -91,14 +91,14 @@ object FormatRegistry {
             id = ID_TODOTXT,
             name = "Todo.txt",
             defaultExtension = ".txt",
-            extensions = listOf(".txt"),
+            extensions = listOf(".txt", ".todotxt", ".todo.txt", ".todo"),
             detectionPatterns = listOf("^\\(([A-Z])\\) ", "^x \\d{4}-\\d{2}-\\d{2}")
         ),
         TextFormat(
             id = ID_CSV,
             name = "CSV",
             defaultExtension = ".csv",
-            extensions = listOf(".csv"),
+            extensions = listOf(".csv", ".tsv"),
             detectionPatterns = listOf("^.*,.*,.*$")
         ),
 
@@ -185,6 +185,14 @@ object FormatRegistry {
             defaultExtension = ".ipynb",
             extensions = listOf(".ipynb"),
             detectionPatterns = listOf("\"nbformat\":", "\"cell_type\":")
+        ),
+
+        // Data interchange formats (extension-only detection to avoid conflicts)
+        TextFormat(
+            id = ID_JSON,
+            name = "JSON",
+            defaultExtension = ".json",
+            extensions = listOf(".json", ".geojson", ".jsonl")
         ),
 
         // Binary format
@@ -401,6 +409,25 @@ object FormatRegistry {
      * ```
      */
      fun detectByFilename(filename: String): TextFormat {
+         // Try compound extensions first (e.g., ".todo.txt") for more specific matching,
+         // then fall back to simple extension (e.g., ".txt")
+         val dotIndex = filename.indexOf('.')
+         if (dotIndex >= 0) {
+             val compoundExt = filename.substring(dotIndex).lowercase()
+             // Try progressively shorter compound extensions
+             var idx = dotIndex
+             while (idx < filename.length) {
+                 val ext = filename.substring(idx).lowercase()
+                 val format = formats.firstOrNull { fmt ->
+                     fmt.extensions.any { it.equals(ext, ignoreCase = true) }
+                 }
+                 if (format != null) return format
+                 // Move to next dot
+                 val nextDot = filename.indexOf('.', idx + 1)
+                 if (nextDot < 0) break
+                 idx = nextDot
+             }
+         }
          val extension = filename.substringAfterLast('.', "")
          return if (extension.isNotEmpty()) {
              detectByExtension(extension)
@@ -515,6 +542,7 @@ object FormatRegistry {
     const val ID_MARKDOWN = "markdown"
     const val ID_TODOTXT = "todotxt"
     const val ID_CSV = "csv"
+    const val ID_JSON = "json"
     const val ID_WIKITEXT = "wikitext"
     const val ID_KEYVALUE = "keyvalue"
     const val ID_ASCIIDOC = "asciidoc"

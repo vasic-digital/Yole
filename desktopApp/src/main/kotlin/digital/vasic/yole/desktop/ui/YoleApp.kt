@@ -43,6 +43,7 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -200,7 +201,9 @@ fun YoleApp() {
 
     YoleDesktopThemeWithSettings(settings) {
         Surface(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("main_app"),
             color = MaterialTheme.colorScheme.background
         ) {
             MainScreen()
@@ -239,7 +242,10 @@ fun MainScreen() {
     var cursorColumn by remember { mutableStateOf(1) }
 
     Scaffold(
-        modifier = Modifier.onKeyEvent { event ->
+        modifier = Modifier
+            .testTag("main_screen")
+            .semantics { contentDescription = "Main application window" }
+            .onKeyEvent { event ->
             if (event.type == KeyEventType.KeyDown) {
                 when (event.key) {
                     Key.S -> {

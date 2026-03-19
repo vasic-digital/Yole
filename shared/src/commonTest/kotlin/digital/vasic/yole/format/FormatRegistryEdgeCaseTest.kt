@@ -409,8 +409,8 @@ class FormatRegistryEdgeCaseTest {
 
     @Test
     fun testTotalFormatCount() {
-        // 17 text formats + 5 network formats = 22
-        assertEquals(22, FormatRegistry.formats.size)
+        // 18 text formats + 5 network formats = 23
+        assertEquals(23, FormatRegistry.formats.size)
     }
 
     @Test
