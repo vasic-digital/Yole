@@ -81,29 +81,26 @@ kotlin {
                 implementation("digital.vasic.storage:Storage-KMP")
                 implementation("digital.vasic.formatters:Formatters-KMP")
 
-                // Kotlin Coroutines - Updated to match version catalog
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+                // Kotlin Coroutines
+                implementation(libs.kotlinx.coroutines.core)
 
-                // Kotlinx Serialization - Updated to match version catalog
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+                // Kotlinx Serialization
+                implementation(libs.kotlinx.serialization.json)
 
-                // DateTime - Updated to match version catalog
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+                // DateTime
+                implementation(libs.kotlinx.datetime)
 
-                // Okio for file system - Updated to match version catalog
-                implementation("com.squareup.okio:okio:3.9.1")
+                // Okio for file system
+                implementation(libs.okio)
 
                  // Ktor Client for network operations
                  implementation(libs.ktor.client.core)
-                 implementation("io.ktor:ktor-client-content-negotiation:3.0.2")
-                 implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.2")
+                 implementation(libs.ktor.client.content.negotiation)
+                 implementation(libs.ktor.serialization.kotlinx.json)
 
                  // SQLite database for metadata - platform specific due to WASM incompatibility
                  // implementation("app.cash.sqldelight:runtime:2.0.2")
                  // implementation("app.cash.sqldelight:coroutines-extensions:2.0.2")
-                 
-                 // Database dependencies for cross-platform implementation
-                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
                 // Compose runtime (if using Compose Multiplatform)
                 implementation(compose.runtime)
@@ -139,7 +136,7 @@ kotlin {
                 implementation("org.xerial:sqlite-jdbc:3.44.1.0")
                 implementation(libs.ktor.client.okhttp)
                 // CIO is JVM-only, so we use OkHttp for Android
-                implementation("io.ktor:ktor-client-cio:3.0.2")
+                implementation(libs.ktor.client.cio)
                 implementation(libs.sshj)   // SFTP via SSH
                 implementation(libs.smbj)   // SMB/CIFS
             }
@@ -160,7 +157,7 @@ kotlin {
                 implementation("org.xerial:sqlite-jdbc:3.44.1.0")
                 implementation(libs.ktor.client.okhttp)
                 // CIO is JVM-only, so we use OkHttp for Desktop
-                implementation("io.ktor:ktor-client-cio:3.0.2")
+                implementation(libs.ktor.client.cio)
                 implementation(libs.sshj)   // SFTP via SSH
                 implementation(libs.smbj)   // SMB/CIFS
             }
@@ -187,7 +184,7 @@ kotlin {
 
             dependencies {
                 // iOS-specific dependencies (inherited from commonMain)
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+                implementation(libs.kotlinx.coroutines.core)
                 // Native SQLite for iOS - Using platform-specific implementation
                 // implementation("co.touchlab:sqliter:1.3.1")
             }
@@ -208,7 +205,7 @@ kotlin {
             dependencies {
                 implementation(compose.ui)
                 implementation(compose.components.resources)
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+                implementation(libs.kotlinx.coroutines.core)
                 // SQLDelight not available for WASM
                 // implementation("app.cash.sqldelight:sqljs-driver:2.0.2")
                 implementation(libs.ktor.client.js)

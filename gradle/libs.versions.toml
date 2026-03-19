@@ -39,6 +39,9 @@ flexmark = "0.64.8"
 opencsv = "5.9"
 commonmark = "0.23.0"
 
+# File System
+okio = "3.9.1"
+
 # Utilities
 apache-commons-lang3 = "3.17.0"
 commons-io = "2.18.0"
@@ -149,12 +152,18 @@ apache-commons-lang3 = { module = "org.apache.commons:commons-lang3", version.re
 commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 
+# File System
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+
 # Ktor (for potential network operations)
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 ktor-client-js = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
 # Protocol Libraries
 sshj = { module = "com.hierynomus:sshj", version.ref = "sshj" }

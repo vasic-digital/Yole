@@ -82,7 +82,6 @@ includeBuild("../Formatters-KMP")
 
 // Existing Android modules
 include(":commons")
-include(":core")
 
 // Format modules removed as they were for legacy app
 
