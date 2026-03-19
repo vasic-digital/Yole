@@ -15,15 +15,10 @@ Yole is a **Kotlin Multiplatform (KMP)** text editor supporting Android, Desktop
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| **Android** | ✅ Production Ready | Fully functional with comprehensive test coverage |
-| **Desktop** | ⚠️ Beta (30% complete) | Basic implementation, needs completion and testing |
-| **iOS** | 🚧 Disabled | iOS targets temporarily disabled in `shared/build.gradle.kts:41` due to compilation issues. Requires resolution before re-enabling |
-| **Web** | 🚧 Stub (0% complete) | Build configuration complete, but no source implementation. Infrastructure in place for future development |
-
-**Critical Issues:**
-- **iOS**: All iOS targets (`iosX64`, `iosArm64`, `iosSimulatorArm64`) commented out. TODO at line 41 of `shared/build.gradle.kts`: "Re-enable iOS targets once basic compilation is working"
-- **Web**: `webApp/src/main/` has no source code despite complete build configuration
-- **Core Module**: Investigation needed - main source directory structure unclear
+| **Android** | Production | Fully functional with comprehensive test coverage, production-ready |
+| **Desktop** (Windows/macOS/Linux) | Beta | Compose Desktop UI functional, keyboard shortcuts, tabs, themes |
+| **iOS** | Alpha | Platform stubs with Result types, KDoc, and implementation plans. Requires Xcode for builds |
+| **Web** (Wasm PWA) | Alpha | Compose for Web with Wasm target, PWA infrastructure in place, basic format support |
 
 ## Kotlin Multiplatform Architecture
 
@@ -176,11 +171,12 @@ webApp/         # Web application (Compose for Web)
 ### Dependency Flow
 
 ```
-Platform Apps (androidApp, desktopApp, etc.)
+Platform Apps (androidApp, desktopApp, iosApp, webApp)
        ↓
     shared (Kotlin Multiplatform)
-       ↓
-   commons (Android utilities - legacy)
+       ↓                    ↓
+   10 KMP Modules      commons (Android utilities - legacy)
+   (via includeBuild)
 ```
 
 ### Network Protocol Architecture
@@ -315,21 +311,10 @@ graph TB
   - `GsCollectionUtils` - Collection manipulation utilities
   - Base classes for format implementations
 
-#### `core` - Core Functionality
-- **Purpose**: Contains reusable editors, syntax highlighters, and text converters
-- **Key Components**:
-  - Android-specific implementations
-  - `TextConverterBase` - Base class for text format converters
-  - `SyntaxHighlighterBase` - Base class for syntax highlighters
-  - `ActionButtonBase` - Base class for format-specific action buttons
-
-#### `app` - Legacy Android Application
-- **Purpose**: Legacy Android application (being phased out)
-- **Key Components**:
-  - `MainActivity` - Main application screen
-  - `DocumentActivity` - Document editing/viewing
-  - `SettingsActivity` - Application settings
-  - Legacy Android UI components
+#### `core` - Core Functionality (Archived)
+- **Status**: Being phased out. Functionality migrated to `shared/` module and extracted KMP modules.
+- **Purpose**: Previously contained reusable editors, syntax highlighters, and text converters
+- **Migration**: `TextConverterBase` logic moved to `shared/format/`, `SyntaxHighlighterBase` moved to platform-specific implementations, encryption utilities migrated to `Security-KMP`
 
 ### Format Modules
 
@@ -592,11 +577,11 @@ Yole uses 6 security scanning tools integrated into the development workflow:
 | Tool | Purpose | Integration |
 |------|---------|-------------|
 | SonarQube | Code quality, bugs, vulnerabilities | Docker Compose |
-| Snyk | Dependency vulnerability scanning | CI + Docker |
-| CodeQL | Semantic code analysis (java-kotlin) | GitHub Actions |
-| Gitleaks | Secret/credential detection | CI pre-commit |
+| Snyk | Dependency vulnerability scanning | Docker |
+| CodeQL | Semantic code analysis (java-kotlin) | Manual |
+| Gitleaks | Secret/credential detection | Manual |
 | Detekt | Kotlin static analysis | Gradle plugin |
-| OWASP Dependency Check | CVE database scanning | Gradle plugin |
+| OWASP Dependency Check | CVE database scanning | Manual |
 
 **Security patterns in code**:
 - `normalizePath()` in `PathUtils.kt` for path traversal protection in all 8 protocol services
@@ -630,64 +615,22 @@ See `docs/SECURITY_SCANNING.md` for detailed tool setup and usage.
 - Module-specific dependencies
 - Automated testing pipeline
 
-### CI/CD Pipeline
+### Build & Test Workflow
 
-The project uses GitHub Actions with three workflows: continuous integration (`ci.yml`), security scanning (`security.yml`), and release automation (`release.yml`).
+All builds and tests are run manually or via Makefile targets. Release builds and full test suites are executed inside Docker/Podman containers.
 
-```mermaid
-flowchart LR
-    subgraph triggers["Triggers"]
-        push["Push to master"]
-        pr["Pull Request"]
-        tag["Version Tag (v*)"]
-        schedule["Weekly Schedule<br/>(Sunday 00:00 UTC)"]
-    end
+```bash
+# Primary dev test command (no Android SDK needed)
+./gradlew :shared:desktopTest
 
-    subgraph ci["ci.yml — Continuous Integration"]
-        direction TB
-        ci_test_shared["Run Shared<br/>Unit Tests<br/>(Android + Desktop)"]
-        ci_build["Build Artifacts<br/>(Debug APK + Desktop JAR)"]
-        ci_lint["Android Lint<br/>(lintFlavorDefaultDebug)"]
-        ci_coverage["Kover Coverage<br/>Report"]
-        ci_codecov["Upload to<br/>Codecov"]
+# Build and test in containers
+docker compose build build
+docker compose run --rm build ./docker/scripts/test-all.sh
+docker compose run --rm build ./docker/scripts/build.sh
 
-        ci_test_shared --> ci_build
-        ci_build --> ci_lint
-        ci_lint --> ci_coverage
-        ci_coverage --> ci_codecov
-    end
-
-    subgraph security["security.yml — Security Scanning"]
-        direction TB
-        sec_gitleaks["Gitleaks<br/>(Secret Scanning)"]
-        sec_snyk["Snyk<br/>(Vulnerability Scan)"]
-        sec_codeql["CodeQL<br/>(Static Analysis<br/>java-kotlin)"]
-        sec_owasp["OWASP<br/>(Dependency Check)"]
-    end
-
-    subgraph release["release.yml — Release"]
-        direction TB
-        rel_build_apk["Build Release APK"]
-        rel_build_jar["Build Desktop JARs"]
-        rel_collect["Collect Artifacts"]
-        rel_gh_release["Create GitHub Release<br/>(with release notes)"]
-
-        rel_build_apk --> rel_collect
-        rel_build_jar --> rel_collect
-        rel_collect --> rel_gh_release
-    end
-
-    push --> ci
-    pr --> ci
-    push --> security
-    pr --> security
-    schedule --> security
-    tag --> release
-
-    style triggers fill:#fff9c4,stroke:#f9a825
-    style ci fill:#e8f5e9,stroke:#388e3c
-    style security fill:#fce4ec,stroke:#c62828
-    style release fill:#e1f5fe,stroke:#0288d1
+# Makefile shortcuts
+make test-shared    # = :shared:desktopTest
+make desktop        # = :desktopApp:run
 ```
 
 ### Platform Dependencies
@@ -729,8 +672,9 @@ flowchart LR
 
 ### Code Organization
 - Keep platform-specific code in respective app modules
-- Share common utilities through `commons/` module
-- Use `core/` for shared Android functionality
+- Place cross-platform logic in the `shared/` module
+- Share common Android utilities through `commons/` module (legacy)
+- Use extracted KMP modules for reusable functionality across projects
 - Maintain format modules for extensibility
 
 ## Future Enhancements

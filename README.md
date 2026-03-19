@@ -1,9 +1,6 @@
-[![GitHub releases](https://img.shields.io/github/tag/vasic-digital/Yole.svg)](https://github.com/vasic-digital/Yole/releases)
-[![GitHub downloads](https://img.shields.io/github/downloads/vasic-digital/Yole/total.svg?logo=github&logoColor=lime)](https://github.com/vasic-digital/Yole/releases)
-[![GitHub CI](https://github.com/vasic-digital/Yole/workflows/CI/badge.svg)](https://github.com/vasic-digital/Yole/actions)
-[![Tests & Coverage](https://github.com/vasic-digital/Yole/workflows/Tests%20%26%20Coverage/badge.svg)](https://github.com/vasic-digital/Yole/actions)
-[![Lint & Docs](https://github.com/vasic-digital/Yole/workflows/Lint%20%26%20Docs/badge.svg)](https://github.com/vasic-digital/Yole/actions)
-[![codecov](https://codecov.io/gh/vasic-digital/Yole/branch/master/graph/badge.svg)](https://codecov.io/gh/vasic-digital/Yole)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.0.20-purple.svg)
+![Platforms](https://img.shields.io/badge/Platforms-Android%20%7C%20Desktop%20%7C%20iOS%20%7C%20Web-blue.svg)
+![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)
 [![Translate on Crowdin](https://img.shields.io/badge/translate-crowdin-green.svg)](https://crowdin.com/project/markor)
 [![Community Discussion](https://img.shields.io/badge/chat-community-blue.svg)](https://github.com/vasic-digital/Yole/discussions)
 
@@ -241,8 +238,7 @@ Use the _auto reformat_ menu option of Android Studio before committing or befor
 * **Zim/WikiText parser**: Custom implementation, transpiling to Markdown
 * **todo.txt parser**: Custom implementation
 * **Binary support**: WebView html img/audio/video with support for most common formats
-* **CI/CD**: GitHub Actions
-* **Build system**: Gradle with version catalog, Makefile
+* **Build system**: Gradle with version catalog, Makefile, Docker/Podman containers
 * **Testing**: Kotlin Test, Kotest 5.9.1, MockK 1.13.13, AssertJ 3.26.3 (9,400+ tests)
 
 ### Resources

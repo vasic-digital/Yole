@@ -9,25 +9,52 @@ Thank you for your interest in contributing to Yole! This document provides guid
 - **Xcode** (for iOS development)
 - **IntelliJ IDEA** or similar (for Desktop/Web development)
 - **Git** for version control
-- **Kotlin** 1.9+ (managed by Gradle)
-- **Android SDK** 21-35 (API levels)
-- **Java** 8+ compatibility
+- **Kotlin** 2.0.20 (managed by Gradle)
+- **Java** 11+ (JDK 11 for shared module, JDK 21 for desktopApp)
+- **Android SDK** 24-35 (API levels)
+- **Go** 1.24+ (for Challenges, Containers, and sibling Go modules)
+- **Docker or Podman** (for release builds and security scanning)
 
 ### Setup
 1. Fork the repository on GitHub
 2. Clone your fork locally:
     ```bash
-    git clone https://github.com/yourusername/yole.git
+    git clone --recursive https://github.com/yourusername/yole.git
     cd yole
     ```
-3. Open the project in your preferred IDE
-4. Let Gradle sync and download dependencies
-5. Build the project to verify setup:
+3. Ensure the 10 extracted KMP modules are available as sibling directories (see Composite Build Setup below)
+4. Open the project in your preferred IDE
+5. Let Gradle sync and download dependencies
+6. Build the project to verify setup:
     ```bash
-    ./gradlew assembleDebug  # For Android
-    ./gradlew desktopApp:run  # For Desktop
-    ./gradlew webApp:wasmJsBrowserRun  # For Web
+    ./gradlew :shared:desktopTest   # Primary test command (no Android SDK needed)
+    ./gradlew :desktopApp:run       # Desktop app
+    ./gradlew :androidApp:assembleDebug  # Android (requires ANDROID_SDK_ROOT)
+    ./gradlew :webApp:wasmJsBrowserRun   # Web (Wasm)
     ```
+
+### Composite Build Setup (10 KMP Modules)
+
+Yole consumes 10 extracted Kotlin Multiplatform modules via `includeBuild()` in `settings.gradle.kts`. Each module lives in a sibling directory:
+
+```
+parent-directory/
+  Yole/                    # This repository
+  RateLimiter-KMP/         # digital.vasic.ratelimiter
+  Concurrency-KMP/         # digital.vasic.concurrency
+  UI-Components-KMP/       # digital.vasic.uicomponents
+  Auth-KMP/                # digital.vasic.auth
+  Security-KMP/            # digital.vasic.security
+  Document-KMP/            # digital.vasic.document
+  Config-KMP/              # digital.vasic.config
+  Database-KMP/            # digital.vasic.database
+  Storage-KMP/             # digital.vasic.storage
+  Formatters-KMP/          # digital.vasic.formatters
+```
+
+Clone each module from its repository. Gradle will automatically resolve them via composite builds. If a module directory is missing, the build will fail with a clear error indicating which `includeBuild()` path could not be found.
+
+When contributing to an extracted module, make changes in the module's own repository and test integration by running `./gradlew :shared:desktopTest` from the Yole root.
 
 ## Development Workflow
 
@@ -470,10 +497,85 @@ Brief description of changes
 - Start a discussion for questions and ideas
 - Check existing issues and discussions before posting
 
+## Challenge Framework Contribution
+
+Yole includes a Go-based challenge framework in the `Challenges/` submodule for cross-platform validation testing.
+
+### Running Challenges
+```bash
+./gradlew runChallenges          # Run all challenges via Gradle
+cd Challenges && go test ./...   # Run challenge tests directly
+```
+
+### Adding New Challenge Banks
+1. Create a YAML challenge file in `Challenges/banks/`
+2. Define challenge metadata: name, platform targets, difficulty, expected outcomes
+3. Implement challenge validation logic in Go
+4. Add tests covering the new challenge bank
+5. Run `go vet ./...` and `go test ./... -race -count=1` before submitting
+
+### Challenge Bank Categories
+- `security/` -- Security-focused challenges (path traversal, injection, etc.)
+- `format-edge-cases/` -- Parser edge case validation
+- `protocol-resilience/` -- Network protocol failure mode testing
+
+## Go Module Contribution
+
+Yole has several Go modules as submodules and sibling projects:
+
+| Module | Location | Purpose |
+|--------|----------|---------|
+| `Challenges/` | Submodule | Cross-platform testing framework |
+| `Containers/` | Submodule | Container orchestration (Challenges dependency) |
+| `HelixQA/` | Submodule | Autonomous QA with testbank, ticket, evidence packages |
+| `DocProcessor` | Sibling | Document processing pipeline |
+| `LLMOrchestrator` | Sibling | LLM agent orchestration |
+| `VisionEngine` | Sibling | Computer vision analysis |
+
+### Go Contribution Requirements
+- Go 1.24+ required
+- All code must pass `go vet ./...`
+- All tests must pass with race detector: `go test ./... -race -count=1`
+- No flaky tests allowed (pre-existing known flaky tests are documented in CLAUDE.md)
+- Follow standard Go project layout conventions
+- Add benchmarks for performance-sensitive code
+
+## Test Type Requirements
+
+All new features and bug fixes must include appropriate tests. Yole uses 16 test types:
+
+### Required for All Changes
+- **Unit tests**: Test individual functions and methods in isolation
+- **Integration tests**: Test interactions between components
+
+### Required by Change Type
+
+| Change Type | Required Test Types |
+|-------------|-------------------|
+| New format parser | Unit, integration, edge-case/supremacy, fuzz |
+| Protocol service change | Unit, integration, stress, resilience, security |
+| UI change | Unit, accessibility, snapshot |
+| Performance change | Unit, performance baseline, load |
+| Security fix | Unit, security, fuzz |
+| Concurrency change | Unit, stress, non-blocking |
+
+### Test Constraints
+- **JUnit4 runner**: Use `runBlocking<Unit> { }` (not `runTest`). JUnit4 requires `Unit` return type.
+- **MockK is JVM-only**: Available in `desktopTest` and `androidUnitTest`, NOT in `commonTest` or `wasmJsTest`.
+- **jvmTarget**: Must be `"11"` in all JVM compilations.
+- **No test removal**: Tests must never be removed, disabled, or skipped. Fix root causes instead.
+
+### Running Tests
+```bash
+./gradlew :shared:desktopTest     # Primary test command
+make test-shared                   # Makefile shortcut
+./gradlew test koverHtmlReport     # All tests with coverage
+```
+
 ## License
 
 By contributing to Yole, you agree that your contributions will be licensed under the same license as the project (Apache 2.0 for code, CC0 1.0 for translations and samples).
 
 ---
 
-Thank you for contributing to Yole! Your help makes this project better for everyone. 🎉
+Thank you for contributing to Yole! Your help makes this project better for everyone.

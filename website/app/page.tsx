@@ -29,14 +29,14 @@ const platforms = [
 ];
 
 const stats = [
-  { label: "Tests", value: "9,400+" },
-  { label: "Text Formats", value: "17" },
+  { label: "Tests", value: "10,000+" },
+  { label: "Format Types", value: "18" },
   { label: "Protocols", value: "8" },
   { label: "Platforms", value: "4" },
 ];
 
 const features = [
-  { title: "17 Text Formats", description: "From Markdown and todo.txt to LaTeX and Jupyter notebooks. One editor for all your text files." },
+  { title: "18 Format Types", description: "17 text formats plus binary detection. From Markdown and todo.txt to LaTeX and Jupyter notebooks. One editor for all your files." },
   { title: "Offline-First", description: "Everything works without an internet connection. Your data stays on your device by default." },
   { title: "8 Cloud Protocols", description: "Optional integration with Dropbox, Google Drive, OneDrive, WebDAV, FTP, SFTP, SMB, and Git. Each with circuit breaker and connection limiter resilience." },
   { title: "Cross-Platform", description: "Built with Kotlin Multiplatform. Write once, run on Android, Desktop, iOS, and Web." },
@@ -45,8 +45,8 @@ const features = [
   { title: "Modular Architecture", description: "10 independently extracted KMP modules. Clean separation of concerns with facade bridges." },
   { title: "Security First", description: "6 integrated security scanning tools: SonarQube, Snyk, Detekt, Gitleaks, OWASP Dependency Check, and CodeQL. Continuous vulnerability detection in CI/CD." },
   { title: "Concurrency Safe", description: "Thread-safe by design with Mutex, Semaphore, @Volatile, StateFlow.update{}, and atomic patterns across all protocol services and shared state." },
-  { title: "Comprehensive Testing", description: "9,400+ tests across 215+ test files covering 16 test types: unit, integration, stress, fuzz, snapshot, load, E2E, accessibility, and more." },
-  { title: "Video Course", description: "25 free video tutorials from beginner to expert. Learn Yole at your own pace." },
+  { title: "Comprehensive Testing", description: "10,000+ tests across 215+ test files covering 16 test types: unit, integration, stress, fuzz, snapshot, load, E2E, accessibility, and more." },
+  { title: "Video Course", description: "31 free video tutorials from beginner to expert. Learn Yole at your own pace." },
 ];
 
 export default function HomePage() {
@@ -62,7 +62,7 @@ export default function HomePage() {
             Cross-Platform Text Editor
           </p>
           <p className="text-lg text-[var(--color-text-secondary)] max-w-2xl mx-auto mb-10">
-            A powerful editor supporting 17 text formats and 8 cloud storage protocols.
+            A powerful editor supporting 17 text formats plus binary detection and 8 cloud storage protocols.
             Offline-first with optional cloud sync. Built with Kotlin Multiplatform for
             Android, Desktop, iOS, and Web.
           </p>
@@ -106,9 +106,9 @@ export default function HomePage() {
       {/* Format Showcase */}
       <section className="py-20">
         <div className="container-page">
-          <h2 className="section-heading text-center">17 Text Formats</h2>
+          <h2 className="section-heading text-center">18 Format Types</h2>
           <p className="section-subheading text-center">
-            One editor for Markdown, todo.txt, CSV, LaTeX, and many more.
+            17 text formats plus binary detection. Markdown, todo.txt, CSV, LaTeX, and many more.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {formats.map((format) => (
@@ -181,7 +181,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <a href="/formats" className="card text-center group">
               <h3 className="font-semibold text-lg mb-2 group-hover:text-primary-500 transition-colors">Formats</h3>
-              <p className="text-sm text-[var(--color-text-secondary)]">17 text formats with syntax examples and use cases.</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">18 format types with syntax examples and use cases.</p>
             </a>
             <a href="/cloud-storage" className="card text-center group">
               <h3 className="font-semibold text-lg mb-2 group-hover:text-primary-500 transition-colors">Cloud Storage</h3>
@@ -189,7 +189,7 @@ export default function HomePage() {
             </a>
             <a href="/video-course" className="card text-center group">
               <h3 className="font-semibold text-lg mb-2 group-hover:text-primary-500 transition-colors">Video Course</h3>
-              <p className="text-sm text-[var(--color-text-secondary)]">25 free videos from beginner to expert level.</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">31 free videos from beginner to expert level.</p>
             </a>
             <a href="/architecture" className="card text-center group">
               <h3 className="font-semibold text-lg mb-2 group-hover:text-primary-500 transition-colors">Architecture</h3>

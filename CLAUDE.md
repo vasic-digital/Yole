@@ -274,7 +274,7 @@ docker compose --profile security up -d sonarqube   # SonarQube at localhost:900
 docker compose --profile full up -d                  # Full security stack
 ```
 
-Tools configured: SonarQube (Docker), Snyk (CI + Docker), CodeQL (CI), Gitleaks (CI), Detekt (Gradle), OWASP Dependency Check (CI).
+Tools configured: SonarQube (Docker), Snyk (Docker), CodeQL (manual), Gitleaks (manual), Detekt (Gradle), OWASP Dependency Check (manual).
 
 ## Key Dependencies
 

@@ -3,6 +3,24 @@
 
 const releases = [
   {
+    version: "2.18.0",
+    date: "2026-03-19",
+    title: "Autonomous QA, Non-Blocking Architecture, and 10,000+ Tests",
+    highlights: [
+      "10,000+ tests across Kotlin (6,695+ desktop) and Go (HelixQA 458+, DocProcessor 219, LLMOrchestrator 247, VisionEngine 262) test suites",
+      "18 format types: 17 text formats plus binary detection with media preview",
+      "31 video course modules (added Non-Blocking Architecture, Test Coverage Mastery, Performance Optimization Advanced, Autonomous QA, Project Completion Guide)",
+      "HelixQA expanded to 12 packages with SessionCoordinator, Navigator, IssueDetector, and evidence collection",
+      "3 new sibling Go modules: DocProcessor (6 packages), LLMOrchestrator (5 packages), VisionEngine (5 packages)",
+      "UI/UX automation testing: 36 recorded challenges across Desktop, Web, and Android with speed mode testing",
+      "IDE-style UI redesign for all 3 active platforms (Android, Desktop, Web)",
+      "ParserRegistry crash fix, AGP 8.9.0 alignment, minSdk 24",
+      "Comprehensive 9-phase project completion plan designed and executed",
+      "Website and video course updated with latest metrics and new episodes",
+    ],
+    breaking: false,
+  },
+  {
     version: "2.17.0",
     date: "2026-03-17",
     title: "Concurrency Safety, Security Pipeline, and Comprehensive Completion",

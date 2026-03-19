@@ -1,6 +1,6 @@
 # Yole Video Course
 
-Comprehensive video course across beginner, advanced, and expert levels for Kotlin Multiplatform development with Yole. 25 modules and 175+ videos covering everything from first steps to contributing to the project.
+Comprehensive video course across beginner, advanced, and expert levels for Kotlin Multiplatform development with Yole. 31 modules and 215+ videos covering everything from first steps to autonomous QA and project completion.
 
 ## Course Overview
 
@@ -8,7 +8,7 @@ Comprehensive video course across beginner, advanced, and expert levels for Kotl
 |-------|---------|--------|
 | Beginner | 5 modules | Getting started, Markdown, Todo.txt, cross-platform app, migration |
 | Advanced | 7 modules | Custom formats, performance, network storage, UI, cloud, containers, security |
-| Expert | 13 modules | Architecture, deployment, testing, community, challenges, monitoring, contributing, platform-specific, stress testing, concurrency safety, security scanning deep dive, performance optimization, complete test coverage |
+| Expert | 19 modules | Architecture, deployment, testing, community, challenges, monitoring, contributing, platform-specific, stress testing, concurrency safety, security scanning deep dive, performance optimization, complete test coverage, UI automation, non-blocking architecture, test coverage mastery, autonomous QA, project completion |
 
 ## Structure
 
@@ -41,7 +41,13 @@ video-course/
     ├── 22-concurrency-safety/       # Module 22: Concurrency Safety in KMP (8 videos)
     ├── 23-security-scanning-deep-dive/ # Module 23: Security Scanning Deep Dive (7 videos)
     ├── 24-performance-optimization/ # Module 24: Performance Optimization (8 videos)
-    └── 25-complete-test-coverage/   # Module 25: Complete Test Coverage (8 videos)
+    ├── 25-complete-test-coverage/   # Module 25: Complete Test Coverage (8 videos)
+    ├── 26-ui-automation-testing/    # Module 26: UI/UX Automation Testing (6 videos)
+    ├── 27-non-blocking-architecture/ # Module 27: Non-Blocking Architecture (8 videos)
+    ├── 28-test-coverage-mastery/    # Module 28: Test Coverage Mastery (8 videos)
+    ├── 29-performance-optimization-advanced/ # Module 29: Performance Optimization Advanced (8 videos)
+    ├── 30-autonomous-qa/            # Module 30: Autonomous QA (8 videos)
+    └── 31-project-completion-guide/ # Module 31: Project Completion Guide (8 videos)
 ```
 
 ## Beginner Level (5 modules)
@@ -108,7 +114,7 @@ Comprehensive security scanning with SonarQube, Snyk, Gitleaks, CodeQL, OWASP De
 
 **Prerequisites:** Module 14.
 
-## Expert Level (13 modules)
+## Expert Level (19 modules)
 
 ### Module 9: Advanced Architecture Patterns (12 videos)
 Clean architecture, dependency injection, state management (MVI), event-driven patterns, modularization, plugin architecture, and database design.
@@ -136,12 +142,12 @@ The Go-based Challenges framework: challenge banks (JSON), running challenges ag
 **Prerequisites:** Modules 9-12, basic Go knowledge.
 
 ### Module 17: Monitoring & Performance (7 videos)
-Resilience patterns (CircuitBreaker, ConnectionLimiter, DocumentCache, RateLimitedStorageService), document caching with hit/miss tracking, connection management, performance metrics (9,400+ test methods, 63.0% coverage), memory profiling, and benchmark testing.
+Resilience patterns (CircuitBreaker, ConnectionLimiter, DocumentCache, RateLimitedStorageService), document caching with hit/miss tracking, connection management, performance metrics (10,000+ test methods, 63.0% coverage), memory profiling, and benchmark testing.
 
 **Prerequisites:** Module 9, Module 6.
 
 ### Module 18: Contributing to Yole (7 videos)
-Complete contributor guide: repository structure (main + 10 KMP modules + 2 Go submodules), git workflow, development environment, running the full test suite (9,400+ test methods across ~215 files), adding formats, adding protocols, resilience patterns, security scanning, and code review standards.
+Complete contributor guide: repository structure (main + 10 KMP modules + 2 Go submodules), git workflow, development environment, running the full test suite (10,000+ test methods across ~215 files), adding formats, adding protocols, resilience patterns, security scanning, and code review standards.
 
 **Prerequisites:** Modules 9-12 (or equivalent familiarity with the codebase).
 
@@ -171,9 +177,39 @@ Performance architecture overview, FormatRegistry lazy initialization (benchmark
 **Prerequisites:** Module 6, Module 9.
 
 ### Module 25: Complete Test Coverage (8 videos)
-The 9,400+ test suite architecture, unit and integration testing patterns, fuzz/snapshot/property-based testing, stress and load testing, E2E and non-blocking testing, security and resilience testing, accessibility and platform-specific testing, and CI coverage strategy.
+The 10,000+ test suite architecture, unit and integration testing patterns, fuzz/snapshot/property-based testing, stress and load testing, E2E and non-blocking testing, security and resilience testing, accessibility and platform-specific testing, and CI coverage strategy.
 
 **Prerequisites:** Module 11, Module 21.
+
+### Module 26: UI/UX Automation Testing (6 videos)
+Real interaction testing across platforms with recorded automation challenges. Speed mode testing (slow, normal, fast), platform-specific adapters (Desktop xdotool, Web Playwright, Android ADB), recording pipelines, and validation.
+
+**Prerequisites:** Module 20, Module 21.
+
+### Module 27: Non-Blocking Architecture (8 videos)
+Non-blocking patterns in Yole: Dispatchers.IO/Default/Main usage, suspend function design, lazy initialization cascade (FormatRegistry, StyleSheets, HttpClient, OAuth2Flow), Wasm single-thread safety, platformSynchronized rationale, and protocol service non-blocking patterns.
+
+**Prerequisites:** Module 9, Module 22.
+
+### Module 28: Test Coverage Mastery (8 videos)
+All 16 test types explained: unit, integration, stress, fuzz, snapshot, load, E2E, performance, accessibility, security, resilience, property-based, contract, non-blocking, supremacy, and mock HTTP. When to use each type, examples from Yole's 10,000+ test suite, and scaling strategies.
+
+**Prerequisites:** Module 11, Module 25.
+
+### Module 29: Performance Optimization Advanced (8 videos)
+PerformanceMetrics infrastructure, MetricsSnapshot data model, tiered caching (DocumentCache LRU, StyleSheets cache, ParsedDocument lazy HTML), platform-aware semaphores, configurable parse concurrency, async format detection for 17 text formats plus binary detection, and parser-specific optimization.
+
+**Prerequisites:** Module 24, Module 27.
+
+### Module 30: Autonomous QA (8 videos)
+HelixQA pipeline: DocProcessor (219 tests) for code analysis, LLMOrchestrator (247 tests) for multi-agent coordination, VisionEngine (262 tests) for visual analysis. SessionCoordinator, PlatformWorker, issue detection, ticket generation, and evidence collection across all platforms.
+
+**Prerequisites:** Module 16, Module 25.
+
+### Module 31: Project Completion Guide (8 videos)
+How the 9-phase comprehensive completion plan was designed and executed. Build-Test-Document pipeline methodology, audit methodology with 6 parallel exploration agents, phase dependencies, verification approach, and lessons learned for applying to your own KMP projects.
+
+**Prerequisites:** Modules 9-30 (or equivalent familiarity with the full project).
 
 ## Production Details
 
@@ -201,7 +237,7 @@ Module 19 -> 1 -> 13 -> 4
 Modules 1 -> 14 -> 15 -> 16 -> 10
 
 ### Performance / Architecture Focus
-Modules 1 -> 5 -> 6 -> 9 -> 17 -> 21 -> 24
+Modules 1 -> 5 -> 6 -> 9 -> 17 -> 21 -> 24 -> 29
 
 ### Platform / KMP Focus
 Modules 1 -> 4 -> 9 -> 20 -> 11 -> 21
@@ -213,4 +249,10 @@ Modules 1 -> 14 -> 11 -> 18 -> 16
 Modules 1 -> 14 -> 15 -> 23 -> 10
 
 ### Concurrency / Testing Deep Dive
-Modules 1 -> 9 -> 22 -> 11 -> 21 -> 25
+Modules 1 -> 9 -> 22 -> 11 -> 21 -> 25 -> 27 -> 28
+
+### Autonomous QA
+Modules 1 -> 9 -> 11 -> 25 -> 30
+
+### Project Completion
+Modules 1 -> 9 -> 11 -> 18 -> 31
