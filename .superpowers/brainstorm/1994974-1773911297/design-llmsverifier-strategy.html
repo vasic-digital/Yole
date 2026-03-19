@@ -1,0 +1,150 @@
+<h2>Design Section 2: LLMsVerifier Strategy Extension</h2>
+<p class="subtitle">Interface-based Strategy pattern with RecipeBuilder for pluggable scoring</p>
+
+<div class="mockup">
+  <div class="mockup-header">Strategy Pattern — Type Hierarchy</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e">
+    <div style="color:#e0e0e0">
+      <div style="color:#ffe66d;font-weight:bold">// ═══ Core Interfaces ═══</div>
+      <div style="margin-top:8px">
+        <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">ScoringStrategy</span> <span style="color:#ff6b6b">interface</span> {
+      </div>
+      <div>&nbsp;&nbsp;<span style="color:#88d8b0">Name()</span> string</div>
+      <div>&nbsp;&nbsp;<span style="color:#88d8b0">Description()</span> string</div>
+      <div>&nbsp;&nbsp;<span style="color:#88d8b0">WeightConfig()</span> WeightConfig</div>
+      <div>&nbsp;&nbsp;<span style="color:#88d8b0">CustomTests()</span> []VerificationTest</div>
+      <div>&nbsp;&nbsp;<span style="color:#88d8b0">ScoreModel(ctx, ModelInfo, []TestResult)</span> (StrategyScore, error)</div>
+      <div>&nbsp;&nbsp;<span style="color:#88d8b0">FilterModels([]ModelInfo)</span> []ModelInfo</div>
+      <div>&nbsp;&nbsp;<span style="color:#88d8b0">MinimumThresholds()</span> Thresholds</div>
+      <div>}</div>
+
+      <div style="margin-top:16px">
+        <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">VerificationTest</span> <span style="color:#ff6b6b">interface</span> {
+      </div>
+      <div>&nbsp;&nbsp;<span style="color:#88d8b0">ID()</span> string</div>
+      <div>&nbsp;&nbsp;<span style="color:#88d8b0">Name()</span> string</div>
+      <div>&nbsp;&nbsp;<span style="color:#88d8b0">Category()</span> TestCategory</div>
+      <div>&nbsp;&nbsp;<span style="color:#88d8b0">Run(ctx, LLMClient)</span> (TestResult, error)</div>
+      <div>&nbsp;&nbsp;<span style="color:#88d8b0">Weight()</span> float64</div>
+      <div>&nbsp;&nbsp;<span style="color:#88d8b0">Required()</span> bool <span style="color:#666">// fail-fast if required test fails</span></div>
+      <div>}</div>
+
+      <div style="margin-top:16px">
+        <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">RecipeStep</span> <span style="color:#ff6b6b">interface</span> {
+      </div>
+      <div>&nbsp;&nbsp;<span style="color:#88d8b0">Apply(builder *StrategyBuilder)</span> *StrategyBuilder</div>
+      <div>}</div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">RecipeBuilder — Fluent API</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e">
+    <div style="color:#e0e0e0">
+      <div style="color:#ffe66d;font-weight:bold">// ═══ Builder Pattern ═══</div>
+      <div style="margin-top:8px">
+        strategy := NewStrategyBuilder(<span style="color:#ffe66d">"helix-qa"</span>).
+      </div>
+      <div>&nbsp;&nbsp;.<span style="color:#4ecdc4">WithDescription</span>(<span style="color:#ffe66d">"Optimized for autonomous QA sessions"</span>).</div>
+      <div>&nbsp;&nbsp;.<span style="color:#4ecdc4">WithWeights</span>(WeightConfig{</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;Responsiveness: <span style="color:#ff6b6b">0.15</span>, <span style="color:#666">// less important for QA</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;CodeCapability: <span style="color:#ff6b6b">0.10</span>, <span style="color:#666">// not coding</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;FeatureRichness: <span style="color:#ff6b6b">0.15</span>,</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;Reliability: <span style="color:#ff6b6b">0.20</span>, <span style="color:#666">// must be stable for long sessions</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;VisionCapability: <span style="color:#ff6b6b">0.25</span>, <span style="color:#666">// NEW: critical for QA</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;InstructionFollowing: <span style="color:#ff6b6b">0.15</span>, <span style="color:#666">// NEW: precise actions</span></div>
+      <div>&nbsp;&nbsp;}).</div>
+      <div>&nbsp;&nbsp;<span style="color:#888">// Built-in recipe steps</span></div>
+      <div>&nbsp;&nbsp;.<span style="color:#4ecdc4">WithRecipe</span>(recipes.<span style="color:#88d8b0">VisionTest</span>()). <span style="color:#666">// screenshot analysis test</span></div>
+      <div>&nbsp;&nbsp;.<span style="color:#4ecdc4">WithRecipe</span>(recipes.<span style="color:#88d8b0">InstructionFollowingTest</span>()). <span style="color:#666">// action precision test</span></div>
+      <div>&nbsp;&nbsp;.<span style="color:#4ecdc4">WithRecipe</span>(recipes.<span style="color:#88d8b0">ContextWindowTest</span>(minTokens: <span style="color:#ff6b6b">100000</span>)).</div>
+      <div>&nbsp;&nbsp;.<span style="color:#4ecdc4">WithRecipe</span>(recipes.<span style="color:#88d8b0">StreamingReliabilityTest</span>()).</div>
+      <div>&nbsp;&nbsp;.<span style="color:#4ecdc4">WithRecipe</span>(recipes.<span style="color:#88d8b0">LongSessionStabilityTest</span>(duration: <span style="color:#ff6b6b">30*time.Minute</span>)).</div>
+      <div>&nbsp;&nbsp;<span style="color:#888">// Custom test</span></div>
+      <div>&nbsp;&nbsp;.<span style="color:#4ecdc4">WithTest</span>(&NavigationCommandTest{}).</div>
+      <div>&nbsp;&nbsp;<span style="color:#888">// Filters</span></div>
+      <div>&nbsp;&nbsp;.<span style="color:#4ecdc4">RequireCapability</span>(<span style="color:#ffe66d">"vision"</span>).</div>
+      <div>&nbsp;&nbsp;.<span style="color:#4ecdc4">RequireCapability</span>(<span style="color:#ffe66d">"streaming"</span>).</div>
+      <div>&nbsp;&nbsp;.<span style="color:#4ecdc4">MinContextWindow</span>(<span style="color:#ff6b6b">50000</span>).</div>
+      <div>&nbsp;&nbsp;<span style="color:#888">// Thresholds</span></div>
+      <div>&nbsp;&nbsp;.<span style="color:#4ecdc4">MinScore</span>(<span style="color:#ff6b6b">0.6</span>).</div>
+      <div>&nbsp;&nbsp;.<span style="color:#4ecdc4">MaxLatency</span>(<span style="color:#ff6b6b">10 * time.Second</span>).</div>
+      <div>&nbsp;&nbsp;.<span style="color:#4ecdc4">Build</span>()</div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Implementations — Default vs QA Strategy</div>
+  <div class="mockup-body" style="padding:20px;background:#1a1a2e">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div style="border:1px solid #4ecdc4;border-radius:8px;padding:12px">
+        <div style="color:#4ecdc4;font-weight:bold;font-size:13px;margin-bottom:8px">DefaultStrategy (existing behavior)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.6">
+          Weights:<br>
+          &nbsp;&nbsp;Responsiveness: <span style="color:#ff6b6b">30%</span><br>
+          &nbsp;&nbsp;CodeCapability: <span style="color:#ff6b6b">25%</span><br>
+          &nbsp;&nbsp;FeatureRichness: <span style="color:#ff6b6b">25%</span><br>
+          &nbsp;&nbsp;Reliability: <span style="color:#ff6b6b">20%</span><br><br>
+          Tests: existence, responsiveness,<br>
+          &nbsp;&nbsp;latency, features, coding, errors<br><br>
+          Filter: none (all models eligible)<br>
+          Threshold: min score 0.0
+        </div>
+      </div>
+      <div style="border:1px solid #ff6b6b;border-radius:8px;padding:12px">
+        <div style="color:#ff6b6b;font-weight:bold;font-size:13px;margin-bottom:8px">QAStrategy (HelixQA injects)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.6">
+          Weights:<br>
+          &nbsp;&nbsp;VisionCapability: <span style="color:#4ecdc4">25%</span><br>
+          &nbsp;&nbsp;Reliability: <span style="color:#4ecdc4">20%</span><br>
+          &nbsp;&nbsp;InstructionFollow: <span style="color:#4ecdc4">15%</span><br>
+          &nbsp;&nbsp;Responsiveness: <span style="color:#4ecdc4">15%</span><br>
+          &nbsp;&nbsp;FeatureRichness: <span style="color:#4ecdc4">15%</span><br>
+          &nbsp;&nbsp;CodeCapability: <span style="color:#4ecdc4">10%</span><br><br>
+          Tests: all default + vision test,<br>
+          &nbsp;&nbsp;instruction test, context window,<br>
+          &nbsp;&nbsp;streaming reliability, long session<br><br>
+          Filter: must have vision + streaming<br>
+          Threshold: min score 0.6
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">File Structure — LLMsVerifier Changes</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div>llm-verifier/llmverifier/</div>
+    <div style="color:#88d8b0">&nbsp;&nbsp;├─ strategy.go <span style="color:#666">// ScoringStrategy interface</span></div>
+    <div style="color:#88d8b0">&nbsp;&nbsp;├─ strategy_default.go <span style="color:#666">// DefaultStrategy (wraps current behavior)</span></div>
+    <div style="color:#88d8b0">&nbsp;&nbsp;├─ strategy_builder.go <span style="color:#666">// StrategyBuilder fluent API</span></div>
+    <div style="color:#88d8b0">&nbsp;&nbsp;├─ strategy_test.go</div>
+    <div style="color:#88d8b0">&nbsp;&nbsp;├─ strategy_builder_test.go</div>
+    <div style="color:#88d8b0">&nbsp;&nbsp;├─ strategy_integration_test.go</div>
+    <div>&nbsp;&nbsp;├─ recipes/</div>
+    <div style="color:#88d8b0">&nbsp;&nbsp;│&nbsp;&nbsp;├─ recipe.go <span style="color:#666">// RecipeStep interface + base recipes</span></div>
+    <div style="color:#88d8b0">&nbsp;&nbsp;│&nbsp;&nbsp;├─ vision.go <span style="color:#666">// VisionTest recipe</span></div>
+    <div style="color:#88d8b0">&nbsp;&nbsp;│&nbsp;&nbsp;├─ instruction.go <span style="color:#666">// InstructionFollowingTest</span></div>
+    <div style="color:#88d8b0">&nbsp;&nbsp;│&nbsp;&nbsp;├─ context_window.go <span style="color:#666">// ContextWindowTest</span></div>
+    <div style="color:#88d8b0">&nbsp;&nbsp;│&nbsp;&nbsp;├─ streaming.go <span style="color:#666">// StreamingReliabilityTest</span></div>
+    <div style="color:#88d8b0">&nbsp;&nbsp;│&nbsp;&nbsp;├─ long_session.go <span style="color:#666">// LongSessionStabilityTest</span></div>
+    <div style="color:#88d8b0">&nbsp;&nbsp;│&nbsp;&nbsp;├─ recipes_test.go</div>
+    <div style="color:#88d8b0">&nbsp;&nbsp;│&nbsp;&nbsp;└─ recipes_stress_test.go</div>
+    <div>&nbsp;&nbsp;├─ verifier.go <span style="color:#666">// MODIFIED: accepts ScoringStrategy</span></div>
+    <div>&nbsp;&nbsp;├─ models.go <span style="color:#666">// MODIFIED: WeightConfig extended</span></div>
+    <div>&nbsp;&nbsp;└─ scoring.go <span style="color:#666">// MODIFIED: delegates to strategy</span></div>
+  </div>
+</div>
+
+<div style="margin-top:20px;padding:16px;border:1px solid #444;border-radius:8px">
+  <h3>Backward Compatibility</h3>
+  <p style="color:#aaa;font-size:14px;line-height:1.8">
+    The existing <code>Verify()</code> function without a strategy uses <code>DefaultStrategy</code> automatically.
+    New <code>VerifyWithStrategy(ctx, strategy ScoringStrategy)</code> accepts custom strategies.
+    All current tests continue to pass unchanged — <code>DefaultStrategy</code> produces identical scores to current behavior.
+    The <code>CalculateScores()</code> method delegates to the active strategy's <code>ScoreModel()</code>.
+  </p>
+</div>

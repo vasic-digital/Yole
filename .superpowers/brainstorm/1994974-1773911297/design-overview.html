@@ -1,0 +1,157 @@
+<h2>Design Section 1: System Overview</h2>
+<p class="subtitle">Full module map and data flow for Autonomous QA Session</p>
+
+<div class="mockup">
+  <div class="mockup-header">System Architecture — Module Dependencies</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.6;padding:20px;background:#1a1a2e">
+    <div style="color:#e0e0e0">
+      <div style="text-align:center;color:#ffe66d;font-weight:bold;margin-bottom:16px">═══════════════════ EXTERNAL MODULES (Git Submodules) ═══════════════════</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+        <div style="border:2px solid #ff6b6b;border-radius:8px;padding:12px;background:#2a1a2e">
+          <div style="color:#ff6b6b;font-weight:bold;text-align:center">LLMsVerifier</div>
+          <div style="color:#aaa;font-size:11px;margin-top:4px">
+            ├─ ScoringStrategy interface<br>
+            ├─ RecipeBuilder<br>
+            ├─ DefaultStrategy<br>
+            ├─ QAStrategy (new)<br>
+            ├─ 12 LLM providers<br>
+            └─ Verification engine
+          </div>
+        </div>
+        <div style="border:2px solid #4ecdc4;border-radius:8px;padding:12px;background:#1a2e2e">
+          <div style="color:#4ecdc4;font-weight:bold;text-align:center">LLMOrchestrator</div>
+          <div style="color:#aaa;font-size:11px;margin-top:4px">
+            ├─ Agent interface<br>
+            ├─ CLI adapters (5 tools)<br>
+            ├─ Pipe + File protocol<br>
+            ├─ Agent pool manager<br>
+            ├─ Response parser<br>
+            └─ Health monitoring
+          </div>
+        </div>
+        <div style="border:2px solid #c9b1ff;border-radius:8px;padding:12px;background:#2a1a3e">
+          <div style="color:#c9b1ff;font-weight:bold;text-align:center">VisionEngine</div>
+          <div style="color:#aaa;font-size:11px;margin-top:4px">
+            ├─ GoCV core ops<br>
+            ├─ LLM Vision adapters<br>
+            ├─ Screenshot differ<br>
+            ├─ UI element detector<br>
+            ├─ Navigation graph<br>
+            └─ Video frame extractor
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+        <div style="border:2px solid #ffe66d;border-radius:8px;padding:12px;background:#2e2a1a">
+          <div style="color:#ffe66d;font-weight:bold;text-align:center">DocProcessor</div>
+          <div style="color:#aaa;font-size:11px;margin-top:4px">
+            ├─ Markdown/YAML parser<br>
+            ├─ Feature map builder<br>
+            ├─ Doc graph (links)<br>
+            ├─ Coverage tracker<br>
+            ├─ LLM summarizer<br>
+            └─ Diagram extractor
+          </div>
+        </div>
+        <div style="border:2px solid #88d8b0;border-radius:8px;padding:12px;background:#1a2e1a">
+          <div style="color:#88d8b0;font-weight:bold;text-align:center">Challenges</div>
+          <div style="color:#aaa;font-size:11px;margin-top:4px">
+            ├─ Test runner<br>
+            ├─ Bank management<br>
+            ├─ Assertion engine<br>
+            └─ Report generation
+          </div>
+        </div>
+        <div style="border:2px solid #ffa07a;border-radius:8px;padding:12px;background:#2e1a1a">
+          <div style="color:#ffa07a;font-weight:bold;text-align:center">Containers</div>
+          <div style="color:#aaa;font-size:11px;margin-top:4px">
+            ├─ Runtime abstraction<br>
+            ├─ Health checks<br>
+            ├─ Resource monitoring<br>
+            └─ Remote distribution
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;color:#ffe66d;font-weight:bold;margin-bottom:16px">════════════════════════ HelixQA (Orchestrator) ════════════════════════</div>
+
+      <div style="border:3px solid #fff;border-radius:12px;padding:16px;background:#1e1e3e">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
+          <div style="border:1px solid #666;border-radius:6px;padding:8px;text-align:center">
+            <div style="color:#ff6b6b;font-size:11px;font-weight:bold">pkg/autonomous</div>
+            <div style="color:#888;font-size:10px">SessionCoordinator<br>PlatformWorker<br>PhaseManager</div>
+          </div>
+          <div style="border:1px solid #666;border-radius:6px;padding:8px;text-align:center">
+            <div style="color:#4ecdc4;font-size:11px;font-weight:bold">pkg/navigator</div>
+            <div style="color:#888;font-size:10px">NavigationEngine<br>ActionExecutor<br>StateTracker</div>
+          </div>
+          <div style="border:1px solid #666;border-radius:6px;padding:8px;text-align:center">
+            <div style="color:#c9b1ff;font-size:11px;font-weight:bold">pkg/issuedetector</div>
+            <div style="color:#888;font-size:10px">LLM-powered detector<br>UX analyzer<br>Crash correlator</div>
+          </div>
+          <div style="border:1px solid #666;border-radius:6px;padding:8px;text-align:center">
+            <div style="color:#ffe66d;font-size:11px;font-weight:bold">pkg/session</div>
+            <div style="color:#888;font-size:10px">Recording manager<br>Timeline events<br>Timestamp linker</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-top:10px">
+          <div style="border:1px solid #555;border-radius:6px;padding:8px;text-align:center;background:#1a1a28">
+            <div style="color:#88d8b0;font-size:11px">pkg/config</div>
+          </div>
+          <div style="border:1px solid #555;border-radius:6px;padding:8px;text-align:center;background:#1a1a28">
+            <div style="color:#88d8b0;font-size:11px">pkg/testbank</div>
+          </div>
+          <div style="border:1px solid #555;border-radius:6px;padding:8px;text-align:center;background:#1a1a28">
+            <div style="color:#88d8b0;font-size:11px">pkg/evidence</div>
+          </div>
+          <div style="border:1px solid #555;border-radius:6px;padding:8px;text-align:center;background:#1a1a28">
+            <div style="color:#88d8b0;font-size:11px">pkg/ticket</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-top:10px">
+          <div style="border:1px solid #555;border-radius:6px;padding:8px;text-align:center;background:#1a1a28">
+            <div style="color:#88d8b0;font-size:11px">pkg/detector</div>
+          </div>
+          <div style="border:1px solid #555;border-radius:6px;padding:8px;text-align:center;background:#1a1a28">
+            <div style="color:#88d8b0;font-size:11px">pkg/validator</div>
+          </div>
+          <div style="border:1px solid #555;border-radius:6px;padding:8px;text-align:center;background:#1a1a28">
+            <div style="color:#88d8b0;font-size:11px">pkg/reporter</div>
+          </div>
+          <div style="border:1px solid #555;border-radius:6px;padding:8px;text-align:center;background:#1a1a28">
+            <div style="color:#88d8b0;font-size:11px">pkg/orchestrator</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:16px;color:#ffe66d;font-weight:bold">══════════════════════════ Data Flow ══════════════════════════</div>
+      <div style="margin-top:12px;padding:12px;border:1px solid #444;border-radius:8px;background:#12122a">
+        <div style="color:#ff6b6b">① LLMsVerifier</div>
+        <div style="color:#888">&nbsp;&nbsp;→ Scores LLMs with QAStrategy → returns ranked model list</div>
+        <div style="color:#ffe66d;margin-top:8px">② DocProcessor</div>
+        <div style="color:#888">&nbsp;&nbsp;→ Loads docs → builds FeatureMap{screens, workflows, expectations}</div>
+        <div style="color:#4ecdc4;margin-top:8px">③ LLMOrchestrator</div>
+        <div style="color:#888">&nbsp;&nbsp;→ Spawns CLI agents with selected LLMs → returns Agent pool</div>
+        <div style="color:#c9b1ff;margin-top:8px">④ Per-Platform Workers (parallel)</div>
+        <div style="color:#888">&nbsp;&nbsp;→ VisionEngine captures screen → Agent analyzes → Navigator acts</div>
+        <div style="color:#888">&nbsp;&nbsp;→ IssueDetector flags problems → Ticket generated with evidence</div>
+        <div style="color:#888">&nbsp;&nbsp;→ Session records video + screenshots + timeline events</div>
+        <div style="color:#88d8b0;margin-top:8px">⑤ Report Aggregation</div>
+        <div style="color:#888">&nbsp;&nbsp;→ All tickets + evidence + coverage → final QA report</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:24px;padding:16px;border:1px solid #444;border-radius:8px">
+  <h3>Module Dependency Order</h3>
+  <p style="color:#aaa;font-size:14px;line-height:1.8">
+    <strong style="color:#ff6b6b">LLMsVerifier</strong> (no project deps) →
+    <strong style="color:#ffe66d">DocProcessor</strong> (no project deps) →
+    <strong style="color:#4ecdc4">LLMOrchestrator</strong> (depends on LLMsVerifier for model selection) →
+    <strong style="color:#c9b1ff">VisionEngine</strong> (depends on LLMOrchestrator for LLM Vision calls) →
+    <strong style="color:#fff">HelixQA</strong> (depends on all above + Challenges + Containers)
+  </p>
+</div>

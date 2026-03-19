@@ -1,0 +1,282 @@
+<h2>Design Section 7: Session Recording, Ticket Linking & Configuration</h2>
+<p class="subtitle">Video recording, timestamp-linked tickets, and .env-driven configuration</p>
+
+<div class="mockup">
+  <div class="mockup-header">pkg/session — Recording & Timeline</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div style="color:#ffe66d;font-weight:bold">// ═══ Session Recorder ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">SessionRecorder</span> <span style="color:#ff6b6b">struct</span> {
+    </div>
+    <div>&nbsp;&nbsp;sessionID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string</div>
+    <div>&nbsp;&nbsp;outputDir&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string</div>
+    <div>&nbsp;&nbsp;videos&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;map[string]*VideoManager <span style="color:#666">// platform → video</span></div>
+    <div>&nbsp;&nbsp;timeline&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*Timeline</div>
+    <div>&nbsp;&nbsp;screenshotIdx&nbsp;int</div>
+    <div>&nbsp;&nbsp;mu&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sync.Mutex</div>
+    <div>}</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">func</span> (sr) <span style="color:#88d8b0">StartRecording</span>(ctx, platform string) error
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (sr) <span style="color:#88d8b0">StopRecording</span>(ctx, platform string) (string, error) <span style="color:#666">// returns video path</span>
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (sr) <span style="color:#88d8b0">CaptureScreenshot</span>(ctx, platform, name string) (Screenshot, error)
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (sr) <span style="color:#88d8b0">RecordEvent</span>(event TimelineEvent)
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (sr) <span style="color:#88d8b0">VideoTimestamp</span>(platform string) time.Duration <span style="color:#666">// current offset</span>
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (sr) <span style="color:#88d8b0">ExportTimeline</span>() []TimelineEvent</div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ Timeline Event ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">TimelineEvent</span> <span style="color:#ff6b6b">struct</span> {
+    </div>
+    <div>&nbsp;&nbsp;ID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string</div>
+    <div>&nbsp;&nbsp;Type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;EventType <span style="color:#666">// action, screenshot, issue, phase_change, crash, navigation</span></div>
+    <div>&nbsp;&nbsp;Platform&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string</div>
+    <div>&nbsp;&nbsp;Timestamp&nbsp;&nbsp;&nbsp;&nbsp;time.Time <span style="color:#666">// wall clock</span></div>
+    <div>&nbsp;&nbsp;VideoOffset&nbsp;&nbsp;time.Duration <span style="color:#666">// offset into platform video</span></div>
+    <div>&nbsp;&nbsp;ScreenID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string <span style="color:#666">// which screen this happened on</span></div>
+    <div>&nbsp;&nbsp;Description&nbsp;&nbsp;string</div>
+    <div>&nbsp;&nbsp;ScreenshotPath string <span style="color:#666">// if screenshot was taken</span></div>
+    <div>&nbsp;&nbsp;IssueID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string <span style="color:#666">// if this event is linked to a ticket</span></div>
+    <div>&nbsp;&nbsp;FeatureID&nbsp;&nbsp;&nbsp;&nbsp;string <span style="color:#666">// if verifying a feature</span></div>
+    <div>&nbsp;&nbsp;Metadata&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;map[string]string</div>
+    <div>}</div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ Video Manager (ffmpeg wrapper) ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">VideoManager</span> <span style="color:#ff6b6b">struct</span> {
+    </div>
+    <div>&nbsp;&nbsp;platform&nbsp;&nbsp;&nbsp;&nbsp;string</div>
+    <div>&nbsp;&nbsp;outputPath&nbsp;&nbsp;string</div>
+    <div>&nbsp;&nbsp;process&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*exec.Cmd <span style="color:#666">// ffmpeg process</span></div>
+    <div>&nbsp;&nbsp;startedAt&nbsp;&nbsp;&nbsp;time.Time</div>
+    <div>&nbsp;&nbsp;recording&nbsp;&nbsp;&nbsp;bool</div>
+    <div>&nbsp;&nbsp;mu&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sync.Mutex</div>
+    <div>}</div>
+    <div style="margin-top:8px;color:#666">
+      // Android: adb screenrecord (or scrcpy piped to ffmpeg)<br>
+      // Desktop: ffmpeg -f x11grab (Linux) / -f avfoundation (macOS)<br>
+      // Web: Playwright video recording API
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Enhanced Ticket Format — Video Timestamp Linking</div>
+  <div class="mockup-body" style="padding:20px;background:#1a1a2e">
+    <div style="border:1px solid #ff6b6b;border-radius:8px;padding:16px">
+      <div style="font-family:monospace;font-size:12px;line-height:1.8;color:#e0e0e0">
+        <div style="color:#ff6b6b;font-weight:bold;font-size:14px">HQA-0042: Button text truncated on Android settings screen</div>
+        <div style="margin-top:8px;color:#aaa">
+          <strong>Severity:</strong> <span style="color:#ffe66d">Medium</span> |
+          <strong>Platform:</strong> Android |
+          <strong>Category:</strong> Visual Bug |
+          <strong>Feature:</strong> feat-settings-page
+        </div>
+        <div style="margin-top:12px;color:#aaa">
+          <strong>Description:</strong><br>
+          The "Export All Documents" button text is truncated to "Export All Do..." on devices
+          with small screen widths. The button container does not wrap text or scale font size.
+        </div>
+        <div style="margin-top:12px;color:#4ecdc4;font-weight:bold">Steps to Reproduce:</div>
+        <div style="color:#aaa">
+          1. Open app on Android device (Pixel 5)<br>
+          2. Navigate: Home → Settings (hamburger menu)<br>
+          3. Scroll down to "Data Management" section<br>
+          4. Observe "Export All Documents" button
+        </div>
+        <div style="margin-top:12px;color:#c9b1ff;font-weight:bold">Evidence:</div>
+        <div style="color:#aaa">
+          📸 Screenshots:<br>
+          &nbsp;&nbsp;• <span style="color:#88d8b0">pre-action:</span> screenshots/android/042-settings-before.png<br>
+          &nbsp;&nbsp;• <span style="color:#88d8b0">post-action:</span> screenshots/android/042-settings-truncated.png<br>
+          &nbsp;&nbsp;• <span style="color:#88d8b0">annotated:</span> screenshots/android/042-annotated.png <span style="color:#666">(red box around issue)</span><br>
+          <br>
+          🎬 Video references:<br>
+          &nbsp;&nbsp;• <span style="color:#ffe66d">videos/android-session.mp4 @ 14:32</span> — navigating to settings<br>
+          &nbsp;&nbsp;• <span style="color:#ffe66d">videos/android-session.mp4 @ 14:47</span> — truncation visible<br>
+          <br>
+          📋 Logs:<br>
+          &nbsp;&nbsp;• logs/android/042-logcat.txt
+        </div>
+        <div style="margin-top:12px;color:#88d8b0;font-weight:bold">LLM Analysis:</div>
+        <div style="color:#aaa">
+          The button uses a fixed-width container (240dp) that doesn't account for
+          longer text strings. Recommended fix: use wrap_content width with a
+          minWidth constraint, or reduce font size with autoSizeTextType.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">.env Configuration — Full Reference</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:11px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div style="color:#ff6b6b;font-weight:bold"># ═══ Autonomous QA Session — Master Switch ═══</div>
+    <div>HELIX_AUTONOMOUS_ENABLED=<span style="color:#88d8b0">true</span> <span style="color:#666"># enabled by default</span></div>
+    <div>HELIX_AUTONOMOUS_PLATFORMS=<span style="color:#88d8b0">android,desktop,web</span></div>
+    <div>HELIX_AUTONOMOUS_TIMEOUT=<span style="color:#88d8b0">2h</span></div>
+    <div>HELIX_AUTONOMOUS_COVERAGE_TARGET=<span style="color:#88d8b0">0.90</span></div>
+    <div>HELIX_AUTONOMOUS_CURIOSITY_ENABLED=<span style="color:#88d8b0">true</span></div>
+    <div>HELIX_AUTONOMOUS_CURIOSITY_TIMEOUT=<span style="color:#88d8b0">30m</span></div>
+
+    <div style="margin-top:12px;color:#4ecdc4;font-weight:bold"># ═══ LLMsVerifier ═══</div>
+    <div>LLMSVERIFIER_CONFIG=<span style="color:#88d8b0">./llmsverifier.yaml</span></div>
+    <div>LLMSVERIFIER_STRATEGY=<span style="color:#88d8b0">helix-qa</span> <span style="color:#666"># "default" or "helix-qa"</span></div>
+    <div>LLMSVERIFIER_MIN_SCORE=<span style="color:#88d8b0">0.6</span></div>
+    <div>LLMSVERIFIER_MAX_MODELS=<span style="color:#88d8b0">5</span></div>
+    <div>LLMSVERIFIER_CACHE_RESULTS=<span style="color:#88d8b0">true</span></div>
+    <div>LLMSVERIFIER_CACHE_TTL=<span style="color:#88d8b0">24h</span></div>
+
+    <div style="margin-top:12px;color:#c9b1ff;font-weight:bold"># ═══ LLM API Keys (used by LLMsVerifier + LLMOrchestrator) ═══</div>
+    <div>OPENAI_API_KEY=<span style="color:#888">sk-...</span></div>
+    <div>ANTHROPIC_API_KEY=<span style="color:#888">sk-ant-...</span></div>
+    <div>GOOGLE_API_KEY=<span style="color:#888">AI...</span></div>
+    <div>GROQ_API_KEY=<span style="color:#888">gsk_...</span></div>
+    <div>MISTRAL_API_KEY=<span style="color:#888">...</span></div>
+    <div>DEEPSEEK_API_KEY=<span style="color:#888">...</span></div>
+    <div>XAI_API_KEY=<span style="color:#888">...</span></div>
+    <div>TOGETHER_API_KEY=<span style="color:#888">...</span></div>
+    <div>QWEN_API_KEY=<span style="color:#888">...</span></div>
+    <div>JUNIE_API_KEY=<span style="color:#888">...</span></div>
+
+    <div style="margin-top:12px;color:#ffe66d;font-weight:bold"># ═══ CLI Agent Configuration ═══</div>
+    <div>HELIX_AGENTS_ENABLED=<span style="color:#88d8b0">opencode,claude-code,gemini</span> <span style="color:#666"># which to use</span></div>
+    <div>HELIX_AGENT_OPENCODE_PATH=<span style="color:#88d8b0">/usr/local/bin/opencode</span></div>
+    <div>HELIX_AGENT_CLAUDE_PATH=<span style="color:#88d8b0">/usr/local/bin/claude</span></div>
+    <div>HELIX_AGENT_GEMINI_PATH=<span style="color:#88d8b0">/usr/local/bin/gemini</span></div>
+    <div>HELIX_AGENT_JUNIE_PATH=<span style="color:#88d8b0">/usr/local/bin/junie</span></div>
+    <div>HELIX_AGENT_QWEN_PATH=<span style="color:#88d8b0">/usr/local/bin/qwen-code</span></div>
+    <div>HELIX_AGENT_TIMEOUT=<span style="color:#88d8b0">60s</span> <span style="color:#666"># per-request timeout</span></div>
+    <div>HELIX_AGENT_MAX_RETRIES=<span style="color:#88d8b0">3</span></div>
+    <div>HELIX_AGENT_POOL_SIZE=<span style="color:#88d8b0">3</span> <span style="color:#666"># max concurrent agents</span></div>
+
+    <div style="margin-top:12px;color:#88d8b0;font-weight:bold"># ═══ Vision Engine ═══</div>
+    <div>HELIX_VISION_PROVIDER=<span style="color:#88d8b0">auto</span> <span style="color:#666"># auto, openai, anthropic, gemini, qwen</span></div>
+    <div>HELIX_VISION_OPENCV_ENABLED=<span style="color:#88d8b0">true</span></div>
+    <div>HELIX_VISION_SSIM_THRESHOLD=<span style="color:#88d8b0">0.95</span> <span style="color:#666"># screens below this are "different"</span></div>
+    <div>HELIX_VISION_MAX_IMAGE_SIZE=<span style="color:#88d8b0">4096</span> <span style="color:#666"># max px dimension before resize</span></div>
+
+    <div style="margin-top:12px;color:#ffa07a;font-weight:bold"># ═══ Doc Processor ═══</div>
+    <div>HELIX_DOCS_ROOT=<span style="color:#88d8b0">./docs</span> <span style="color:#666"># additional doc paths (comma-separated)</span></div>
+    <div>HELIX_DOCS_AUTO_DISCOVER=<span style="color:#88d8b0">true</span></div>
+    <div>HELIX_DOCS_FORMATS=<span style="color:#88d8b0">md,yaml,html,adoc,rst</span></div>
+
+    <div style="margin-top:12px;color:#fff;font-weight:bold"># ═══ Recording ═══</div>
+    <div>HELIX_RECORDING_VIDEO=<span style="color:#88d8b0">true</span></div>
+    <div>HELIX_RECORDING_SCREENSHOTS=<span style="color:#88d8b0">true</span></div>
+    <div>HELIX_RECORDING_VIDEO_QUALITY=<span style="color:#88d8b0">medium</span> <span style="color:#666"># low, medium, high</span></div>
+    <div>HELIX_RECORDING_SCREENSHOT_FORMAT=<span style="color:#88d8b0">png</span> <span style="color:#666"># png, jpg</span></div>
+    <div>HELIX_RECORDING_FFMPEG_PATH=<span style="color:#88d8b0">/usr/bin/ffmpeg</span></div>
+
+    <div style="margin-top:12px;color:#666;font-weight:bold"># ═══ Platform-specific ═══</div>
+    <div>HELIX_ANDROID_DEVICE=<span style="color:#888">emulator-5554</span></div>
+    <div>HELIX_ANDROID_PACKAGE=<span style="color:#888">digital.vasic.yole</span></div>
+    <div>HELIX_WEB_URL=<span style="color:#888">http://localhost:8080</span></div>
+    <div>HELIX_WEB_BROWSER=<span style="color:#888">chromium</span></div>
+    <div>HELIX_DESKTOP_PROCESS=<span style="color:#888">yole-desktop</span></div>
+    <div>HELIX_DESKTOP_DISPLAY=<span style="color:#888">:0</span></div>
+
+    <div style="margin-top:12px;color:#666;font-weight:bold"># ═══ Output ═══</div>
+    <div>HELIX_OUTPUT_DIR=<span style="color:#88d8b0">./qa-results</span></div>
+    <div>HELIX_REPORT_FORMATS=<span style="color:#88d8b0">markdown,html,json</span></div>
+    <div>HELIX_TICKETS_ENABLED=<span style="color:#88d8b0">true</span></div>
+    <div>HELIX_TICKETS_MIN_SEVERITY=<span style="color:#88d8b0">low</span> <span style="color:#666"># low, medium, high, critical</span></div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Existing Test Types — LLM Enhancement Retrofit</div>
+  <div class="mockup-body" style="padding:20px;background:#1a1a2e">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="border:1px solid #4ecdc4;border-radius:8px;padding:12px">
+        <div style="color:#4ecdc4;font-weight:bold;font-size:13px">pkg/detector (Enhanced)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.8;margin-top:6px">
+          <span style="color:#88d8b0">Before:</span> Regex-based crash log parsing<br>
+          <span style="color:#ff6b6b">After:</span> LLM analyzes crash logs for<br>
+          &nbsp;&nbsp;root cause, affected component,<br>
+          &nbsp;&nbsp;reproduction likelihood, severity<br>
+          New: <span style="color:#fff">LLMCrashAnalyzer</span> interface<br>
+          New: <span style="color:#fff">EnhancedDetectionResult</span> with<br>
+          &nbsp;&nbsp;LLMAnalysis field
+        </div>
+      </div>
+      <div style="border:1px solid #ff6b6b;border-radius:8px;padding:12px">
+        <div style="color:#ff6b6b;font-weight:bold;font-size:13px">pkg/validator (Enhanced)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.8;margin-top:6px">
+          <span style="color:#88d8b0">Before:</span> Binary pass/fail via crash check<br>
+          <span style="color:#ff6b6b">After:</span> LLM evaluates if step outcome<br>
+          &nbsp;&nbsp;matches expected result semantically<br>
+          New: <span style="color:#fff">LLMValidator</span> interface<br>
+          New: <span style="color:#fff">SemanticValidation</span> field on<br>
+          &nbsp;&nbsp;StepResult (confidence + reasoning)
+        </div>
+      </div>
+      <div style="border:1px solid #c9b1ff;border-radius:8px;padding:12px">
+        <div style="color:#c9b1ff;font-weight:bold;font-size:13px">pkg/evidence (Enhanced)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.8;margin-top:6px">
+          <span style="color:#88d8b0">Before:</span> Raw screenshot/logcat capture<br>
+          <span style="color:#ff6b6b">After:</span> LLM-annotated screenshots with<br>
+          &nbsp;&nbsp;highlighted issues, bounding boxes,<br>
+          &nbsp;&nbsp;textual annotations on images<br>
+          New: <span style="color:#fff">AnnotateScreenshot()</span> method<br>
+          New: <span style="color:#fff">AnnotatedItem</span> evidence type
+        </div>
+      </div>
+      <div style="border:1px solid #ffe66d;border-radius:8px;padding:12px">
+        <div style="color:#ffe66d;font-weight:bold;font-size:13px">pkg/ticket (Enhanced)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.8;margin-top:6px">
+          <span style="color:#88d8b0">Before:</span> Template-based markdown tickets<br>
+          <span style="color:#ff6b6b">After:</span> LLM-written tickets with:<br>
+          &nbsp;&nbsp;- Video timestamp references<br>
+          &nbsp;&nbsp;- Suggested fix from LLM analysis<br>
+          &nbsp;&nbsp;- Related features cross-reference<br>
+          New: <span style="color:#fff">VideoReference</span> struct<br>
+          New: <span style="color:#fff">LLMSuggestedFix</span> field
+        </div>
+      </div>
+      <div style="border:1px solid #88d8b0;border-radius:8px;padding:12px">
+        <div style="color:#88d8b0;font-weight:bold;font-size:13px">pkg/reporter (Enhanced)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.8;margin-top:6px">
+          <span style="color:#88d8b0">Before:</span> Stats-based QA report<br>
+          <span style="color:#ff6b6b">After:</span> LLM-generated executive summary,<br>
+          &nbsp;&nbsp;risk assessment, priority ranking,<br>
+          &nbsp;&nbsp;navigation map embed, coverage heatmap<br>
+          New: <span style="color:#fff">ExecutiveSummary</span> section<br>
+          New: <span style="color:#fff">NavigationMapEmbed</span> (Mermaid)
+        </div>
+      </div>
+      <div style="border:1px solid #ffa07a;border-radius:8px;padding:12px">
+        <div style="color:#ffa07a;font-weight:bold;font-size:13px">pkg/testbank (Enhanced)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.8;margin-top:6px">
+          <span style="color:#88d8b0">Before:</span> Static YAML test definitions<br>
+          <span style="color:#ff6b6b">After:</span> LLM-generated test cases from<br>
+          &nbsp;&nbsp;FeatureMap, dynamic test expansion,<br>
+          &nbsp;&nbsp;edge case generation per feature<br>
+          New: <span style="color:#fff">GenerateFromFeatureMap()</span><br>
+          New: <span style="color:#fff">ExpandEdgeCases()</span> method
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:20px;padding:16px;border:1px solid #444;border-radius:8px">
+  <h3>Key Design Decisions</h3>
+  <ul style="color:#aaa;font-size:14px;line-height:2">
+    <li><strong>Video recording per platform</strong> — each platform gets its own video file. ffmpeg handles Desktop (x11grab), adb screenrecord for Android, Playwright API for Web.</li>
+    <li><strong>VideoOffset on every TimelineEvent</strong> — every action, screenshot, issue, and phase change records the offset into the platform video. Tickets reference these offsets directly: "See video @ 14:32".</li>
+    <li><strong>LLM enhancements are optional</strong> — every enhanced package checks if an LLM agent is available. Without one, existing behavior is preserved. This means `helixqa run` (original command) works exactly as before.</li>
+    <li><strong>.env is the single source of truth</strong> — all configuration in one file. Autonomous session is enabled by default but every aspect is individually toggleable.</li>
+    <li><strong>All existing 235 tests remain passing</strong> — enhancements are additive (new fields, new optional methods). No breaking changes to existing interfaces.</li>
+  </ul>
+</div>

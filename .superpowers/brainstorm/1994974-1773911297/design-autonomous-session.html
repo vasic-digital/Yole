@@ -1,0 +1,338 @@
+<h2>Design Section 6: Autonomous QA Session (HelixQA Core)</h2>
+<p class="subtitle">The new test type — SessionCoordinator, PlatformWorkers, and 4-phase execution</p>
+
+<div class="mockup">
+  <div class="mockup-header">Session Lifecycle — 4 Phases</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div style="color:#ff6b6b;font-weight:bold;font-size:14px">Phase 1: Setup (Sequential)</div>
+    <div style="margin:8px 0 4px;border-left:3px solid #ff6b6b;padding-left:12px;color:#aaa">
+      1.1 Load .env configuration<br>
+      1.2 LLMsVerifier.VerifyWithStrategy(ctx, QAStrategy) → ranked models<br>
+      1.3 DocProcessor.LoadDir(ctx, projectRoot) → documents<br>
+      1.4 DocProcessor.BuildFromDocs(ctx, docs) → feature map<br>
+      1.5 DocProcessor.Enrich(ctx, featureMap, agent) → refined map<br>
+      1.6 LLMOrchestrator.SpawnAgents(ctx, selectedModels) → agent pool<br>
+      1.7 VisionEngine.Init(ctx, visionProvider) → analyzer<br>
+      1.8 Start video recording for each platform<br>
+      1.9 Emit SessionStarted event with timestamps
+    </div>
+
+    <div style="margin-top:20px;color:#4ecdc4;font-weight:bold;font-size:14px">Phase 2: Documentation-Driven Verification (Parallel per Platform)</div>
+    <div style="margin:8px 0 4px;border-left:3px solid #4ecdc4;padding-left:12px;color:#aaa">
+      For each platform (Android, Desktop, Web) in parallel:<br><br>
+      2.1 PlatformWorker acquires Agent from pool<br>
+      2.2 For each Feature in FeatureMap (priority order):<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;a. Agent receives: "Verify feature: {name}. Steps: {steps}"<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;b. For each TestStep:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- VisionEngine captures screenshot (pre-action)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- Agent analyzes screen → decides action<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- ActionExecutor performs action on app<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- VisionEngine captures screenshot (post-action)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- VisionEngine.CompareScreens() → diff<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- Agent evaluates: did the expected outcome happen?<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- CoverageTracker.MarkVerified() or MarkFailed()<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- Session.RecordEvent(timestamp, screenshot, action, result)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;c. If issue found → IssueDetector creates ticket<br>
+      2.3 NavigationGraph updated with each screen transition<br>
+      2.4 Detector checks for crashes/ANRs after each action
+    </div>
+
+    <div style="margin-top:20px;color:#ffe66d;font-weight:bold;font-size:14px">Phase 3: Curiosity-Driven Exploration (Parallel per Platform)</div>
+    <div style="margin:8px 0 4px;border-left:3px solid #ffe66d;padding-left:12px;color:#aaa">
+      For each platform in parallel:<br><br>
+      3.1 Agent receives NavigationGraph + "explore undiscovered areas"<br>
+      3.2 Exploration loop (until timeout or coverage target):<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;a. VisionEngine captures current screen<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;b. Agent sees: screen analysis + navigation graph + "what haven't we tried?"<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;c. Agent decides: click unexplored button / try edge case / go deeper<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;d. ActionExecutor performs action<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;e. VisionEngine analyzes result → new screen? issue? crash?<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;f. NavigationGraph.AddScreen() if new<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;g. IssueDetector evaluates UX: confusing navigation? broken layout?<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;h. Session.RecordEvent()<br>
+      3.3 Agent tries edge cases: empty inputs, rapid clicks, back button, rotation<br>
+      3.4 Undocumented features found → flagged for doc update
+    </div>
+
+    <div style="margin-top:20px;color:#c9b1ff;font-weight:bold;font-size:14px">Phase 4: Report & Cleanup (Sequential)</div>
+    <div style="margin:8px 0 4px;border-left:3px solid #c9b1ff;padding-left:12px;color:#aaa">
+      4.1 Stop all video recordings<br>
+      4.2 CoverageTracker.Coverage() → coverage report<br>
+      4.3 NavigationGraph.Export() → navigation map (DOT/Mermaid)<br>
+      4.4 Aggregate all tickets across platforms<br>
+      4.5 Link ticket screenshots to video timestamps<br>
+      4.6 Generate QA report (Markdown + HTML + JSON)<br>
+      4.7 LLMOrchestrator.Shutdown() → release all agents<br>
+      4.8 Emit SessionCompleted event with summary
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Core Types — pkg/autonomous</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div style="color:#ffe66d;font-weight:bold">// ═══ Session Coordinator ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">SessionCoordinator</span> <span style="color:#ff6b6b">struct</span> {
+    </div>
+    <div>&nbsp;&nbsp;config&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*SessionConfig</div>
+    <div>&nbsp;&nbsp;verifier&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LLMsVerifierClient <span style="color:#666">// calls LLMsVerifier</span></div>
+    <div>&nbsp;&nbsp;docProcessor&nbsp;&nbsp;DocProcessorClient <span style="color:#666">// calls DocProcessor</span></div>
+    <div>&nbsp;&nbsp;orchestrator&nbsp;&nbsp;AgentPool <span style="color:#666">// from LLMOrchestrator</span></div>
+    <div>&nbsp;&nbsp;visionEngine&nbsp;&nbsp;Analyzer <span style="color:#666">// from VisionEngine</span></div>
+    <div>&nbsp;&nbsp;featureMap&nbsp;&nbsp;&nbsp;&nbsp;*FeatureMap</div>
+    <div>&nbsp;&nbsp;workers&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;map[string]*PlatformWorker</div>
+    <div>&nbsp;&nbsp;phaseManager&nbsp;&nbsp;*PhaseManager</div>
+    <div>&nbsp;&nbsp;session&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*SessionRecorder</div>
+    <div>&nbsp;&nbsp;mu&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sync.Mutex</div>
+    <div>}</div>
+
+    <div style="margin-top:12px">
+      <span style="color:#ff6b6b">func</span> (sc *SessionCoordinator) <span style="color:#88d8b0">Run</span>(ctx) (*SessionResult, error)
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (sc *SessionCoordinator) <span style="color:#88d8b0">Pause</span>(ctx) error
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (sc *SessionCoordinator) <span style="color:#88d8b0">Resume</span>(ctx) error
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (sc *SessionCoordinator) <span style="color:#88d8b0">Cancel</span>(ctx) error
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (sc *SessionCoordinator) <span style="color:#88d8b0">Status</span>() SessionStatus
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (sc *SessionCoordinator) <span style="color:#88d8b0">Progress</span>() ProgressReport
+    </div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ Platform Worker ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">PlatformWorker</span> <span style="color:#ff6b6b">struct</span> {
+    </div>
+    <div>&nbsp;&nbsp;platform&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string <span style="color:#666">// android, desktop, web</span></div>
+    <div>&nbsp;&nbsp;agent&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Agent</div>
+    <div>&nbsp;&nbsp;analyzer&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Analyzer</div>
+    <div>&nbsp;&nbsp;navigator&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*NavigationEngine</div>
+    <div>&nbsp;&nbsp;issueDetector&nbsp;*IssueDetector</div>
+    <div>&nbsp;&nbsp;coverage&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CoverageTracker</div>
+    <div>&nbsp;&nbsp;navGraph&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NavigationGraph</div>
+    <div>&nbsp;&nbsp;detector&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CrashDetector <span style="color:#666">// existing HelixQA detector</span></div>
+    <div>&nbsp;&nbsp;session&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*SessionRecorder</div>
+    <div>}</div>
+
+    <div style="margin-top:12px">
+      <span style="color:#ff6b6b">func</span> (pw *PlatformWorker) <span style="color:#88d8b0">RunDocDriven</span>(ctx, features []Feature) ([]StepResult, error)
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (pw *PlatformWorker) <span style="color:#88d8b0">RunCuriosityDriven</span>(ctx, timeout time.Duration) ([]StepResult, error)
+    </div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ Phase Manager ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">PhaseManager</span> <span style="color:#ff6b6b">struct</span> {
+    </div>
+    <div>&nbsp;&nbsp;phases&nbsp;&nbsp;&nbsp;&nbsp;[]Phase</div>
+    <div>&nbsp;&nbsp;current&nbsp;&nbsp;&nbsp;int</div>
+    <div>&nbsp;&nbsp;listeners&nbsp;[]PhaseListener</div>
+    <div>&nbsp;&nbsp;mu&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sync.Mutex</div>
+    <div>}</div>
+
+    <div style="margin-top:12px"><span style="color:#ff6b6b">type</span> Phase <span style="color:#ff6b6b">struct</span> {</div>
+    <div>&nbsp;&nbsp;Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string <span style="color:#666">// "setup", "doc-driven", "curiosity", "report"</span></div>
+    <div>&nbsp;&nbsp;Status&nbsp;&nbsp;&nbsp;PhaseStatus <span style="color:#666">// pending, running, completed, failed, skipped</span></div>
+    <div>&nbsp;&nbsp;StartAt&nbsp;&nbsp;time.Time</div>
+    <div>&nbsp;&nbsp;EndAt&nbsp;&nbsp;&nbsp;&nbsp;time.Time</div>
+    <div>&nbsp;&nbsp;Progress&nbsp;float64 <span style="color:#666">// 0.0 - 1.0</span></div>
+    <div>&nbsp;&nbsp;Error&nbsp;&nbsp;&nbsp;&nbsp;error</div>
+    <div>}</div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ Session Result ═══</div>
+    <div style="margin-top:8px"><span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">SessionResult</span> <span style="color:#ff6b6b">struct</span> {</div>
+    <div>&nbsp;&nbsp;SessionID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string</div>
+    <div>&nbsp;&nbsp;StartTime&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;time.Time</div>
+    <div>&nbsp;&nbsp;EndTime&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;time.Time</div>
+    <div>&nbsp;&nbsp;Duration&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;time.Duration</div>
+    <div>&nbsp;&nbsp;Phases&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[]Phase</div>
+    <div>&nbsp;&nbsp;Coverage&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CoverageReport</div>
+    <div>&nbsp;&nbsp;NavigationMap&nbsp;GraphSnapshot</div>
+    <div>&nbsp;&nbsp;Tickets&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[]Ticket</div>
+    <div>&nbsp;&nbsp;Videos&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;map[string]string <span style="color:#666">// platform → video path</span></div>
+    <div>&nbsp;&nbsp;Screenshots&nbsp;&nbsp;&nbsp;[]Screenshot</div>
+    <div>&nbsp;&nbsp;PlatformResults map[string]*PlatformResult</div>
+    <div>&nbsp;&nbsp;LLMsUsed&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[]ModelInfo</div>
+    <div>&nbsp;&nbsp;ReportPath&nbsp;&nbsp;&nbsp;&nbsp;string</div>
+    <div>&nbsp;&nbsp;Success&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bool</div>
+    <div>}</div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">pkg/navigator — NavigationEngine</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div style="color:#ffe66d;font-weight:bold">// ═══ Navigation Engine ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">NavigationEngine</span> <span style="color:#ff6b6b">struct</span> {
+    </div>
+    <div>&nbsp;&nbsp;agent&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Agent <span style="color:#666">// LLM agent for decision-making</span></div>
+    <div>&nbsp;&nbsp;analyzer&nbsp;&nbsp;Analyzer <span style="color:#666">// VisionEngine for screen analysis</span></div>
+    <div>&nbsp;&nbsp;executor&nbsp;&nbsp;ActionExecutor <span style="color:#666">// platform-specific action runner</span></div>
+    <div>&nbsp;&nbsp;graph&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NavigationGraph</div>
+    <div>&nbsp;&nbsp;state&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*StateTracker</div>
+    <div>}</div>
+
+    <div style="margin-top:12px">
+      <span style="color:#ff6b6b">func</span> (ne *NavigationEngine) <span style="color:#88d8b0">NavigateTo</span>(ctx, target string) error
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (ne *NavigationEngine) <span style="color:#88d8b0">PerformAction</span>(ctx, action Action) (*ActionResult, error)
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (ne *NavigationEngine) <span style="color:#88d8b0">ExploreUnknown</span>(ctx) (*ExploreResult, error)
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (ne *NavigationEngine) <span style="color:#88d8b0">CurrentScreen</span>(ctx) (*ScreenAnalysis, error)
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (ne *NavigationEngine) <span style="color:#88d8b0">GoBack</span>(ctx) error
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (ne *NavigationEngine) <span style="color:#88d8b0">GoHome</span>(ctx) error
+    </div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ Action Executor (platform-specific) ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">ActionExecutor</span> <span style="color:#ff6b6b">interface</span> {
+    </div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Click(ctx, x, y int)</span> error</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Type(ctx, text string)</span> error</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Scroll(ctx, direction string, amount int)</span> error</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">LongPress(ctx, x, y int)</span> error</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Swipe(ctx, fromX, fromY, toX, toY int)</span> error</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">KeyPress(ctx, key string)</span> error</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Back(ctx)</span> error</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Home(ctx)</span> error</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Screenshot(ctx)</span> ([]byte, error)</div>
+    <div>}</div>
+
+    <div style="margin-top:8px;color:#666">
+      // Implementations: ADBExecutor (Android), PlaywrightExecutor (Web), X11Executor (Desktop)
+    </div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ State Tracker ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">StateTracker</span> <span style="color:#ff6b6b">struct</span> {
+    </div>
+    <div>&nbsp;&nbsp;history&nbsp;&nbsp;&nbsp;&nbsp;[]ScreenState <span style="color:#666">// ordered screen visit history</span></div>
+    <div>&nbsp;&nbsp;current&nbsp;&nbsp;&nbsp;&nbsp;*ScreenState</div>
+    <div>&nbsp;&nbsp;breadcrumb&nbsp;[]string <span style="color:#666">// navigation path ["Home", "Settings", "About"]</span></div>
+    <div>&nbsp;&nbsp;mu&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sync.RWMutex</div>
+    <div>}</div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">pkg/issuedetector — LLM-Powered Bug Detection</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div style="color:#ffe66d;font-weight:bold">// ═══ Issue Detector ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">IssueDetector</span> <span style="color:#ff6b6b">struct</span> {
+    </div>
+    <div>&nbsp;&nbsp;agent&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Agent <span style="color:#666">// LLM for issue analysis</span></div>
+    <div>&nbsp;&nbsp;analyzer&nbsp;&nbsp;&nbsp;Analyzer <span style="color:#666">// VisionEngine</span></div>
+    <div>&nbsp;&nbsp;ticketGen&nbsp;&nbsp;*ticket.Generator <span style="color:#666">// existing HelixQA tickets</span></div>
+    <div>&nbsp;&nbsp;session&nbsp;&nbsp;&nbsp;&nbsp;*SessionRecorder</div>
+    <div>}</div>
+
+    <div style="margin-top:12px">
+      <span style="color:#ff6b6b">func</span> (id *IssueDetector) <span style="color:#88d8b0">AnalyzeAction</span>(ctx, before, after ScreenAnalysis, action Action) ([]Issue, error)
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (id *IssueDetector) <span style="color:#88d8b0">AnalyzeUX</span>(ctx, navGraph NavigationGraph) ([]Issue, error)
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (id *IssueDetector) <span style="color:#88d8b0">AnalyzeAccessibility</span>(ctx, screen ScreenAnalysis) ([]Issue, error)
+    </div>
+    <div>
+      <span style="color:#ff6b6b">func</span> (id *IssueDetector) <span style="color:#88d8b0">CreateTicket</span>(ctx, issue Issue) (*Ticket, error)
+    </div>
+
+    <div style="margin-top:16px;color:#888">
+      Issue detection categories:<br>
+      • <span style="color:#ff6b6b">Visual bugs</span>: overlapping elements, truncated text, broken layouts<br>
+      • <span style="color:#ffe66d">UX issues</span>: confusing navigation, dead ends, inconsistent behavior<br>
+      • <span style="color:#4ecdc4">Accessibility</span>: low contrast, missing labels, small touch targets<br>
+      • <span style="color:#c9b1ff">Functional</span>: features not working as documented, unexpected errors<br>
+      • <span style="color:#88d8b0">Performance</span>: slow transitions, unresponsive UI, long loading<br>
+      • <span style="color:#ffa07a">Crashes</span>: ANRs, app closures (via existing HelixQA detector)
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">New HelixQA File Structure (additions only)</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div>HelixQA/pkg/</div>
+    <div style="color:#ff6b6b">&nbsp;&nbsp;├─ autonomous/ <span style="color:#666">(NEW)</span></div>
+    <div style="color:#ff6b6b">&nbsp;&nbsp;│&nbsp;&nbsp;├─ coordinator.go <span style="color:#666">// SessionCoordinator</span></div>
+    <div style="color:#ff6b6b">&nbsp;&nbsp;│&nbsp;&nbsp;├─ worker.go <span style="color:#666">// PlatformWorker</span></div>
+    <div style="color:#ff6b6b">&nbsp;&nbsp;│&nbsp;&nbsp;├─ phase.go <span style="color:#666">// PhaseManager, Phase, PhaseListener</span></div>
+    <div style="color:#ff6b6b">&nbsp;&nbsp;│&nbsp;&nbsp;├─ result.go <span style="color:#666">// SessionResult, SessionStatus</span></div>
+    <div style="color:#ff6b6b">&nbsp;&nbsp;│&nbsp;&nbsp;├─ coordinator_test.go</div>
+    <div style="color:#ff6b6b">&nbsp;&nbsp;│&nbsp;&nbsp;├─ worker_test.go</div>
+    <div style="color:#ff6b6b">&nbsp;&nbsp;│&nbsp;&nbsp;├─ phase_test.go</div>
+    <div style="color:#ff6b6b">&nbsp;&nbsp;│&nbsp;&nbsp;├─ coordinator_integration_test.go</div>
+    <div style="color:#ff6b6b">&nbsp;&nbsp;│&nbsp;&nbsp;├─ coordinator_e2e_test.go</div>
+    <div style="color:#ff6b6b">&nbsp;&nbsp;│&nbsp;&nbsp;└─ coordinator_stress_test.go</div>
+    <div style="color:#4ecdc4">&nbsp;&nbsp;├─ navigator/ <span style="color:#666">(NEW)</span></div>
+    <div style="color:#4ecdc4">&nbsp;&nbsp;│&nbsp;&nbsp;├─ engine.go <span style="color:#666">// NavigationEngine</span></div>
+    <div style="color:#4ecdc4">&nbsp;&nbsp;│&nbsp;&nbsp;├─ executor.go <span style="color:#666">// ActionExecutor interface</span></div>
+    <div style="color:#4ecdc4">&nbsp;&nbsp;│&nbsp;&nbsp;├─ adb.go <span style="color:#666">// ADBExecutor (Android)</span></div>
+    <div style="color:#4ecdc4">&nbsp;&nbsp;│&nbsp;&nbsp;├─ playwright.go <span style="color:#666">// PlaywrightExecutor (Web)</span></div>
+    <div style="color:#4ecdc4">&nbsp;&nbsp;│&nbsp;&nbsp;├─ x11.go <span style="color:#666">// X11Executor (Desktop)</span></div>
+    <div style="color:#4ecdc4">&nbsp;&nbsp;│&nbsp;&nbsp;├─ state.go <span style="color:#666">// StateTracker</span></div>
+    <div style="color:#4ecdc4">&nbsp;&nbsp;│&nbsp;&nbsp;├─ engine_test.go</div>
+    <div style="color:#4ecdc4">&nbsp;&nbsp;│&nbsp;&nbsp;├─ executor_test.go</div>
+    <div style="color:#4ecdc4">&nbsp;&nbsp;│&nbsp;&nbsp;├─ adb_test.go</div>
+    <div style="color:#4ecdc4">&nbsp;&nbsp;│&nbsp;&nbsp;├─ playwright_test.go</div>
+    <div style="color:#4ecdc4">&nbsp;&nbsp;│&nbsp;&nbsp;├─ x11_test.go</div>
+    <div style="color:#4ecdc4">&nbsp;&nbsp;│&nbsp;&nbsp;└─ navigator_stress_test.go</div>
+    <div style="color:#c9b1ff">&nbsp;&nbsp;├─ issuedetector/ <span style="color:#666">(NEW)</span></div>
+    <div style="color:#c9b1ff">&nbsp;&nbsp;│&nbsp;&nbsp;├─ detector.go <span style="color:#666">// IssueDetector</span></div>
+    <div style="color:#c9b1ff">&nbsp;&nbsp;│&nbsp;&nbsp;├─ categories.go <span style="color:#666">// Issue categories & severity</span></div>
+    <div style="color:#c9b1ff">&nbsp;&nbsp;│&nbsp;&nbsp;├─ prompts.go <span style="color:#666">// LLM prompts for issue analysis</span></div>
+    <div style="color:#c9b1ff">&nbsp;&nbsp;│&nbsp;&nbsp;├─ detector_test.go</div>
+    <div style="color:#c9b1ff">&nbsp;&nbsp;│&nbsp;&nbsp;├─ detector_integration_test.go</div>
+    <div style="color:#c9b1ff">&nbsp;&nbsp;│&nbsp;&nbsp;└─ detector_stress_test.go</div>
+    <div style="color:#ffe66d">&nbsp;&nbsp;├─ session/ <span style="color:#666">(NEW)</span></div>
+    <div style="color:#ffe66d">&nbsp;&nbsp;│&nbsp;&nbsp;├─ recorder.go <span style="color:#666">// SessionRecorder (video + screenshots)</span></div>
+    <div style="color:#ffe66d">&nbsp;&nbsp;│&nbsp;&nbsp;├─ timeline.go <span style="color:#666">// TimelineEvent, TimestampLinker</span></div>
+    <div style="color:#ffe66d">&nbsp;&nbsp;│&nbsp;&nbsp;├─ video.go <span style="color:#666">// VideoManager (ffmpeg wrapper)</span></div>
+    <div style="color:#ffe66d">&nbsp;&nbsp;│&nbsp;&nbsp;├─ recorder_test.go</div>
+    <div style="color:#ffe66d">&nbsp;&nbsp;│&nbsp;&nbsp;├─ timeline_test.go</div>
+    <div style="color:#ffe66d">&nbsp;&nbsp;│&nbsp;&nbsp;├─ video_test.go</div>
+    <div style="color:#ffe66d">&nbsp;&nbsp;│&nbsp;&nbsp;└─ session_stress_test.go</div>
+    <div>&nbsp;&nbsp;├─ config/ <span style="color:#666">(MODIFIED — add autonomous session config)</span></div>
+    <div>&nbsp;&nbsp;├─ evidence/ <span style="color:#666">(MODIFIED — add LLM-annotated screenshots)</span></div>
+    <div>&nbsp;&nbsp;├─ ticket/ <span style="color:#666">(MODIFIED — add video timestamp refs)</span></div>
+    <div>&nbsp;&nbsp;├─ reporter/ <span style="color:#666">(MODIFIED — add session report format)</span></div>
+    <div>&nbsp;&nbsp;├─ orchestrator/ <span style="color:#666">(MODIFIED — add autonomous session type)</span></div>
+    <div>&nbsp;&nbsp;└─ detector/ <span style="color:#666">(MODIFIED — LLM-enhanced crash analysis)</span></div>
+
+    <div style="margin-top:12px">HelixQA/cmd/helixqa/</div>
+    <div>&nbsp;&nbsp;└─ main.go <span style="color:#666">(MODIFIED — add "autonomous" subcommand)</span></div>
+  </div>
+</div>
+
+<div style="margin-top:20px;padding:16px;border:1px solid #444;border-radius:8px">
+  <h3>CLI Integration</h3>
+  <div style="font-family:monospace;font-size:13px;color:#aaa;line-height:2;padding:8px">
+    <div><span style="color:#4ecdc4">helixqa autonomous</span> --project /path/to/Yole \</div>
+    <div>&nbsp;&nbsp;--platforms android,desktop,web \</div>
+    <div>&nbsp;&nbsp;--env .env \</div>
+    <div>&nbsp;&nbsp;--timeout 2h \</div>
+    <div>&nbsp;&nbsp;--coverage-target 0.9 \</div>
+    <div>&nbsp;&nbsp;--output qa-results/ \</div>
+    <div>&nbsp;&nbsp;--report markdown,html,json</div>
+  </div>
+</div>

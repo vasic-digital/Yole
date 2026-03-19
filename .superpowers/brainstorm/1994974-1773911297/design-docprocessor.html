@@ -1,0 +1,237 @@
+<h2>Design Section 5: DocProcessor Module</h2>
+<p class="subtitle">Load project documentation, build feature maps, track verification coverage</p>
+
+<div class="mockup">
+  <div class="mockup-header">Core Interfaces</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div style="color:#ffe66d;font-weight:bold">// ═══ Document Loader ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">Loader</span> <span style="color:#ff6b6b">interface</span> {
+    </div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">LoadDir(ctx, path string)</span> ([]Document, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">LoadFile(ctx, path string)</span> (Document, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">SupportedFormats()</span> []string</div>
+    <div>}</div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ Feature Map Builder ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">FeatureMapBuilder</span> <span style="color:#ff6b6b">interface</span> {
+    </div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">BuildFromDocs(ctx, []Document)</span> (*FeatureMap, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Enrich(ctx, fm *FeatureMap, agent LLMAgent)</span> error <span style="color:#666">// LLM refines map</span></div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Merge(maps ...*FeatureMap)</span> *FeatureMap</div>
+    <div>}</div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ Coverage Tracker ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">CoverageTracker</span> <span style="color:#ff6b6b">interface</span> {
+    </div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">MarkVerified(featureID string, platform string, evidence Evidence)</span></div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">MarkFailed(featureID string, platform string, issue Issue)</span></div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">MarkSkipped(featureID string, platform string, reason string)</span></div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Coverage()</span> CoverageReport</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">CoverageByPlatform(platform string)</span> float64</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">CoverageByCategory(category string)</span> float64</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Unverified()</span> []Feature</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Export()</span> CoverageSnapshot</div>
+    <div>}</div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ LLM Agent (injected from LLMOrchestrator) ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">LLMAgent</span> <span style="color:#ff6b6b">interface</span> {
+    </div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Summarize(ctx, text string)</span> (string, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">ExtractFeatures(ctx, text string)</span> ([]RawFeature, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">ClassifyFeature(ctx, feature RawFeature)</span> (FeatureCategory, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">InferScreens(ctx, features []Feature)</span> ([]ExpectedScreen, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">GenerateTestSteps(ctx, feature Feature)</span> ([]TestStep, error)</div>
+    <div>}</div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Document Processing Pipeline</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.8;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div style="color:#ffe66d;font-weight:bold">═══ Phase 1: Load & Parse ═══</div>
+    <div style="color:#aaa;margin:4px 0 8px">Scan project tree for all documentation files</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="border:1px solid #4ecdc4;border-radius:6px;padding:10px">
+        <div style="color:#4ecdc4;font-weight:bold;font-size:11px">Supported Formats</div>
+        <div style="color:#aaa;font-size:11px;margin-top:4px">
+          *.md (Markdown) ← primary<br>
+          *.yaml / *.yml (configs)<br>
+          *.txt (plain text)<br>
+          *.html (web docs)<br>
+          *.adoc (AsciiDoc)<br>
+          *.rst (reStructuredText)
+        </div>
+      </div>
+      <div style="border:1px solid #ff6b6b;border-radius:6px;padding:10px">
+        <div style="color:#ff6b6b;font-weight:bold;font-size:11px">Auto-Discovered Locations</div>
+        <div style="color:#aaa;font-size:11px;margin-top:4px">
+          docs/ directory<br>
+          README.md, CLAUDE.md<br>
+          **/USER_GUIDE.md<br>
+          **/API_REFERENCE.md<br>
+          **/ARCHITECTURE.md<br>
+          CHANGELOG.md, CONTRIBUTING.md
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">═══ Phase 2: Extract Features (LLM-Powered) ═══</div>
+    <div style="color:#aaa;margin:4px 0 8px">LLM reads each document, extracts features, screens, workflows</div>
+    <div style="border:1px solid #c9b1ff;border-radius:6px;padding:12px;margin-top:8px">
+      <div style="font-size:11px;color:#c9b1ff">
+        Document: "docs/USER_GUIDE_FORMATS.md"<br>
+        <span style="color:#888">────────────────────────────────</span>
+      </div>
+      <div style="font-size:11px;color:#aaa;margin-top:4px">
+        LLM extracts:<br>
+        → Feature: "Markdown editing" (category: format, screens: [editor, preview])<br>
+        → Feature: "CSV import/export" (category: format, screens: [file_picker, editor, export_dialog])<br>
+        → Feature: "Dark theme toggle" (category: ui, screens: [settings])<br>
+        → Feature: "Cloud storage sync" (category: network, screens: [storage_config, sync_status])<br>
+        → Workflow: "Create new markdown doc" (steps: [open_app → new_doc → select_format → type → save])
+      </div>
+    </div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">═══ Phase 3: Build Feature Map ═══</div>
+    <div style="color:#aaa;margin:4px 0 8px">Structured, queryable map of everything the app should do</div>
+    <div style="border:1px solid #88d8b0;border-radius:6px;padding:12px;margin-top:8px">
+      <div style="font-size:11px;color:#88d8b0">FeatureMap</div>
+      <div style="font-size:11px;color:#aaa;margin-top:4px">
+        ├─ Features[] <span style="color:#666">// flat list, each with ID, name, category, platforms, source doc</span><br>
+        ├─ Screens[] <span style="color:#666">// expected screens with descriptions, linked features</span><br>
+        ├─ Workflows[] <span style="color:#666">// multi-step user journeys with expected outcomes</span><br>
+        ├─ Categories{} <span style="color:#666">// grouped: format, ui, network, settings, etc.</span><br>
+        ├─ PlatformMatrix{} <span style="color:#666">// which features on which platforms</span><br>
+        └─ DocGraph <span style="color:#666">// link relationships between documents</span>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">═══ Phase 4: Generate Verification Plan ═══</div>
+    <div style="color:#aaa;margin:4px 0 8px">LLM generates test steps for each feature, prioritized by risk</div>
+    <div style="border:1px solid #ffe66d;border-radius:6px;padding:12px;margin-top:8px">
+      <div style="font-size:11px;color:#aaa">
+        Feature "Markdown editing" → TestSteps:<br>
+        &nbsp;&nbsp;1. Open app → verify editor screen loads<br>
+        &nbsp;&nbsp;2. Create new markdown file<br>
+        &nbsp;&nbsp;3. Type "# Hello" → verify heading renders in preview<br>
+        &nbsp;&nbsp;4. Add bold, italic, link → verify formatting<br>
+        &nbsp;&nbsp;5. Save file → verify file persists after restart<br>
+        <br>
+        <span style="color:#ff6b6b">Priority: critical</span> (core feature, all platforms)
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Key Data Types</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div><span style="color:#ff6b6b">type</span> Document <span style="color:#ff6b6b">struct</span> {</div>
+    <div>&nbsp;&nbsp;Path&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// relative to project root</span></div>
+    <div>&nbsp;&nbsp;Format&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// markdown, yaml, html, etc.</span></div>
+    <div>&nbsp;&nbsp;Title&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// extracted or inferred title</span></div>
+    <div>&nbsp;&nbsp;Content&nbsp;&nbsp;&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// raw content</span></div>
+    <div>&nbsp;&nbsp;Sections&nbsp;&nbsp;[]Section&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// parsed heading structure</span></div>
+    <div>&nbsp;&nbsp;Links&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[]string&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// outgoing doc references</span></div>
+    <div>&nbsp;&nbsp;ModifiedAt&nbsp;time.Time</div>
+    <div>}</div>
+
+    <div style="margin-top:12px"><span style="color:#ff6b6b">type</span> Feature <span style="color:#ff6b6b">struct</span> {</div>
+    <div>&nbsp;&nbsp;ID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// auto-generated: "feat-markdown-editing"</span></div>
+    <div>&nbsp;&nbsp;Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string</div>
+    <div>&nbsp;&nbsp;Description&nbsp;string</div>
+    <div>&nbsp;&nbsp;Category&nbsp;&nbsp;&nbsp;FeatureCategory <span style="color:#666">// format, ui, network, settings, etc.</span></div>
+    <div>&nbsp;&nbsp;Platforms&nbsp;&nbsp;[]string&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// [android, desktop, web]</span></div>
+    <div>&nbsp;&nbsp;Priority&nbsp;&nbsp;&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// critical, high, medium, low</span></div>
+    <div>&nbsp;&nbsp;Screens&nbsp;&nbsp;&nbsp;&nbsp;[]string&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// expected screen IDs</span></div>
+    <div>&nbsp;&nbsp;TestSteps&nbsp;&nbsp;[]TestStep&nbsp;&nbsp;<span style="color:#666">// LLM-generated verification steps</span></div>
+    <div>&nbsp;&nbsp;SourceDoc&nbsp;&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// which doc defined this feature</span></div>
+    <div>&nbsp;&nbsp;SourceSection string&nbsp;&nbsp;&nbsp;<span style="color:#666">// heading path within doc</span></div>
+    <div>}</div>
+
+    <div style="margin-top:12px"><span style="color:#ff6b6b">type</span> FeatureMap <span style="color:#ff6b6b">struct</span> {</div>
+    <div>&nbsp;&nbsp;Features&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[]Feature</div>
+    <div>&nbsp;&nbsp;Screens&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[]ExpectedScreen</div>
+    <div>&nbsp;&nbsp;Workflows&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[]Workflow</div>
+    <div>&nbsp;&nbsp;Categories&nbsp;&nbsp;&nbsp;&nbsp;map[FeatureCategory][]Feature</div>
+    <div>&nbsp;&nbsp;PlatformMatrix&nbsp;map[string][]Feature <span style="color:#666">// platform → features</span></div>
+    <div>&nbsp;&nbsp;DocGraph&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*DocGraph</div>
+    <div>&nbsp;&nbsp;GeneratedAt&nbsp;&nbsp;&nbsp;time.Time</div>
+    <div>&nbsp;&nbsp;ProjectRoot&nbsp;&nbsp;&nbsp;string</div>
+    <div>}</div>
+
+    <div style="margin-top:12px"><span style="color:#ff6b6b">type</span> CoverageReport <span style="color:#ff6b6b">struct</span> {</div>
+    <div>&nbsp;&nbsp;Total&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int</div>
+    <div>&nbsp;&nbsp;Verified&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int</div>
+    <div>&nbsp;&nbsp;Failed&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int</div>
+    <div>&nbsp;&nbsp;Skipped&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int</div>
+    <div>&nbsp;&nbsp;Unverified&nbsp;&nbsp;&nbsp;&nbsp;int</div>
+    <div>&nbsp;&nbsp;OverallPct&nbsp;&nbsp;&nbsp;&nbsp;float64</div>
+    <div>&nbsp;&nbsp;ByPlatform&nbsp;&nbsp;&nbsp;&nbsp;map[string]float64</div>
+    <div>&nbsp;&nbsp;ByCategory&nbsp;&nbsp;&nbsp;&nbsp;map[string]float64</div>
+    <div>&nbsp;&nbsp;Issues&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[]Issue</div>
+    <div>}</div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Module File Structure</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div>DocProcessor/</div>
+    <div>├─ pkg/</div>
+    <div>│&nbsp;&nbsp;├─ loader/</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">loader.go</span> <span style="color:#666">// Loader interface + impl</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">markdown.go</span> <span style="color:#666">// Markdown parser (headings, links, sections)</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">yaml.go</span> <span style="color:#666">// YAML doc parser</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">scanner.go</span> <span style="color:#666">// Recursive project tree scanner</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ loader_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ markdown_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ yaml_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;└─ scanner_test.go</div>
+    <div>│&nbsp;&nbsp;├─ feature/</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#4ecdc4">builder.go</span> <span style="color:#666">// FeatureMapBuilder interface + impl</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#4ecdc4">feature.go</span> <span style="color:#666">// Feature, FeatureMap, Workflow types</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#4ecdc4">category.go</span> <span style="color:#666">// FeatureCategory enum + classification</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#4ecdc4">screen.go</span> <span style="color:#666">// ExpectedScreen type</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ builder_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ feature_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;└─ builder_integration_test.go</div>
+    <div>│&nbsp;&nbsp;├─ coverage/</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#ff6b6b">tracker.go</span> <span style="color:#666">// CoverageTracker interface + impl</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#ff6b6b">report.go</span> <span style="color:#666">// CoverageReport generation</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ tracker_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;└─ tracker_stress_test.go</div>
+    <div>│&nbsp;&nbsp;├─ docgraph/</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#c9b1ff">graph.go</span> <span style="color:#666">// DocGraph for inter-document links</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#c9b1ff">export.go</span> <span style="color:#666">// JSON, Mermaid export</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;└─ graph_test.go</div>
+    <div>│&nbsp;&nbsp;├─ llm/</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#ffe66d">agent.go</span> <span style="color:#666">// LLMAgent interface (injected)</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#ffe66d">prompts.go</span> <span style="color:#666">// Prompt templates for feature extraction</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ agent_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;└─ prompts_test.go</div>
+    <div>│&nbsp;&nbsp;└─ config/</div>
+    <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ config.go</div>
+    <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ config_test.go</div>
+    <div>├─ go.mod <span style="color:#666">// minimal deps: yaml.v3, testify</span></div>
+    <div>├─ Makefile</div>
+    <div>├─ README.md, ARCHITECTURE.md, API_REFERENCE.md</div>
+    <div>├─ CONTRIBUTING.md, CHANGELOG.md, USER_GUIDE.md, LICENSE</div>
+    <div>└─ Upstreams/</div>
+  </div>
+</div>
+
+<div style="margin-top:20px;padding:16px;border:1px solid #444;border-radius:8px">
+  <h3>Key Design Decisions</h3>
+  <ul style="color:#aaa;font-size:14px;line-height:2">
+    <li><strong>LLMAgent is injected</strong> — DocProcessor doesn't depend on LLMOrchestrator at module level. The caller passes an adapter that satisfies the LLMAgent interface. This keeps DocProcessor reusable by any project.</li>
+    <li><strong>Auto-discovery</strong> — Scanner finds docs by well-known patterns (docs/, README.md, *_GUIDE.md, etc.) plus configurable additional paths. No manual enumeration needed.</li>
+    <li><strong>CoverageTracker is thread-safe</strong> — multiple platform workers mark features as verified/failed concurrently during parallel testing.</li>
+    <li><strong>Feature IDs are deterministic</strong> — generated from name + category, so the same feature always gets the same ID across runs. Enables progress comparison between sessions.</li>
+    <li><strong>Prompt templates in prompts.go</strong> — structured prompts with JSON output schema for feature extraction. Versioned so changes are trackable.</li>
+  </ul>
+</div>

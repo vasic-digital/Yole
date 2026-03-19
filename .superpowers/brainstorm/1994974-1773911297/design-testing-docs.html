@@ -1,0 +1,354 @@
+<h2>Design Section 8: Testing Strategy & Documentation Plan</h2>
+<p class="subtitle">100% coverage across all test types, full documentation suite</p>
+
+<div class="mockup">
+  <div class="mockup-header">Testing Matrix — All Modules</div>
+  <div class="mockup-body" style="padding:20px;background:#1a1a2e">
+    <table style="width:100%;border-collapse:collapse;font-family:monospace;font-size:11px;color:#e0e0e0">
+      <thead>
+        <tr style="border-bottom:2px solid #444">
+          <th style="text-align:left;padding:8px;color:#ffe66d">Module</th>
+          <th style="text-align:center;padding:8px;color:#88d8b0">Unit</th>
+          <th style="text-align:center;padding:8px;color:#4ecdc4">Integration</th>
+          <th style="text-align:center;padding:8px;color:#c9b1ff">E2E</th>
+          <th style="text-align:center;padding:8px;color:#ff6b6b">Security</th>
+          <th style="text-align:center;padding:8px;color:#ffa07a">Stress</th>
+          <th style="text-align:center;padding:8px;color:#ffe66d">Automation</th>
+          <th style="text-align:center;padding:8px;color:#fff">Est. Tests</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px;color:#ff6b6b">LLMsVerifier (Strategy ext)</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px;color:#fff;font-weight:bold">~120</td>
+        </tr>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px;color:#4ecdc4">LLMOrchestrator</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px;color:#fff;font-weight:bold">~200</td>
+        </tr>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px;color:#c9b1ff">VisionEngine</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px;color:#fff;font-weight:bold">~180</td>
+        </tr>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px;color:#ffe66d">DocProcessor</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px;color:#fff;font-weight:bold">~150</td>
+        </tr>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px;color:#fff">HelixQA (new packages)</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px;color:#fff;font-weight:bold">~300</td>
+        </tr>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px;color:#aaa">HelixQA (enhanced packages)</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px">✓</td>
+          <td style="text-align:center;padding:8px;color:#fff;font-weight:bold">~150</td>
+        </tr>
+        <tr style="border-top:2px solid #ffe66d">
+          <td style="padding:8px;color:#ffe66d;font-weight:bold">TOTAL</td>
+          <td colspan="6"></td>
+          <td style="text-align:center;padding:8px;color:#ffe66d;font-weight:bold;font-size:14px">~1,100</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Test Types — What Each Covers</div>
+  <div class="mockup-body" style="padding:20px;background:#1a1a2e">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="border:1px solid #88d8b0;border-radius:8px;padding:12px">
+        <div style="color:#88d8b0;font-weight:bold;font-size:13px">Unit Tests (~400)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.8;margin-top:6px">
+          Every public function + key private logic<br>
+          Mock all external dependencies<br>
+          Table-driven tests for edge cases<br>
+          Error path coverage (every error return)<br>
+          Nil/empty/boundary input handling<br>
+          Interface contract verification
+        </div>
+      </div>
+      <div style="border:1px solid #4ecdc4;border-radius:8px;padding:12px">
+        <div style="color:#4ecdc4;font-weight:bold;font-size:13px">Integration Tests (~250)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.8;margin-top:6px">
+          Cross-package interactions<br>
+          Real file I/O (temp dirs)<br>
+          Pipeline flows (load → process → output)<br>
+          Multi-component coordination<br>
+          Agent ↔ Protocol ↔ Parser chains<br>
+          Config loading from real .env files
+        </div>
+      </div>
+      <div style="border:1px solid #c9b1ff;border-radius:8px;padding:12px">
+        <div style="color:#c9b1ff;font-weight:bold;font-size:13px">E2E Tests (~150)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.8;margin-top:6px">
+          Full session lifecycle (setup → run → report)<br>
+          CLI command execution with flags<br>
+          Mock LLM server for deterministic tests<br>
+          Real file system output verification<br>
+          Ticket + evidence + video output<br>
+          Multi-platform session simulation
+        </div>
+      </div>
+      <div style="border:1px solid #ff6b6b;border-radius:8px;padding:12px">
+        <div style="color:#ff6b6b;font-weight:bold;font-size:13px">Security Tests (~100)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.8;margin-top:6px">
+          API key masking in logs/output<br>
+          Path traversal prevention (evidence dirs)<br>
+          Command injection via agent responses<br>
+          .env file permission validation<br>
+          Prompt injection detection (LLM output)<br>
+          Temp file cleanup verification
+        </div>
+      </div>
+      <div style="border:1px solid #ffa07a;border-radius:8px;padding:12px">
+        <div style="color:#ffa07a;font-weight:bold;font-size:13px">Stress Tests (~100)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.8;margin-top:6px">
+          Concurrent agent pool acquire/release<br>
+          Parallel platform workers (race -count=1)<br>
+          Large feature maps (1000+ features)<br>
+          Long navigation graphs (500+ screens)<br>
+          High-frequency screenshot capture<br>
+          Timeline with 10K+ events
+        </div>
+      </div>
+      <div style="border:1px solid #ffe66d;border-radius:8px;padding:12px">
+        <div style="color:#ffe66d;font-weight:bold;font-size:13px">Full Automation Tests (~100)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.8;margin-top:6px">
+          CI pipeline validation (make test-race)<br>
+          Build from clean checkout<br>
+          Cross-module dependency resolution<br>
+          Upstream sync script execution<br>
+          Release artifact generation<br>
+          .env.example completeness check
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Test Infrastructure Patterns</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div style="color:#ffe66d;font-weight:bold">// ═══ Mock LLM Server (for deterministic E2E tests) ═══</div>
+    <div style="margin-top:8px;color:#aaa">
+      All modules ship a <span style="color:#4ecdc4">testutil/</span> package with:<br><br>
+      • <span style="color:#88d8b0">MockAgent</span> — implements Agent interface, returns canned responses<br>
+      • <span style="color:#88d8b0">MockVisionProvider</span> — returns preset ScreenAnalysis for test images<br>
+      • <span style="color:#88d8b0">MockLLMServer</span> — HTTP server returning scripted responses<br>
+      • <span style="color:#88d8b0">MockActionExecutor</span> — records actions without real UI interaction<br>
+      • <span style="color:#88d8b0">TestFixtures</span> — sample screenshots, docs, .env files, YAML banks<br><br>
+
+      <span style="color:#ffe66d">Key principle:</span> No test requires real LLM API calls or real devices.<br>
+      All external dependencies are mocked. Tests run in CI without API keys.<br>
+      Integration tests use real file I/O but mock all network/LLM/device calls.
+    </div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ Test Naming Convention ═══</div>
+    <div style="margin-top:8px;color:#aaa">
+      <span style="color:#88d8b0">*_test.go</span> — unit tests (same package)<br>
+      <span style="color:#4ecdc4">*_integration_test.go</span> — cross-package integration<br>
+      <span style="color:#c9b1ff">*_e2e_test.go</span> — full pipeline end-to-end<br>
+      <span style="color:#ff6b6b">*_security_test.go</span> — security-focused tests<br>
+      <span style="color:#ffa07a">*_stress_test.go</span> — concurrent/load/performance<br>
+      <span style="color:#ffe66d">*_automation_test.go</span> — CI/build/release validation<br><br>
+
+      All tests run with: <span style="color:#fff">go test ./... -race -count=1</span><br>
+      All tests tagged: <span style="color:#fff">// +build !integration</span> for fast unit-only runs
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Documentation Deliverables — Per Module</div>
+  <div class="mockup-body" style="padding:20px;background:#1a1a2e">
+    <table style="width:100%;border-collapse:collapse;font-family:monospace;font-size:11px;color:#e0e0e0">
+      <thead>
+        <tr style="border-bottom:2px solid #444">
+          <th style="text-align:left;padding:8px;color:#ffe66d">Document</th>
+          <th style="text-align:center;padding:8px;color:#ff6b6b">LLMsV</th>
+          <th style="text-align:center;padding:8px;color:#4ecdc4">Orch</th>
+          <th style="text-align:center;padding:8px;color:#c9b1ff">Vision</th>
+          <th style="text-align:center;padding:8px;color:#ffe66d">DocP</th>
+          <th style="text-align:center;padding:8px;color:#fff">Helix</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px">README.md</td>
+          <td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px">ARCHITECTURE.md</td>
+          <td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px">API_REFERENCE.md</td>
+          <td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px">USER_GUIDE.md</td>
+          <td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px">CONTRIBUTING.md</td>
+          <td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px">CHANGELOG.md</td>
+          <td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px">CLAUDE.md / AGENTS.md</td>
+          <td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px">.env.example</td>
+          <td style="text-align:center">—</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px">VIDEO_COURSE.md</td>
+          <td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid #333">
+          <td style="padding:8px">Mermaid diagrams</td>
+          <td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:16px;font-family:monospace;font-size:12px">
+      <div style="color:#ffe66d;font-weight:bold">Documentation per module: 10 documents</div>
+      <div style="color:#aaa;margin-top:4px">5 modules × 10 docs = <span style="color:#fff;font-weight:bold">50 documentation files</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Video Course Outline — Per Module</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.8;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div style="color:#ffe66d;font-weight:bold">Each module gets a VIDEO_COURSE.md with scripts for:</div>
+    <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="border:1px solid #444;border-radius:6px;padding:10px">
+        <div style="color:#ff6b6b;font-weight:bold;font-size:11px">LLMsVerifier Strategy</div>
+        <div style="color:#aaa;font-size:11px;margin-top:4px">
+          1. Strategy pattern overview<br>
+          2. Building custom strategies<br>
+          3. RecipeBuilder walkthrough<br>
+          4. Writing custom VerificationTests<br>
+          5. Integrating with external tools
+        </div>
+      </div>
+      <div style="border:1px solid #444;border-radius:6px;padding:10px">
+        <div style="color:#4ecdc4;font-weight:bold;font-size:11px">LLMOrchestrator</div>
+        <div style="color:#aaa;font-size:11px;margin-top:4px">
+          1. Agent interface + adapters<br>
+          2. Adding a new CLI adapter<br>
+          3. Pipe vs file protocol<br>
+          4. Agent pool management<br>
+          5. Health monitoring & recovery
+        </div>
+      </div>
+      <div style="border:1px solid #444;border-radius:6px;padding:10px">
+        <div style="color:#c9b1ff;font-weight:bold;font-size:11px">VisionEngine</div>
+        <div style="color:#aaa;font-size:11px;margin-top:4px">
+          1. Two-layer analysis pipeline<br>
+          2. GoCV operations deep dive<br>
+          3. LLM Vision providers<br>
+          4. Navigation graph building<br>
+          5. Video frame extraction
+        </div>
+      </div>
+      <div style="border:1px solid #444;border-radius:6px;padding:10px">
+        <div style="color:#ffe66d;font-weight:bold;font-size:11px">DocProcessor</div>
+        <div style="color:#aaa;font-size:11px;margin-top:4px">
+          1. Document loading & parsing<br>
+          2. LLM feature extraction<br>
+          3. Feature map structure<br>
+          4. Coverage tracking<br>
+          5. Custom prompt templates
+        </div>
+      </div>
+      <div style="border:1px solid #444;border-radius:6px;padding:10px;grid-column:span 2">
+        <div style="color:#fff;font-weight:bold;font-size:11px">HelixQA Autonomous Session</div>
+        <div style="color:#aaa;font-size:11px;margin-top:4px">
+          1. Architecture overview — 4 phases &nbsp;&nbsp;|&nbsp;&nbsp;
+          2. Setting up .env configuration &nbsp;&nbsp;|&nbsp;&nbsp;
+          3. Running your first session &nbsp;&nbsp;|&nbsp;&nbsp;
+          4. Platform workers deep dive &nbsp;&nbsp;|&nbsp;&nbsp;
+          5. Navigation engine &nbsp;&nbsp;|&nbsp;&nbsp;
+          6. Issue detection &nbsp;&nbsp;|&nbsp;&nbsp;
+          7. Reading QA reports &nbsp;&nbsp;|&nbsp;&nbsp;
+          8. Extending with custom strategies
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;color:#aaa">
+      <span style="color:#ffe66d;font-weight:bold">Total video course scripts:</span> 28 episodes across 5 modules
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Diagrams — Per Module</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.8;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div style="color:#ffe66d;font-weight:bold">Each ARCHITECTURE.md includes Mermaid diagrams for:</div>
+    <div style="margin-top:8px;color:#aaa">
+      1. <span style="color:#88d8b0">Component diagram</span> — packages, interfaces, dependencies<br>
+      2. <span style="color:#4ecdc4">Sequence diagram</span> — primary flow (e.g., session lifecycle)<br>
+      3. <span style="color:#c9b1ff">Class diagram</span> — key types and their relationships<br>
+      4. <span style="color:#ff6b6b">State diagram</span> — lifecycle states (agent, session, phase)<br>
+      5. <span style="color:#ffe66d">Flowchart</span> — decision flows (navigation, issue detection)<br><br>
+
+      <span style="color:#fff;font-weight:bold">5 modules × 5 diagrams = 25 Mermaid diagrams</span>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:20px;padding:16px;border:1px solid #444;border-radius:8px">
+  <h3>Summary</h3>
+  <ul style="color:#aaa;font-size:14px;line-height:2">
+    <li><strong>~1,100 new tests</strong> across 6 types (unit, integration, E2E, security, stress, automation)</li>
+    <li><strong>All tests run with -race -count=1</strong> — race-safe guaranteed</li>
+    <li><strong>No real LLM/device dependencies</strong> — full mock infrastructure for CI</li>
+    <li><strong>50 documentation files</strong> (README, ARCHITECTURE, API_REFERENCE, USER_GUIDE, CONTRIBUTING, CHANGELOG, CLAUDE.md, .env.example, VIDEO_COURSE, diagrams per module)</li>
+    <li><strong>28 video course scripts</strong> across 5 modules</li>
+    <li><strong>25 Mermaid architecture diagrams</strong></li>
+  </ul>
+</div>

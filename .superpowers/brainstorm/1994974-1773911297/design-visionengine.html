@@ -1,0 +1,213 @@
+<h2>Design Section 4: VisionEngine Module</h2>
+<p class="subtitle">GoCV core operations + LLM Vision for intelligent UI understanding</p>
+
+<div class="mockup">
+  <div class="mockup-header">Core Interfaces</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div style="color:#ffe66d;font-weight:bold">// ═══ Vision Analyzer — Primary Interface ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">Analyzer</span> <span style="color:#ff6b6b">interface</span> {
+    </div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">AnalyzeScreen(ctx, screenshot []byte)</span> (ScreenAnalysis, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">CompareScreens(ctx, before, after []byte)</span> (ScreenDiff, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">DetectElements(screenshot []byte)</span> ([]UIElement, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">DetectText(screenshot []byte)</span> ([]TextRegion, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">IdentifyScreen(ctx, screenshot []byte)</span> (ScreenIdentity, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">DetectIssues(ctx, screenshot []byte)</span> ([]VisualIssue, error)</div>
+    <div>}</div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ Navigation Graph ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">NavigationGraph</span> <span style="color:#ff6b6b">interface</span> {
+    </div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">AddScreen(screen ScreenIdentity)</span> string <span style="color:#666">// returns node ID</span></div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">AddTransition(from, to string, action Action)</span></div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">CurrentScreen()</span> string</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">SetCurrent(screenID string)</span></div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">PathTo(targetID string)</span> ([]Transition, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">UnvisitedScreens()</span> []string</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Coverage()</span> float64 <span style="color:#666">// % of discovered screens visited</span></div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Export()</span> GraphSnapshot <span style="color:#666">// serializable for reports</span></div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Screens()</span> []ScreenNode</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Transitions()</span> []Transition</div>
+    <div>}</div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ Video Processor ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">VideoProcessor</span> <span style="color:#ff6b6b">interface</span> {
+    </div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">ExtractFrame(videoPath string, timestamp time.Duration)</span> ([]byte, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">ExtractKeyFrames(videoPath string)</span> ([]KeyFrame, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">DetectSceneChanges(videoPath string)</span> ([]time.Duration, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">GenerateThumbnail(videoPath string, ts time.Duration, size Size)</span> ([]byte, error)</div>
+    <div>}</div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ LLM Vision Provider ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">VisionProvider</span> <span style="color:#ff6b6b">interface</span> {
+    </div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">AnalyzeImage(ctx, image []byte, prompt string)</span> (string, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">CompareImages(ctx, img1, img2 []byte, prompt string)</span> (string, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">SupportsVision()</span> bool</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">MaxImageSize()</span> int</div>
+    <div>}</div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Two-Layer Analysis Pipeline</div>
+  <div class="mockup-body" style="padding:20px;background:#1a1a2e">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div style="border:2px solid #4ecdc4;border-radius:8px;padding:16px">
+        <div style="color:#4ecdc4;font-weight:bold;font-size:14px;text-align:center;margin-bottom:12px">Layer 1: GoCV (Mechanical)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.8">
+          <div style="color:#88d8b0">Fast, deterministic, no API calls</div>
+          <div style="margin-top:8px">
+          ├─ <span style="color:#fff">Screenshot diffing</span><br>
+          │&nbsp;&nbsp;SSIM + pixel diff → change mask<br>
+          ├─ <span style="color:#fff">Edge detection</span><br>
+          │&nbsp;&nbsp;Canny edges → UI element bounds<br>
+          ├─ <span style="color:#fff">Color analysis</span><br>
+          │&nbsp;&nbsp;Dominant colors, contrast ratios<br>
+          ├─ <span style="color:#fff">Template matching</span><br>
+          │&nbsp;&nbsp;Find known icons/buttons<br>
+          ├─ <span style="color:#fff">Motion detection</span><br>
+          │&nbsp;&nbsp;Frame-to-frame delta for animations<br>
+          ├─ <span style="color:#fff">Contour detection</span><br>
+          │&nbsp;&nbsp;Bounding boxes for all UI elements<br>
+          └─ <span style="color:#fff">Video frame extraction</span><br>
+          &nbsp;&nbsp;&nbsp;Key frames at scene changes
+          </div>
+        </div>
+      </div>
+      <div style="border:2px solid #ff6b6b;border-radius:8px;padding:16px">
+        <div style="color:#ff6b6b;font-weight:bold;font-size:14px;text-align:center;margin-bottom:12px">Layer 2: LLM Vision (Intelligent)</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.8">
+          <div style="color:#88d8b0">Contextual, semantic, requires API</div>
+          <div style="margin-top:8px">
+          ├─ <span style="color:#fff">Screen identification</span><br>
+          │&nbsp;&nbsp;"This is the Settings page"<br>
+          ├─ <span style="color:#fff">UI comprehension</span><br>
+          │&nbsp;&nbsp;"Login form with email + password"<br>
+          ├─ <span style="color:#fff">UX issue detection</span><br>
+          │&nbsp;&nbsp;"Button text is truncated"<br>
+          ├─ <span style="color:#fff">Accessibility analysis</span><br>
+          │&nbsp;&nbsp;"Low contrast on header text"<br>
+          ├─ <span style="color:#fff">Navigation suggestions</span><br>
+          │&nbsp;&nbsp;"Click hamburger menu → Settings"<br>
+          ├─ <span style="color:#fff">Layout validation</span><br>
+          │&nbsp;&nbsp;"Content overlaps on small screen"<br>
+          └─ <span style="color:#fff">Feature verification</span><br>
+          &nbsp;&nbsp;&nbsp;"Markdown preview matches docs"
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;text-align:center;font-family:monospace;font-size:12px;color:#ffe66d">
+      GoCV runs FIRST (cheap, fast) → results fed as context to LLM Vision (expensive, smart)<br>
+      <span style="color:#888">e.g., "I detected 14 UI elements [bounding boxes]. Which is the Settings button?"</span>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Key Data Types</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div style="color:#ffe66d;font-weight:bold">// Screen analysis result</div>
+    <div><span style="color:#ff6b6b">type</span> ScreenAnalysis <span style="color:#ff6b6b">struct</span> {</div>
+    <div>&nbsp;&nbsp;ScreenID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// unique hash of screen state</span></div>
+    <div>&nbsp;&nbsp;Title&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// LLM-identified screen name</span></div>
+    <div>&nbsp;&nbsp;Description&nbsp;&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// what's on this screen</span></div>
+    <div>&nbsp;&nbsp;Elements&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[]UIElement&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// detected interactive elements</span></div>
+    <div>&nbsp;&nbsp;TextRegions&nbsp;&nbsp;[]TextRegion&nbsp;&nbsp;&nbsp;<span style="color:#666">// OCR-detected text</span></div>
+    <div>&nbsp;&nbsp;Issues&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[]VisualIssue&nbsp;&nbsp;<span style="color:#666">// detected problems</span></div>
+    <div>&nbsp;&nbsp;Navigable&nbsp;&nbsp;&nbsp;&nbsp;[]Action&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// possible navigation actions</span></div>
+    <div>&nbsp;&nbsp;Timestamp&nbsp;&nbsp;&nbsp;&nbsp;time.Time</div>
+    <div>}</div>
+
+    <div style="margin-top:12px"><span style="color:#ff6b6b">type</span> UIElement <span style="color:#ff6b6b">struct</span> {</div>
+    <div>&nbsp;&nbsp;Type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// button, input, link, menu, tab, etc.</span></div>
+    <div>&nbsp;&nbsp;Label&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// visible text or aria label</span></div>
+    <div>&nbsp;&nbsp;BoundingBox&nbsp;Rect&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// x, y, width, height</span></div>
+    <div>&nbsp;&nbsp;Clickable&nbsp;&nbsp;bool</div>
+    <div>&nbsp;&nbsp;Confidence&nbsp;float64&nbsp;&nbsp;&nbsp;<span style="color:#666">// detection confidence 0-1</span></div>
+    <div>}</div>
+
+    <div style="margin-top:12px"><span style="color:#ff6b6b">type</span> VisualIssue <span style="color:#ff6b6b">struct</span> {</div>
+    <div>&nbsp;&nbsp;Type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// overlap, truncation, contrast, alignment, etc.</span></div>
+    <div>&nbsp;&nbsp;Severity&nbsp;&nbsp;&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// critical, high, medium, low</span></div>
+    <div>&nbsp;&nbsp;Description&nbsp;string</div>
+    <div>&nbsp;&nbsp;Region&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rect&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// affected area</span></div>
+    <div>&nbsp;&nbsp;Screenshot&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// annotated screenshot path</span></div>
+    <div>}</div>
+
+    <div style="margin-top:12px"><span style="color:#ff6b6b">type</span> ScreenDiff <span style="color:#ff6b6b">struct</span> {</div>
+    <div>&nbsp;&nbsp;Similarity&nbsp;&nbsp;&nbsp;float64&nbsp;&nbsp;&nbsp;<span style="color:#666">// SSIM score 0-1</span></div>
+    <div>&nbsp;&nbsp;ChangedRegions []Rect&nbsp;&nbsp;<span style="color:#666">// areas that changed</span></div>
+    <div>&nbsp;&nbsp;NewElements&nbsp;&nbsp;[]UIElement <span style="color:#666">// elements that appeared</span></div>
+    <div>&nbsp;&nbsp;GoneElements&nbsp;[]UIElement <span style="color:#666">// elements that disappeared</span></div>
+    <div>&nbsp;&nbsp;DiffImage&nbsp;&nbsp;&nbsp;&nbsp;[]byte&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// visual diff overlay</span></div>
+    <div>&nbsp;&nbsp;IsNewScreen&nbsp;&nbsp;bool&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#666">// true if screens are fundamentally different</span></div>
+    <div>}</div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Module File Structure</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div>VisionEngine/</div>
+    <div>├─ pkg/</div>
+    <div>│&nbsp;&nbsp;├─ analyzer/</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">analyzer.go</span> <span style="color:#666">// Analyzer interface + composite impl</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">screen.go</span> <span style="color:#666">// ScreenAnalysis, ScreenIdentity, ScreenDiff types</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">element.go</span> <span style="color:#666">// UIElement, TextRegion, VisualIssue types</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ analyzer_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;└─ analyzer_integration_test.go</div>
+    <div>│&nbsp;&nbsp;├─ opencv/</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#4ecdc4">differ.go</span> <span style="color:#666">// SSIM, pixel diff, change mask</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#4ecdc4">detector.go</span> <span style="color:#666">// Edge, contour, template matching</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#4ecdc4">color.go</span> <span style="color:#666">// Dominant colors, contrast ratio</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#4ecdc4">video.go</span> <span style="color:#666">// Frame extraction, scene changes</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ differ_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ detector_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ color_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ video_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;└─ opencv_stress_test.go</div>
+    <div>│&nbsp;&nbsp;├─ llmvision/</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#ff6b6b">provider.go</span> <span style="color:#666">// VisionProvider interface</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#ff6b6b">openai.go</span> <span style="color:#666">// GPT-4o vision adapter</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#ff6b6b">anthropic.go</span> <span style="color:#666">// Claude vision adapter</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#ff6b6b">gemini.go</span> <span style="color:#666">// Gemini vision adapter</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#ff6b6b">qwen.go</span> <span style="color:#666">// Qwen-VL adapter</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ provider_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;└─ provider_integration_test.go</div>
+    <div>│&nbsp;&nbsp;├─ graph/</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#c9b1ff">graph.go</span> <span style="color:#666">// NavigationGraph interface + impl</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#c9b1ff">pathfinder.go</span> <span style="color:#666">// BFS/Dijkstra path finding</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#c9b1ff">export.go</span> <span style="color:#666">// DOT, JSON, Mermaid export</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ graph_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ pathfinder_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;└─ graph_stress_test.go</div>
+    <div>│&nbsp;&nbsp;└─ config/</div>
+    <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ config.go</div>
+    <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ config_test.go</div>
+    <div>├─ go.mod <span style="color:#666">// depends on gocv.io/x/gocv</span></div>
+    <div>├─ Makefile</div>
+    <div>├─ .env.example</div>
+    <div>├─ README.md, ARCHITECTURE.md, API_REFERENCE.md</div>
+    <div>├─ CONTRIBUTING.md, CHANGELOG.md, USER_GUIDE.md, LICENSE</div>
+    <div>└─ Upstreams/</div>
+  </div>
+</div>
+
+<div style="margin-top:20px;padding:16px;border:1px solid #444;border-radius:8px">
+  <h3>Key Design Decisions</h3>
+  <ul style="color:#aaa;font-size:14px;line-height:2">
+    <li><strong>Composite Analyzer</strong> — GoCV layer runs first (cheap, fast), feeds bounding boxes + diff data as structured context to LLM Vision layer. LLM gets "here are 14 detected elements at these coordinates" instead of raw pixels.</li>
+    <li><strong>NavigationGraph</strong> — directed graph where nodes are unique screens (hashed by visual similarity) and edges are actions. Supports pathfinding (BFS) for "how do I get to Settings from here?" and coverage tracking.</li>
+    <li><strong>Export formats</strong> — DOT (Graphviz), JSON, Mermaid for including navigation maps in QA reports and tickets.</li>
+    <li><strong>VideoProcessor</strong> — GoCV-based frame extraction at scene changes (detects screen transitions automatically). Used by ticket generator to link video timestamps to issues.</li>
+    <li><strong>Multiple VisionProviders</strong> — adapters for GPT-4o, Claude, Gemini, Qwen-VL. Provider selected based on LLMsVerifier scores. Fallback chain if primary provider fails.</li>
+  </ul>
+</div>

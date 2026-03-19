@@ -1,0 +1,217 @@
+<h2>Design Section 3: LLMOrchestrator Module</h2>
+<p class="subtitle">Headless CLI agent management with hybrid pipe+file communication</p>
+
+<div class="mockup">
+  <div class="mockup-header">Core Interfaces</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div style="color:#ffe66d;font-weight:bold">// ═══ Agent Interface ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">Agent</span> <span style="color:#ff6b6b">interface</span> {
+    </div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">ID()</span> string</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Name()</span> string <span style="color:#666">// "opencode", "claude-code", "gemini", etc.</span></div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Start(ctx)</span> error</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Stop(ctx)</span> error</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">IsRunning()</span> bool</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Health(ctx)</span> HealthStatus</div>
+    <div>&nbsp;&nbsp;<span style="color:#888">// Real-time interaction (stdin/stdout pipe)</span></div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Send(ctx, prompt string)</span> (Response, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">SendStream(ctx, prompt string)</span> (<-chan StreamChunk, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#888">// File-based exchange (artifacts)</span></div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">SendWithAttachments(ctx, prompt, []Attachment)</span> (Response, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">OutputDir()</span> string</div>
+    <div>&nbsp;&nbsp;<span style="color:#888">// Capabilities</span></div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Capabilities()</span> AgentCapabilities</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">SupportsVision()</span> bool</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">ModelInfo()</span> ModelInfo <span style="color:#666">// from LLMsVerifier</span></div>
+    <div>}</div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ Agent Pool ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">AgentPool</span> <span style="color:#ff6b6b">interface</span> {
+    </div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Register(agent Agent)</span> error</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Acquire(ctx, requirements AgentRequirements)</span> (Agent, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Release(agent Agent)</span></div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Available()</span> []Agent</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">HealthCheck(ctx)</span> []HealthStatus</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Shutdown(ctx)</span> error</div>
+    <div>}</div>
+
+    <div style="margin-top:16px;color:#ffe66d;font-weight:bold">// ═══ Response Parser ═══</div>
+    <div style="margin-top:8px">
+      <span style="color:#ff6b6b">type</span> <span style="color:#4ecdc4;font-weight:bold">ResponseParser</span> <span style="color:#ff6b6b">interface</span> {
+    </div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">Parse(raw string)</span> (ParsedResponse, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">ExtractJSON(raw string)</span> (map[string]any, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">ExtractActions(raw string)</span> ([]Action, error)</div>
+    <div>&nbsp;&nbsp;<span style="color:#88d8b0">ExtractIssues(raw string)</span> ([]Issue, error)</div>
+    <div>}</div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">5 CLI Adapters — Each Implements Agent Interface</div>
+  <div class="mockup-body" style="padding:20px;background:#1a1a2e">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="border:1px solid #4ecdc4;border-radius:8px;padding:12px">
+        <div style="color:#4ecdc4;font-weight:bold;font-size:13px">OpenCodeAgent</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.6;margin-top:6px">
+          CLI: <span style="color:#ffe66d">opencode</span><br>
+          Mode: <span style="color:#88d8b0">--headless --non-interactive</span><br>
+          Pipe: stdin/stdout JSON-lines<br>
+          Vision: via configured LLM<br>
+          Models: any from LLMsVerifier<br>
+          Config: OPENCODE_API_KEY, OPENCODE_MODEL
+        </div>
+      </div>
+      <div style="border:1px solid #ff6b6b;border-radius:8px;padding:12px">
+        <div style="color:#ff6b6b;font-weight:bold;font-size:13px">ClaudeCodeAgent</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.6;margin-top:6px">
+          CLI: <span style="color:#ffe66d">claude</span><br>
+          Mode: <span style="color:#88d8b0">--print --output-format json</span><br>
+          Pipe: stdin prompt, stdout JSON<br>
+          Vision: Claude vision (native)<br>
+          Models: Claude family<br>
+          Config: ANTHROPIC_API_KEY
+        </div>
+      </div>
+      <div style="border:1px solid #c9b1ff;border-radius:8px;padding:12px">
+        <div style="color:#c9b1ff;font-weight:bold;font-size:13px">GeminiAgent</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.6;margin-top:6px">
+          CLI: <span style="color:#ffe66d">gemini</span><br>
+          Mode: <span style="color:#88d8b0">--non-interactive</span><br>
+          Pipe: stdin/stdout<br>
+          Vision: Gemini vision (native)<br>
+          Models: Gemini family<br>
+          Config: GOOGLE_API_KEY
+        </div>
+      </div>
+      <div style="border:1px solid #ffe66d;border-radius:8px;padding:12px">
+        <div style="color:#ffe66d;font-weight:bold;font-size:13px">JunieAgent</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.6;margin-top:6px">
+          CLI: <span style="color:#ffe66d">junie</span><br>
+          Mode: <span style="color:#88d8b0">--headless</span><br>
+          Pipe: stdin/stdout<br>
+          Vision: via configured LLM<br>
+          Models: JetBrains AI<br>
+          Config: JUNIE_API_KEY
+        </div>
+      </div>
+      <div style="border:1px solid #88d8b0;border-radius:8px;padding:12px;grid-column:span 2">
+        <div style="color:#88d8b0;font-weight:bold;font-size:13px">QwenCodeAgent</div>
+        <div style="font-family:monospace;font-size:11px;color:#aaa;line-height:1.6;margin-top:6px">
+          CLI: <span style="color:#ffe66d">qwen-code</span>&nbsp;&nbsp;|&nbsp;&nbsp;
+          Mode: <span style="color:#88d8b0">--headless --non-interactive</span>&nbsp;&nbsp;|&nbsp;&nbsp;
+          Pipe: stdin/stdout&nbsp;&nbsp;|&nbsp;&nbsp;
+          Vision: Qwen-VL (native)&nbsp;&nbsp;|&nbsp;&nbsp;
+          Models: Qwen family&nbsp;&nbsp;|&nbsp;&nbsp;
+          Config: QWEN_API_KEY
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Hybrid Communication Protocol</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div style="color:#ffe66d;font-weight:bold">═══ Real-time Channel (stdin/stdout pipes) ═══</div>
+    <div style="margin-top:8px;color:#aaa">Used for: navigation commands, screen analysis, quick decisions</div>
+    <div style="margin-top:8px">
+      <span style="color:#4ecdc4">→ Send:</span> {"type":"prompt","content":"What do you see on this screen?","image_path":"/tmp/screenshot.png"}
+    </div>
+    <div>
+      <span style="color:#ff6b6b">← Recv:</span> {"type":"response","content":"I see a login form with...","actions":[{"type":"click","target":"username_field"}]}
+    </div>
+    <div style="margin-top:8px">
+      <span style="color:#4ecdc4">→ Send:</span> {"type":"prompt","content":"Navigate to Settings > About"}
+    </div>
+    <div>
+      <span style="color:#ff6b6b">← Recv:</span> {"type":"response","content":"Opening settings...","actions":[{"type":"click","target":"settings_icon"}]}
+    </div>
+
+    <div style="margin-top:20px;color:#ffe66d;font-weight:bold">═══ File-based Channel (shared directory) ═══</div>
+    <div style="margin-top:8px;color:#aaa">Used for: screenshots, analysis reports, ticket drafts, large context</div>
+    <div style="margin-top:8px">
+      <span style="color:#888">/tmp/helix-session-{id}/</span>
+    </div>
+    <div>&nbsp;&nbsp;├─ <span style="color:#4ecdc4">inbox/</span> <span style="color:#666">← HelixQA writes instructions here</span></div>
+    <div>&nbsp;&nbsp;│&nbsp;&nbsp;├─ 001-analyze-screen.json</div>
+    <div>&nbsp;&nbsp;│&nbsp;&nbsp;├─ 001-screenshot.png</div>
+    <div>&nbsp;&nbsp;│&nbsp;&nbsp;└─ 002-full-doc-context.json</div>
+    <div>&nbsp;&nbsp;├─ <span style="color:#ff6b6b">outbox/</span> <span style="color:#666">← Agent writes results here</span></div>
+    <div>&nbsp;&nbsp;│&nbsp;&nbsp;├─ 001-analysis.json</div>
+    <div>&nbsp;&nbsp;│&nbsp;&nbsp;├─ 001-ticket-draft.md</div>
+    <div>&nbsp;&nbsp;│&nbsp;&nbsp;└─ 002-feature-coverage.json</div>
+    <div>&nbsp;&nbsp;└─ <span style="color:#ffe66d">shared/</span> <span style="color:#666">← Shared artifacts (docs, feature map)</span></div>
+    <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ feature-map.json</div>
+    <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ navigation-graph.json</div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:20px">
+  <div class="mockup-header">Module File Structure</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.7;padding:20px;background:#1a1a2e;color:#e0e0e0">
+    <div>LLMOrchestrator/</div>
+    <div>├─ cmd/orchestrator/main.go <span style="color:#666">// CLI (optional standalone use)</span></div>
+    <div>├─ pkg/</div>
+    <div>│&nbsp;&nbsp;├─ agent/</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">agent.go</span> <span style="color:#666">// Agent, AgentCapabilities, Response interfaces</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">pool.go</span> <span style="color:#666">// AgentPool with mutex-safe acquire/release</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">health.go</span> <span style="color:#666">// HealthMonitor goroutine, circuit breaker</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ agent_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ pool_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;└─ health_test.go</div>
+    <div>│&nbsp;&nbsp;├─ adapter/</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#4ecdc4">opencode.go</span> <span style="color:#666">// OpenCode headless adapter</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#ff6b6b">claudecode.go</span> <span style="color:#666">// Claude Code --print adapter</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#c9b1ff">gemini.go</span> <span style="color:#666">// Gemini CLI adapter</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#ffe66d">junie.go</span> <span style="color:#666">// Junie headless adapter</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">qwencode.go</span> <span style="color:#666">// Qwen Code adapter</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#aaa">base.go</span> <span style="color:#666">// BaseAdapter with shared pipe/process logic</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ opencode_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ claudecode_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ gemini_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ junie_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ qwencode_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;└─ adapter_integration_test.go</div>
+    <div>│&nbsp;&nbsp;├─ protocol/</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">pipe.go</span> <span style="color:#666">// PipeTransport (stdin/stdout JSON-lines)</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">file.go</span> <span style="color:#666">// FileTransport (inbox/outbox/shared dirs)</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">message.go</span> <span style="color:#666">// Message types, Attachment, StreamChunk</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ pipe_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ file_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;└─ protocol_stress_test.go</div>
+    <div>│&nbsp;&nbsp;├─ parser/</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">parser.go</span> <span style="color:#666">// ResponseParser: JSON, actions, issues extraction</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ <span style="color:#88d8b0">action.go</span> <span style="color:#666">// Action types (click, type, scroll, navigate)</span></div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;├─ parser_test.go</div>
+    <div>│&nbsp;&nbsp;│&nbsp;&nbsp;└─ parser_fuzz_test.go</div>
+    <div>│&nbsp;&nbsp;└─ config/</div>
+    <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ <span style="color:#88d8b0">config.go</span> <span style="color:#666">// Agent configs, .env loading</span></div>
+    <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ config_test.go</div>
+    <div>├─ go.mod</div>
+    <div>├─ go.sum</div>
+    <div>├─ Makefile</div>
+    <div>├─ .env.example</div>
+    <div>├─ README.md</div>
+    <div>├─ ARCHITECTURE.md</div>
+    <div>├─ API_REFERENCE.md</div>
+    <div>├─ CONTRIBUTING.md</div>
+    <div>├─ CHANGELOG.md</div>
+    <div>├─ USER_GUIDE.md</div>
+    <div>├─ LICENSE</div>
+    <div>└─ Upstreams/ <span style="color:#666">// 4 remote sync scripts</span></div>
+  </div>
+</div>
+
+<div style="margin-top:20px;padding:16px;border:1px solid #444;border-radius:8px">
+  <h3>Key Design Decisions</h3>
+  <ul style="color:#aaa;font-size:14px;line-height:2">
+    <li><strong>BaseAdapter</strong> — shared process management (spawn, pipe setup, graceful shutdown, timeout). Each CLI adapter only implements the protocol-specific parsing.</li>
+    <li><strong>AgentPool</strong> — mutex-safe, supports <code>Acquire(ctx, requirements)</code> to get an agent matching capability needs (e.g., "needs vision"). Blocks if none available, respects context cancellation.</li>
+    <li><strong>Circuit breaker per agent</strong> — if an agent crashes 3 times in a row, it's marked unhealthy and excluded from the pool until manual reset or health check passes.</li>
+    <li><strong>No LLMsVerifier dependency at Go module level</strong> — LLMOrchestrator accepts <code>ModelInfo</code> structs passed in by HelixQA. The LLMsVerifier selection happens before LLMOrchestrator is initialized.</li>
+  </ul>
+</div>

@@ -1,0 +1,112 @@
+<h2>System Architecture: 3 Approaches</h2>
+<p class="subtitle">How should the Autonomous QA Session orchestrate all components?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Centralized Pipeline</h3>
+      <p>A single <code>SessionOrchestrator</code> in HelixQA drives everything sequentially:</p>
+      <div class="mockup" style="margin:12px 0">
+        <div class="mockup-body" style="font-family:monospace;font-size:13px;line-height:1.8;padding:16px">
+          <div style="color:#888">// Sequential phases, one controller</div>
+          <div>1. LLMsVerifier → <span style="color:#4ecdc4">Score & select LLMs</span></div>
+          <div>2. DocProcessor → <span style="color:#4ecdc4">Build feature map</span></div>
+          <div>3. VisionEngine → <span style="color:#4ecdc4">Init screen capture</span></div>
+          <div>4. LLMOrchestrator → <span style="color:#4ecdc4">Spawn CLI agents</span></div>
+          <div>5. <strong>Navigation Loop:</strong></div>
+          <div>&nbsp;&nbsp;→ Vision captures screen</div>
+          <div>&nbsp;&nbsp;→ LLM analyzes + decides action</div>
+          <div>&nbsp;&nbsp;→ Execute action on app</div>
+          <div>&nbsp;&nbsp;→ Check feature map coverage</div>
+          <div>&nbsp;&nbsp;→ Generate tickets for issues</div>
+          <div>6. Report → <span style="color:#4ecdc4">Final QA report + tickets</span></div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Simple mental model</li>
+          <li>Easy to debug (linear flow)</li>
+          <li>Predictable resource usage</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>One agent at a time (slow)</li>
+          <li>Single point of failure</li>
+          <li>Hard to parallelize platforms</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Event-Driven Pipeline</h3>
+      <p>Modules communicate via Go channels. Each module is a goroutine consuming/producing events:</p>
+      <div class="mockup" style="margin:12px 0">
+        <div class="mockup-body" style="font-family:monospace;font-size:13px;line-height:1.8;padding:16px">
+          <div style="color:#888">// Concurrent producers & consumers</div>
+          <div><span style="color:#ff6b6b">DocProcessor</span> →ch→ <span style="color:#4ecdc4">FeatureMap</span></div>
+          <div><span style="color:#ff6b6b">VisionEngine</span> →ch→ <span style="color:#4ecdc4">ScreenState</span></div>
+          <div><span style="color:#ff6b6b">Navigator</span> ←ch← <span style="color:#4ecdc4">ScreenState + FeatureMap</span></div>
+          <div><span style="color:#ff6b6b">Navigator</span> →ch→ <span style="color:#4ecdc4">Actions</span></div>
+          <div><span style="color:#ff6b6b">IssueDetector</span> ←ch← <span style="color:#4ecdc4">ScreenState</span></div>
+          <div><span style="color:#ff6b6b">IssueDetector</span> →ch→ <span style="color:#4ecdc4">Tickets</span></div>
+          <div><span style="color:#ff6b6b">EvidenceRecorder</span> ←ch← <span style="color:#4ecdc4">All events</span></div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Naturally concurrent</li>
+          <li>Modules are decoupled</li>
+          <li>Easy to add new consumers</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Complex event ordering</li>
+          <li>Harder to debug (async)</li>
+          <li>Channel deadlock risks</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Coordinator + Worker Agents</h3>
+      <p>A <code>SessionCoordinator</code> manages phases, but delegates work to parallel worker agents per platform:</p>
+      <div class="mockup" style="margin:12px 0">
+        <div class="mockup-body" style="font-family:monospace;font-size:13px;line-height:1.8;padding:16px">
+          <div style="color:#888">// Phased coordination, parallel execution</div>
+          <div><strong>SessionCoordinator</strong></div>
+          <div>├─ <span style="color:#ff6b6b">Phase 1: Setup</span> (sequential)</div>
+          <div>│&nbsp;&nbsp;├─ LLMsVerifier → select LLMs</div>
+          <div>│&nbsp;&nbsp;├─ DocProcessor → build feature map</div>
+          <div>│&nbsp;&nbsp;└─ LLMOrchestrator → spawn agents</div>
+          <div>├─ <span style="color:#4ecdc4">Phase 2: Doc-Driven</span> (parallel per platform)</div>
+          <div>│&nbsp;&nbsp;├─ Worker[Android] → verify features</div>
+          <div>│&nbsp;&nbsp;├─ Worker[Desktop] → verify features</div>
+          <div>│&nbsp;&nbsp;└─ Worker[Web] → verify features</div>
+          <div>├─ <span style="color:#ffe66d">Phase 3: Curiosity</span> (parallel per platform)</div>
+          <div>│&nbsp;&nbsp;├─ Worker[Android] → free explore</div>
+          <div>│&nbsp;&nbsp;├─ Worker[Desktop] → free explore</div>
+          <div>│&nbsp;&nbsp;└─ Worker[Web] → free explore</div>
+          <div>└─ <span style="color:#c9b1ff">Phase 4: Report</span> (sequential)</div>
+          <div>&nbsp;&nbsp;&nbsp;└─ Aggregate tickets + evidence + report</div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Clear phase boundaries</li>
+          <li>Parallel platform testing</li>
+          <li>Predictable + concurrent</li>
+          <li>Easy progress tracking</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Slightly more complex than A</li>
+          <li>Cross-platform issues found late</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>
