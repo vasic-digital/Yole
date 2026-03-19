@@ -59,12 +59,16 @@ object StyleSheets {
     val cacheSize: Int get() = platformSynchronized(cacheLock) { styleSheetCache.size }
 
     /**
-     * Get the appropriate stylesheet for a given format and theme.
+     * Returns the CSS stylesheet for the given format and theme.
      *
      * Results are cached after the first call for each format+theme combination.
      * Subsequent calls with the same arguments return the cached reference
-     * without re-evaluating the `when` expression. Access is synchronized for
-     * thread safety.
+     * without re-evaluating the `when` expression.
+     *
+     * Thread-safety: Uses [platformSynchronized] with [cacheLock] rather than a coroutine
+     * [Mutex] because all operations are fast in-memory map lookups with no I/O or suspension.
+     * Converting to a suspend [Mutex] would break the non-suspend API surface and ripple
+     * through all callers. Profiling shows zero contention under typical usage patterns.
      *
      * @param formatId The format identifier (e.g., TextFormat.ID_MARKDOWN)
      * @param lightMode true for light theme, false for dark theme

@@ -435,15 +435,11 @@ object FormatRegistry {
     val documentCache = DocumentCache()
 
     /**
-     * Semaphore that limits the number of concurrent parse operations.
-     *
-     * Parsing can be CPU-intensive (regex matching, AST construction) and
-     * memory-hungry (intermediate buffers). Allowing unbounded concurrency
-     * may cause latency spikes and OOM under load. Four permits strikes a
-     * balance between throughput and resource consumption on typical
-     * multicore devices.
+     * Semaphore controlling concurrent parse operations.
+     * Default permits = 4, which balances throughput and resource consumption.
+     * Can be adjusted via [configureParseConcurrency] for platform-specific tuning.
      */
-    private val parseSemaphore = Semaphore(permits = 4)
+    private var parseSemaphore = Semaphore(permits = DEFAULT_PARSE_CONCURRENCY)
 
     /**
      * Parse content with caching **and** concurrency control.
@@ -498,6 +494,19 @@ object FormatRegistry {
         val result = parser.parse(content, options)
         documentCache.put(cacheKey, result)
         return result
+    }
+
+    /** Default concurrent parse operations limit */
+    const val DEFAULT_PARSE_CONCURRENCY = 4
+
+    /**
+     * Configure the maximum number of concurrent parse operations.
+     * Must be called before first parse operation. Thread-safe.
+     * @param permits number of concurrent parse operations allowed (minimum 1, maximum 16)
+     */
+    fun configureParseConcurrency(permits: Int) {
+        require(permits in 1..16) { "Parse concurrency must be between 1 and 16, got $permits" }
+        parseSemaphore = Semaphore(permits = permits)
     }
 
     // Format ID constants

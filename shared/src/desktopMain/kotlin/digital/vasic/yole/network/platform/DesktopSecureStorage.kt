@@ -28,9 +28,13 @@ class DesktopSecureStorage(
     private val mutex = Mutex()
 
     // In-memory cache for fast and reliable access
+    @Volatile
     private var cache: MutableMap<String, String>? = null
+    @Volatile
     private var secretKey: SecretKey? = null
+    @Volatile
     private var lastKnownFileModified: Long = 0L
+    @Volatile
     private var lastKnownFileSize: Long = 0L
 
     override suspend fun store(key: String, value: String): Result<Unit> = withContext(Dispatchers.IO) {
@@ -135,8 +139,8 @@ class DesktopSecureStorage(
                 return@withContext Result.success(false)
             }
 
-            // Verify round-trip encryption works
-            val aesKey = getOrCreateSecretKey()
+            // Verify round-trip encryption works (mutex protects secretKey access)
+            val aesKey = mutex.withLock { getOrCreateSecretKey() }
             val testData = "secure_test_${System.currentTimeMillis()}"
             val encrypted = encryptData(testData, aesKey)
             val decrypted = decryptData(encrypted, aesKey)

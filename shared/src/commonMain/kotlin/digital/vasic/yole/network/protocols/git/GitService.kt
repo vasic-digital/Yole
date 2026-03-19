@@ -87,6 +87,7 @@ class GitService(
     }
 
     // Track whether httpClient has been initialized to avoid closing uninitialized client
+    @Volatile
     private var httpClientInitialized = false
 
     private val stateMutex = Mutex()

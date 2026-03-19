@@ -639,3 +639,46 @@ fun testConcurrency() = runTest {
 | **StateFlow** | Mutex + StateFlow | High | Observable reactive state |
 
 All patterns are **Kotlin Multiplatform compatible** and can be safely used across JVM, iOS, Wasm, and Desktop targets.
+
+---
+
+## Session 6 Concurrency Fixes (2026-03-19)
+
+### Fixes Applied
+
+#### @Volatile for httpClientInitialized (WebDavService, GitService)
+The `httpClientInitialized` boolean flag was a plain `var` without `@Volatile`, creating a visibility race between the `lazy` httpClient initializer and `disconnect()`. Fixed by adding `@Volatile` to ensure cross-thread visibility.
+
+**Files:** `WebDavService.kt`, `GitService.kt`
+
+#### @Volatile for DesktopSecureStorage Fields
+Four mutable fields (`cache`, `secretKey`, `lastKnownFileModified`, `lastKnownFileSize`) lacked `@Volatile`. Additionally, `getOrCreateSecretKey()` was called outside the mutex in `isSecure()`. Fixed by adding `@Volatile` to all four fields and wrapping the `isSecure()` call in `mutex.withLock`.
+
+**File:** `DesktopSecureStorage.kt`
+
+#### Consistent isLowOnSpace Threshold
+DropboxService used `>= 0.9` while GoogleDriveService and OneDriveService used `> 0.9`. Aligned all three to `>= 0.9` (90% or more triggers low space warning).
+
+**Files:** `GoogleDriveService.kt`, `OneDriveService.kt`
+
+#### Configurable Parse Semaphore
+`FormatRegistry.parseSemaphore` was hardcoded to 4 permits. Added `DEFAULT_PARSE_CONCURRENCY` constant and `configureParseConcurrency(permits)` method for platform-specific tuning (range: 1-16).
+
+**File:** `FormatRegistry.kt`
+
+#### NetworkStorageConfigService Documentation
+Added KDoc documenting that `configuredServices` map is protected by the class-level `mutex`.
+
+**File:** `NetworkStorageConfigService.kt`
+
+### Previously Fixed (Session 3, Verified)
+The following issues were verified as already fixed during the Phase 1 audit:
+- CancellationException rethrow in DropboxService, GoogleDriveService, OneDriveService `getRecentChanges()`
+- SmbService `deleteFile()` connection guards
+- SmbService `getFileInfo()` lock-protected return
+- SmbService `listFiles()` CancellationException in Flow catch
+- SftpService `exists()` VFS initialization via `isConnected()` guard
+- FtpService `disconnect()` atomic clear+cancel of activeJobs
+- AuthTokenManager two-mutex consistent lock ordering
+- DocumentCache `yield()` cooperative cancellation
+- DropboxService `isLowOnSpace` threshold (>= 0.9)

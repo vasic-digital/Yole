@@ -1498,7 +1498,7 @@ class OneDriveService(
                     availableSpace = availableSpace,
                     usagePercentage = usagePercentage,
                     isFull = availableSpace <= 0,
-                    isLowOnSpace = usagePercentage > 0.9,
+                    isLowOnSpace = usagePercentage >= 0.9,
                     metadata = mapOf("provider" to "OneDrive", "type" to config.driveType.name)
                 ))
             } else {

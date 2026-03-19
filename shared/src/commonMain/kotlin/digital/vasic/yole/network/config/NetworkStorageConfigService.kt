@@ -29,6 +29,11 @@ class NetworkStorageConfigService {
     private val _activeStorage = MutableStateFlow<NetworkStorage?>(null)
     private val _connectionStatus = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     
+    /**
+     * Map of configured storage services by unique identifier.
+     * Thread-safety: All accesses to this map are protected by [mutex].
+     * Do not access this field outside of a [mutex.withLock] block.
+     */
     private val configuredServices = mutableMapOf<String, NetworkStorageService>()
     
     /**
