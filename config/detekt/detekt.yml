@@ -7,7 +7,7 @@ complexity:
   LongParameterList:
     functionThreshold: 8
     constructorThreshold: 10
-  ComplexMethod:
+  CyclomaticComplexMethod:
     threshold: 30
   TooManyFunctions:
     thresholdInFiles: 30
@@ -62,9 +62,6 @@ comments:
     active: false
   AbsentOrWrongFileLicense:
     active: false
-
-formatting:
-  active: false
 
 coroutines:
   active: true
