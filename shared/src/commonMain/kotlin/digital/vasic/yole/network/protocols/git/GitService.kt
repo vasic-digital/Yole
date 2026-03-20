@@ -11,6 +11,7 @@ import digital.vasic.yole.network.StorageQuota
 import digital.vasic.yole.network.common.*
 import digital.vasic.yole.network.platform.PlatformFileIOFactory
 import digital.vasic.yole.network.protocol.createHttpClient
+import digital.vasic.yole.util.Volatile
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
