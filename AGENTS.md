@@ -1,166 +1,98 @@
 # Yole - Development Guide for AI Agents
 
-## MANDATORY: No CI/CD Pipelines
+## MANDATORY Rules
 
-**NO GitHub Actions, GitLab CI/CD, or any automated pipeline may exist in this repository!**
-
-- No `.github/workflows/` directory
-- No `.gitlab-ci.yml` file
-- No Jenkinsfile, .travis.yml, .circleci, or any other CI configuration
-- All builds and tests are run manually or via Makefile targets
-- This rule is permanent and non-negotiable
-
-## MANDATORY: Build and Test in Containers
-
-**ALL builds and tests MUST be executed inside Docker/Podman containers, NOT directly on the host machine!**
-
-This is required to ensure:
-- Consistent environment across all platforms
-- Proper dependency management
-- Reproducible builds
-- Proper Android emulator access
-- All integration services available
-
-```bash
-# Build the container first
-docker compose build build
-
-# Run tests inside container
-docker compose run --rm build ./docker/scripts/test-all.sh
-
-# Build releases inside container
-docker compose run --rm build ./docker/scripts/build.sh
-```
-
-## MANDATORY: Never Remove or Disable Tests
-
-**NO test may ever be removed, disabled, skipped, or left broken!**
-
-All issues must be fixed by addressing the root causes:
-- Fix the source code to match tests if tests are correct
-- Fix the tests to match source code if source is correct
-- Add missing classes/methods to make code compile
-- Add missing imports to tests
-- Fix syntax errors
-- Fix parameter name mismatches
-
-Any fix applied must be:
-- Covered by all supported test types in depth
-- Verified by running all challenges
-- Properly documented
-
-## MANDATORY: Build Naming Convention for Releases
-
-**ALL builds in `releases/` MUST use this naming:**
-
-```
-Yole-{Platform}-{Version}-{Variant}-{VersionCodeDotted}.{ext}
-```
-
-- **Platform**: `Android`, `Desktop-linux-x64`, `Desktop-windows-x64`, `Desktop-macos-arm64`, `Web-wasm`
-- **Version**: Semantic version (e.g., `1.0.0`)
-- **Variant**: `Debug` or `Release` — **both variants MUST be built**
-- **VersionCodeDotted**: Version code as dotted groups (code `1` → `0.0.0.0.1`, code `102` → `0.0.1.0.2`)
-
-Both **signed debug AND signed release** variants are required for every platform.
-
-## Project Overview
-
-**Yole** is a cross-platform text editor built with Kotlin Multiplatform (KMP), supporting Android (production), Desktop (beta), iOS/Web (development). Supports 17 text formats, 8 network protocols, and 10 extracted KMP modules. 9,400+ tests across ~215 test files.
-
-**Package namespace:** `digital.vasic.yole.*` (legacy: `net.gsantner.opoc.*`)
+1. **No CI/CD Pipelines** - No `.github/workflows/`, `.gitlab-ci.yml`, Jenkinsfile, etc.
+2. **Never Remove/Disable Tests** - Fix root causes, don't skip tests
+3. **Release builds in containers** - `docker compose run --rm build ./docker/scripts/build.sh`
 
 ## Build Commands
 
 ```bash
-# Primary dev test command (no Android SDK needed, runs on host JVM)
+# Primary dev test (no Android SDK needed)
 ./gradlew :shared:desktopTest
-make test-shared                                   # Makefile shortcut
+make test-shared
 
 # Single test class
 ./gradlew :shared:desktopTest --tests "digital.vasic.yole.format.todotxt.TodoTxtQuerySyntaxTests"
 
-# Android
-./gradlew :androidApp:assembleDebug
-make build
+# Single test method
+./gradlew :shared:desktopTest --tests "digital.vasic.yole.format.markdown.MarkdownParserTests.ParseHeaders"
 
-# Desktop
-./gradlew :desktopApp:run
-make desktop
-
-# Web (WASM)
-./gradlew :webApp:wasmJsBrowserRun
-make web
-
-# All tests (requires Android SDK for androidApp module)
+# All tests (requires Android SDK)
 ./gradlew test
-./gradlew test koverHtmlReport                   # With coverage
+./gradlew test koverHtmlReport  # With coverage
+
+# Platform builds
+./gradlew :androidApp:assembleDebug   # Android
+./gradlew :desktopApp:run             # Desktop
+./gradlew :webApp:wasmJsBrowserRun    # Web
 
 # Lint & Static Analysis
-./gradlew lintFlavorDefaultDebug
 ./gradlew detekt
+./gradlew lintFlavorDefaultDebug
 
-# API Docs
-./gradlew :shared:dokkaHtml
+# Makefile shortcuts
+make test-shared    # :shared:desktopTest
+make desktop        # :desktopApp:run
+make detekt         # Static analysis
 
-# Benchmarks
-./gradlew :shared:runSimpleBenchmarks
-
-# Challenge framework
-./gradlew runChallenges
+# Submodule tests (requires Go 1.24+)
+make challenge      # Challenges Go tests
+make helixqa-test   # HelixQA Go tests
+make qa-all         # Full QA pipeline
 ```
-
-## Known Issues
-
-- **AGP version mismatch**: `androidApp` tests may fail due to AGP version mismatch. Use `:shared:desktopTest` for routine testing.
-- **Container OOM**: Exit code 137 = OOM kill. Increase container memory limits.
-- **Go flaky tests**: `TestStress_ConcurrentJWTRefresh` (Auth) and `TestGenericPool_HealthyConnectionsSurvive` (Database) are pre-existing flaky tests.
 
 ## Testing Constraints
 
-- **JUnit4 runner**: Tests use `runBlocking<Unit> { }` (not `runTest`). JUnit4 requires `Unit` return type.
-- **MockK is JVM-only**: Available in `desktopTest` and `androidUnitTest`, NOT in `commonTest` or `wasmJsTest`.
-- **kotlinx-coroutines-test**: No WASM variant. Unavailable in `commonTest`.
-- **jvmTarget**: Must be `"11"` in all JVM compilations.
+- **JUnit4 runner**: Use `runBlocking<Unit> { }` (not `runTest`) - JUnit4 requires `Unit` return
+- **MockK is JVM-only**: Available in `desktopTest` and `androidUnitTest`, NOT in `commonTest`
+- **kotlinx-coroutines-test**: No WASM variant, unavailable in `commonTest`
+- **jvmTarget**: Must be `"11"` in all JVM compilations
 
 ## Architecture
 
-- **Shared module** (`shared/src/commonMain/kotlin/digital/vasic/yole/`) - All business logic
-- **10 extracted KMP modules** - Consumed via `includeBuild()` in `settings.gradle.kts`
-- **Platform apps** (`androidApp/`, `desktopApp/`, `iosApp/`, `webApp/`) - UI shells
-- **Legacy** (`app/`, `core/`, `commons/`) - Android-specific, being phased out
-
 ```
 shared/src/commonMain/kotlin/digital/vasic/yole/
-├── format/          # 17 format parsers + registry + DocumentCache + StyleSheets
+├── format/          # 17 parsers + FormatRegistry + DocumentCache + StyleSheets
 ├── network/         # 8 protocols (Dropbox, GDrive, OneDrive, WebDAV, FTP, SFTP, SMB, Git)
 ├── model/           # Document representation
-├── ui/              # Shared Compose components (Theme, accessibility)
+├── ui/              # Shared Compose components
 └── util/            # Facade bridges (LazyLoading, RateLimiting, PlatformSync)
 ```
 
+**Package namespace:** `digital.vasic.yole.*` (legacy: `net.gsantner.opoc.*`)
+
 ### Key Patterns
 
-- **FormatRegistry**: Lazy-loaded `formats` via `lazy { createFormats() }`, check `isFormatsInitialized`
-- **StyleSheets**: `styleSheetCache` with `clearCache()`
-- **All 8 protocol services**: CircuitBreaker, ConnectionLimiter, Mutex lock ordering, CancellationException rethrow, `normalizePath()` for path traversal protection
-- **Concurrency**: `scopeMutex` > `stateMutex` > `operationsMutex` > `syncMutex` > `cacheMutex` > `pauseFlagsMutex` > `activeJobsMutex` > `storageInitMutex`
+- **FormatRegistry**: `formats` is lazy-loaded via `lazy { createFormats() }`, check `isFormatsInitialized`
+- **StyleSheets**: Uses `styleSheetCache` with `clearCache()`
+- **Protocol services**: CircuitBreaker, ConnectionLimiter, Mutex lock ordering, `normalizePath()` for path traversal protection
+- **Concurrency lock ordering**: `scopeMutex` > `stateMutex` > `operationsMutex` > `syncMutex` > `cacheMutex` > `pauseFlagsMutex` > `activeJobsMutex` > `storageInitMutex`
+
+## Git Submodules
+
+| Submodule | Purpose |
+|-----------|---------|
+| `Challenges/` | Go testing framework: 17 packages, UI automation banks, userflow runner, FFmpeg recorder |
+| `Containers/` | Container orchestration: 20 packages, remote distribution, boot manager, ctop monitoring |
+| `HelixQA/` | QA orchestration: crash detection, evidence collection, LLM-powered autonomous testing |
+
+```bash
+git submodule update --init --recursive
+
+# Build and test submodules
+cd Challenges && go build ./... && go test ./... -race -count=1
+cd Containers && go build ./... && go test ./... -race -count=1
+cd HelixQA && go build ./... && go test ./... -race -count=1
+
+# Run autonomous QA session
+cd HelixQA && go run ./cmd/helixqa autonomous --project .. --platforms android,desktop,web
+```
 
 ## Code Style Guidelines
 
-### Language Standards
-- **Kotlin** primary; Java only for legacy code
-- **Java 11+** compatibility required
-- Use `expect/actual` pattern for platform-specific code
-
-### Naming Conventions
-- **Classes**: PascalCase (`TextFormat`, `MarkdownParser`)
-- **Functions**: camelCase (`parseContent()`, `detectFormat()`)
-- **Variables**: camelCase (`documentContent`, `formatRegistry`)
-- **Constants**: UPPER_SNAKE_CASE (`ID_MARKDOWN`, `EXTENSION_MD`)
-- **Test classes**: End with `Tests` or `Test`
-
-### File Headers
+### File Headers (Required)
 ```kotlin
 /*#######################################################
  *
@@ -172,73 +104,80 @@ shared/src/commonMain/kotlin/digital/vasic/yole/
 package digital.vasic.yole.format
 ```
 
+### Language Standards
+- **Kotlin** primary; Java only for legacy code
+- **Java 11+** compatibility required
+- Use `expect/actual` pattern for platform-specific code
+
+### Naming Conventions
+| Type | Convention | Example |
+|------|------------|---------|
+| Classes | PascalCase | `TextFormat`, `MarkdownParser` |
+| Functions | camelCase | `parseContent()`, `detectFormat()` |
+| Variables | camelCase | `documentContent`, `formatRegistry` |
+| Constants | UPPER_SNAKE_CASE | `ID_MARKDOWN`, `EXTENSION_MD` |
+| Test classes | End with `Tests` or `Test` | `MarkdownParserTests` |
+
 ### Import Ordering
-1. Kotlin standard library (`kotlin.*`)
+1. Kotlin standard library (`kotlin.*`, `kotlinx.*`)
 2. Third-party libraries (`androidx.*`, `com.*`, `org.*`)
 3. Project imports (`digital.vasic.yole.*`)
 
-### Code Organization
-- **KDoc** required for all public APIs with examples
-- **Group** related functionality
-- Use **data classes** for simple data holders
-- Leverage Kotlin **null safety** features
+### KDoc Requirements
+- Required for all public APIs
+- Include `@property` for constructor parameters
+- Include `@param`, `@return`, `@throws` where applicable
+- Include `@example` code blocks for complex APIs
 
 ### Error Handling
-- Use specific exception types
+- Use specific exception types (not generic `Exception`)
 - Provide meaningful error messages
 - Fail fast with validation at boundaries
+- Always rethrow `CancellationException` in catch blocks for coroutines
+
+### Concurrency
+- Use `Mutex.withLock` for protecting mutable state
+- Use `@Volatile` for lazy caches accessed from multiple threads
+- Use `platformSynchronized(lock)` for simple atomic operations
+- Never use `GlobalScope` (enforced by Detekt)
+
+## Detekt Rules (config/detekt/detekt.yml)
+
+- Max line length: 150 characters
+- Max method length: 100 lines
+- Max parameters: 8 (function), 10 (constructor)
+- Cyclomatic complexity: 30
+- No global coroutines
+- No swallowed exceptions
 
 ## Adding New Formats
 
 1. Create parser in `shared/src/commonMain/kotlin/digital/vasic/yole/format/[name]/`
 2. Implement `TextParser` interface
-3. Register in `FormatRegistry.kt`
-4. Add tests in `shared/src/commonTest/kotlin/`
+3. Add `TextFormat` to `FormatRegistry.createFormats()` (order matters - specific before general)
+4. Add format ID constant to `TextFormat.Companion`
+5. Register parser via `ParserRegistry.registerLazy("formatId") { Parser() }`
+6. Add tests in `shared/src/commonTest/kotlin/digital/vasic/yole/format/[name]/`
 
 ## Key Files
 
-- `shared/build.gradle.kts` - KMP configuration
-- `gradle/libs.versions.toml` - Dependency versions
-- `docker/scripts/test-all.sh` - Comprehensive test runner
-- `docker-compose.yml` - Container build + security scanning environment
-- `config/detekt/detekt.yml` - Static analysis configuration
-- `scripts/run_security_scan.sh` - Local security scanning
+| File | Purpose |
+|------|---------|
+| `shared/build.gradle.kts` | KMP configuration |
+| `gradle/libs.versions.toml` | Dependency versions |
+| `settings.gradle.kts` | Module includes + 10 composite builds |
+| `config/detekt/detekt.yml` | Static analysis rules |
+| `Makefile` | Build automation (`make help` for all targets) |
 
 ## Quality Requirements
 
 - All tests must pass
-- Minimum 70% code coverage (enforced by Kover)
-- No lint violations
-- SPDX headers required on all new files
+- Minimum 70% code coverage (Kover)
+- No Detekt violations
+- SPDX headers on all new files
 
-## Security Scanning
+## Known Issues
 
-Free security scanning is integrated via GitHub Actions:
-
-```bash
-# Start local SonarQube (requires Docker/Podman)
-docker compose up -d sonarqube
-
-# SonarQube available at: http://localhost:9000
-# Default credentials: admin/admin
-```
-
-### Security Tools Configured
-- **Snyk**: Free tier for vulnerability scanning (set SNYK_TOKEN in repo secrets)
-- **SonarQube**: Community edition via Docker Compose
-- **CodeQL**: GitHub native security analysis
-- **OWASP Dependency Check**: Gradle plugin
-- **Gitleaks**: Secret scanning
-
-## Docker Services
-
-```bash
-# Start all services
-docker compose up -d
-
-# Start specific service
-docker compose up -d sonarqube
-
-# Full security stack
-docker compose up -d --profile full
-```
+- **AGP mismatch**: `androidApp` tests may fail; use `:shared:desktopTest`
+- **Container OOM**: Exit code 137 = increase memory limits
+- **Go flaky tests**: `TestStress_ConcurrentJWTRefresh`, `TestGenericPool_HealthyConnectionsSurvive`

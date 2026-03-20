@@ -91,8 +91,9 @@ releases/web/Yole-Web-wasm-1.0.0-Release-0.0.0.0.1/
 
 | Submodule | Purpose |
 |-----------|---------|
-| `Challenges/` | Go-based testing framework with cross-platform challenges |
-| `Containers/` | Go-based container orchestration (dependency of Challenges) |
+| `Challenges/` | Go-based testing framework with cross-platform challenges, UI automation banks, userflow runner |
+| `Containers/` | Go-based container orchestration, remote distribution, distributed test runner |
+| `HelixQA/` | QA orchestration with crash detection, evidence collection, LLM-powered autonomous testing |
 
 ```bash
 git submodule update --init --recursive
@@ -100,7 +101,33 @@ git submodule update --init --recursive
 # Build and test (requires Go 1.24+)
 cd Challenges && go build ./... && go vet ./... && go test ./... -race -count=1
 cd Containers && go build ./... && go vet ./... && go test ./... -race -count=1
+cd HelixQA && go build ./... && go vet ./... && go test ./... -race -count=1
+
+# Run HelixQA autonomous QA session
+cd HelixQA && go run ./cmd/helixqa autonomous --project .. --platforms android,desktop,web
 ```
+
+### Submodule Features
+
+**Challenges** (`digital.vasic.challenges`):
+- 17 packages: challenge, registry, runner, assertion (16 evaluators), report, logging, env, bank, monitor, metrics, plugin, infra, userflow, panoptic, httpclient, container
+- UI automation challenge banks: desktop, web, android with step-by-step validation
+- ComposeDesktop runner, FFmpeg recorder, speed modes, recording validator
+- Userflow runner for end-to-end UI automation
+
+**Containers** (`digital.vasic.containers`):
+- 20 packages: runtime, compose, health, endpoint, lifecycle, monitor, event, discovery, logging, metrics, boot, orchestrator, remote, scheduler, network, volume, envconfig, distribution, ctop
+- Remote distribution with 5 scheduling strategies (resource_aware, round_robin, affinity, spread, bin_pack)
+- Boot manager for lazy container startup and idle shutdown
+- Distributed test runner for cross-host test execution
+- ctop for container monitoring (top/htop-style)
+
+**HelixQA** (`digital.vasic.helixqa`):
+- Cross-platform crash/ANR detection (ADB, pgrep, browser monitoring)
+- Evidence collection (screenshots, video, logs, stack traces)
+- LLM-powered bug detection and ticket generation
+- Autonomous QA sessions with 4 phases (Setup → Doc-Driven → Curiosity-Driven → Report)
+- Integration with LLMsVerifier, LLMOrchestrator, VisionEngine, DocProcessor
 
 ## Build Commands
 
