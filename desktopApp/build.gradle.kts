@@ -68,6 +68,10 @@ compose.desktop {
     application {
         mainClass = "digital.vasic.yole.desktop.MainKt"
 
+        buildTypes.release.proguard {
+            isEnabled.set(false)
+        }
+
         nativeDistributions {
             targetFormats(
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Dmg,
