@@ -37,7 +37,11 @@ internal var applicationExitCallback: (() -> Unit)? = null
 internal var windowVisibilityToggle: ((Boolean) -> Unit)? = null
 
 @OptIn(ExperimentalComposeUiApi::class)
-fun main() = application {
+fun main() {
+    // Initialize parsers before launching the UI
+    digital.vasic.yole.format.ParserInitializer.registerAllParsersLazy()
+
+    application {
     // Load application settings
     val settingsStorage = DesktopSettingsStorage()
     val appSettings = remember { mutableStateOf(settingsStorage.loadSettings()) }
@@ -166,6 +170,7 @@ fun main() = application {
                 }
             }
         }
+    }
     }
 }
 

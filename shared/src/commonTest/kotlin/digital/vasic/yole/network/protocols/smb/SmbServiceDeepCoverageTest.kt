@@ -916,15 +916,24 @@ class SmbServiceDeepCoverageTest {
     // ----------------------------------------------------------------
 
     @Test
-    fun `searchFiles always returns failure`() = runBlocking<Unit> {
+    fun `searchFiles when not connected returns connection error`() = runBlocking<Unit> {
         val results = service.searchFiles("query", null, false).toList()
         assertEquals(1, results.size)
         assertTrue(results[0].isFailure)
-        assertEquals("SMB search not implemented", results[0].exceptionOrNull()?.message)
+        assertEquals("SMB not connected", results[0].exceptionOrNull()?.message)
     }
 
     @Test
-    fun `searchFiles with path and includeContent returns failure`() = runBlocking<Unit> {
+    fun `searchFiles when connected returns empty list for no matches`() = runBlocking<Unit> {
+        service.connect()
+        val results = service.searchFiles("nonexistent_file_xyz", "/", false).toList()
+        assertEquals(1, results.size)
+        assertTrue(results[0].isSuccess)
+        assertTrue(results[0].getOrNull()!!.isEmpty())
+    }
+
+    @Test
+    fun `searchFiles with path and includeContent when not connected returns failure`() = runBlocking<Unit> {
         val results = service.searchFiles("query", "/dir", true).toList()
         assertTrue(results[0].isFailure)
     }

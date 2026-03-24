@@ -319,8 +319,13 @@ fun MainScreen() {
         }
     }
 
-    // Initialize parsers with lazy loading for faster startup
+    // Initialize secure storage and parsers with lazy loading for faster startup
     LaunchedEffect(Unit) {
+        try {
+            digital.vasic.yole.network.platform.SecureStorageFactory.initialize(context)
+        } catch (e: Exception) {
+            android.util.Log.e("YoleApp", "Failed to initialize secure storage", e)
+        }
         try {
             digital.vasic.yole.format.ParserInitializer.registerAllParsersLazy()
         } catch (e: Exception) {

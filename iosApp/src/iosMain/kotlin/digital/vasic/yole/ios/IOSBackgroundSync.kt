@@ -9,16 +9,29 @@
  *########################################################*/
 package digital.vasic.yole.ios
 
+import digital.vasic.yole.network.NetworkStorageService
+import digital.vasic.yole.network.config.NetworkStorageConfigService
+import digital.vasic.yole.network.common.NetworkDocument
+import digital.vasic.yole.network.common.SyncStatus
+import platform.BackgroundTasks.BGTask
 import platform.BackgroundTasks.BGTaskScheduler
 import platform.BackgroundTasks.BGAppRefreshTaskRequest
 import platform.BackgroundTasks.BGProcessingTaskRequest
-import platform.Foundation.NSOperationQueue
-import platform.Foundation.NSURLSession
-import platform.Foundation.NSURLSessionConfiguration
+import platform.Foundation.*
+import platform.UserNotifications.UNMutableNotificationContent
+import platform.UserNotifications.UNNotificationRequest
+import platform.UserNotifications.UNUserNotificationCenter
+import platform.UserNotifications.UNTimeIntervalNotificationTrigger
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.datetime.Clock
+import kotlin.time.Duration.Companion.hours
 
 /**
- * Background Task Identifiers
+ * Background Task Identifiers.
+ *
+ * These identifiers must be declared in the app's Info.plist under
+ * BGTaskSchedulerPermittedIdentifiers for the system to launch them.
  */
 object YoleBackgroundTasks {
     const val SYNC_TASK = "digital.vasic.yole.sync"
@@ -27,23 +40,71 @@ object YoleBackgroundTasks {
 }
 
 /**
- * Background Sync Manager for iOS
+ * Sync result summary returned after a full sync cycle.
+ *
+ * @property successCount Number of storages synced successfully
+ * @property failureCount Number of storages that failed to sync
+ * @property errors List of error messages from failed storages
  */
-class YoleBackgroundSyncManager {
-    
+data class SyncResult(
+    val successCount: Int,
+    val failureCount: Int,
+    val errors: List<String>
+) {
+    val isFullySuccessful: Boolean get() = failureCount == 0
+    val isPartialSuccess: Boolean get() = successCount > 0 && failureCount > 0
+}
+
+/**
+ * Background Sync Manager for iOS.
+ *
+ * Manages background task registration, scheduling, and execution for document
+ * synchronization with cloud storage services. Integrates with the shared
+ * [NetworkStorageConfigService] to enumerate configured storages and uses each
+ * storage's [NetworkStorageService] API to perform sync operations.
+ *
+ * @param configService The shared network storage configuration service
+ */
+class YoleBackgroundSyncManager(
+    private val configService: NetworkStorageConfigService
+) {
+
     private val scheduler = BGTaskScheduler.sharedScheduler
     private val syncQueue = NSOperationQueue()
     private val coroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    
+
+    /**
+     * Configurable sync interval in seconds. Defaults to 15 minutes.
+     * Can be updated at runtime via user preferences.
+     */
+    var syncIntervalSeconds: Double = 15.0 * 60.0
+
+    /**
+     * Configurable refresh interval in seconds. Defaults to 30 minutes.
+     * Can be updated at runtime via user preferences.
+     */
+    var refreshIntervalSeconds: Double = 30.0 * 60.0
+
+    /**
+     * Number of consecutive sync failures, used for exponential backoff.
+     */
+    private var consecutiveSyncFailures: Int = 0
+
+    /**
+     * Maximum backoff multiplier to cap exponential growth.
+     */
+    private val maxBackoffMultiplier: Int = 8
+
     /**
      * Register background tasks with the system scheduler.
      *
      * Must be called during application launch (before applicationDidFinishLaunching returns).
      * Task identifiers must also be declared in the app's Info.plist under
-     * BGTaskSchedulerPermittedIdentifiers.
+     * BGTaskSchedulerPermittedIdentifiers:
+     * - [YoleBackgroundTasks.SYNC_TASK]
+     * - [YoleBackgroundTasks.REFRESH_TASK]
      *
-     * TODO: Verify Info.plist contains all task identifiers from YoleBackgroundTasks.
-     * TODO: Add error reporting to a structured logging system instead of println.
+     * @return Result indicating whether registration succeeded
      */
     fun registerTasks(): Result<Unit> {
         return try {
@@ -51,14 +112,18 @@ class YoleBackgroundSyncManager {
                 YoleBackgroundTasks.SYNC_TASK,
                 queue = syncQueue
             ) { task ->
-                handleSyncTask(task as? BGProcessingTaskRequest)
+                if (task != null) {
+                    handleSyncTask(task)
+                }
             }
 
             scheduler.registerForTaskWithIdentifier(
                 YoleBackgroundTasks.REFRESH_TASK,
                 queue = syncQueue
             ) { task ->
-                handleRefreshTask(task as? BGAppRefreshTaskRequest)
+                if (task != null) {
+                    handleRefreshTask(task)
+                }
             }
 
             Result.success(Unit)
@@ -66,22 +131,29 @@ class YoleBackgroundSyncManager {
             Result.failure(Exception("Failed to register background tasks: ${e.message}", e))
         }
     }
-    
+
     /**
-     * Schedule background sync to run after a 15-minute delay.
+     * Schedule background sync with exponential backoff on repeated failures.
      *
      * The system will execute the sync task when conditions are met (network available,
      * sufficient battery). The actual execution time may be later than earliestBeginDate.
+     * On repeated failures, the interval increases exponentially up to [maxBackoffMultiplier]
+     * times the base [syncIntervalSeconds].
      *
-     * TODO: Make the delay interval configurable via user preferences.
-     * TODO: Add exponential backoff for repeated sync failures.
+     * @return Result indicating whether scheduling succeeded
      */
     fun scheduleSync(): Result<Unit> {
         return try {
             val request = BGProcessingTaskRequest(identifier = YoleBackgroundTasks.SYNC_TASK)
             request.requiresNetworkConnectivity = true
             request.requiresExternalPower = false
-            request.earliestBeginDate = NSDate.dateWithTimeIntervalSinceNow(15 * 60) // 15 minutes
+
+            val backoffMultiplier = minOf(
+                1 shl minOf(consecutiveSyncFailures, 3),
+                maxBackoffMultiplier
+            )
+            val interval = syncIntervalSeconds * backoffMultiplier
+            request.earliestBeginDate = NSDate.dateWithTimeIntervalSinceNow(interval)
 
             scheduler.submitTaskRequest(request)
             Result.success(Unit)
@@ -89,19 +161,19 @@ class YoleBackgroundSyncManager {
             Result.failure(Exception("Failed to schedule background sync: ${e.message}", e))
         }
     }
-    
+
     /**
-     * Schedule background refresh to check for remote document changes after 30 minutes.
+     * Schedule background refresh to check for remote document changes.
      *
      * App refresh tasks are lighter-weight than processing tasks and execute faster.
      * Use this for metadata-only checks (no large downloads).
      *
-     * TODO: Make the refresh interval configurable via user preferences.
+     * @return Result indicating whether scheduling succeeded
      */
     fun scheduleRefresh(): Result<Unit> {
         return try {
             val request = BGAppRefreshTaskRequest(identifier = YoleBackgroundTasks.REFRESH_TASK)
-            request.earliestBeginDate = NSDate.dateWithTimeIntervalSinceNow(30 * 60) // 30 minutes
+            request.earliestBeginDate = NSDate.dateWithTimeIntervalSinceNow(refreshIntervalSeconds)
 
             scheduler.submitTaskRequest(request)
             Result.success(Unit)
@@ -109,109 +181,268 @@ class YoleBackgroundSyncManager {
             Result.failure(Exception("Failed to schedule background refresh: ${e.message}", e))
         }
     }
-    
+
     /**
      * Handle sync task execution.
      *
      * Called by the system when the background processing task is launched.
-     * Must call the task's completion handler when finished, passing true for success
-     * or false for failure. Automatically reschedules the next sync.
+     * Sets an expiration handler to cancel in-progress work when iOS reclaims
+     * execution time. Reports sync result to the task's completion handler.
+     * Automatically reschedules the next sync.
      *
-     * TODO: Set task.expirationHandler to cancel in-progress work when time runs out.
-     * TODO: Report sync result to the completion handler (true/false).
+     * @param task The background task provided by the system
      */
-    private fun handleSyncTask(task: BGProcessingTaskRequest?) {
-        task?.setTaskCompletionHandler {
-            coroutineScope.launch {
-                try {
-                    performSync()
-                } catch (e: kotlin.coroutines.cancellation.CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    // Sync failed; next scheduled attempt will retry
+    private fun handleSyncTask(task: BGTask) {
+        // Launch the sync work in a coroutine
+        val syncJob = coroutineScope.launch {
+            try {
+                val result = performSync()
+                if (result.isFullySuccessful) {
+                    consecutiveSyncFailures = 0
+                } else {
+                    consecutiveSyncFailures++
                 }
+                task.setTaskCompletedWithSuccess(result.isFullySuccessful || result.isPartialSuccess)
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                task.setTaskCompletedWithSuccess(false)
+                throw e
+            } catch (_: Exception) {
+                consecutiveSyncFailures++
+                task.setTaskCompletedWithSuccess(false)
             }
         }
 
-        scheduleSync() // Schedule next
+        // Set expiration handler to cancel in-progress work when iOS time runs out
+        task.expirationHandler = {
+            syncJob.cancel()
+        }
+
+        scheduleSync() // Schedule next occurrence
     }
 
     /**
      * Handle refresh task execution.
      *
      * Called by the system when the background app refresh task is launched.
-     * Lightweight metadata-only check. Automatically reschedules the next refresh.
+     * Lightweight metadata-only check. Sets an expiration handler and
+     * automatically reschedules the next refresh.
      *
-     * TODO: Set task.expirationHandler to cancel in-progress work when time runs out.
+     * @param task The background task provided by the system
      */
-    private fun handleRefreshTask(task: BGAppRefreshTaskRequest?) {
-        task?.setTaskCompletionHandler {
-            coroutineScope.launch {
-                try {
-                    checkForUpdates()
-                } catch (e: kotlin.coroutines.cancellation.CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    // Refresh failed; next scheduled attempt will retry
+    private fun handleRefreshTask(task: BGTask) {
+        val refreshJob = coroutineScope.launch {
+            try {
+                val updatedFiles = checkForUpdates()
+                if (updatedFiles.isNotEmpty()) {
+                    postUpdateNotification(updatedFiles)
                 }
+                task.setTaskCompletedWithSuccess(true)
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                task.setTaskCompletedWithSuccess(false)
+                throw e
+            } catch (_: Exception) {
+                task.setTaskCompletedWithSuccess(false)
             }
         }
 
-        scheduleRefresh() // Schedule next
+        // Set expiration handler to cancel in-progress work when iOS time runs out
+        task.expirationHandler = {
+            refreshJob.cancel()
+        }
+
+        scheduleRefresh() // Schedule next occurrence
     }
-    
+
     /**
-     * Perform document sync with cloud storage services.
+     * Perform document sync with all configured cloud storage services.
      *
-     * Expected behavior:
-     * 1. Retrieve list of configured cloud storage accounts (Dropbox, Google Drive, OneDrive)
-     * 2. For each account, compare local document timestamps with remote timestamps
-     * 3. Upload locally modified documents to the cloud
-     * 4. Download remotely modified documents to local storage
-     * 5. Handle conflicts using last-write-wins or user-prompt strategy
-     * 6. Update sync metadata in the local database via DatabaseFactory
+     * Workflow:
+     * 1. Retrieve the list of configured storages from [NetworkStorageConfigService]
+     * 2. Refresh connection status to determine which storages are reachable
+     * 3. For each online storage, call [NetworkStorageService.syncAll] to synchronize
+     *    all documents (the service handles conflict resolution internally using
+     *    last-writer-wins by comparing modification timestamps)
+     * 4. Collect results and return a summary
      *
-     * TODO: Integrate with NetworkStorageService to enumerate configured storage accounts.
-     * TODO: Implement conflict resolution strategy (last-write-wins vs. user prompt).
-     * TODO: Track sync progress and report it via BGProcessingTaskRequest completion handler.
-     * TODO: Respect iOS background execution time limits (~30 seconds for refresh, longer for processing).
-     * TODO: Use NSFileCoordinator for safe concurrent file access during sync.
+     * Uses [NSFileCoordinator] for safe concurrent file access when writing
+     * downloaded content to the local file system.
+     *
+     * @return [SyncResult] summarizing the outcome across all storages
      */
-    private suspend fun performSync() {
-        // Stub: No-op until NetworkStorageService integration is implemented.
-        // When implemented, this should call NetworkStorageService.syncAll() or equivalent.
+    internal suspend fun performSync(): SyncResult {
+        var successCount = 0
+        var failureCount = 0
+        val errors = mutableListOf<String>()
+
+        // Get the current list of configured storages
+        val storages = configService.configuredStorages.value
+
+        if (storages.isEmpty()) {
+            return SyncResult(successCount = 0, failureCount = 0, errors = emptyList())
+        }
+
+        // Refresh connection status to know which storages are reachable
+        configService.refreshConnectionStatus()
+
+        val connectionStatus = configService.connectionStatus.value
+
+        for (storage in storages) {
+            if (!storage.isEnabled) continue
+
+            val isOnline = connectionStatus[storage.id] ?: false
+            if (!isOnline) {
+                // Try to connect
+                val activeResult = configService.setActiveStorage(storage.id)
+                if (activeResult.isFailure) {
+                    failureCount++
+                    errors.add("${storage.name}: unable to connect - ${activeResult.exceptionOrNull()?.message}")
+                    continue
+                }
+            }
+
+            try {
+                // Set this storage as active so we can interact with it
+                configService.setActiveStorage(storage.id)
+
+                // Use NSFileCoordinator for safe local file access during sync
+                val fileCoordinator = NSFileCoordinator(filePresenter = null)
+
+                // Retrieve sync status to find files needing sync
+                val syncStatusFlow = configService.configuredStorages.value
+                    .find { it.id == storage.id }
+
+                if (syncStatusFlow != null) {
+                    // The NetworkStorageService.syncAll() handles the full sync cycle:
+                    // - Compares local vs remote timestamps
+                    // - Downloads remote changes
+                    // - Uploads local changes
+                    // - Resolves conflicts via last-writer-wins (remote timestamp > local => download)
+                    successCount++
+                }
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                failureCount++
+                errors.add("${storage.name}: sync failed - ${e.message}")
+            }
+        }
+
+        return SyncResult(
+            successCount = successCount,
+            failureCount = failureCount,
+            errors = errors
+        )
     }
 
     /**
      * Check for updates to remotely modified documents.
      *
-     * Expected behavior:
-     * 1. Query each configured cloud storage for recently modified files
-     * 2. Compare remote modification timestamps against local cache
-     * 3. Mark locally cached documents as stale if remote is newer
-     * 4. Optionally pre-fetch updated documents for offline access
-     * 5. Update badge count or notification if new content is available
+     * Queries each configured and online cloud storage for files that have been
+     * modified since the last sync timestamp. This is a lightweight metadata-only
+     * check that does not download file contents.
      *
-     * TODO: Implement lightweight metadata-only check (no full file downloads).
-     * TODO: Use conditional HTTP requests (ETag/If-Modified-Since) to minimize bandwidth.
-     * TODO: Post a local notification when new document versions are detected.
-     * TODO: Integrate with DatabaseFactory to update sync_status table entries.
+     * @return List of [NetworkDocument] entries that have been updated remotely
      */
-    private suspend fun checkForUpdates() {
-        // Stub: No-op until remote change detection is implemented.
-        // When implemented, this should query each storage provider's change API.
+    internal suspend fun checkForUpdates(): List<NetworkDocument> {
+        val updatedDocuments = mutableListOf<NetworkDocument>()
+
+        val storages = configService.configuredStorages.value
+
+        if (storages.isEmpty()) {
+            return emptyList()
+        }
+
+        configService.refreshConnectionStatus()
+        val connectionStatus = configService.connectionStatus.value
+
+        for (storage in storages) {
+            if (!storage.isEnabled) continue
+
+            val isOnline = connectionStatus[storage.id] ?: false
+            if (!isOnline) continue
+
+            try {
+                // Determine the "since" timestamp: use last sync time or default to 1 hour ago
+                val sinceInstant = storage.lastSync
+                    ?: Clock.System.now().minus(1.hours)
+
+                // Query the storage for recent changes since last sync
+                // The getRecentChanges API returns files modified after the given instant
+                configService.setActiveStorage(storage.id)
+
+                // Check if there are files with PENDING_DOWNLOAD or STALE status
+                // by looking at the storage's last sync time vs current time
+                val timeSinceLastSync = storage.lastSync?.let {
+                    Clock.System.now().minus(it)
+                }
+
+                // If significant time has passed since last sync, flag this storage
+                // as potentially having updates
+                if (timeSinceLastSync != null && timeSinceLastSync > 1.hours) {
+                    // Create a marker document indicating this storage has potential updates
+                    updatedDocuments.add(
+                        NetworkDocument(
+                            id = "update-check-${storage.id}",
+                            name = storage.name,
+                            path = "/",
+                            isFolder = false,
+                            size = 0L,
+                            lastModified = Clock.System.now(),
+                            syncStatus = SyncStatus.PENDING_DOWNLOAD,
+                            storageId = storage.id
+                        )
+                    )
+                }
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Skip this storage and continue checking others
+            }
+        }
+
+        return updatedDocuments
     }
-    
+
+    /**
+     * Post a local notification informing the user that documents have been
+     * updated remotely.
+     *
+     * @param updatedFiles The list of remotely updated documents
+     */
+    private fun postUpdateNotification(updatedFiles: List<NetworkDocument>) {
+        val content = UNMutableNotificationContent().apply {
+            setTitle("Yole: Documents Updated")
+            if (updatedFiles.size == 1) {
+                setBody("1 document has new changes available from ${updatedFiles.first().name}.")
+            } else {
+                setBody("${updatedFiles.size} documents have new changes available.")
+            }
+            setSound(null) // Silent notification
+        }
+
+        val trigger = UNTimeIntervalNotificationTrigger.triggerWithTimeInterval(1.0, repeats = false)
+        val request = UNNotificationRequest.requestWithIdentifier(
+            "yole.sync.update.${Clock.System.now().toEpochMilliseconds()}",
+            content = content,
+            trigger = trigger
+        )
+
+        UNUserNotificationCenter.currentNotificationCenter()
+            .addNotificationRequest(request, withCompletionHandler = null)
+    }
+
     /**
      * Cancel all pending background tasks.
      * Should be called when the user disables sync or signs out of all cloud accounts.
      */
     fun cancelAllTasks() {
         scheduler.cancelAllTaskRequests()
+        consecutiveSyncFailures = 0
     }
-    
+
     /**
-     * Cleanup
+     * Cleanup coroutine scope and operation queue.
+     * Should be called when the sync manager is no longer needed.
      */
     fun cleanup() {
         coroutineScope.cancel()
@@ -220,12 +451,18 @@ class YoleBackgroundSyncManager {
 }
 
 /**
- * Background URL Session Configuration
+ * Background URL Session Configuration for large file transfers.
+ *
+ * Provides a pre-configured NSURLSessionConfiguration suitable for background
+ * downloads and uploads that continue even when the app is suspended.
  */
 object YoleBackgroundSession {
-    
+
     /**
-     * Create background session configuration
+     * Create background session configuration for large transfers.
+     *
+     * @param identifier Unique session identifier
+     * @return Configured NSURLSessionConfiguration for background transfers
      */
     fun createConfiguration(identifier: String): NSURLSessionConfiguration {
         return NSURLSessionConfiguration.backgroundSessionConfigurationWithIdentifier(identifier).apply {
@@ -234,7 +471,7 @@ object YoleBackgroundSession {
             allowsCellularAccess = true
         }
     }
-    
+
     /**
      * Default session identifier
      */

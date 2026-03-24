@@ -144,6 +144,9 @@ class WebDavService(
             onSuccess = { it },
             onFailure = { e ->
                 if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+                if (e is CircuitBreakerOpenException) {
+                    SecurityEventLogger.logCircuitBreakerOpen("WebDavService", circuitBreaker.failures)
+                }
                 Result.failure(NetworkStorageException.ConnectionException.Failed(
                     message = "WebDAV connection failed",
                     cause = e
@@ -894,7 +897,9 @@ class WebDavService(
         includeContent: Boolean
     ): Flow<Result<List<NetworkDocument>>> = flow {
         if (!isConnected()) {
-            emit(Result.failure(Exception("WebDAV search not implemented")))
+            emit(Result.failure(NetworkStorageException.ConnectionException.NotConnected(
+                message = "WebDAV not connected"
+            )))
             return@flow
         }
 
@@ -903,7 +908,7 @@ class WebDavService(
             val fullUrl = buildWebDavUrl(searchPath)
             val propfindBody = buildPropfindRequestBody()
 
-            // Try PROPFIND with Depth: infinity first
+            // Try PROPFIND with Depth: infinity first for recursive search
             val response = try {
                 httpClient.request(fullUrl) {
                     method = HttpMethod("PROPFIND")
@@ -925,12 +930,27 @@ class WebDavService(
                 }
                 emit(Result.success(filtered))
             } else {
-                // Server may not support Depth: infinity
-                emit(Result.failure(Exception("WebDAV search not implemented")))
+                // Server does not support Depth: infinity — fall back to
+                // PROPFIND Depth: 1 via the existing listFiles() and filter
+                // results client-side.
+                var found = false
+                listFiles(searchPath).collect { result ->
+                    result.onSuccess { documents ->
+                        val filtered = documents.filter { doc ->
+                            doc.name.contains(query, ignoreCase = true) ||
+                                    doc.path.contains(query, ignoreCase = true)
+                        }
+                        emit(Result.success(filtered))
+                        found = true
+                    }
+                }
+                if (!found) {
+                    emit(Result.success(emptyList()))
+                }
             }
         } catch (e: Exception) {
             if (e is kotlin.coroutines.cancellation.CancellationException) throw e
-            emit(Result.failure(Exception("WebDAV search not implemented")))
+            emit(Result.failure(Exception("WebDAV search failed: ${e.message}")))
         }
     }
 

@@ -4,99 +4,101 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Web secure storage implementation using localStorage
- * with XOR obfuscation and Base64 encoding.
+ * with AES-GCM encryption via Web Crypto API, falling
+ * back to XOR obfuscation in non-secure contexts.
  *
  *########################################################*/
 package digital.vasic.yole.network.platform
 
 import kotlinx.browser.localStorage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /**
- * Web implementation of secure storage using localStorage with basic obfuscation.
+ * Web implementation of secure storage using localStorage with AES-GCM encryption
+ * via the Web Crypto API, falling back to XOR obfuscation in non-secure contexts.
  *
- * ## Security Limitation
+ * ## Security Model
  *
- * **This implementation does NOT provide true encryption.** It uses XOR obfuscation
- * with a static key and Base64 encoding, which is trivially reversible by anyone
- * with access to the JavaScript source code or browser developer tools.
+ * When running in a secure context (HTTPS or localhost), this implementation uses
+ * AES-GCM 256-bit encryption via the Web Crypto API (`crypto.subtle`):
  *
- * ### Threat Model
- * - **Protected against:** Casual inspection of localStorage via browser UI
- * - **NOT protected against:** XSS attacks, browser extensions with page access,
- *   developer tools inspection, any attacker with JavaScript execution context
+ * - **Key management**: On first use, an AES-GCM 256-bit key is generated and
+ *   exported as JWK to localStorage under `yole_crypto_key`. On subsequent uses
+ *   the key is imported from localStorage.
+ * - **Encryption**: Each `store()` call generates a random 12-byte IV, encrypts
+ *   the value with AES-GCM, concatenates IV + ciphertext, Base64-encodes, and
+ *   stores in localStorage.
+ * - **Decryption**: Each `retrieve()` call Base64-decodes, splits the first 12
+ *   bytes as IV and the rest as ciphertext, then decrypts with AES-GCM.
  *
- * ### Why True Encryption Is Not Yet Implemented
+ * ### Threat Model (Encrypted Mode)
+ * - **Protected against:** Casual localStorage inspection, basic XSS data
+ *   exfiltration (attacker gets ciphertext, not plaintext), offline analysis
+ *   of exported localStorage dumps without the key
+ * - **NOT protected against:** Sophisticated XSS that reads both the key and
+ *   ciphertext from localStorage, browser extensions with full page access,
+ *   physical device access with browser profile access
  *
- * The Web Crypto API (`crypto.subtle`) provides AES-GCM encryption suitable for
- * securing localStorage values. However, integrating it from Kotlin/Wasm requires
- * non-trivial JavaScript interop:
+ * ### Fallback (Non-Secure Context)
  *
- * 1. **Async Promise API**: `crypto.subtle.generateKey()`, `encrypt()`, and `decrypt()`
- *    return JavaScript `Promise` objects. Kotlin/Wasm's JS interop for `Promise`
- *    resolution requires `JsPromise` handling or `suspend` bridge functions, which
- *    are still evolving in the Kotlin/Wasm target.
- *
- * 2. **Key Persistence**: The AES-GCM `CryptoKey` must be stored persistently.
- *    `localStorage` only stores strings, so the key would need to be exported via
- *    `crypto.subtle.exportKey("jwk", key)` and re-imported on each session.
- *    Alternatively, IndexedDB can store `CryptoKey` objects directly.
- *
- * 3. **Binary Data Handling**: `crypto.subtle.encrypt()` operates on `ArrayBuffer`/
- *    `Uint8Array`, requiring conversion to/from Base64 strings for localStorage.
- *
- * ### Implementation Roadmap for Web Crypto API Integration
- *
- * TODO: Implement AES-GCM encryption using Web Crypto API when Kotlin/Wasm
- *       JS interop matures. The implementation should:
- *       1. Check `crypto.subtle` availability (requires secure context: HTTPS or localhost)
- *       2. On first use, generate an AES-GCM 256-bit key via:
- *          `crypto.subtle.generateKey({name: "AES-GCM", length: 256}, true, ["encrypt", "decrypt"])`
- *       3. Export the key as JWK and store in localStorage under a dedicated key
- *       4. For each `store()` call: generate a random 12-byte IV, encrypt the value,
- *          concatenate IV + ciphertext, Base64-encode, and store
- *       5. For each `retrieve()` call: Base64-decode, split IV + ciphertext, decrypt
- *       6. Fall back to XOR obfuscation if `crypto.subtle` is unavailable
- *          (e.g., non-secure HTTP context)
+ * When `crypto.subtle` is unavailable (plain HTTP, non-localhost), the
+ * implementation falls back to XOR obfuscation with a static key. This provides
+ * only data hiding, not cryptographic security. A warning is logged to the
+ * browser console when fallback mode is active.
  *
  * @see SecureStorage
  * @see SecureStorageFactory
  */
 class WebSecureStorage : SecureStorage {
 
-    private val json = Json { ignoreUnknownKeys = true }
+    /**
+     * Whether the Web Crypto API (`crypto.subtle`) is available.
+     * Requires a secure context: HTTPS or localhost.
+     * Note: No @Volatile needed — Wasm is single-threaded.
+     */
+    private var cryptoAvailable: Boolean = checkCryptoSubtleAvailable()
 
     /**
-     * Indicates whether true encryption (e.g., AES-GCM via Web Crypto API) is supported.
+     * Whether the AES-GCM crypto key has been initialized (generated or loaded).
+     * Once true, [encryptAesGcm] and [decryptAesGcm] can be called.
+     */
+    private var cryptoKeyReady: Boolean = false
+
+    /**
+     * Indicates whether true encryption (AES-GCM via Web Crypto API) is supported
+     * in the current browser context.
      *
-     * Currently always returns `false` because only XOR obfuscation is implemented.
-     * When Web Crypto API integration is complete, this will check for
-     * `crypto.subtle` availability (requires HTTPS or localhost secure context).
+     * Returns `true` when `crypto.subtle` is available (secure context: HTTPS or
+     * localhost). Returns `false` when only XOR obfuscation fallback is active.
      */
     val isEncryptionSupported: Boolean
-        get() = false
+        get() = cryptoAvailable
 
     /**
      * Returns the security level of the current storage implementation.
      *
-     * - `"obfuscated"` — Current state: XOR obfuscation, trivially reversible
-     * - `"encrypted"` — Future state: AES-GCM via Web Crypto API
+     * - `"encrypted"` — AES-GCM via Web Crypto API (secure context)
+     * - `"obfuscated"` — XOR obfuscation fallback (non-secure context)
      * - `"plaintext"` — Fallback if obfuscation fails
      */
     val securityLevel: String
-        get() = "obfuscated"
+        get() = if (cryptoAvailable) "encrypted" else "obfuscated"
 
     override suspend fun store(key: String, value: String): Result<Unit> = withContext(Dispatchers.Default) {
         try {
-            val encryptedValue = obfuscateData(value)
-            localStorage.setItem(getStorageKey(key), encryptedValue)
+            if (cryptoAvailable) {
+                ensureCryptoKeyReady()
+                val encrypted = encryptAesGcm(value)
+                localStorage.setItem(getStorageKey(key), encrypted)
+            } else {
+                val obfuscated = obfuscateData(value)
+                localStorage.setItem(getStorageKey(key), obfuscated)
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -105,9 +107,16 @@ class WebSecureStorage : SecureStorage {
 
     override suspend fun retrieve(key: String): Result<String?> = withContext(Dispatchers.Default) {
         try {
-            val encryptedValue = localStorage.getItem(getStorageKey(key)) ?: return@withContext Result.success(null)
-            val decryptedValue = deobfuscateData(encryptedValue)
-            Result.success(decryptedValue)
+            val storedValue = localStorage.getItem(getStorageKey(key))
+                ?: return@withContext Result.success(null)
+            if (cryptoAvailable) {
+                ensureCryptoKeyReady()
+                val decrypted = decryptAesGcm(storedValue)
+                Result.success(decrypted)
+            } else {
+                val deobfuscated = deobfuscateData(storedValue)
+                Result.success(deobfuscated)
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -173,9 +182,6 @@ class WebSecureStorage : SecureStorage {
 
     override suspend fun isSecure(): Result<Boolean> = withContext(Dispatchers.Default) {
         try {
-            // Web environment can only provide obfuscation, not true encryption.
-            // This tests that the obfuscation/deobfuscation cycle works correctly,
-            // but does NOT indicate cryptographic security.
             val testKey = "_secure_storage_test_"
             val testValue = "test_value_${Clock.System.now().toEpochMilliseconds()}"
 
@@ -183,22 +189,87 @@ class WebSecureStorage : SecureStorage {
             val retrieved = retrieve(testKey).getOrNull()
             delete(testKey)
 
-            // Returns false because XOR obfuscation is not cryptographically secure.
-            // Will return true once Web Crypto API integration is implemented.
-            Result.success(false)
+            if (retrieved != testValue) {
+                return@withContext Result.success(false)
+            }
+
+            // Returns true when AES-GCM encryption is active (secure context),
+            // false when only XOR obfuscation fallback is in use.
+            Result.success(cryptoAvailable)
         } catch (e: Exception) {
             Result.success(false)
         }
     }
+
+    // ==================== AES-GCM Encryption ====================
+
+    /**
+     * Ensures the AES-GCM crypto key is ready for use.
+     * Loads an existing key from localStorage or generates a new one.
+     */
+    private suspend fun ensureCryptoKeyReady() {
+        if (cryptoKeyReady) return
+        val existingJwk = localStorage.getItem(CRYPTO_KEY_STORAGE_KEY)
+        if (existingJwk != null) {
+            importCryptoKeyFromJwk(existingJwk)
+        } else {
+            generateAndStoreCryptoKey()
+        }
+        cryptoKeyReady = true
+    }
+
+    /**
+     * Generates a new AES-GCM 256-bit key, exports it as JWK, and stores
+     * the JWK string in localStorage.
+     */
+    private suspend fun generateAndStoreCryptoKey() {
+        val jwk = jsGenerateAndExportKey()
+        localStorage.setItem(CRYPTO_KEY_STORAGE_KEY, jwk)
+    }
+
+    /**
+     * Imports an AES-GCM key from a JWK string stored in localStorage.
+     */
+    private suspend fun importCryptoKeyFromJwk(jwk: String) {
+        jsImportKey(jwk)
+    }
+
+    /**
+     * Encrypts a plaintext string using AES-GCM.
+     *
+     * Generates a random 12-byte IV, encrypts the plaintext, concatenates
+     * IV + ciphertext, and returns the result as a Base64-encoded string.
+     *
+     * @param plaintext The string to encrypt
+     * @return Base64-encoded IV + ciphertext
+     */
+    private suspend fun encryptAesGcm(plaintext: String): String {
+        return jsEncrypt(plaintext)
+    }
+
+    /**
+     * Decrypts a Base64-encoded IV + ciphertext string using AES-GCM.
+     *
+     * Base64-decodes the input, splits the first 12 bytes as IV and the
+     * rest as ciphertext, and decrypts.
+     *
+     * @param encoded Base64-encoded IV + ciphertext
+     * @return The decrypted plaintext string
+     */
+    private suspend fun decryptAesGcm(encoded: String): String {
+        return jsDecrypt(encoded)
+    }
+
+    // ==================== XOR Obfuscation Fallback ====================
 
     private fun getStorageKey(key: String): String {
         return "$STORAGE_PREFIX$key"
     }
 
     private fun obfuscateData(data: String): String {
-        // Simple XOR obfuscation with a fixed key.
+        // XOR obfuscation fallback for non-secure contexts.
         // WARNING: This is NOT secure encryption, just basic obfuscation to prevent
-        // casual inspection of localStorage values. See class KDoc for details.
+        // casual inspection of localStorage values.
         val key = obfuscationKey
         val result = StringBuilder()
 
@@ -229,11 +300,197 @@ class WebSecureStorage : SecureStorage {
 
     companion object {
         private const val STORAGE_PREFIX = "yole_network_secure_"
+        private const val CRYPTO_KEY_STORAGE_KEY = "yole_crypto_key"
         private val obfuscationKey = "Y0l3_N3tw0rk_S3cur3_K3y_2025"
     }
 }
 
-// External functions for base64 encoding/decoding
-// These are available in most web browsers
+// ==================== External JS Functions ====================
+
+// Base64 encoding/decoding (available in all modern browsers)
 external fun btoa(data: String): String
 external fun atob(data: String): String
+
+// ==================== Web Crypto API JS Interop ====================
+//
+// The Web Crypto API is Promise-based and operates on ArrayBuffer/Uint8Array.
+// These helper functions encapsulate the async JS operations and bridge them
+// into Kotlin/Wasm via @JsFun annotations that define inline JavaScript.
+//
+// The crypto key is held in a globalThis variable (_yoleCryptoKey) so it
+// persists across calls without re-importing from localStorage each time.
+//
+// Async JS functions return JsAny (which is a JS Promise at runtime). The
+// awaitJsString() helper bridges these Promises into Kotlin coroutines using
+// suspendCancellableCoroutine + .then()/.catch() callbacks.
+
+/**
+ * Checks whether `crypto.subtle` is available in the current browser context.
+ * Returns `true` in secure contexts (HTTPS or localhost), `false` otherwise.
+ * Logs a console warning when falling back to obfuscation mode.
+ */
+@JsFun("""
+() => {
+    try {
+        if (typeof crypto !== 'undefined' && crypto.subtle) {
+            return true;
+        }
+    } catch (e) {}
+    console.warn('[Yole] crypto.subtle unavailable (non-secure context). Falling back to XOR obfuscation. Use HTTPS or localhost for AES-GCM encryption.');
+    return false;
+}
+""")
+private external fun checkCryptoSubtleAvailable(): Boolean
+
+/**
+ * Generates an AES-GCM 256-bit key, stores it in the globalThis variable,
+ * exports it as JWK, and returns a Promise resolving to the JWK JSON string.
+ */
+@JsFun("""
+async () => {
+    const key = await crypto.subtle.generateKey(
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['encrypt', 'decrypt']
+    );
+    globalThis._yoleCryptoKey = key;
+    const jwk = await crypto.subtle.exportKey('jwk', key);
+    return JSON.stringify(jwk);
+}
+""")
+private external fun jsGenerateAndExportKeyImpl(): JsAny
+
+/**
+ * Imports an AES-GCM key from a JWK JSON string into the globalThis variable.
+ * Returns a Promise resolving to an empty string on success.
+ */
+@JsFun("""
+async (jwkStr) => {
+    const jwk = JSON.parse(jwkStr);
+    const key = await crypto.subtle.importKey(
+        'jwk',
+        jwk,
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['encrypt', 'decrypt']
+    );
+    globalThis._yoleCryptoKey = key;
+    return '';
+}
+""")
+private external fun jsImportKeyImpl(jwk: JsString): JsAny
+
+/**
+ * Encrypts a plaintext string using AES-GCM with the globalThis key.
+ * Returns a Promise resolving to Base64-encoded IV (12 bytes) + ciphertext.
+ */
+@JsFun("""
+async (plaintext) => {
+    const key = globalThis._yoleCryptoKey;
+    if (!key) throw new Error('Crypto key not initialized');
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encoder = new TextEncoder();
+    const data = encoder.encode(plaintext);
+    const ciphertext = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: iv },
+        key,
+        data
+    );
+    const combined = new Uint8Array(iv.length + ciphertext.byteLength);
+    combined.set(iv, 0);
+    combined.set(new Uint8Array(ciphertext), iv.length);
+    let binary = '';
+    for (let i = 0; i < combined.length; i++) {
+        binary += String.fromCharCode(combined[i]);
+    }
+    return btoa(binary);
+}
+""")
+private external fun jsEncryptImpl(plaintext: JsString): JsAny
+
+/**
+ * Decrypts a Base64-encoded IV + ciphertext string using AES-GCM.
+ * Returns a Promise resolving to the plaintext string.
+ */
+@JsFun("""
+async (encoded) => {
+    const key = globalThis._yoleCryptoKey;
+    if (!key) throw new Error('Crypto key not initialized');
+    const binary = atob(encoded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    const iv = bytes.slice(0, 12);
+    const ciphertext = bytes.slice(12);
+    const decrypted = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: iv },
+        key,
+        ciphertext
+    );
+    const decoder = new TextDecoder();
+    return decoder.decode(decrypted);
+}
+""")
+private external fun jsDecryptImpl(encoded: JsString): JsAny
+
+/**
+ * Bridges a JS Promise (typed as [JsAny]) to a Kotlin String via `.then()`/`.catch()`.
+ *
+ * The [onResolve] callback receives the resolved string value; [onReject] receives
+ * the error message. This function is used by [awaitJsString] to connect JS Promises
+ * to Kotlin's [suspendCancellableCoroutine].
+ */
+@JsFun("""
+(promise, onResolve, onReject) => {
+    promise.then(
+        (value) => onResolve(String(value)),
+        (error) => onReject(String(error && error.message ? error.message : error))
+    );
+}
+""")
+private external fun jsPromiseThen(
+    promise: JsAny,
+    onResolve: (JsString) -> Unit,
+    onReject: (JsString) -> Unit
+)
+
+// ==================== Kotlin Suspend Bridges ====================
+//
+// These suspend functions bridge the JS Promise-based API into Kotlin coroutines.
+// The awaitJsString() function uses suspendCancellableCoroutine with JS .then()/.catch()
+// callbacks to resume the coroutine when the Promise settles.
+
+/**
+ * Awaits a JS Promise (typed as [JsAny]) and returns the resolved value as a Kotlin [String].
+ * Throws an [Exception] if the Promise rejects.
+ */
+private suspend fun awaitJsString(promise: JsAny): String {
+    return suspendCancellableCoroutine { continuation ->
+        jsPromiseThen(
+            promise,
+            onResolve = { value: JsString ->
+                continuation.resume(value.toString())
+            },
+            onReject = { error: JsString ->
+                continuation.resumeWithException(RuntimeException(error.toString()))
+            }
+        )
+    }
+}
+
+private suspend fun jsGenerateAndExportKey(): String {
+    return awaitJsString(jsGenerateAndExportKeyImpl())
+}
+
+private suspend fun jsImportKey(jwk: String) {
+    awaitJsString(jsImportKeyImpl(jwk.toJsString()))
+}
+
+private suspend fun jsEncrypt(plaintext: String): String {
+    return awaitJsString(jsEncryptImpl(plaintext.toJsString()))
+}
+
+private suspend fun jsDecrypt(encoded: String): String {
+    return awaitJsString(jsDecryptImpl(encoded.toJsString()))
+}

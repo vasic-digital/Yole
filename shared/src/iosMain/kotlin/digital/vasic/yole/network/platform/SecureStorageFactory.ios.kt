@@ -124,9 +124,21 @@ private class IosKeychainSecureStorage : SecureStorage {
         }
     }
 
-    override suspend fun exists(key: String): Boolean {
-        val result = retrieve(key)
-        return result.isSuccess && result.getOrNull() != null
+    override suspend fun contains(key: String): Result<Boolean> {
+        return try {
+            val query = mapOf<Any?, Any?>(
+                kSecClass to kSecClassGenericPassword,
+                kSecAttrService to serviceName,
+                kSecAttrAccount to key,
+                kSecReturnData to false
+            )
+
+            @Suppress("UNCHECKED_CAST")
+            val status = SecItemCopyMatching(query as CFDictionaryRef, null)
+            Result.success(status == errSecSuccess)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     override suspend fun clear(): Result<Unit> {
@@ -148,7 +160,16 @@ private class IosKeychainSecureStorage : SecureStorage {
         }
     }
 
-    override suspend fun getAllKeys(): Result<List<String>> {
+    override suspend fun isSecure(): Result<Boolean> {
+        return try {
+            // iOS Keychain Services provides hardware-backed encryption
+            Result.success(true)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun listKeys(): Result<List<String>> {
         return try {
             val query = mapOf<Any?, Any?>(
                 kSecClass to kSecClassGenericPassword,

@@ -225,8 +225,8 @@ class WebDavServiceTest {
         webDavService = WebDavService(webDavConfig)
         val result = webDavService.searchFiles("test", "/", false).first()
         
-        assertTrue(result.isFailure, "Search should fail with not implemented error")
-        assertEquals("WebDAV search not implemented", result.exceptionOrNull()?.message)
+        assertTrue(result.isFailure, "Search should fail when not connected")
+        assertEquals("WebDAV not connected", result.exceptionOrNull()?.message)
     }
     
     @Test

@@ -49,7 +49,8 @@ import org.w3c.files.FileReader
  */
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
-    // Initialize PWA features
+    // Initialize parsers and PWA features
+    digital.vasic.yole.format.ParserInitializer.registerAllParsersLazy()
     PWAFeatures.initialize()
 
     CanvasBasedWindow(canvasElementId = "yoleCanvas", title = "Yole - IDE Editor") {

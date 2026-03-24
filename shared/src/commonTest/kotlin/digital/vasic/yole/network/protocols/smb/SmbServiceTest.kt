@@ -229,7 +229,7 @@ class SmbServiceTest {
         val result = smbService.searchFiles("test", "/", false).first()
         
         assertTrue(result.isFailure, "Search should fail when not connected")
-        assertEquals("SMB search not implemented", result.exceptionOrNull()?.message)
+        assertEquals("SMB not connected", result.exceptionOrNull()?.message)
     }
     
     @Test

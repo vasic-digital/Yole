@@ -237,8 +237,8 @@ class GitServiceTest {
         gitService = GitService(gitConfig)
         val result = gitService.searchFiles("test", "/", false).first()
         
-        assertTrue(result.isFailure, "Search should fail with not implemented error")
-        assertEquals("Git search not implemented", result.exceptionOrNull()?.message)
+        assertTrue(result.isFailure, "Search should fail when not connected")
+        assertEquals("Git not connected", result.exceptionOrNull()?.message)
     }
     
     @Test

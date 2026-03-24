@@ -479,21 +479,21 @@ class SmbServiceEnhancedTest {
     // ==================== SEARCH TESTS ====================
 
     @Test
-    fun `searchFiles returns failure for unimplemented`() = runBlocking<Unit> {
+    fun `searchFiles returns failure when not connected`() = runBlocking<Unit> {
         val results = service.searchFiles("query", "/", false).toList()
         assertTrue(results.isNotEmpty())
         assertTrue(results[0].isFailure)
     }
 
     @Test
-    fun `searchFiles with includeContent flag returns failure`() = runBlocking<Unit> {
+    fun `searchFiles with includeContent flag returns failure when not connected`() = runBlocking<Unit> {
         val results = service.searchFiles("query", "/", true).toList()
         assertTrue(results.isNotEmpty())
         assertTrue(results[0].isFailure)
     }
 
     @Test
-    fun `searchFiles with null path returns failure`() = runBlocking<Unit> {
+    fun `searchFiles with null path returns failure when not connected`() = runBlocking<Unit> {
         val results = service.searchFiles("query", null, false).toList()
         assertTrue(results.isNotEmpty())
         assertTrue(results[0].isFailure)

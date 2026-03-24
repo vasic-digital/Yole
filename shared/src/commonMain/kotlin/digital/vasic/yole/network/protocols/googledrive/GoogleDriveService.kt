@@ -182,6 +182,7 @@ class GoogleDriveService(
         val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
         
         if (!hasValidToken) {
+            SecurityEventLogger.logAuthFailure("GoogleDriveService", "No valid authentication tokens found")
             Result.failure(
                 NetworkStorageException.ConnectionException.Authentication(
                     message = "No valid authentication tokens found",
@@ -205,6 +206,9 @@ class GoogleDriveService(
             onSuccess = { it },
             onFailure = { e ->
                 if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+                if (e is CircuitBreakerOpenException) {
+                    SecurityEventLogger.logCircuitBreakerOpen("GoogleDriveService", circuitBreaker.failures)
+                }
                 Result.failure(NetworkStorageException.ConnectionException.Failed(
                     message = "Google Drive connection failed",
                     cause = e
@@ -283,7 +287,7 @@ class GoogleDriveService(
         return try {
             val refreshToken = authTokenManager.getRefreshToken().getOrNull()
                 ?: return Result.failure(Exception("No refresh token available"))
-            
+
             val tokenResponse = oauth2Flow.refreshAccessToken(refreshToken)
             if (tokenResponse.isSuccess) {
                 val tokens = tokenResponse.getOrThrow()
@@ -293,12 +297,15 @@ class GoogleDriveService(
                     expiresIn = tokens.expires_in
                 )
                 stateMutex.withLock { _isConnected = true }
+                SecurityEventLogger.logTokenRefresh("GoogleDriveService", success = true)
                 Result.success(Unit)
             } else {
+                SecurityEventLogger.logTokenRefresh("GoogleDriveService", success = false)
                 Result.failure(tokenResponse.exceptionOrNull() ?: Exception("Token refresh failed"))
             }
         } catch (e: Exception) {
             if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+            SecurityEventLogger.logTokenRefresh("GoogleDriveService", success = false)
             Result.failure(e)
         }
     }

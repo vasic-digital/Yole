@@ -8,6 +8,7 @@
  *########################################################*/
 package digital.vasic.yole.format
 
+import digital.vasic.yole.monitoring.PerformanceMetrics
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.yield
@@ -52,11 +53,13 @@ class DocumentCache(private val maxSize: Int = 100) {
             val value = cache[key]
             if (value != null) {
                 _hits++
+                PerformanceMetrics.recordCacheHit()
                 // Move to end of access order (most recently used)
                 accessOrder.remove(key)
                 accessOrder.add(key)
             } else {
                 _misses++
+                PerformanceMetrics.recordCacheMiss()
             }
             value
         }
@@ -72,6 +75,7 @@ class DocumentCache(private val maxSize: Int = 100) {
         while (cache.size > maxSize && accessOrder.isNotEmpty()) {
             val eldest = accessOrder.removeFirst()
             cache.remove(eldest)
+            PerformanceMetrics.recordCacheEviction()
         }
         _size = cache.size
     }

@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Web/Wasm implementation of SecureStorageFactory.
- * Uses localStorage with basic obfuscation (not true encryption).
+ * Uses AES-GCM encryption via Web Crypto API in secure
+ * contexts, falling back to XOR obfuscation otherwise.
  *
  *########################################################*/
 package digital.vasic.yole.network.platform
@@ -14,26 +15,20 @@ import kotlinx.browser.localStorage
 /**
  * Web implementation of [SecureStorageFactory].
  *
- * Creates [WebSecureStorage] instances backed by localStorage with XOR obfuscation.
- * This provides data hiding but NOT cryptographic security. See [WebSecureStorage]
- * for a detailed security analysis and the Web Crypto API implementation roadmap.
+ * Creates [WebSecureStorage] instances backed by localStorage. In secure contexts
+ * (HTTPS or localhost), values are encrypted with AES-GCM via the Web Crypto API.
+ * In non-secure contexts, falls back to XOR obfuscation with a console warning.
+ * See [WebSecureStorage] for the full security model.
  *
  * ## Security Considerations
  *
- * - Values are XOR-obfuscated, not encrypted. This prevents casual inspection
- *   but is trivially reversible by an attacker with JavaScript execution context.
+ * - In secure contexts: AES-GCM 256-bit encryption via `crypto.subtle`
+ * - In non-secure contexts: XOR obfuscation fallback (trivially reversible)
  * - localStorage is subject to the same-origin policy, providing domain-level isolation.
  * - localStorage has a ~5-10 MB size limit depending on the browser.
- * - localStorage is synchronous and blocks the main thread; consider IndexedDB
- *   for large or frequent storage operations.
+ * - The AES-GCM key is persisted as JWK in localStorage under `yole_crypto_key`.
  *
  * ## Future Enhancements
- *
- * TODO: When [WebSecureStorage] gains Web Crypto API support, this factory should:
- *       1. Check if `crypto.subtle` is available (HTTPS/localhost secure context)
- *       2. If available, return a `CryptoSecureStorage` instance with AES-GCM encryption
- *       3. If unavailable, fall back to the current `WebSecureStorage` with obfuscation
- *       4. Log a warning when falling back to obfuscation-only mode
  *
  * TODO: Consider using IndexedDB instead of localStorage for:
  *       - Larger storage capacity (browser-dependent, typically 50+ MB)
@@ -72,9 +67,9 @@ actual object SecureStorageFactory {
     /**
      * Check if secure storage is available on web platform.
      *
-     * Returns `true` if localStorage is accessible. Note that this does NOT indicate
-     * that true encryption is available — only that the obfuscation-based storage
-     * can be used. Check [WebSecureStorage.isEncryptionSupported] for encryption status.
+     * Returns `true` if localStorage is accessible. Check
+     * [WebSecureStorage.isEncryptionSupported] to determine whether AES-GCM encryption
+     * is active (secure context) or XOR obfuscation fallback is in use.
      */
     actual suspend fun isAvailable(): Boolean {
         return try {

@@ -9,8 +9,10 @@
  *########################################################*/
 package digital.vasic.yole.format
 
+import digital.vasic.yole.monitoring.PerformanceMetrics
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.datetime.Clock
 
 /**
  * Registry for all supported text formats in Yole.
@@ -294,15 +296,19 @@ object FormatRegistry {
      */
     fun detectByContent(content: String, maxLines: Int = 10): TextFormat? {
         if (content.isEmpty()) return null
+        val startMs = Clock.System.now().toEpochMilliseconds()
 
         val lines = content.lines().take(maxLines)
         val sampleText = lines.joinToString("\n")
 
-        return formats.firstOrNull { format ->
+        val result = formats.firstOrNull { format ->
             format.detectionPatterns.any { pattern ->
                 Regex(pattern, RegexOption.MULTILINE).containsMatchIn(sampleText)
             }
         }
+        val elapsed = Clock.System.now().toEpochMilliseconds() - startMs
+        PerformanceMetrics.recordDetection(elapsed)
+        return result
     }
 
     /**
@@ -390,10 +396,14 @@ object FormatRegistry {
      * ```
      */
      fun detectByExtension(extension: String): TextFormat {
+         val startMs = Clock.System.now().toEpochMilliseconds()
          val cleanExtension = extension.trim().lowercase().let { if (it.startsWith(".")) it else ".$it" }
-         return formats.firstOrNull { format ->
+         val result = formats.firstOrNull { format ->
              format.extensions.any { it.equals(cleanExtension, ignoreCase = true) }
          } ?: formats.first { it.id == ID_PLAINTEXT }
+         val elapsed = Clock.System.now().toEpochMilliseconds() - startMs
+         PerformanceMetrics.recordDetection(elapsed)
+         return result
      }
 
     /**
@@ -494,7 +504,10 @@ object FormatRegistry {
         format: TextFormat,
         options: Map<String, Any> = emptyMap()
     ): ParsedDocument {
+        val semaphoreStartMs = Clock.System.now().toEpochMilliseconds()
         return parseSemaphore.withPermit {
+            val semaphoreElapsed = Clock.System.now().toEpochMilliseconds() - semaphoreStartMs
+            PerformanceMetrics.recordSemaphoreWait(semaphoreElapsed)
             parseWithCache(content, format, options)
         }
     }
@@ -516,9 +529,12 @@ object FormatRegistry {
         val cacheKey = "${format.id}:${content.hashCode()}"
         documentCache.get(cacheKey)?.let { return it }
 
+        val parseStartMs = Clock.System.now().toEpochMilliseconds()
         val parser = ParserRegistry.getParser(format)
             ?: throw IllegalArgumentException("No parser for format: ${format.id}")
         val result = parser.parse(content, options)
+        val parseElapsed = Clock.System.now().toEpochMilliseconds() - parseStartMs
+        PerformanceMetrics.recordParse(parseElapsed)
         documentCache.put(cacheKey, result)
         return result
     }

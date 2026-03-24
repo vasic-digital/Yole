@@ -154,6 +154,9 @@ class SmbService(
             onSuccess = { it },
             onFailure = { e ->
                 if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+                if (e is CircuitBreakerOpenException) {
+                    SecurityEventLogger.logCircuitBreakerOpen("SmbService", circuitBreaker.failures)
+                }
                 Result.failure(
                     NetworkStorageException.ConnectionException.Failed(
                         message = "SMB connection failed",
@@ -925,13 +928,43 @@ class SmbService(
         // Individual files can be synced via syncFile()
     }
 
-    /** Searches files by [query]; always fails because native SMB protocol support is required. */
+    /**
+     * Searches files by [query] using the in-memory file tree.
+     * Filters entries whose name or path contains the query (case-insensitive),
+     * optionally scoped to a subdirectory via [path].
+     */
     override fun searchFiles(
         query: String,
         path: String?,
         includeContent: Boolean
     ): Flow<Result<List<NetworkDocument>>> = flow {
-        emit(Result.failure(Exception("SMB search not implemented")))
+        if (!isConnected()) {
+            emit(Result.failure(NetworkStorageException.ConnectionException.NotConnected(
+                message = "SMB not connected"
+            )))
+            return@flow
+        }
+
+        try {
+            val searchPath = path ?: "/"
+
+            val matchedFiles = fileTreeMutex.withLock {
+                fileTree.values
+                    .map { it.document }
+                    .filter { doc ->
+                        val inPath = if (searchPath == "/") true
+                        else doc.path.startsWith(searchPath)
+
+                        inPath && (doc.name.contains(query, ignoreCase = true) ||
+                                doc.path.contains(query, ignoreCase = true))
+                    }
+            }
+
+            emit(Result.success(matchedFiles))
+        } catch (e: Exception) {
+            if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+            emit(Result.failure(Exception("SMB search failed: ${e.message}")))
+        }
     }
 
     /** Returns file tree entries modified at or after [since], optionally filtered by [path]. */
@@ -1027,7 +1060,12 @@ class SmbService(
      * Delegates to [PathUtils.normalizePath] for shared traversal protection.
      */
     private fun normalizePath(path: String): String {
-        return PathUtils.normalizePath(path, _rootPath)
+        try {
+            return PathUtils.normalizePath(path, _rootPath)
+        } catch (e: IllegalArgumentException) {
+            SecurityEventLogger.logPathTraversalBlocked("SmbService", path)
+            throw e
+        }
     }
 
     /**

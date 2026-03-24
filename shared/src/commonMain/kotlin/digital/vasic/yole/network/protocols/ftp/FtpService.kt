@@ -156,6 +156,7 @@ class FtpService(
                 // Authenticate with USER/PASS
                 val loginResult = ftpClient.login(config.username, config.password)
                 if (loginResult.isFailure) {
+                    SecurityEventLogger.logAuthFailure("FtpService", "FTP login failed for user '${config.username}'")
                     ftpClient.disconnect()
                     return@withConnection Result.failure(NetworkStorageException.ConnectionException.Failed(
                         message = "FTP connection failed",
@@ -170,6 +171,9 @@ class FtpService(
             onSuccess = { it },
             onFailure = { e ->
                 if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+                if (e is CircuitBreakerOpenException) {
+                    SecurityEventLogger.logCircuitBreakerOpen("FtpService", circuitBreaker.failures)
+                }
                 Result.failure(NetworkStorageException.ConnectionException.Failed(
                     message = "FTP connection failed",
                     cause = e
@@ -1262,7 +1266,12 @@ class FtpService(
      * Delegates to [PathUtils.normalizePath] for shared traversal protection.
      */
     private fun normalizePath(path: String): String {
-        return PathUtils.normalizePath(path, _rootPath)
+        try {
+            return PathUtils.normalizePath(path, _rootPath)
+        } catch (e: IllegalArgumentException) {
+            SecurityEventLogger.logPathTraversalBlocked("FtpService", path)
+            throw e
+        }
     }
 
     /**

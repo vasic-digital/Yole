@@ -141,6 +141,9 @@ class SftpService(
             onSuccess = { it },
             onFailure = { e ->
                 if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+                if (e is CircuitBreakerOpenException) {
+                    SecurityEventLogger.logCircuitBreakerOpen("SftpService", circuitBreaker.failures)
+                }
                 Result.failure(
                     NetworkStorageException.ConnectionException.Failed(
                         message = "SFTP connection failed",
@@ -166,6 +169,7 @@ class SftpService(
                 Result.success(Unit)
             }
             else -> {
+                SecurityEventLogger.logAuthFailure("SftpService", "SFTP requires either password or private key authentication")
                 Result.failure(
                     NetworkStorageException.ConnectionException.Authentication(
                         message = "SFTP requires either password or private key authentication",
@@ -1317,6 +1321,11 @@ class SftpService(
      * Delegates to [PathUtils.normalizePath] for shared traversal protection.
      */
     private fun normalizePath(path: String): String {
-        return PathUtils.normalizePath(path, _rootPath)
+        try {
+            return PathUtils.normalizePath(path, _rootPath)
+        } catch (e: IllegalArgumentException) {
+            SecurityEventLogger.logPathTraversalBlocked("SftpService", path)
+            throw e
+        }
     }
 }

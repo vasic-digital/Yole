@@ -181,6 +181,7 @@ class OneDriveService(
                 val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
 
                 if (!hasValidToken) {
+                    SecurityEventLogger.logAuthFailure("OneDriveService", "No valid authentication tokens found")
                     return@withConnection Result.failure(
                         NetworkStorageException.ConnectionException.Authentication(
                             message = "No valid authentication tokens found",
@@ -204,6 +205,9 @@ class OneDriveService(
             onSuccess = { it },
             onFailure = { e ->
                 if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+                if (e is CircuitBreakerOpenException) {
+                    SecurityEventLogger.logCircuitBreakerOpen("OneDriveService", circuitBreaker.failures)
+                }
                 Result.failure(NetworkStorageException.ConnectionException.Failed(
                     message = "OneDrive connection failed",
                     cause = e
@@ -291,7 +295,7 @@ class OneDriveService(
         return try {
             val refreshToken = authTokenManager.getRefreshToken().getOrNull()
                 ?: return Result.failure(Exception("No refresh token available"))
-            
+
             val tokenResponse = oauth2Flow.refreshAccessToken(refreshToken)
             if (tokenResponse.isSuccess) {
                 val tokens = tokenResponse.getOrThrow()
@@ -301,12 +305,15 @@ class OneDriveService(
                     expiresIn = tokens.expires_in
                 )
                 stateMutex.withLock { _isConnected = true }
+                SecurityEventLogger.logTokenRefresh("OneDriveService", success = true)
                 Result.success(Unit)
             } else {
+                SecurityEventLogger.logTokenRefresh("OneDriveService", success = false)
                 Result.failure(tokenResponse.exceptionOrNull() ?: Exception("Token refresh failed"))
             }
         } catch (e: Exception) {
             if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+            SecurityEventLogger.logTokenRefresh("OneDriveService", success = false)
             Result.failure(e)
         }
     }

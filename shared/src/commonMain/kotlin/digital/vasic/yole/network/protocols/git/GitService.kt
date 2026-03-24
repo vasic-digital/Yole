@@ -169,6 +169,9 @@ class GitService(
             onSuccess = { it },
             onFailure = { e ->
                 if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+                if (e is CircuitBreakerOpenException) {
+                    SecurityEventLogger.logCircuitBreakerOpen("GitService", circuitBreaker.failures)
+                }
                 Result.failure(NetworkStorageException.ConnectionException.Failed(
                     message = "Git connection failed",
                     cause = e
@@ -1393,14 +1396,16 @@ class GitService(
         includeContent: Boolean
     ): Flow<Result<List<NetworkDocument>>> = flow {
         if (!isConnected()) {
-            emit(Result.failure(Exception("Git search not implemented")))
+            emit(Result.failure(NetworkStorageException.ConnectionException.NotConnected(
+                message = "Git not connected"
+            )))
             return@flow
         }
 
         try {
             val searchPath = path ?: "/"
 
-            // Search through known files
+            // First attempt: search through locally known files
             val matchedFiles = fileListMutex.withLock {
                 knownFiles.values
                     .filter { entry ->
@@ -1431,12 +1436,28 @@ class GitService(
 
             if (matchedFiles.isNotEmpty()) {
                 emit(Result.success(matchedFiles))
-            } else {
-                emit(Result.failure(Exception("Git search not implemented")))
+                return@flow
+            }
+
+            // Fallback: use listFiles() to fetch directory listing from remote, then filter
+            var found = false
+            listFiles(searchPath).collect { result ->
+                result.onSuccess { documents ->
+                    val filtered = documents.filter { doc ->
+                        doc.name.contains(query, ignoreCase = true) ||
+                                doc.path.contains(query, ignoreCase = true)
+                    }
+                    emit(Result.success(filtered))
+                    found = true
+                }
+            }
+
+            if (!found) {
+                emit(Result.success(emptyList()))
             }
         } catch (e: Exception) {
             if (e is kotlin.coroutines.cancellation.CancellationException) throw e
-            emit(Result.failure(Exception("Git search not implemented")))
+            emit(Result.failure(Exception("Git search failed: ${e.message}")))
         }
     }
 

@@ -181,6 +181,7 @@ class DropboxService(
                 val hasValidToken = authTokenManager.hasValidToken().getOrNull() ?: false
 
                 if (!hasValidToken) {
+                    SecurityEventLogger.logAuthFailure("DropboxService", "No valid authentication tokens found")
                     return@withConnection Result.failure(
                         NetworkStorageException.ConnectionException.Authentication(
                             message = "No valid authentication tokens found",
@@ -204,6 +205,9 @@ class DropboxService(
             onSuccess = { it },
             onFailure = { e ->
                 if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+                if (e is CircuitBreakerOpenException) {
+                    SecurityEventLogger.logCircuitBreakerOpen("DropboxService", circuitBreaker.failures)
+                }
                 Result.failure(NetworkStorageException.ConnectionException.Failed(
                     message = "Dropbox connection failed",
                     cause = e
@@ -283,7 +287,7 @@ class DropboxService(
         return try {
             val refreshToken = authTokenManager.getRefreshToken().getOrNull()
                 ?: return Result.failure(Exception("No refresh token available"))
-            
+
             val tokenResponse = oauth2Flow.refreshAccessToken(refreshToken)
             if (tokenResponse.isSuccess) {
                 val tokens = tokenResponse.getOrThrow()
@@ -293,12 +297,15 @@ class DropboxService(
                     expiresIn = tokens.expires_in
                 )
                 stateMutex.withLock { _isConnected = true }
+                SecurityEventLogger.logTokenRefresh("DropboxService", success = true)
                 Result.success(Unit)
             } else {
+                SecurityEventLogger.logTokenRefresh("DropboxService", success = false)
                 Result.failure(tokenResponse.exceptionOrNull() ?: Exception("Token refresh failed"))
             }
         } catch (e: Exception) {
             if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+            SecurityEventLogger.logTokenRefresh("DropboxService", success = false)
             Result.failure(e)
         }
     }
@@ -1420,7 +1427,12 @@ class DropboxService(
      * Delegates to [PathUtils.normalizePath] for shared traversal protection.
      */
     private fun normalizePath(path: String): String {
-        return PathUtils.normalizePath(path, _rootPath)
+        try {
+            return PathUtils.normalizePath(path, _rootPath)
+        } catch (e: IllegalArgumentException) {
+            SecurityEventLogger.logPathTraversalBlocked("DropboxService", path)
+            throw e
+        }
     }
     
     private fun jsonEscape(value: String): String =

@@ -1,101 +1,66 @@
+/*#######################################################
+ *
+ * SPDX-FileCopyrightText: 2025 Milos Vasic
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Android implementation of SecureStorageFactory.
+ * Uses EncryptedSharedPreferences for real credential encryption.
+ *
+ *########################################################*/
 package digital.vasic.yole.network.platform
 
 import android.content.Context
-import androidx.security.crypto.MasterKey
 
 /**
  * Android implementation of SecureStorageFactory.
+ *
+ * Requires [initialize] to be called with an Android [Context] before [create]
+ * is invoked. The context is stored as the application context to avoid leaking
+ * Activity references.
  */
 actual object SecureStorageFactory {
-    
+
+    @Volatile
+    private var appContext: Context? = null
+
     /**
-     * Create a new Android secure storage instance.
+     * Initialize the factory with an Android application context.
+     * Must be called once during app startup (e.g., in Application.onCreate
+     * or the main Activity) before any SecureStorage operations.
+     *
+     * @param context Any Android context; the application context is retained.
+     */
+    fun initialize(context: Context) {
+        appContext = context.applicationContext
+    }
+
+    /**
+     * Create a new Android secure storage instance backed by EncryptedSharedPreferences.
+     *
+     * @return [Result.success] with an [AndroidSecureStorage] if the context has been
+     *         initialized via [initialize], or [Result.failure] if not yet initialized.
      */
     actual suspend fun create(): Result<SecureStorage> {
         return try {
-            // For now, we'll use a simple implementation
-            // In a real app, you'd get the context properly
-            val secureStorage = createMockSecureStorage()
+            val context = appContext
+                ?: return Result.failure(
+                    IllegalStateException(
+                        "SecureStorageFactory not initialized. " +
+                        "Call SecureStorageFactory.initialize(context) during app startup."
+                    )
+                )
+            val secureStorage = AndroidSecureStorage(context)
             Result.success(secureStorage)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Check if secure storage is available on Android.
+     * Returns true if the factory has been initialized with a context.
      */
     actual suspend fun isAvailable(): Boolean {
-        return try {
-            // Android supports secure storage via EncryptedSharedPreferences
-            true
-        } catch (e: Exception) {
-            false
-        }
-    }
-    
-    /**
-     * Create a mock secure storage for compilation purposes
-     * This should be replaced with proper Android implementation
-     */
-    private fun createMockSecureStorage(): SecureStorage {
-        return object : SecureStorage {
-            private val storage = mutableMapOf<String, String>()
-            
-            override suspend fun store(key: String, value: String): Result<Unit> {
-                return try {
-                    storage[key] = value
-                    Result.success(Unit)
-                } catch (e: Exception) {
-                    Result.failure(e)
-                }
-            }
-            
-            override suspend fun retrieve(key: String): Result<String?> {
-                return try {
-                    Result.success(storage[key])
-                } catch (e: Exception) {
-                    Result.failure(e)
-                }
-            }
-            
-            override suspend fun delete(key: String): Result<Unit> {
-                return try {
-                    storage.remove(key)
-                    Result.success(Unit)
-                } catch (e: Exception) {
-                    Result.failure(e)
-                }
-            }
-            
-            override suspend fun contains(key: String): Result<Boolean> {
-                return try {
-                    Result.success(storage.containsKey(key))
-                } catch (e: Exception) {
-                    Result.failure(e)
-                }
-            }
-            
-            override suspend fun listKeys(): Result<List<String>> {
-                return try {
-                    Result.success(storage.keys.toList())
-                } catch (e: Exception) {
-                    Result.failure(e)
-                }
-            }
-            
-            override suspend fun clear(): Result<Unit> {
-                return try {
-                    storage.clear()
-                    Result.success(Unit)
-                } catch (e: Exception) {
-                    Result.failure(e)
-                }
-            }
-            
-            override suspend fun isSecure(): Result<Boolean> {
-                return Result.success(true) // Android uses EncryptedSharedPreferences
-            }
-        }
+        return appContext != null
     }
 }

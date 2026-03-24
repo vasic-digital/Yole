@@ -17,11 +17,12 @@ import kotlin.test.*
  *
  * Tests cover:
  * - localStorage integration
- * - XOR obfuscation (not true encryption)
+ * - AES-GCM encryption (secure context) / XOR obfuscation fallback
  * - Cross-browser compatibility
  * - localStorage limitations and quotas
  * - Web-specific error scenarios
  * - Base64 encoding/decoding
+ * - Crypto key management
  */
 class WebSecureStorageTest : SecureStorageTest() {
 
@@ -46,11 +47,11 @@ class WebSecureStorageTest : SecureStorageTest() {
     }
 
     private fun clearLocalStorage() {
-        // Clear all items with our prefix
+        // Clear all items with our prefix and the crypto key
         val keysToRemove = mutableListOf<String>()
         for (i in 0 until localStorage.length) {
             val key = localStorage.key(i)
-            if (key?.startsWith("yole_network_secure_") == true) {
+            if (key?.startsWith("yole_network_secure_") == true || key == "yole_crypto_key") {
                 keysToRemove.add(key)
             }
         }
@@ -62,8 +63,8 @@ class WebSecureStorageTest : SecureStorageTest() {
     // ==================== Web-Specific Tests ====================
 
     @Test
-    fun `should use localStorage with obfuscation`() = runTest {
-        val key = "obfuscation_test_key"
+    fun `should store encrypted data in localStorage`() = runTest {
+        val key = "encryption_test_key"
         val value = "sensitive_data_123"
 
         // Store value
@@ -72,43 +73,49 @@ class WebSecureStorageTest : SecureStorageTest() {
         // Check localStorage directly
         val storageKey = "yole_network_secure_$key"
         val storedValue = localStorage.getItem(storageKey)
-        
+
         assertNotNull(storedValue, "Value should be stored in localStorage")
-        
-        // Stored value should be obfuscated (base64 encoded XOR result)
-        assertNotEquals(value, storedValue, "Stored value should be obfuscated")
-        
+
+        // Stored value should be encrypted/obfuscated (not plaintext)
+        assertNotEquals(value, storedValue, "Stored value should be encrypted or obfuscated")
+
         // Should be base64 encoded (contains only base64 characters)
         assertTrue(storedValue.matches(Regex("^[A-Za-z0-9+/=]*$")), "Should be base64 encoded")
     }
 
     @Test
-    fun `should apply XOR obfuscation correctly`() = runTest {
-        val key = "xor_test_key"
-        val value = "test_value_for_xor"
+    fun `should encrypt and decrypt correctly`() = runTest {
+        val key = "roundtrip_test_key"
+        val value = "test_value_for_roundtrip"
 
         webSecureStorage.store(key, value)
 
         // Retrieve and verify it matches original
         val result = webSecureStorage.retrieve(key)
-        assertEquals(value, result.getOrNull(), "XOR obfuscation should be reversible")
+        assertEquals(value, result.getOrNull(), "Encrypt/decrypt roundtrip should preserve data")
     }
 
     @Test
-    fun `should use consistent obfuscation key`() = runTest {
-        val key = "consistency_test_key"
+    fun `should produce unique ciphertexts with random IVs`() = runTest {
+        val key = "iv_uniqueness_test_key"
         val value = "test_value"
-
-        // Store same value multiple times
-        webSecureStorage.store(key, value)
         val storageKey = "yole_network_secure_$key"
+
+        // Store same value twice — AES-GCM uses random IVs,
+        // so ciphertexts should differ even for the same plaintext.
+        // XOR obfuscation fallback produces identical output, but that is also acceptable.
+        webSecureStorage.store(key, value)
         val firstStoredValue = localStorage.getItem(storageKey)
 
         webSecureStorage.store(key, value) // Store again
         val secondStoredValue = localStorage.getItem(storageKey)
 
-        // Should produce same obfuscated result for same input
-        assertEquals(firstStoredValue, secondStoredValue, "Same input should produce same obfuscated output")
+        assertNotNull(firstStoredValue)
+        assertNotNull(secondStoredValue)
+
+        // Both must decrypt back to the same plaintext regardless of ciphertext differences
+        val result = webSecureStorage.retrieve(key)
+        assertEquals(value, result.getOrNull(), "Decrypted value should match original")
     }
 
     @Test
@@ -145,16 +152,17 @@ class WebSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should validate security with obfuscation test`() = runTest {
+    fun `should report secure when crypto is available`() = runTest {
         val isSecureResult = webSecureStorage.isSecure()
         assertTrue(isSecureResult.isSuccess, "Security validation should succeed")
-        
+
         val isSecure = isSecureResult.getOrNull()
         assertNotNull(isSecure, "Security status should not be null")
-        
-        // Web implementation only provides obfuscation, not true encryption
-        // But it should still pass the basic security test (data integrity)
-        assertTrue(isSecure, "Web secure storage should report as secure for basic use")
+
+        // In a secure context (HTTPS/localhost, e.g., test runner), isSecure() returns true
+        // because AES-GCM encryption is active. In non-secure contexts it returns false.
+        // The test environment provides crypto.subtle, so we expect true.
+        assertTrue(isSecure, "Web secure storage should report as secure in test environment")
     }
 
     @Test
@@ -292,46 +300,70 @@ class WebSecureStorageTest : SecureStorageTest() {
     }
 
     @Test
-    fun `should handle malformed obfuscated data gracefully`() = runTest {
+    fun `should handle malformed encrypted data gracefully`() = runTest {
         val key = "malformed_test_key"
         val storageKey = "yole_network_secure_$key"
-        
+
         // Store valid data first
         webSecureStorage.store(key, "valid_value")
-        
+
         // Corrupt the stored data
         localStorage.setItem(storageKey, "invalid_base64!!!")
-        
+
         // Try to retrieve - should handle gracefully
         val result = webSecureStorage.retrieve(key)
-        
-        // Should either return null or fail gracefully
-        if (result.isSuccess) {
-            assertNull(result.getOrNull(), "Malformed data should return null")
+
+        // With AES-GCM, corrupted data causes decryption failure (Result.failure).
+        // With XOR fallback, corrupted base64 also causes failure.
+        // Either way, it should not crash — it should return a failure result.
+        assertTrue(result.isFailure, "Malformed data should cause a graceful failure")
+        assertNotNull(result.exceptionOrNull(), "Should provide error details for malformed data")
+    }
+
+    @Test
+    fun `should store data larger than plaintext due to encryption overhead`() = runTest {
+        val sensitiveData = "password123"
+        val key = "overhead_test_key"
+
+        webSecureStorage.store(key, sensitiveData)
+
+        val storageKey = "yole_network_secure_$key"
+        val encryptedData = localStorage.getItem(storageKey)
+
+        assertNotNull(encryptedData)
+        assertNotEquals(sensitiveData, encryptedData, "Stored value must differ from plaintext")
+
+        // AES-GCM adds IV (12 bytes) + auth tag (16 bytes) + base64 expansion.
+        // XOR obfuscation adds base64 expansion. Either way, stored size > plaintext size.
+        assertTrue(encryptedData.length > sensitiveData.length,
+            "Encrypted/obfuscated data should be larger than plaintext due to overhead")
+    }
+
+    @Test
+    fun `should report encryption support status`() = runTest {
+        // In a secure context (test runner uses localhost or HTTPS), crypto.subtle is available
+        // and isEncryptionSupported should be true. In non-secure contexts it would be false.
+        val supported = webSecureStorage.isEncryptionSupported
+        val level = webSecureStorage.securityLevel
+
+        if (supported) {
+            assertEquals("encrypted", level, "Security level should be 'encrypted' when crypto is available")
         } else {
-            assertNotNull(result.exceptionOrNull(), "Malformed data should cause failure")
+            assertEquals("obfuscated", level, "Security level should be 'obfuscated' in fallback mode")
         }
     }
 
     @Test
-    fun `should provide appropriate security warnings`() = runTest {
-        // Web storage only provides obfuscation, not true encryption
-        // This test documents that limitation
-        
-        val sensitiveData = "password123"
-        val key = "security_test_key"
-        
-        webSecureStorage.store(key, sensitiveData)
-        
-        // Verify data is obfuscated but not truly encrypted
-        val storageKey = "yole_network_secure_$key"
-        val obfuscatedData = localStorage.getItem(storageKey)
-        
-        assertNotNull(obfuscatedData)
-        assertNotEquals(sensitiveData, obfuscatedData)
-        
-        // The obfuscation is reversible with the known key
-        // This is not true cryptographic security
-        assertTrue(obfuscatedData.length > sensitiveData.length, "Obfuscation should increase size due to base64")
+    fun `should persist crypto key in localStorage`() = runTest {
+        // After storing a value (which triggers key generation), the crypto key
+        // should be persisted in localStorage under the dedicated key.
+        webSecureStorage.store("key_persistence_test", "some_value")
+
+        if (webSecureStorage.isEncryptionSupported) {
+            val cryptoKey = localStorage.getItem("yole_crypto_key")
+            assertNotNull(cryptoKey, "AES-GCM key should be persisted as JWK in localStorage")
+            assertTrue(cryptoKey.contains("\"kty\""), "Stored key should be valid JWK JSON")
+            assertTrue(cryptoKey.contains("\"k\""), "JWK should contain the key material")
+        }
     }
 }
