@@ -901,14 +901,13 @@ class SmbServiceDeepCoverageTest {
     }
 
     @Test
-    fun `listFiles returns ListFailed when connected`() = runBlocking<Unit> {
+    fun `listFiles returns success with empty list when connected`() = runBlocking<Unit> {
         service.connect()
         val results = service.listFiles("/test").toList()
         assertEquals(1, results.size)
-        assertTrue(results[0].isFailure)
-        assertIs<NetworkStorageException.FileOperationException.ListFailed>(
-            results[0].exceptionOrNull()
-        )
+        assertTrue(results[0].isSuccess)
+        val files = results[0].getOrThrow()
+        assertTrue(files.isEmpty(), "Empty file tree should return empty list")
     }
 
     // ----------------------------------------------------------------

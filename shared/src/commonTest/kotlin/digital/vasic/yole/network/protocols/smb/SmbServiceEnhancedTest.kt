@@ -184,22 +184,23 @@ class SmbServiceEnhancedTest {
     }
 
     @Test
-    fun `listFiles with connected service returns failure for unimplemented`() = runBlocking<Unit> {
+    fun `listFiles with connected service returns success with empty file tree`() = runBlocking<Unit> {
         service.connect()
         val results = service.listFiles("/").toList()
         assertEquals(1, results.size)
-        assertTrue(results[0].isFailure)
-        assertIs<NetworkStorageException.FileOperationException.ListFailed>(results[0].exceptionOrNull())
+        assertTrue(results[0].isSuccess)
+        val files = results[0].getOrThrow()
+        assertTrue(files.isEmpty(), "Empty file tree should return empty list when protocol client unavailable")
     }
 
     @Test
-    fun `listFiles with different paths returns correct failure`() = runBlocking<Unit> {
+    fun `listFiles with different paths returns success`() = runBlocking<Unit> {
         service.connect()
         val paths = listOf("/", "/documents", "/documents/subfolder", "/photos")
         for (path in paths) {
             val results = service.listFiles(path).toList()
             assertTrue(results.isNotEmpty())
-            assertTrue(results[0].isFailure)
+            assertTrue(results[0].isSuccess)
         }
     }
 

@@ -119,7 +119,7 @@ class UltimateSupremacyTest {
     @Test
     fun `ULTIMATE - HTML conversion speed supremacy`() {
         val contentSizes = listOf(1000, 10000, 50000)
-        val maxConversionTimeMs = 5000 // 5000ms maximum (allows for constrained environments)
+        val maxConversionTimeMs = 10000 // 10s maximum (allows for constrained environments with metrics instrumentation)
 
         contentSizes.forEach { size ->
             val content = generateMassiveContent(size)

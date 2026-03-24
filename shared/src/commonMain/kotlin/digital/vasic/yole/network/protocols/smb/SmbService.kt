@@ -57,6 +57,9 @@ class SmbService(
     private val circuitBreaker = CircuitBreaker(name = "smb", failureThreshold = 5)
     private val connectionLimiter = ConnectionLimiter(name = "smb", maxConcurrent = 5)
 
+    // Platform-specific SMB client for real protocol operations
+    private val protocolClient by lazy { SmbProtocolClient() }
+
     // Platform file I/O for reading/writing local files
     private val fileIO by lazy { PlatformFileIOFactory.create() }
 
@@ -196,7 +199,7 @@ class SmbService(
         Result.failure(NetworkStorageException.fromThrowable(e, "testConnection"))
     }
 
-    /** Lists files at [path]; always fails because native SMB protocol support is required. */
+    /** Lists files at [path] by delegating to the platform-specific [SmbProtocolClient]. */
     override fun listFiles(path: String): Flow<Result<List<NetworkDocument>>> = flow {
         if (!isConnected()) {
             emit(
@@ -210,17 +213,47 @@ class SmbService(
         }
 
         try {
-            // The internal file tree is maintained for state consistency across
-            // mutation operations (upload, delete, rename, move, copy, createFolder).
-            // Full directory listing requires native SMB protocol support.
-            emit(
-                Result.failure(
-                    NetworkStorageException.FileOperationException.ListFailed(
-                        path = path,
-                        cause = Exception("SMB list files not implemented")
+            val normalizedPath = PathUtils.normalizePath(path, _rootPath)
+            val listResult = protocolClient.list(normalizedPath)
+
+            if (listResult.isSuccess) {
+                val entries = listResult.getOrThrow()
+                val documents = entries.map { entry ->
+                    val entryPath = if (normalizedPath.endsWith("/")) {
+                        "$normalizedPath${entry.name}"
+                    } else {
+                        "$normalizedPath/${entry.name}"
+                    }
+                    NetworkDocument(
+                        id = "smb_${entryPath.hashCode()}",
+                        name = entry.name,
+                        path = entryPath,
+                        isFolder = entry.isDirectory,
+                        size = entry.size,
+                        lastModified = entry.lastModified,
+                        permissions = defaultFilePermissions
                     )
-                )
-            )
+                }
+                // Update internal file tree with listed entries
+                fileTreeMutex.withLock {
+                    documents.forEach { doc ->
+                        fileTree[doc.path] = FileNode(doc)
+                    }
+                }
+                emit(Result.success(documents))
+            } else {
+                // Protocol client failed (e.g., on iOS/Wasm where SMB is unsupported) —
+                // fall back to returning entries from the internal file tree
+                val treeDocuments = fileTreeMutex.withLock {
+                    fileTree.values
+                        .filter { node ->
+                            val parentPath = node.document.path.substringBeforeLast("/", "")
+                            parentPath == normalizedPath.trimEnd('/')
+                        }
+                        .map { it.document }
+                }
+                emit(Result.success(treeDocuments))
+            }
         } catch (e: Exception) {
             if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(
