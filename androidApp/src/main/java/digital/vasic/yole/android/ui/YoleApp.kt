@@ -2118,12 +2118,33 @@ fun FileBrowserScreen(
         }
     }
 
+    // Check if we have broad file access (Android 11+)
+    val hasFileAccess = remember {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            Environment.isExternalStorageManager()
+        } else {
+            true // Pre-Android 11: legacy permissions suffice
+        }
+    }
+    var showPermissionPrompt by remember { mutableStateOf(false) }
+
+    // Permission request launcher for MANAGE_EXTERNAL_STORAGE
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        // After returning from settings, reload with hopefully granted permission
+        val docsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+        if (docsDir.exists() && docsDir.canRead()) {
+            loadLocalDirectory(docsDir)
+        }
+    }
+
     LaunchedEffect(Unit) {
         isLoadingFiles = true
         kotlinx.coroutines.delay(300)
-        val docsDir = Environment.getExternalStoragePublicDirectory(
-            Environment.DIRECTORY_DOCUMENTS
-        )
+
+        // Try direct file access first (works with MANAGE_EXTERNAL_STORAGE or pre-Android 11)
+        val docsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
         if (docsDir.exists() && docsDir.canRead()) {
             currentDirectory = docsDir
             currentPathLabel = docsDir.absolutePath
@@ -2136,21 +2157,26 @@ fun FileBrowserScreen(
                     localFile = f
                 )
             }
+            isLoadingFiles = false
         } else {
-            val fallback = context.filesDir
-            currentDirectory = fallback
-            currentPathLabel = fallback.absolutePath
-            allFiles = (fallback.listFiles()?.toList() ?: emptyList()).map { f ->
-                BrowsableFile(
-                    name = f.name,
-                    isDirectory = f.isDirectory,
-                    size = if (f.isFile) f.length() else 0L,
-                    lastModified = f.lastModified(),
-                    localFile = f
-                )
+            // No direct access — check persisted SAF permissions first
+            val persistedUris = context.contentResolver.persistedUriPermissions
+            if (persistedUris.isNotEmpty()) {
+                // Use the most recently granted SAF tree
+                val lastUri = persistedUris.last().uri
+                val doc = DocumentFile.fromTreeUri(context, lastUri)
+                if (doc != null && doc.isDirectory) {
+                    safTreeUri = lastUri
+                    loadSafDirectory(doc)
+                } else {
+                    showPermissionPrompt = true
+                    isLoadingFiles = false
+                }
+            } else {
+                showPermissionPrompt = true
+                isLoadingFiles = false
             }
         }
-        isLoadingFiles = false
     }
 
     val files = remember(allFiles, searchQuery, sortBy) {
@@ -2200,6 +2226,43 @@ fun FileBrowserScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        // Permission prompt: shown when no file access and no SAF tree
+        if (showPermissionPrompt && allFiles.isEmpty() && !isLoadingFiles) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "File Access Required",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Yole needs permission to browse your files. You can either grant full storage access or pick a folder to browse.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                            Button(onClick = {
+                                val intent = Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                                permissionLauncher.launch(intent)
+                            }) {
+                                Text("Grant Access")
+                            }
+                        }
+                        OutlinedButton(onClick = { directoryPicker.launch(null) }) {
+                            Text("Pick a Folder")
+                        }
+                    }
+                }
+            }
+        }
+
         if (showSearch) {
             OutlinedTextField(
                 value = searchQuery,
@@ -2257,9 +2320,9 @@ fun FileBrowserScreen(
                     if (documentsDir.exists() && documentsDir.canRead()) {
                         loadLocalDirectory(documentsDir)
                     } else {
-                        Toast.makeText(
-                            context, "Documents not accessible", Toast.LENGTH_SHORT
-                        ).show()
+                        // No direct access — launch SAF picker for Documents
+                        Toast.makeText(context, "Pick your Documents folder", Toast.LENGTH_SHORT).show()
+                        directoryPicker.launch(null)
                     }
                 },
                 label = { Text("Documents", style = MaterialTheme.typography.labelSmall) },
@@ -2273,9 +2336,8 @@ fun FileBrowserScreen(
                     if (downloadsDir.exists() && downloadsDir.canRead()) {
                         loadLocalDirectory(downloadsDir)
                     } else {
-                        Toast.makeText(
-                            context, "Downloads not accessible", Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(context, "Pick your Downloads folder", Toast.LENGTH_SHORT).show()
+                        directoryPicker.launch(null)
                     }
                 },
                 label = { Text("Downloads", style = MaterialTheme.typography.labelSmall) },
@@ -2289,9 +2351,8 @@ fun FileBrowserScreen(
                     if (internalStorageDir.exists() && internalStorageDir.canRead()) {
                         loadLocalDirectory(internalStorageDir)
                     } else {
-                        Toast.makeText(
-                            context, "Internal storage not accessible", Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(context, "Pick a storage folder", Toast.LENGTH_SHORT).show()
+                        directoryPicker.launch(null)
                     }
                 },
                 label = { Text("Internal Storage", style = MaterialTheme.typography.labelSmall) },
