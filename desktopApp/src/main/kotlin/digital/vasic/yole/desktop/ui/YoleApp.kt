@@ -1192,7 +1192,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Version: 2.15.1",
+                text = "Version: 2.19.3.5",
                 style = TextStyle(fontSize = 12.sp, color = IdeTextMuted)
             )
         }

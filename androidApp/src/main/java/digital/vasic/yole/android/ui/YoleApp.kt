@@ -1784,7 +1784,7 @@ fun IdeDrawerContent(
 
         // Version info at bottom
         Text(
-            "Yole v2.15.1",
+            "Yole v2.19.3",
             color = textSecondary.copy(alpha = 0.5f),
             fontSize = 10.sp,
             modifier = Modifier.padding(16.dp)
@@ -4224,7 +4224,7 @@ fun MoreScreen(
                 Column {
                     Text("About Yole", style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        "Version 2.15.1 - Text editor for Android, Desktop, iOS & Web",
+                        "Version 2.19.3 - Text editor for Android, Desktop, iOS & Web",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
