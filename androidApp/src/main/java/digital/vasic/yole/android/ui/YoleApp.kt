@@ -831,7 +831,10 @@ fun MainScreen() {
                                 Screen.MORE -> MoreScreen(
                                     onSettingsClick = { currentSubScreen = SubScreen.SETTINGS },
                                     onFileBrowserClick = { currentSubScreen = SubScreen.FILE_BROWSER },
-                                    onSearchClick = { showFileSearch = true },
+                                    onSearchClick = {
+                                        currentScreen = Screen.FILES
+                                        showFileSearch = true
+                                    },
                                     onBackupClick = { showBackupDialog = true },
                                     onAboutClick = { showAboutDialog = true }
                                 )
