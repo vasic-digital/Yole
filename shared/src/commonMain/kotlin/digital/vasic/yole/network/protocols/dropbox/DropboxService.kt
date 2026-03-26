@@ -94,9 +94,9 @@ class DropboxService(
         )
     }
 
-    @Volatile
+    @kotlin.concurrent.Volatile
     private var _isConnected = false
-    @Volatile
+    @kotlin.concurrent.Volatile
     private var _rootPath = if (config.rootPath.isBlank()) "" else config.rootPath
     private val stateMutex = Mutex()
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()

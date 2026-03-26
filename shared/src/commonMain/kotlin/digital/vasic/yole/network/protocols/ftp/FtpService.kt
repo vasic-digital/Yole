@@ -58,10 +58,10 @@ class FtpService(
 
     private val ftpClient = _injectedFtpClient ?: FtpProtocolClient()
 
-    @Volatile
+    @kotlin.concurrent.Volatile
     private var _isConnected = false
     private val stateMutex = Mutex()
-    @Volatile
+    @kotlin.concurrent.Volatile
     private var _rootPath = config.rootPath.ifBlank { "/" }
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()
     private val operationsMutex = Mutex()

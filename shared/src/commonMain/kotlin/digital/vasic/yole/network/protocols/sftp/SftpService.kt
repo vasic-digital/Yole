@@ -56,10 +56,10 @@ class SftpService(
     private val circuitBreaker = CircuitBreaker(name = "sftp", failureThreshold = 5)
     private val connectionLimiter = ConnectionLimiter(name = "sftp", maxConcurrent = 5)
 
-    @Volatile
+    @kotlin.concurrent.Volatile
     private var _isConnected = false
     private val stateMutex = Mutex()
-    @Volatile
+    @kotlin.concurrent.Volatile
     private var _rootPath = config.rootPath.ifBlank { "/" }
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()
     private val operationsMutex = Mutex()

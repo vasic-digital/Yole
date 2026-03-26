@@ -476,7 +476,7 @@ object FormatRegistry {
      * Default permits = 4, which balances throughput and resource consumption.
      * Can be adjusted via [configureParseConcurrency] for platform-specific tuning.
      */
-    @Volatile
+    @kotlin.concurrent.Volatile
     private var parseSemaphore = Semaphore(permits = DEFAULT_PARSE_CONCURRENCY)
 
     /**

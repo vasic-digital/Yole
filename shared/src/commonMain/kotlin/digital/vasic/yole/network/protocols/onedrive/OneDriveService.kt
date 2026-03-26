@@ -95,9 +95,9 @@ class OneDriveService(
     }
 
     private val stateMutex = Mutex()
-    @Volatile
+    @kotlin.concurrent.Volatile
     private var _isConnected = false
-    @Volatile
+    @kotlin.concurrent.Volatile
     private var _rootFolderId = config.rootFolderId ?: "root"
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()
     private val operationsMutex = Mutex()

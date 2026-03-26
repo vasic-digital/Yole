@@ -88,11 +88,11 @@ class GitService(
     }
 
     // Track whether httpClient has been initialized to avoid closing uninitialized client
-    @Volatile
+    @kotlin.concurrent.Volatile
     private var httpClientInitialized = false
 
     private val stateMutex = Mutex()
-    @Volatile
+    @kotlin.concurrent.Volatile
     private var _isConnected = false
 
     // In-memory cache protected by Mutex for thread-safe access
