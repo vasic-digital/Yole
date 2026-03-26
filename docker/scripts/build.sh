@@ -53,8 +53,8 @@ setup_signing_keys() {
             -keyalg RSA \
             -keysize 2048 \
             -validity 10000 \
-            -storepass yole123 \
-            -keypass yole123 \
+            -storepass "${KEYSTORE_PASSWORD:-changeit}" \
+            -keypass "${KEYSTORE_PASSWORD:-changeit}" \
             -dname "CN=Yole, OU=Development, O=Yole, L=City, ST=State, C=US"
         echo -e "${GREEN}Android keystore created${NC}"
     fi
@@ -69,8 +69,8 @@ setup_signing_keys() {
             -keyalg RSA \
             -keysize 2048 \
             -validity 10000 \
-            -storepass yole123 \
-            -keypass yole123 \
+            -storepass "${KEYSTORE_PASSWORD:-changeit}" \
+            -keypass "${KEYSTORE_PASSWORD:-changeit}" \
             -dname "CN=Yole, OU=Development, O=Yole, L=City, ST=State, C=US"
         echo -e "${GREEN}Desktop keystore created${NC}"
     fi
@@ -162,8 +162,8 @@ build_desktop() {
     echo "Signing Desktop JAR..."
     jarsigner \
         -keystore "$KEY_DIR/yole-desktop.jks" \
-        -storepass yole123 \
-        -keypass yole123 \
+        -storepass "${KEYSTORE_PASSWORD:-changeit}" \
+        -keypass "${KEYSTORE_PASSWORD:-changeit}" \
         "$JAR_FILE" \
         yole-desktop
 
