@@ -35,6 +35,8 @@ const stats = [
   { label: "Platforms", value: "4" },
 ];
 
+// v2.19.0 — 9,000+ desktop tests, 10,000+ total (including Go suites), 36 video episodes
+
 const features = [
   { title: "18 Format Types", description: "17 text formats plus binary detection. From Markdown and todo.txt to LaTeX and Jupyter notebooks. One editor for all your files." },
   { title: "Offline-First", description: "Everything works without an internet connection. Your data stays on your device by default." },
@@ -46,7 +48,7 @@ const features = [
   { title: "Security First", description: "6 integrated security scanning tools: SonarQube, Snyk, Detekt, Gitleaks, OWASP Dependency Check, and CodeQL. Continuous vulnerability detection in CI/CD." },
   { title: "Concurrency Safe", description: "Thread-safe by design with Mutex, Semaphore, @Volatile, StateFlow.update{}, and atomic patterns across all protocol services and shared state." },
   { title: "Comprehensive Testing", description: "10,000+ tests across 215+ test files covering 16 test types: unit, integration, stress, fuzz, snapshot, load, E2E, accessibility, and more." },
-  { title: "Video Course", description: "31 free video tutorials from beginner to expert. Learn Yole at your own pace." },
+  { title: "Video Course", description: "36 free video tutorials from beginner to expert. Learn Yole at your own pace." },
 ];
 
 export default function HomePage() {
@@ -189,7 +191,7 @@ export default function HomePage() {
             </a>
             <a href="/video-course" className="card text-center group">
               <h3 className="font-semibold text-lg mb-2 group-hover:text-primary-500 transition-colors">Video Course</h3>
-              <p className="text-sm text-[var(--color-text-secondary)]">31 free videos from beginner to expert level.</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">36 free videos from beginner to expert level.</p>
             </a>
             <a href="/architecture" className="card text-center group">
               <h3 className="font-semibold text-lg mb-2 group-hover:text-primary-500 transition-colors">Architecture</h3>

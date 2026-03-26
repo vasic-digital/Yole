@@ -3,6 +3,23 @@
 
 const releases = [
   {
+    version: "2.19.0",
+    date: "2026-03-26",
+    title: "Concurrency Safety, Dead Code Elimination, and 36-Episode Video Course",
+    highlights: [
+      "Concurrency safety hardening: @Volatile on all shared mutable fields across WebDAV, Git, and DesktopSecureStorage; enforced lock ordering convention (scopeMutex > stateMutex > operationsMutex > syncMutex > cacheMutex); HttpTimeout configuration for all protocol clients",
+      "Dead code elimination: all stubs, mocks, and unwired code removed across all platforms; SmbService.listFiles wired to real SmbProtocolClient",
+      "Security hardening: SecurityEventLogger structured audit trail with 10 event types, 4 severity levels, and ring buffer; path traversal deep tests and OAuth2 edge case coverage",
+      "581 new tests bringing desktop total to 8,928; all tests passing, 0 failures",
+      "5 new video course episodes (32-36): Concurrency Safety Patterns, Security Scanning Pipeline, Stress Testing and Performance Monitoring, Challenge-Driven Development, Project Completion and Quality Gates",
+      "Video course now 36 episodes total covering beginner through production-grade KMP development",
+      "Go ecosystem documentation complete: DocProcessor, LLMOrchestrator, VisionEngine, and HelixQA fully documented with API references and architecture guides",
+      "ProGuard disabled for desktop release build (Java 21 unsupported); build warnings suppressed",
+      "KMP module verification: all 10 modules present in composite builds with substantive CHANGELOG.md and CONTRIBUTING.md",
+    ],
+    breaking: false,
+  },
+  {
     version: "2.18.0",
     date: "2026-03-19",
     title: "Autonomous QA, Non-Blocking Architecture, and 10,000+ Tests",

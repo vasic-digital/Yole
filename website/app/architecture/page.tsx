@@ -88,7 +88,7 @@ export default function ArchitecturePage() {
           <pre className="text-sm bg-[var(--color-bg-secondary)] rounded-lg p-4 overflow-x-auto border border-[var(--color-border)]"><code>{`Yole/
 ├── shared/                  # Shared KMP module (depends on extracted modules)
 │   ├── src/commonMain/      # Common Kotlin code
-│   ├── src/commonTest/      # 9,400+ tests
+│   ├── src/commonTest/      # 10,000+ tests
 │   ├── src/androidMain/     # Android expect/actual
 │   ├── src/desktopMain/     # Desktop (JVM) expect/actual
 │   ├── src/iosMain/         # iOS expect/actual
@@ -281,6 +281,15 @@ export default function ArchitecturePage() {
             transitions for UI state. Semaphore-based connection limiters cap concurrent
             connections per protocol.
           </p>
+          <p className="text-[var(--color-text-secondary)] leading-relaxed mb-4">
+            A strict lock ordering convention is enforced across all services to prevent
+            deadlocks: scopeMutex must be acquired before stateMutex, which must be acquired
+            before operationsMutex, then syncMutex, cacheMutex, pauseFlagsMutex, activeJobsMutex,
+            and storageInitMutex. @Volatile is applied to all lazy-initialized shared fields
+            (HttpClient, cache flags, connection state) in WebDAV, Git, and platform-specific
+            secure storage. HttpTimeout is configured on all Ktor clients to prevent indefinite
+            hangs under network partition conditions.
+          </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
             <div className="text-center">
               <div className="text-lg font-bold text-primary-500">Mutex</div>
@@ -427,14 +436,14 @@ export default function ArchitecturePage() {
         <h2 className="text-3xl font-bold tracking-tight mb-4">Testing</h2>
         <div className="card">
           <p className="text-[var(--color-text-secondary)] leading-relaxed mb-4">
-            Yole has a comprehensive test suite of 9,400+ tests across 215+ test files.
+            Yole has a comprehensive test suite of 10,000+ tests across 215+ test files.
             Tests cover all 17 format parsers, network protocol clients, authentication
             flows, rate limiting, concurrency, UI components, stress testing, monitoring
             metrics, fuzz testing, snapshot testing, and load testing.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary-500">9,400+</div>
+              <div className="text-2xl font-bold text-primary-500">10,000+</div>
               <div className="text-xs text-[var(--color-text-secondary)]">Total Tests</div>
             </div>
             <div className="text-center">
