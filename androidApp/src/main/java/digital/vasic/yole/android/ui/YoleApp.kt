@@ -719,6 +719,18 @@ fun MainScreen() {
                                     }
                                 }
                             }
+                            SubScreen.FILE_BROWSER -> FileBrowserScreen(
+                                searchQuery = fileSearchQuery,
+                                sortBy = fileSortBy,
+                                onSearchQueryChanged = { fileSearchQuery = it },
+                                onSortChanged = { fileSortBy = it },
+                                showSearch = showFileSearch,
+                                onShowSearchChanged = { showFileSearch = it },
+                                onFileSelected = { file, content ->
+                                    openFileInTab(file, content)
+                                },
+                                onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
+                            )
                             else -> {}
                         }
                     }
@@ -825,6 +837,18 @@ fun MainScreen() {
                                 )
                             }
                         }
+                        SubScreen.FILE_BROWSER -> FileBrowserScreen(
+                            searchQuery = fileSearchQuery,
+                            sortBy = fileSortBy,
+                            onSearchQueryChanged = { fileSearchQuery = it },
+                            onSortChanged = { fileSortBy = it },
+                            showSearch = showFileSearch,
+                            onShowSearchChanged = { showFileSearch = it },
+                            onFileSelected = { file, content ->
+                                openFileInTab(file, content)
+                            },
+                            onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
+                        )
                         else -> {}
                     }
                 }

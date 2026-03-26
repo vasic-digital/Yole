@@ -625,21 +625,61 @@ fun FileBrowserScreen(onFileSelected: (String, String) -> Unit) {
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            // Sample files for demonstration
-            val sampleFiles = listOf(
-                "sample.md" to "# Sample Markdown\n\nThis is a sample document.",
-                "todo.txt" to "x 2018-01-01 Complete task @work\n2018-01-02 New task +project @home",
-                "notes.txt" to "Plain text notes\n\n- Item 1\n- Item 2"
-            )
+            // Read actual files from user's Documents and home directory
+            val userHome = System.getProperty("user.home") ?: "."
+            val docsDir = java.io.File(userHome, "Documents")
+            val browseDir = if (docsDir.exists() && docsDir.isDirectory) docsDir else java.io.File(userHome)
+            var currentDir by remember { mutableStateOf(browseDir) }
+            val fileManager = remember { digital.vasic.yole.desktop.file.DesktopFileManager() }
 
-            sampleFiles.forEach { (fileName, content) ->
+            val fileList = remember(currentDir) {
+                val files = currentDir.listFiles()?.toList() ?: emptyList()
+                files.sortedWith(compareBy<java.io.File> { !it.isDirectory }.thenBy { it.name.lowercase() })
+            }
+
+            // Parent directory navigation
+            if (currentDir != browseDir && currentDir.parentFile != null) {
                 IdeFileItem(
-                    fileName = fileName,
-                    onClick = { onFileSelected(fileName, content) }
+                    fileName = "..",
+                    onClick = { currentDir = currentDir.parentFile }
                 )
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            // Current path indicator
+            Text(
+                text = currentDir.absolutePath,
+                style = TextStyle(fontSize = 9.sp, color = secondaryColor),
+                maxLines = 1,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            // File list with scroll
+            val scrollState = rememberScrollState()
+            Column(modifier = Modifier.weight(1f).verticalScroll(scrollState)) {
+                fileList.forEach { file ->
+                    if (file.isDirectory) {
+                        IdeFileItem(
+                            fileName = "\uD83D\uDCC1 ${file.name}",
+                            onClick = { currentDir = file }
+                        )
+                    } else {
+                        IdeFileItem(
+                            fileName = file.name,
+                            onClick = {
+                                val content = fileManager.readFile(file) ?: file.readText()
+                                onFileSelected(file.name, content)
+                            }
+                        )
+                    }
+                }
+                if (fileList.isEmpty()) {
+                    Text(
+                        text = "Empty directory",
+                        style = TextStyle(fontSize = 11.sp, color = secondaryColor),
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
 
             Divider(
                 color = borderColor,
@@ -649,11 +689,6 @@ fun FileBrowserScreen(onFileSelected: (String, String) -> Unit) {
             Text(
                 text = "Supported formats: ${FormatRegistry.formats.size}",
                 style = TextStyle(fontSize = 11.sp, color = secondaryColor)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Note: File system access will be implemented next",
-                style = TextStyle(fontSize = 10.sp, color = IdeTextMuted)
             )
         }
 
