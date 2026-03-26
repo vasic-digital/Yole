@@ -2071,6 +2071,7 @@ fun FileBrowserScreen(
     var safCurrentDoc by remember { mutableStateOf<DocumentFile?>(null) }
     var safParentStack by remember { mutableStateOf<List<DocumentFile>>(emptyList()) }
     var currentPathLabel by remember { mutableStateOf("") }
+    var showPermissionPrompt by remember { mutableStateOf(false) }
 
     // Helper: load files from a local File directory
     fun loadLocalDirectory(dir: File) {
@@ -2082,17 +2083,28 @@ fun FileBrowserScreen(
         currentPathLabel = dir.absolutePath
         coroutineScope.launch {
             delay(200)
-            val children = dir.listFiles()?.toList() ?: emptyList()
-            allFiles = children.map { f ->
-                BrowsableFile(
-                    name = f.name,
-                    isDirectory = f.isDirectory,
-                    size = if (f.isFile) f.length() else 0L,
-                    lastModified = f.lastModified(),
-                    localFile = f
-                )
+            val children = dir.listFiles()?.toList()
+            if (children != null && children.isNotEmpty()) {
+                allFiles = children.map { f ->
+                    BrowsableFile(
+                        name = f.name,
+                        isDirectory = f.isDirectory,
+                        size = if (f.isFile) f.length() else 0L,
+                        lastModified = f.lastModified(),
+                        localFile = f
+                    )
+                }
+                isLoadingFiles = false
+            } else if (dir.exists() && !dir.canRead()) {
+                // Directory exists but we can't read it — likely a permission issue.
+                // Show the files as empty and prompt user to grant access or use SAF.
+                allFiles = emptyList()
+                isLoadingFiles = false
+                showPermissionPrompt = true
+            } else {
+                allFiles = emptyList()
+                isLoadingFiles = false
             }
-            isLoadingFiles = false
         }
     }
 
@@ -2126,7 +2138,6 @@ fun FileBrowserScreen(
             true // Pre-Android 11: legacy permissions suffice
         }
     }
-    var showPermissionPrompt by remember { mutableStateOf(false) }
 
     // Permission request launcher for MANAGE_EXTERNAL_STORAGE
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -2432,16 +2443,28 @@ fun FileBrowserScreen(
                                     if (file.isDirectory) {
                                         // Navigate into directory
                                         if (file.safUri != null) {
-                                            // SAF directory navigation: find the child DocumentFile
-                                            // by matching its URI against the current directory listing
-                                            val childDoc = safCurrentDoc?.listFiles()?.find {
-                                                it.uri == file.safUri
-                                            }
-                                            if (childDoc != null && childDoc.isDirectory) {
-                                                safCurrentDoc?.let { parent ->
-                                                    safParentStack = safParentStack + parent
+                                            // SAF directory navigation: use findFile() which is
+                                            // the reliable way to traverse tree document URIs.
+                                            // findFile() queries the DocumentProvider by name
+                                            // and returns a proper browsable DocumentFile.
+                                            coroutineScope.launch {
+                                                val childDoc = safCurrentDoc?.findFile(file.name)
+                                                    ?: safCurrentDoc?.listFiles()?.find { child ->
+                                                        child.name == file.name && child.isDirectory
+                                                    }
+                                                if (childDoc != null && childDoc.isDirectory) {
+                                                    safCurrentDoc?.let { parent ->
+                                                        safParentStack = safParentStack + parent
+                                                    }
+                                                    loadSafDirectory(childDoc)
+                                                } else {
+                                                    // Could not resolve child — show message
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Could not open folder: ${file.name}",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 }
-                                                loadSafDirectory(childDoc)
                                             }
                                         } else if (file.localFile != null) {
                                             // Local directory navigation
