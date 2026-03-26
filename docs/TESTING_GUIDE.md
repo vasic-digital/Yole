@@ -22,10 +22,11 @@ Yole uses a comprehensive testing strategy with multiple test types and framewor
 
 ### Testing Goals
 
-- **Target Coverage**: >80% code coverage (current: ~15%)
-- **Test Types**: Unit, Integration, UI, Property-based, Snapshot
+- **Target Coverage**: >80% code coverage (minimum enforced: 70%)
+- **Desktop Tests**: ~9,000+ passing (8,928 as of Session 7, March 2026)
+- **Test Types**: Unit, Integration, Stress, Fuzz, Snapshot, Load, E2E, Performance, Accessibility, Security, Resilience, Property-based, Contract, Non-blocking, Supremacy, Mock HTTP
 - **Frameworks**: JUnit 4, AssertJ, MockK, Kotest, Espresso, Compose UI Test
-- **Automation**: CI/CD integration with automated test runs
+- **Automation**: Manual builds and Makefile targets; release suites run in Docker/Podman containers
 
 ### Project Testing Structure
 

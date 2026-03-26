@@ -570,6 +570,8 @@ Yole enforces strict concurrency safety patterns across the codebase, required b
 
 **`isFormatsInitialized` guard**: Prevents accessing the `FormatRegistry.formats` lazy list before initialization completes under concurrent first-access.
 
+**Session 7 additions (March 2026)**: `@Volatile` applied to `_isConnected`, `_rootPath`, and `_rootFolderId` across all 8 protocol services and to `parseSemaphore` in `FormatRegistry`. Lock ordering violations in `cancelOperation` fixed for Dropbox, GoogleDrive, OneDrive, and FTP services. `HttpTimeout` (10s connect, 30s request) added to all platform `HttpClientFactory` implementations.
+
 ### Security Scanning
 
 Yole uses 6 security scanning tools integrated into the development workflow:
@@ -593,7 +595,7 @@ See `docs/SECURITY_SCANNING.md` for detailed tool setup and usage.
 
 ### Testing Strategy
 
-**9,400+ tests across ~215 test files** covering 16 test types: unit, integration, stress, supremacy, mock HTTP, property-based, contract, security, performance, resilience, fuzz, snapshot, load, E2E, accessibility, non-blocking.
+**~9,000+ desktop tests across ~215+ test files** covering 16 test types: unit, integration, stress, supremacy, mock HTTP, property-based, contract, security, performance, resilience, fuzz, snapshot, load, E2E, accessibility, non-blocking.
 
 #### Platform-Specific Tests
 - `shared/src/commonTest/`: Cross-platform tests (all targets)

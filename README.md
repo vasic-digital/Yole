@@ -12,7 +12,7 @@
 
 **Download:**  [F-Droid](https://f-droid.org/repository/browse/?fdid=digital.vasic.yole), [GitHub](https://github.com/vasic-digital/Yole/releases/latest)
 
-**Current Version:** v2.15.1
+**Current Version:** v2.19.0
 
 ## Platform Support Status
 

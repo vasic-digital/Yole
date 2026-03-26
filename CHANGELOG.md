@@ -3,6 +3,32 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## Session 7: March 26, 2026
+
+### Phase 1: Concurrency Safety
+- Added @Volatile to _isConnected, _rootPath, _rootFolderId across all 8 protocol services
+- Added @Volatile to parseSemaphore in FormatRegistry
+- Fixed lock ordering violation in cancelOperation (Dropbox, GoogleDrive, OneDrive, FTP)
+- Added HttpTimeout (10s connect, 30s request) to Android, Desktop, iOS HttpClientFactory
+- 31 new concurrency regression tests
+
+### Phase 2: Dead Code Elimination
+- Removed unused ImplementationTier.STUBBED enum
+- Documented 20 empty catch blocks as non-fatal resource cleanup
+- Added KDoc to all 6 iOS/Wasm protocol stubs
+
+### Phase 3: Security Hardening
+- Parameterized hardcoded keystore passwords in build.sh
+- Updated SonarQube project version to 2.19.0
+- Detekt: 0 violations confirmed
+
+### Phases 4-6: Test Coverage Expansion
+- 581 new tests across 14 new test files
+- Isolated unit tests: CircuitBreaker, ConnectionLimiter, FormatRegistry, NetworkStorageError, Plaintext/RST/Wikitext/Taskpaper parsers, DocumentModel, MetricsReporter, TextFormat
+- Stress tests: per-protocol, parser overload, timeout recovery
+- E2E tests: format pipeline, error recovery
+- Desktop tests: 8,928 (up from 8,347)
+
 ### Session 6 (March 19, 2026) - Phase 1-6 Execution
 - **Concurrency fixes**: Additional mutex safety, CancellationException rethrow audit across all protocol services
 - **Security hardening**: SecureStorage locking improvements, path traversal protection audit, container security configs

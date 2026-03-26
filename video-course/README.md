@@ -1,6 +1,6 @@
 # Yole Video Course
 
-Comprehensive video course across beginner, advanced, and expert levels for Kotlin Multiplatform development with Yole. 31 modules and 215+ videos covering everything from first steps to autonomous QA and project completion.
+Comprehensive video course across beginner, advanced, and expert levels for Kotlin Multiplatform development with Yole. 36 modules and 255+ videos covering everything from first steps to autonomous QA, security scanning, stress testing, challenge-driven development, and project completion.
 
 ## Course Overview
 
@@ -8,7 +8,7 @@ Comprehensive video course across beginner, advanced, and expert levels for Kotl
 |-------|---------|--------|
 | Beginner | 5 modules | Getting started, Markdown, Todo.txt, cross-platform app, migration |
 | Advanced | 7 modules | Custom formats, performance, network storage, UI, cloud, containers, security |
-| Expert | 19 modules | Architecture, deployment, testing, community, challenges, monitoring, contributing, platform-specific, stress testing, concurrency safety, security scanning deep dive, performance optimization, complete test coverage, UI automation, non-blocking architecture, test coverage mastery, autonomous QA, project completion |
+| Expert | 24 modules | Architecture, deployment, testing, community, challenges, monitoring, contributing, platform-specific, stress testing, concurrency safety, security scanning deep dive, performance optimization, complete test coverage, UI automation, non-blocking architecture, test coverage mastery, autonomous QA, project completion, concurrency safety patterns, security scanning pipeline, stress testing & performance, challenge development, project completion & quality gates |
 
 ## Structure
 
@@ -47,7 +47,12 @@ video-course/
     ├── 28-test-coverage-mastery/    # Module 28: Test Coverage Mastery (8 videos)
     ├── 29-performance-optimization-advanced/ # Module 29: Performance Optimization Advanced (8 videos)
     ├── 30-autonomous-qa/            # Module 30: Autonomous QA (8 videos)
-    └── 31-project-completion-guide/ # Module 31: Project Completion Guide (8 videos)
+    ├── 31-project-completion-guide/ # Module 31: Project Completion Guide (8 videos)
+    ├── 32-concurrency-safety-patterns/ # Module 32: Concurrency Safety Patterns in KMP (8 videos)
+    ├── 33-security-scanning-pipeline/  # Module 33: Security Scanning Pipeline (8 videos)
+    ├── 34-stress-testing-performance/  # Module 34: Stress Testing & Performance Monitoring (8 videos)
+    ├── 35-challenge-development/       # Module 35: Challenge-Driven Development (8 videos)
+    └── 36-project-completion/          # Module 36: Project Completion & Quality Gates (8 videos)
 ```
 
 ## Beginner Level (5 modules)
@@ -114,7 +119,7 @@ Comprehensive security scanning with SonarQube, Snyk, Gitleaks, CodeQL, OWASP De
 
 **Prerequisites:** Module 14.
 
-## Expert Level (19 modules)
+## Expert Level (24 modules)
 
 ### Module 9: Advanced Architecture Patterns (12 videos)
 Clean architecture, dependency injection, state management (MVI), event-driven patterns, modularization, plugin architecture, and database design.
@@ -210,6 +215,31 @@ HelixQA pipeline: DocProcessor (219 tests) for code analysis, LLMOrchestrator (2
 How the 9-phase comprehensive completion plan was designed and executed. Build-Test-Document pipeline methodology, audit methodology with 6 parallel exploration agents, phase dependencies, verification approach, and lessons learned for applying to your own KMP projects.
 
 **Prerequisites:** Modules 9-30 (or equivalent familiarity with the full project).
+
+### Module 32: Concurrency Safety Patterns in KMP (8 videos)
+Deep dive into @Volatile usage in protocol services and FormatRegistry, lock ordering conventions across 8 mutex priorities, HttpTimeout configuration in platform HttpClientFactory implementations, CancellationException rethrow rules, SupervisorJob and structured concurrency, and writing concurrency regression tests. Covers the Session 7 audit findings and fixes applied across all 8 protocol services.
+
+**Prerequisites:** Module 9, Module 22.
+
+### Module 33: Security Scanning Pipeline (8 videos)
+End-to-end walkthrough of Yole's 6-tool security pipeline: Detekt (zero violations at scale), SonarQube project versioning and dashboard interpretation, Snyk dependency triage, keystore password parameterization, OWASP Dependency Check with SBOM generation, and CodeQL/Gitleaks for semantic analysis and secret detection. Covers building a security-first development workflow with per-phase scan cadences.
+
+**Prerequisites:** Module 15, Module 23.
+
+### Module 34: Stress Testing & Performance Monitoring (8 videos)
+Per-protocol stress test design, parser overload testing with the parseSemaphore guard, timeout recovery verification using MockEngine, PerformanceMetrics/MetricsSnapshot/MetricsReporter infrastructure, performance baseline tests with percentile thresholds, memory leak detection for DocumentCache and StyleSheets, and integrating stress tests into daily vs weekly vs pre-release cadences.
+
+**Prerequisites:** Module 11, Module 21, Module 17.
+
+### Module 35: Challenge-Driven Development (8 videos)
+Challenge banks as executable specifications: schema design (id, platform, priority, scenarios), the three existing banks (security, format-edge-cases, protocol-resilience), writing a new bank, the runChallenges Gradle task, ChallengeValidationTests in the Kotlin suite, HelixQA test bank integration, and growing the challenge framework alongside new features.
+
+**Prerequisites:** Module 16, Module 25.
+
+### Module 36: Project Completion & Quality Gates (8 videos)
+Defining "complete" across five dimensions (correctness, safety, security, documentation, observability), the 6-phase session structure (audit, implement, test, document, verify, commit), the zero-defect verification workflow, Kover coverage gates at 70% minimum, the full 7-session history of Yole's hardening journey, documentation as a quality gate, and adapting these gates to your own KMP project.
+
+**Prerequisites:** Modules 9-35 (or equivalent familiarity with the full project).
 
 ## Production Details
 
