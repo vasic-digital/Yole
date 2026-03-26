@@ -94,7 +94,9 @@ class DropboxService(
         )
     }
 
+    @Volatile
     private var _isConnected = false
+    @Volatile
     private var _rootPath = if (config.rootPath.isBlank()) "" else config.rootPath
     private val stateMutex = Mutex()
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()
@@ -120,6 +122,9 @@ class DropboxService(
     private val scopeMutex = Mutex()
     private var initJob: Job? = null
 
+    // Cache and sync maps are independently protected. Removing an entry
+    // from syncStatusMap and cacheEntries is NOT atomic across both maps.
+    // This is acceptable: stale sync status is harmless and self-correcting.
     // In-memory cache storage
     private val cacheEntries = mutableMapOf<String, CacheEntry>()
     private val cacheMutex = Mutex()
@@ -919,14 +924,14 @@ class DropboxService(
     
     override suspend fun cancelOperation(operationId: Long): Result<Unit> {
         return try {
+            operationsMutex.withLock { activeOperations.remove(operationId) }
+            pauseFlagsMutex.withLock {
+                pauseFlags.remove(operationId)
+            }
             activeJobsMutex.withLock {
                 activeJobs[operationId]?.cancel()
                 activeJobs.remove(operationId)
             }
-            pauseFlagsMutex.withLock {
-                pauseFlags.remove(operationId)
-            }
-            operationsMutex.withLock { activeOperations.remove(operationId) }
             Result.success(Unit)
         } catch (e: Exception) {
             if (e is kotlin.coroutines.cancellation.CancellationException) throw e

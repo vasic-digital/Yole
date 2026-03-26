@@ -58,8 +58,10 @@ class FtpService(
 
     private val ftpClient = _injectedFtpClient ?: FtpProtocolClient()
 
+    @Volatile
     private var _isConnected = false
     private val stateMutex = Mutex()
+    @Volatile
     private var _rootPath = config.rootPath.ifBlank { "/" }
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()
     private val operationsMutex = Mutex()
@@ -866,15 +868,15 @@ class FtpService(
      * Cancel an active operation by cancelling its associated coroutine job.
      */
     override suspend fun cancelOperation(operationId: Long): Result<Unit> {
-        jobsMutex.withLock {
-            activeJobs[operationId]?.cancel()
-            activeJobs.remove(operationId)
-        }
         operationsMutex.withLock {
             activeOperations.remove(operationId)
         }
         pauseMutex.withLock {
             pausedOperations.remove(operationId)
+        }
+        jobsMutex.withLock {
+            activeJobs[operationId]?.cancel()
+            activeJobs.remove(operationId)
         }
         return Result.success(Unit)
     }

@@ -27,6 +27,9 @@ class DocumentCache(private val maxSize: Int = 100) {
     private val cache = mutableMapOf<String, ParsedDocument>()
     private val accessOrder = mutableListOf<String>()
 
+    // Approximate counters: @Volatile provides visibility but not atomicity.
+    // Slight under/over-counting is acceptable for cache statistics.
+    // All increments happen within mutex.withLock, so in practice these are exact.
     @kotlin.concurrent.Volatile
     private var _hits = 0L
     @kotlin.concurrent.Volatile

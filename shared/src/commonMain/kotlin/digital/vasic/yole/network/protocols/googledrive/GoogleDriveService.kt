@@ -94,7 +94,9 @@ class GoogleDriveService(
     }
 
     private val stateMutex = Mutex()
+    @Volatile
     private var _isConnected = false
+    @Volatile
     private var _rootFolderId = config.rootFolderId ?: "root"
     private val activeOperations = mutableMapOf<Long, NetworkOperation>()
     private val operationsMutex = Mutex()
@@ -1010,14 +1012,14 @@ class GoogleDriveService(
     /** Cancel the operation identified by [operationId] and remove it from active tracking. */
     override suspend fun cancelOperation(operationId: Long): Result<Unit> {
         return try {
+            operationsMutex.withLock { activeOperations.remove(operationId) }
+            pauseFlagsMutex.withLock {
+                pauseFlags.remove(operationId)
+            }
             activeJobsMutex.withLock {
                 activeJobs[operationId]?.cancel()
                 activeJobs.remove(operationId)
             }
-            pauseFlagsMutex.withLock {
-                pauseFlags.remove(operationId)
-            }
-            operationsMutex.withLock { activeOperations.remove(operationId) }
             Result.success(Unit)
         } catch (e: Exception) {
             if (e is kotlin.coroutines.cancellation.CancellationException) throw e

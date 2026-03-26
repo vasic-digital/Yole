@@ -64,7 +64,9 @@ class SmbService(
     private val fileIO by lazy { PlatformFileIOFactory.create() }
 
     private val stateMutex = Mutex()
+    @Volatile
     private var _isConnected = false
+    @Volatile
     private var _rootPath = if (config.path.isBlank()) "/" else config.path
 
     /**

@@ -92,6 +92,7 @@ class GitService(
     private var httpClientInitialized = false
 
     private val stateMutex = Mutex()
+    @Volatile
     private var _isConnected = false
 
     // In-memory cache protected by Mutex for thread-safe access

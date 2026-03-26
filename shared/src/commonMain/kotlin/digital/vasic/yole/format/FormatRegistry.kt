@@ -476,6 +476,7 @@ object FormatRegistry {
      * Default permits = 4, which balances throughput and resource consumption.
      * Can be adjusted via [configureParseConcurrency] for platform-specific tuning.
      */
+    @Volatile
     private var parseSemaphore = Semaphore(permits = DEFAULT_PARSE_CONCURRENCY)
 
     /**
@@ -544,7 +545,12 @@ object FormatRegistry {
 
     /**
      * Configure the maximum number of concurrent parse operations.
-     * Must be called before first parse operation. Thread-safe.
+     *
+     * **Thread safety:** The [parseSemaphore] field is @Volatile, ensuring
+     * visibility of the new Semaphore reference. However, in-flight
+     * [parseWithCacheConcurrent] calls will complete with the old semaphore.
+     * Call this method during initialization, before concurrent parsing begins.
+     *
      * @param permits number of concurrent parse operations allowed (minimum 1, maximum 16)
      */
     fun configureParseConcurrency(permits: Int) {
