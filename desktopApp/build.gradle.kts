@@ -80,7 +80,7 @@ compose.desktop {
             )
 
             packageName = "Yole"
-            packageVersion = "2.19.0"
+            packageVersion = "2.19.1"
 
             description = "A versatile text editor supporting 18+ markup formats"
 
