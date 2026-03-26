@@ -64,10 +64,15 @@ import android.content.Intent
 import android.widget.Toast
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import android.net.Uri
+import android.os.Environment
 import digital.vasic.opoc.model.GsSharedPreferencesPropertyBackend
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.ParseOptions
+import digital.vasic.yole.network.common.StorageConfig
+import digital.vasic.yole.network.common.StorageType
+import digital.vasic.yole.network.config.NetworkStorageConfigService
 import digital.vasic.yole.ui.pressScale
 import digital.vasic.yole.ui.hoverScale
 import digital.vasic.yole.ui.ScreenTransitions
@@ -2033,6 +2038,18 @@ fun FileCardSkeleton() {
     }
 }
 
+/**
+ * Represents a file entry that can come from either the local filesystem or SAF.
+ */
+private data class BrowsableFile(
+    val name: String,
+    val isDirectory: Boolean,
+    val size: Long,
+    val lastModified: Long,
+    val localFile: File? = null,
+    val safUri: Uri? = null
+)
+
 @Composable
 fun FileBrowserScreen(
     searchQuery: String = "",
@@ -2047,19 +2064,91 @@ fun FileBrowserScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var currentDirectory by remember { mutableStateOf<File?>(null) }
-    var allFiles by remember { mutableStateOf<List<File>>(emptyList()) }
+    var allFiles by remember { mutableStateOf<List<BrowsableFile>>(emptyList()) }
     var isLoadingFiles by remember { mutableStateOf(true) }
+    // SAF browsing state
+    var safTreeUri by remember { mutableStateOf<Uri?>(null) }
+    var safCurrentDoc by remember { mutableStateOf<DocumentFile?>(null) }
+    var safParentStack by remember { mutableStateOf<List<DocumentFile>>(emptyList()) }
+    var currentPathLabel by remember { mutableStateOf("") }
+
+    // Helper: load files from a local File directory
+    fun loadLocalDirectory(dir: File) {
+        isLoadingFiles = true
+        safTreeUri = null
+        safCurrentDoc = null
+        safParentStack = emptyList()
+        currentDirectory = dir
+        currentPathLabel = dir.absolutePath
+        coroutineScope.launch {
+            delay(200)
+            val children = dir.listFiles()?.toList() ?: emptyList()
+            allFiles = children.map { f ->
+                BrowsableFile(
+                    name = f.name,
+                    isDirectory = f.isDirectory,
+                    size = if (f.isFile) f.length() else 0L,
+                    lastModified = f.lastModified(),
+                    localFile = f
+                )
+            }
+            isLoadingFiles = false
+        }
+    }
+
+    // Helper: load files from a SAF DocumentFile directory
+    fun loadSafDirectory(doc: DocumentFile) {
+        isLoadingFiles = true
+        currentDirectory = null
+        safCurrentDoc = doc
+        currentPathLabel = doc.name ?: "Selected folder"
+        coroutineScope.launch {
+            delay(200)
+            val children = doc.listFiles()
+            allFiles = children.map { child ->
+                BrowsableFile(
+                    name = child.name ?: "unknown",
+                    isDirectory = child.isDirectory,
+                    size = if (!child.isDirectory) child.length() else 0L,
+                    lastModified = child.lastModified(),
+                    safUri = child.uri
+                )
+            }
+            isLoadingFiles = false
+        }
+    }
 
     LaunchedEffect(Unit) {
         isLoadingFiles = true
         kotlinx.coroutines.delay(300)
-        val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-        if (docsDir.exists()) {
+        val docsDir = Environment.getExternalStoragePublicDirectory(
+            Environment.DIRECTORY_DOCUMENTS
+        )
+        if (docsDir.exists() && docsDir.canRead()) {
             currentDirectory = docsDir
-            allFiles = docsDir.listFiles()?.toList() ?: emptyList()
+            currentPathLabel = docsDir.absolutePath
+            allFiles = (docsDir.listFiles()?.toList() ?: emptyList()).map { f ->
+                BrowsableFile(
+                    name = f.name,
+                    isDirectory = f.isDirectory,
+                    size = if (f.isFile) f.length() else 0L,
+                    lastModified = f.lastModified(),
+                    localFile = f
+                )
+            }
         } else {
-            currentDirectory = context.filesDir
-            allFiles = context.filesDir.listFiles()?.toList() ?: emptyList()
+            val fallback = context.filesDir
+            currentDirectory = fallback
+            currentPathLabel = fallback.absolutePath
+            allFiles = (fallback.listFiles()?.toList() ?: emptyList()).map { f ->
+                BrowsableFile(
+                    name = f.name,
+                    isDirectory = f.isDirectory,
+                    size = if (f.isFile) f.length() else 0L,
+                    lastModified = f.lastModified(),
+                    localFile = f
+                )
+            }
         }
         isLoadingFiles = false
     }
@@ -2070,8 +2159,8 @@ fun FileBrowserScreen(
         }
         filtered = when (sortBy) {
             "name" -> filtered.sortedBy { it.name.lowercase() }
-            "date" -> filtered.sortedByDescending { it.lastModified() }
-            "size" -> filtered.sortedByDescending { if (it.isFile) it.length() else 0L }
+            "date" -> filtered.sortedByDescending { it.lastModified }
+            "size" -> filtered.sortedByDescending { it.size }
             else -> filtered
         }
         filtered
@@ -2080,9 +2169,33 @@ fun FileBrowserScreen(
     val directoryPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
-        uri?.let {
-            val documentFile = DocumentFile.fromTreeUri(context, it)
-            Toast.makeText(context, "Directory selected: ${documentFile?.name}", Toast.LENGTH_SHORT).show()
+        uri?.let { treeUri ->
+            // Persist read permission so we can re-access later
+            try {
+                val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                context.contentResolver.takePersistableUriPermission(treeUri, flags)
+            } catch (_: SecurityException) {
+                // Read-only fallback
+                try {
+                    context.contentResolver.takePersistableUriPermission(
+                        treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                } catch (_: SecurityException) {
+                    // Permission could not be persisted; browsing still works this session
+                }
+            }
+            val documentFile = DocumentFile.fromTreeUri(context, treeUri)
+            if (documentFile != null && documentFile.isDirectory) {
+                safTreeUri = treeUri
+                safParentStack = emptyList()
+                loadSafDirectory(documentFile)
+            } else {
+                Toast.makeText(
+                    context, "Could not open the selected directory",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 
@@ -2122,19 +2235,94 @@ fun FileBrowserScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
-        currentDirectory?.let { dir ->
-            Text(
-                text = dir.absolutePath,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+        // Quick-access directory buttons
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            val documentsDir = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DOCUMENTS
+            )
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DOWNLOADS
+            )
+            val internalStorageDir = Environment.getExternalStorageDirectory()
+
+            AssistChip(
+                onClick = {
+                    if (documentsDir.exists() && documentsDir.canRead()) {
+                        loadLocalDirectory(documentsDir)
+                    } else {
+                        Toast.makeText(
+                            context, "Documents not accessible", Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                label = { Text("Documents", style = MaterialTheme.typography.labelSmall) },
+                leadingIcon = {
+                    Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                }
+            )
+
+            AssistChip(
+                onClick = {
+                    if (downloadsDir.exists() && downloadsDir.canRead()) {
+                        loadLocalDirectory(downloadsDir)
+                    } else {
+                        Toast.makeText(
+                            context, "Downloads not accessible", Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                label = { Text("Downloads", style = MaterialTheme.typography.labelSmall) },
+                leadingIcon = {
+                    Icon(Icons.Filled.ArrowDropDown, contentDescription = null, modifier = Modifier.size(16.dp))
+                }
+            )
+
+            AssistChip(
+                onClick = {
+                    if (internalStorageDir.exists() && internalStorageDir.canRead()) {
+                        loadLocalDirectory(internalStorageDir)
+                    } else {
+                        Toast.makeText(
+                            context, "Internal storage not accessible", Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                label = { Text("Internal Storage", style = MaterialTheme.typography.labelSmall) },
+                leadingIcon = {
+                    Icon(Icons.Filled.Home, contentDescription = null, modifier = Modifier.size(16.dp))
+                }
+            )
+
+            AssistChip(
+                onClick = {
+                    val appDir = context.getExternalFilesDir(null) ?: context.filesDir
+                    loadLocalDirectory(appDir)
+                },
+                label = { Text("App Files", style = MaterialTheme.typography.labelSmall) },
+                leadingIcon = {
+                    Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(16.dp))
+                }
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = currentPathLabel,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         LoadingStateWrapper(
             isLoading = isLoadingFiles,
@@ -2158,11 +2346,16 @@ fun FileBrowserScreen(
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     itemsIndexed(
                         items = files,
-                        key = { _, file -> file.absolutePath }
+                        key = { index, file ->
+                            file.safUri?.toString() ?: file.localFile?.absolutePath ?: "$index-${file.name}"
+                        }
                     ) { index, file ->
-                        val isDirectory = file.isDirectory
                         val fileName = file.name
-                        val fileSize = if (file.isFile) "${file.length()} bytes" else ""
+                        val fileSize = if (!file.isDirectory && file.size > 0) {
+                            formatFileSize(file.size)
+                        } else {
+                            ""
+                        }
 
                         androidx.compose.animation.AnimatedVisibility(
                             visible = true,
@@ -2175,20 +2368,48 @@ fun FileBrowserScreen(
                                     .padding(vertical = 2.dp)
                                     .pressScale(scale = 0.97f),
                                 onClick = {
-                                    if (isDirectory) {
-                                        isLoadingFiles = true
-                                        currentDirectory = file
-                                        coroutineScope.launch {
-                                            delay(200)
-                                            allFiles = file.listFiles()?.toList() ?: emptyList()
-                                            isLoadingFiles = false
+                                    if (file.isDirectory) {
+                                        // Navigate into directory
+                                        if (file.safUri != null) {
+                                            // SAF directory navigation: find the child DocumentFile
+                                            // by matching its URI against the current directory listing
+                                            val childDoc = safCurrentDoc?.listFiles()?.find {
+                                                it.uri == file.safUri
+                                            }
+                                            if (childDoc != null && childDoc.isDirectory) {
+                                                safCurrentDoc?.let { parent ->
+                                                    safParentStack = safParentStack + parent
+                                                }
+                                                loadSafDirectory(childDoc)
+                                            }
+                                        } else if (file.localFile != null) {
+                                            // Local directory navigation
+                                            loadLocalDirectory(file.localFile)
                                         }
                                     } else {
-                                        try {
-                                            val content = file.readText()
-                                            onFileSelected(fileName, content)
-                                        } catch (e: Exception) {
-                                            onFileSelected(fileName, "")
+                                        // Open file
+                                        if (file.safUri != null) {
+                                            try {
+                                                val inputStream = context.contentResolver
+                                                    .openInputStream(file.safUri)
+                                                val content = inputStream?.bufferedReader()
+                                                    ?.use { it.readText() } ?: ""
+                                                onFileSelected(fileName, content)
+                                            } catch (e: Exception) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Could not read file: ${e.message}",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                                onFileSelected(fileName, "")
+                                            }
+                                        } else if (file.localFile != null) {
+                                            try {
+                                                val content = file.localFile.readText()
+                                                onFileSelected(fileName, content)
+                                            } catch (e: Exception) {
+                                                onFileSelected(fileName, "")
+                                            }
                                         }
                                     }
                                 }
@@ -2201,8 +2422,8 @@ fun FileBrowserScreen(
                                 ) {
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         Icon(
-                                            if (isDirectory) Icons.Filled.List else Icons.Filled.Edit,
-                                            contentDescription = if (isDirectory) "Folder" else "File",
+                                            if (file.isDirectory) Icons.Filled.List else Icons.Filled.Edit,
+                                            contentDescription = if (file.isDirectory) "Folder" else "File",
                                             modifier = Modifier.size(20.dp)
                                         )
                                         Text(
@@ -2210,7 +2431,7 @@ fun FileBrowserScreen(
                                             style = MaterialTheme.typography.bodyLarge
                                         )
                                     }
-                                    if (!isDirectory && fileSize.isNotEmpty()) {
+                                    if (!file.isDirectory && fileSize.isNotEmpty()) {
                                         Text(
                                             text = fileSize,
                                             style = MaterialTheme.typography.bodySmall,
@@ -2233,17 +2454,33 @@ fun FileBrowserScreen(
         ) {
             OutlinedButton(
                 onClick = {
-                    currentDirectory?.parentFile?.let { parent ->
-                        isLoadingFiles = true
-                        currentDirectory = parent
-                        coroutineScope.launch {
-                            delay(200)
-                            allFiles = parent.listFiles()?.toList() ?: emptyList()
-                            isLoadingFiles = false
+                    if (safCurrentDoc != null && safParentStack.isNotEmpty()) {
+                        // SAF: go up to parent
+                        val parent = safParentStack.last()
+                        safParentStack = safParentStack.dropLast(1)
+                        loadSafDirectory(parent)
+                    } else if (safCurrentDoc != null && safTreeUri != null) {
+                        // SAF: at tree root, switch back to local default
+                        safTreeUri = null
+                        safCurrentDoc = null
+                        safParentStack = emptyList()
+                        val docsDir = Environment.getExternalStoragePublicDirectory(
+                            Environment.DIRECTORY_DOCUMENTS
+                        )
+                        val fallback = if (docsDir.exists() && docsDir.canRead()) docsDir
+                            else context.filesDir
+                        loadLocalDirectory(fallback)
+                    } else {
+                        // Local filesystem: go up to parent
+                        currentDirectory?.parentFile?.let { parent ->
+                            loadLocalDirectory(parent)
                         }
                     }
                 },
-                enabled = currentDirectory?.parentFile != null && !isLoadingFiles,
+                enabled = !isLoadingFiles && (
+                    (safCurrentDoc != null) ||
+                    (currentDirectory?.parentFile != null)
+                ),
                 modifier = Modifier.pressScale()
             ) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Up", modifier = Modifier.size(20.dp))
@@ -2268,6 +2505,18 @@ fun FileBrowserScreen(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
+    }
+}
+
+/**
+ * Formats a byte count into a human-readable size string.
+ */
+private fun formatFileSize(bytes: Long): String {
+    return when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+        bytes < 1024 * 1024 * 1024 -> "${"%.1f".format(bytes / (1024.0 * 1024.0))} MB"
+        else -> "${"%.1f".format(bytes / (1024.0 * 1024.0 * 1024.0))} GB"
     }
 }
 
@@ -2660,7 +2909,7 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "STORAGE",
+            text = "CLOUD STORAGE",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 1.sp
@@ -2669,15 +2918,522 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Local file system storage is used for documents.",
+            text = "Configure cloud and network storage connections.",
             style = MaterialTheme.typography.bodyMedium
         )
-        Text(
-            text = "Cloud storage protocols: Dropbox, Google Drive, OneDrive, FTP, SFTP, SMB, WebDAV",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        var showConfigDialog by remember { mutableStateOf(false) }
+        var selectedStorageType by remember { mutableStateOf<StorageType?>(null) }
+
+        // Storage protocol cards
+        val storageProtocols = remember {
+            listOf(
+                Triple(StorageType.WEBDAV, "WebDAV", "Nextcloud, ownCloud, SharePoint"),
+                Triple(StorageType.FTP, "FTP", "File Transfer Protocol"),
+                Triple(StorageType.SFTP, "SFTP", "Secure File Transfer Protocol"),
+                Triple(StorageType.SMB, "SMB/CIFS", "Windows file sharing"),
+                Triple(StorageType.GIT, "Git", "Git repository storage"),
+                Triple(StorageType.DROPBOX, "Dropbox", "Dropbox cloud storage"),
+                Triple(StorageType.GOOGLE_DRIVE, "Google Drive", "Google cloud storage"),
+                Triple(StorageType.ONEDRIVE, "OneDrive", "Microsoft cloud storage")
+            )
+        }
+
+        storageProtocols.forEach { (type, name, description) ->
+            val icon = when (type) {
+                StorageType.WEBDAV -> Icons.Filled.AccountBox
+                StorageType.FTP -> Icons.Filled.Share
+                StorageType.SFTP -> Icons.Filled.Lock
+                StorageType.SMB -> Icons.Filled.Home
+                StorageType.GIT -> Icons.Filled.Build
+                StorageType.DROPBOX -> Icons.Filled.Favorite
+                StorageType.GOOGLE_DRIVE -> Icons.Filled.Star
+                StorageType.ONEDRIVE -> Icons.Filled.Place
+            }
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            icon,
+                            contentDescription = name,
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Column {
+                            Text(
+                                text = name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = description,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            selectedStorageType = type
+                            showConfigDialog = true
+                        }
+                    ) {
+                        Text("Configure")
+                    }
+                }
+            }
+        }
+
+        // Storage configuration dialog
+        if (showConfigDialog && selectedStorageType != null) {
+            StorageConfigDialog(
+                storageType = selectedStorageType!!,
+                onDismiss = {
+                    showConfigDialog = false
+                    selectedStorageType = null
+                }
+            )
+        }
     }
+}
+
+@Composable
+private fun StorageConfigDialog(
+    storageType: StorageType,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val configService = remember { NetworkStorageConfigService() }
+
+    // Common fields
+    var name by remember { mutableStateOf("") }
+    var isTesting by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
+    var statusMessage by remember { mutableStateOf<String?>(null) }
+    var statusIsError by remember { mutableStateOf(false) }
+
+    // Credential-based fields
+    var host by remember { mutableStateOf("") }
+    var port by remember { mutableStateOf(storageType.defaultPort.toString()) }
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var serverUrl by remember { mutableStateOf("") }
+    var share by remember { mutableStateOf("") }
+    var repositoryUrl by remember { mutableStateOf("") }
+    var localCachePath by remember { mutableStateOf("") }
+
+    // OAuth fields
+    var clientId by remember { mutableStateOf("") }
+    var clientSecret by remember { mutableStateOf("") }
+    var appKey by remember { mutableStateOf("") }
+    var appSecret by remember { mutableStateOf("") }
+
+    // Build config from current form fields
+    fun buildConfig(): StorageConfig? {
+        val configName = name.ifBlank {
+            storageType.displayName
+        }
+        return when (storageType) {
+            StorageType.WEBDAV -> {
+                if (serverUrl.isBlank()) return null
+                StorageConfig.WebDavConfig(
+                    name = configName,
+                    url = serverUrl,
+                    username = username,
+                    password = password
+                )
+            }
+            StorageType.FTP -> {
+                if (host.isBlank()) return null
+                StorageConfig.FtpConfig(
+                    name = configName,
+                    host = host,
+                    port = port.toIntOrNull() ?: 21,
+                    username = username,
+                    password = password
+                )
+            }
+            StorageType.SFTP -> {
+                if (host.isBlank()) return null
+                StorageConfig.SftpConfig(
+                    name = configName,
+                    host = host,
+                    port = port.toIntOrNull() ?: 22,
+                    username = username.ifBlank { null },
+                    password = password.ifBlank { null }
+                )
+            }
+            StorageType.SMB -> {
+                if (host.isBlank() || share.isBlank()) return null
+                StorageConfig.SmbConfig(
+                    name = configName,
+                    host = host,
+                    share = share,
+                    username = username,
+                    password = password,
+                    port = port.toIntOrNull() ?: 445
+                )
+            }
+            StorageType.GIT -> {
+                if (repositoryUrl.isBlank()) return null
+                StorageConfig.GitConfig(
+                    name = configName,
+                    repositoryUrl = repositoryUrl,
+                    username = username.ifBlank { null },
+                    password = password.ifBlank { null },
+                    localCachePath = localCachePath.ifBlank {
+                        "${Environment.getExternalStorageDirectory()}/Yole/git-cache/$configName"
+                    }
+                )
+            }
+            StorageType.DROPBOX -> {
+                if (appKey.isBlank() || appSecret.isBlank()) return null
+                StorageConfig.DropboxConfig(
+                    name = configName,
+                    accessToken = "",
+                    appKey = appKey,
+                    appSecret = appSecret
+                )
+            }
+            StorageType.GOOGLE_DRIVE -> {
+                if (clientId.isBlank() || clientSecret.isBlank()) return null
+                StorageConfig.GoogleDriveConfig(
+                    name = configName,
+                    clientId = clientId,
+                    clientSecret = clientSecret
+                )
+            }
+            StorageType.ONEDRIVE -> {
+                if (clientId.isBlank() || clientSecret.isBlank()) return null
+                StorageConfig.OneDriveConfig(
+                    name = configName,
+                    clientId = clientId,
+                    clientSecret = clientSecret
+                )
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = { if (!isTesting && !isSaving) onDismiss() },
+        title = {
+            Text(
+                text = "Configure ${storageType.displayName}",
+                fontFamily = FontFamily.Monospace
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Connection name") },
+                    placeholder = { Text(storageType.displayName) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                when (storageType) {
+                    StorageType.WEBDAV -> {
+                        OutlinedTextField(
+                            value = serverUrl,
+                            onValueChange = { serverUrl = it },
+                            label = { Text("Server URL") },
+                            placeholder = { Text("https://cloud.example.com/remote.php/dav") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = username,
+                            onValueChange = { username = it },
+                            label = { Text("Username") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Password") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    }
+
+                    StorageType.FTP, StorageType.SFTP -> {
+                        OutlinedTextField(
+                            value = host,
+                            onValueChange = { host = it },
+                            label = { Text("Host") },
+                            placeholder = { Text("ftp.example.com") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = port,
+                            onValueChange = { port = it },
+                            label = { Text("Port") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = username,
+                            onValueChange = { username = it },
+                            label = { Text("Username") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Password") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    }
+
+                    StorageType.SMB -> {
+                        OutlinedTextField(
+                            value = host,
+                            onValueChange = { host = it },
+                            label = { Text("Host") },
+                            placeholder = { Text("192.168.1.100") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = port,
+                            onValueChange = { port = it },
+                            label = { Text("Port") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = share,
+                            onValueChange = { share = it },
+                            label = { Text("Share name") },
+                            placeholder = { Text("Documents") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = username,
+                            onValueChange = { username = it },
+                            label = { Text("Username") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Password") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    }
+
+                    StorageType.GIT -> {
+                        OutlinedTextField(
+                            value = repositoryUrl,
+                            onValueChange = { repositoryUrl = it },
+                            label = { Text("Repository URL") },
+                            placeholder = { Text("https://github.com/user/repo.git") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = username,
+                            onValueChange = { username = it },
+                            label = { Text("Username (optional)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Password / Token (optional)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    }
+
+                    StorageType.DROPBOX -> {
+                        OutlinedTextField(
+                            value = appKey,
+                            onValueChange = { appKey = it },
+                            label = { Text("App Key") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = appSecret,
+                            onValueChange = { appSecret = it },
+                            label = { Text("App Secret") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        Text(
+                            text = "Get credentials from the Dropbox App Console.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+
+                    StorageType.GOOGLE_DRIVE, StorageType.ONEDRIVE -> {
+                        OutlinedTextField(
+                            value = clientId,
+                            onValueChange = { clientId = it },
+                            label = { Text("Client ID") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = clientSecret,
+                            onValueChange = { clientSecret = it },
+                            label = { Text("Client Secret") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        val consoleName = if (storageType == StorageType.GOOGLE_DRIVE) {
+                            "Google Cloud Console"
+                        } else {
+                            "Azure Portal"
+                        }
+                        Text(
+                            text = "Get credentials from the $consoleName.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+
+                // Status message
+                statusMessage?.let { msg ->
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = msg,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (statusIsError) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        }
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Test Connection button
+                OutlinedButton(
+                    onClick = {
+                        val config = buildConfig()
+                        if (config == null) {
+                            statusMessage = "Please fill in all required fields."
+                            statusIsError = true
+                            return@OutlinedButton
+                        }
+                        isTesting = true
+                        statusMessage = "Testing connection..."
+                        statusIsError = false
+                        coroutineScope.launch {
+                            val result = configService.testConnection(config)
+                            isTesting = false
+                            if (result.isSuccess && result.getOrDefault(false)) {
+                                statusMessage = "Connection successful!"
+                                statusIsError = false
+                            } else {
+                                val error = result.exceptionOrNull()?.message
+                                    ?: "Connection failed."
+                                statusMessage = error
+                                statusIsError = true
+                            }
+                        }
+                    },
+                    enabled = !isTesting && !isSaving
+                ) {
+                    if (isTesting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                    Text("Test")
+                }
+
+                // Save button
+                Button(
+                    onClick = {
+                        val config = buildConfig()
+                        if (config == null) {
+                            statusMessage = "Please fill in all required fields."
+                            statusIsError = true
+                            return@Button
+                        }
+                        isSaving = true
+                        statusMessage = "Saving..."
+                        statusIsError = false
+                        coroutineScope.launch {
+                            val result = configService.addStorage(config)
+                            isSaving = false
+                            if (result.isSuccess) {
+                                Toast.makeText(
+                                    context,
+                                    "${storageType.displayName} configured successfully",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                onDismiss()
+                            } else {
+                                val error = result.exceptionOrNull()?.message
+                                    ?: "Failed to save configuration."
+                                statusMessage = error
+                                statusIsError = true
+                            }
+                        }
+                    },
+                    enabled = !isTesting && !isSaving
+                ) {
+                    if (isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                    Text("Save")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isTesting && !isSaving
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 // Bottom Navigation Bar - now redirects to IDE bottom nav
