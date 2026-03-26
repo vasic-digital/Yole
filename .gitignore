@@ -11,6 +11,7 @@ tmp/
 *.log
 releases/
 docker/keys/
+qa-results*/
 
 ################
 ### Intellij ###
