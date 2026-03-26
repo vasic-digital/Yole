@@ -75,10 +75,10 @@ class NetworkProtocolStatusTest {
 
     @Test
     fun testProtocolsByTier() {
-        val stubbed = NetworkProtocolStatus.protocolsByTier(
-            NetworkProtocolStatus.ImplementationTier.STUBBED
+        val partial = NetworkProtocolStatus.protocolsByTier(
+            NetworkProtocolStatus.ImplementationTier.PARTIALLY_IMPLEMENTED
         )
-        assertTrue(stubbed.isEmpty())
+        assertTrue(partial.isEmpty())
 
         val full = NetworkProtocolStatus.protocolsByTier(
             NetworkProtocolStatus.ImplementationTier.FULLY_IMPLEMENTED

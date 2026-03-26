@@ -11,7 +11,12 @@ package digital.vasic.yole.network.protocols.smb
 import digital.vasic.yole.network.common.PlatformNotSupportedException
 
 /**
- * iOS implementation of [SmbProtocolClient].
+ * iOS stub for SMB protocol client.
+ *
+ * **Platform limitation:** smbj library is JVM-only.
+ * All methods return `Result.failure(UnsupportedOperationException)`.
+ *
+ * **Future plan:** libsmb2 via Kotlin/Native cinterop.
  *
  * ## Why SMB Is Not Supported on iOS
  *

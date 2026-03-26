@@ -97,10 +97,14 @@ actual class SmbProtocolClient actual constructor() {
 
     actual suspend fun disconnect(): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            try { diskShare?.close() } catch (_: Exception) {}
-            try { session?.close() } catch (_: Exception) {}
-            try { connection?.close() } catch (_: Exception) {}
-            try { smbClient?.close() } catch (_: Exception) {}
+            try { diskShare?.close() } catch (_: Exception) { // Resource cleanup — failure is non-fatal
+            }
+            try { session?.close() } catch (_: Exception) { // Resource cleanup — failure is non-fatal
+            }
+            try { connection?.close() } catch (_: Exception) { // Resource cleanup — failure is non-fatal
+            }
+            try { smbClient?.close() } catch (_: Exception) { // Resource cleanup — failure is non-fatal
+            }
             diskShare = null
             session = null
             connection = null

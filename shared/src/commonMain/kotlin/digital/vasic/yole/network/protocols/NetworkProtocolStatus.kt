@@ -21,7 +21,6 @@ package digital.vasic.yole.network.protocols
  *
  * | Tier | Meaning |
  * |------|---------|
- * | STUBBED | In-memory only. No network I/O. All file operations mutate a local virtual file system. |
  * | PARTIALLY_IMPLEMENTED | Some operations perform real HTTP I/O via ktor; others remain stubbed or unimplemented. |
  * | SUBSTANTIALLY_IMPLEMENTED | Most CRUD operations hit real cloud APIs via ktor. Local filesystem I/O (reading/writing bytes to disk) is not yet wired up. |
  * | FULLY_IMPLEMENTED | Real network I/O for all operations. Platform-limited protocols throw UnsupportedOperationException on unsupported platforms. |
@@ -59,9 +58,6 @@ object NetworkProtocolStatus {
      * Implementation tier describing how much real network I/O a service performs.
      */
     enum class ImplementationTier {
-        /** No network I/O. All operations mutate an in-memory virtual file system. */
-        STUBBED,
-
         /** Some operations use real HTTP via ktor; others are stubbed or unimplemented. */
         PARTIALLY_IMPLEMENTED,
 
@@ -178,11 +174,11 @@ object NetworkProtocolStatus {
         allProtocols().filter { it.usesHttpClient }
 
     /**
-     * Returns only the fully stubbed protocols (in-memory only, no network I/O).
+     * Returns only the protocols that are not yet fully implemented.
      * Currently returns an empty list as all protocols are fully implemented.
      */
     fun stubbedProtocols(): List<ProtocolInfo> =
-        protocolsByTier(ImplementationTier.STUBBED)
+        protocolsByTier(ImplementationTier.PARTIALLY_IMPLEMENTED)
 
     /**
      * Returns only the fully implemented protocols.

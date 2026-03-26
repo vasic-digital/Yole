@@ -9,11 +9,12 @@
 package digital.vasic.yole.network.protocols.smb
 
 /**
- * Web (Wasm) implementation of [SmbProtocolClient].
+ * Wasm stub for SMB protocol client.
  *
- * SMB/CIFS is not supported on the web platform because the smbj library
- * is JVM-only and raw TCP sockets are unavailable in a browser environment.
- * All methods return [UnsupportedOperationException] failures.
+ * **Platform limitation:** Browser security model prevents raw TCP socket access.
+ * All methods return `Result.failure(UnsupportedOperationException)`.
+ *
+ * **Future plan:** Server-side SMB-over-WebSocket proxy.
  *
  * This is an intentional platform limitation, not a stub awaiting implementation.
  * Browser security models fundamentally prevent raw TCP socket access required for SMB.

@@ -12,7 +12,12 @@ package digital.vasic.yole.network.protocols.ftp
 import digital.vasic.yole.network.common.PlatformNotSupportedException
 
 /**
- * iOS actual implementation of [FtpProtocolClient].
+ * iOS stub for FTP protocol client.
+ *
+ * **Platform limitation:** iOS does not provide raw TCP socket access for FTP.
+ * All methods return `Result.failure(UnsupportedOperationException)`.
+ *
+ * **Future plan:** NWConnection (Network.framework) or libcurl cinterop.
  *
  * ## Why FTP Is Not Supported on iOS
  *

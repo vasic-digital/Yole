@@ -11,7 +11,12 @@ package digital.vasic.yole.network.protocols.sftp
 import digital.vasic.yole.network.common.PlatformNotSupportedException
 
 /**
- * iOS implementation of [SshClient].
+ * iOS stub for SFTP/SSH protocol client.
+ *
+ * **Platform limitation:** sshj library is JVM-only.
+ * All methods return `Result.failure(UnsupportedOperationException)`.
+ *
+ * **Future plan:** libssh2 via Kotlin/Native cinterop.
  *
  * ## Why SFTP Is Not Supported on iOS
  *

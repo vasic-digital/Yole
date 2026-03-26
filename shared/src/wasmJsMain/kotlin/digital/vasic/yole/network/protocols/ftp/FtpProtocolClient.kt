@@ -8,12 +8,12 @@
 package digital.vasic.yole.network.protocols.ftp
 
 /**
- * Web/Wasm actual implementation of [FtpProtocolClient].
+ * Wasm stub for FTP protocol client.
  *
- * FTP over raw TCP sockets is not supported in browser/Wasm environments.
- * Browsers do not expose raw TCP socket APIs, making FTP protocol communication
- * impossible from client-side web applications.
- * All operations return [Result.failure] with [UnsupportedOperationException].
+ * **Platform limitation:** Browser security model prevents raw TCP socket access.
+ * All methods return `Result.failure(UnsupportedOperationException)`.
+ *
+ * **Future plan:** Server-side FTP-over-WebSocket proxy.
  *
  * This is an intentional platform limitation, not a stub awaiting implementation.
  * Browser security models fundamentally prevent raw TCP socket access.

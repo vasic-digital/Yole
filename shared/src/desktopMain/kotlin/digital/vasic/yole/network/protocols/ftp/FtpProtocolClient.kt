@@ -109,9 +109,12 @@ actual class FtpProtocolClient actual constructor() {
                     }
                 }
             } finally {
-                try { reader?.close() } catch (_: Exception) {}
-                try { writer?.close() } catch (_: Exception) {}
-                try { controlSocket?.close() } catch (_: Exception) {}
+                try { reader?.close() } catch (_: Exception) { // Resource cleanup — failure is non-fatal
+                }
+                try { writer?.close() } catch (_: Exception) { // Resource cleanup — failure is non-fatal
+                }
+                try { controlSocket?.close() } catch (_: Exception) { // Resource cleanup — failure is non-fatal
+                }
                 reader = null
                 writer = null
                 controlSocket = null
@@ -165,7 +168,8 @@ actual class FtpProtocolClient actual constructor() {
                 // Parse the listing
                 lines.mapNotNull { parseFtpListLine(it) }
             } catch (e: Exception) {
-                try { dataSocket.close() } catch (_: Exception) {}
+                try { dataSocket.close() } catch (_: Exception) { // Resource cleanup — failure is non-fatal
+                }
                 throw e
             }
         }
@@ -209,7 +213,8 @@ actual class FtpProtocolClient actual constructor() {
 
                 data
             } catch (e: Exception) {
-                try { dataSocket.close() } catch (_: Exception) {}
+                try { dataSocket.close() } catch (_: Exception) { // Resource cleanup — failure is non-fatal
+                }
                 throw e
             }
         }
@@ -252,7 +257,8 @@ actual class FtpProtocolClient actual constructor() {
                     throw Exception("FTP STOR transfer incomplete: $transferResponse")
                 }
             } catch (e: Exception) {
-                try { dataSocket.close() } catch (_: Exception) {}
+                try { dataSocket.close() } catch (_: Exception) { // Resource cleanup — failure is non-fatal
+                }
                 throw e
             }
         }
