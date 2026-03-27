@@ -23,7 +23,7 @@ class VersionConsistencyTests {
 
     companion object {
         const val EXPECTED_VERSION = "1.0.0"
-        const val EXPECTED_VERSION_CODE = 6
+        const val EXPECTED_VERSION_CODE = 7
     }
 
     @Test

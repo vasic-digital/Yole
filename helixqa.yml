@@ -16,8 +16,8 @@ platforms:
     device: emulator-5554
     package: digital.vasic.yole.android
     activity: digital.vasic.yole.android.MainActivity
-    apk_debug: releases/Android/Yole-Android-1.0.0-Debug-0.0.0.0.6.apk
-    apk_release: releases/Android/Yole-Android-1.0.0-Release-0.0.0.0.6.apk
+    apk_debug: releases/Android/Yole-Android-1.0.0-Debug-0.0.0.0.7.apk
+    apk_release: releases/Android/Yole-Android-1.0.0-Release-0.0.0.0.7.apk
     automation_script: automation/android-all-formats-automation.sh
     recordings_dir: recordings/android/formats
 
@@ -32,7 +32,7 @@ platforms:
   desktop:
     enabled: true
     process: java
-    jar: releases/Desktop-linux-x64/Yole-Desktop-linux-x64-1.0.0-Release-0.0.0.0.6.jar
+    jar: releases/Desktop-linux-x64/Yole-Desktop-linux-x64-1.0.0-Release-0.0.0.0.7.jar
     test_class: digital.vasic.yole.desktop.AllFormatsAutomationTest
     automation_script: automation/desktop-all-formats-runner.sh
     recordings_dir: recordings/desktop/formats

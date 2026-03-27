@@ -216,7 +216,7 @@ Line 5 after empty line"""
         assertNotNull("Version code should be parseable", versionCode)
         
         // Version code should be >= 6 (incremented from 5)
-        assertTrue("Version code should be >= 6", versionCode!! >= 6)
+        assertTrue("Version code should be >= 7", versionCode!! >= 7)
     }
 
     @Test
