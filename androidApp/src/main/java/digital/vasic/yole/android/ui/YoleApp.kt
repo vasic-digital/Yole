@@ -64,6 +64,7 @@ import android.content.Intent
 import android.widget.Toast
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import digital.vasic.opoc.model.GsSharedPreferencesPropertyBackend
@@ -152,14 +153,55 @@ class YoleSettings(context: android.content.Context) : GsSharedPreferencesProper
 }
 
 /**
- * Save content to a file
+ * Save content to a file (supports both direct file access and SAF)
  */
-fun saveFile(filePath: String, content: String): Boolean {
+fun saveFile(context: Context, filePath: String, content: String, safUri: Uri? = null): Boolean {
     return try {
-        val file = File(filePath)
-        file.parentFile?.mkdirs()
-        file.writeText(content)
-        true
+        if (safUri != null) {
+            // SAF-based save
+            context.contentResolver.openOutputStream(safUri, "wt")?.use { outputStream ->
+                outputStream.write(content.toByteArray())
+            }
+            true
+        } else {
+            // Direct file access save
+            val file = File(filePath)
+            file.parentFile?.mkdirs()
+            file.writeText(content)
+            true
+        }
+    } catch (e: Exception) {
+        false
+    }
+}
+
+/**
+ * Create a new file using SAF (for Android 11+ compatibility)
+ */
+fun createFileWithSAF(context: Context, parentUri: Uri, fileName: String, content: String): Boolean {
+    return try {
+        val parentDoc = DocumentFile.fromTreeUri(context, parentUri)
+        if (parentDoc != null && parentDoc.isDirectory) {
+            // Check if file already exists
+            val existingFile = parentDoc.findFile(fileName)
+            if (existingFile != null) {
+                // Update existing file
+                context.contentResolver.openOutputStream(existingFile.uri, "wt")?.use { outputStream ->
+                    outputStream.write(content.toByteArray())
+                }
+            } else {
+                // Create new file
+                val newFile = parentDoc.createFile("text/plain", fileName)
+                if (newFile != null) {
+                    context.contentResolver.openOutputStream(newFile.uri, "wt")?.use { outputStream ->
+                        outputStream.write(content.toByteArray())
+                    }
+                }
+            }
+            true
+        } else {
+            false
+        }
     } catch (e: Exception) {
         false
     }
@@ -458,7 +500,7 @@ fun MainScreen() {
                                     val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
                                     if (!docsDir.exists()) docsDir.mkdirs()
                                     val filePath = File(docsDir, fileName).absolutePath
-                                    if (saveFile(filePath, fileContent)) {
+                                    if (saveFile(context, filePath, fileContent)) {
                                         if (settings.getAnnounceChanges()) {
                                             Toast.makeText(context, "File saved successfully", Toast.LENGTH_SHORT).show()
                                         }
@@ -632,7 +674,7 @@ fun MainScreen() {
                                         val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
                                         if (!docsDir.exists()) docsDir.mkdirs()
                                         val filePath = File(docsDir, fileName).absolutePath
-                                        saveFile(filePath, fileContent)
+                                        saveFile(context, filePath, fileContent)
                                     }
                                 }
                             )
@@ -711,7 +753,7 @@ fun MainScreen() {
                                                 val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
                                                 if (!docsDir.exists()) docsDir.mkdirs()
                                                 val filePath = File(docsDir, "quicknote.md").absolutePath
-                                                saveFile(filePath, quickNoteContent)
+                                                saveFile(context, filePath, quickNoteContent)
                                             }
                                         )
                                         Screen.MORE -> MoreScreen(
@@ -764,7 +806,7 @@ fun MainScreen() {
                                     val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
                                     if (!docsDir.exists()) docsDir.mkdirs()
                                     val filePath = File(docsDir, fileName).absolutePath
-                                    saveFile(filePath, fileContent)
+                                    saveFile(context, filePath, fileContent)
                                 }
                             }
                         )
@@ -830,7 +872,7 @@ fun MainScreen() {
                                         val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
                                         if (!docsDir.exists()) docsDir.mkdirs()
                                         val filePath = File(docsDir, "quicknote.md").absolutePath
-                                        saveFile(filePath, quickNoteContent)
+                                        saveFile(context, filePath, quickNoteContent)
                                     }
                                 )
                                 Screen.MORE -> MoreScreen(
@@ -1784,7 +1826,7 @@ fun IdeDrawerContent(
 
         // Version info at bottom
         Text(
-            "Yole v2.19.3",
+            "Yole v1.0.0",
             color = textSecondary.copy(alpha = 0.5f),
             fontSize = 10.sp,
             modifier = Modifier.padding(16.dp)
@@ -2156,10 +2198,17 @@ fun FileBrowserScreen(
 
         // Try direct file access first (works with MANAGE_EXTERNAL_STORAGE or pre-Android 11)
         val docsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
-        if (docsDir.exists() && docsDir.canRead()) {
+        val directFiles = if (docsDir.exists() && docsDir.canRead()) {
+            docsDir.listFiles()?.toList() ?: emptyList()
+        } else {
+            emptyList()
+        }
+        
+        if (directFiles.isNotEmpty()) {
+            // We have direct access and files exist
             currentDirectory = docsDir
             currentPathLabel = docsDir.absolutePath
-            allFiles = (docsDir.listFiles()?.toList() ?: emptyList()).map { f ->
+            allFiles = directFiles.map { f ->
                 BrowsableFile(
                     name = f.name,
                     isDirectory = f.isDirectory,
@@ -2170,7 +2219,7 @@ fun FileBrowserScreen(
             }
             isLoadingFiles = false
         } else {
-            // No direct access — check persisted SAF permissions first
+            // No direct access or directory is empty — check persisted SAF permissions
             val persistedUris = context.contentResolver.persistedUriPermissions
             if (persistedUris.isNotEmpty()) {
                 // Use the most recently granted SAF tree
@@ -2180,12 +2229,20 @@ fun FileBrowserScreen(
                     safTreeUri = lastUri
                     loadSafDirectory(doc)
                 } else {
-                    showPermissionPrompt = true
+                    // Invalid SAF URI, show permission prompt but also load empty local directory
+                    currentDirectory = docsDir
+                    currentPathLabel = docsDir.absolutePath
+                    allFiles = emptyList()
                     isLoadingFiles = false
+                    showPermissionPrompt = true
                 }
             } else {
-                showPermissionPrompt = true
+                // No SAF permission either - show local directory (even if empty) with permission prompt
+                currentDirectory = docsDir
+                currentPathLabel = docsDir.absolutePath
+                allFiles = emptyList()
                 isLoadingFiles = false
+                showPermissionPrompt = true
             }
         }
     }
@@ -4224,7 +4281,7 @@ fun MoreScreen(
                 Column {
                     Text("About Yole", style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        "Version 2.19.3 - Text editor for Android, Desktop, iOS & Web",
+                        "Version 1.0.0 - Text editor for Android, Desktop, iOS & Web",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )

@@ -280,7 +280,7 @@ class FullUIAutomationTest {
         pauseForSpeed(speed.clickDelay)
 
         // Verify about info exists in tree
-        onNodeWithText("Version: 2.19.3.5").assertExists()
+        onNodeWithText("Version: 1.0.0").assertExists()
 
         println("    Settings screen with all sections verified")
     }
@@ -791,7 +791,7 @@ class FullUIAutomationTest {
 
         // Section: About Yole (may be off-screen)
         onNodeWithText("About Yole").assertExists()
-        onNodeWithText("Version: 2.19.3.5").assertExists()
+        onNodeWithText("Version: 1.0.0").assertExists()
 
         // Interact: Change theme using RadioButton nodes (system=0, light=1, dark=2)
         onAllNodes(isSelectable())[2].performClick()

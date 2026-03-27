@@ -23,8 +23,8 @@ android {
         applicationId = "digital.vasic.yole.android"
         minSdk = 24
         targetSdk = 35
-        versionCode = 5
-        versionName = "2.19.3"
+        versionCode = 6
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

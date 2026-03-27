@@ -703,7 +703,7 @@ fun AboutDialog(
                 )
                 
                 Text(
-                    text = "Version 2.19.3.5",
+                    text = "Version 1.0.0",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
