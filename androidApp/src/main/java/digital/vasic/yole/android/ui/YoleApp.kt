@@ -235,7 +235,9 @@ fun deleteFile(filePath: String): Boolean {
 data class EditorTab(
     val fileName: String,
     val content: String,
-    val isDirty: Boolean = false
+    val isDirty: Boolean = false,
+    val filePath: String? = null,
+    val safUri: Uri? = null
 )
 
 enum class Screen {
@@ -331,13 +333,18 @@ fun MainScreen() {
     val lineNumColor = if (isDarkTheme) IdeTheme.darkLineNumbers else IdeTheme.lightLineNumbers
 
     // Helper: open file in a new tab or switch to existing tab
-    fun openFileInTab(fileName: String, content: String) {
+    fun openFileInTab(fileName: String, content: String, safUri: Uri? = null, filePath: String? = null) {
         val existingIndex = openTabs.indexOfFirst { it.fileName == fileName }
         if (existingIndex >= 0) {
             activeTabIndex = existingIndex
             fileContent = openTabs[existingIndex].content
         } else {
-            openTabs = openTabs + EditorTab(fileName = fileName, content = content)
+            openTabs = openTabs + EditorTab(
+                fileName = fileName,
+                content = content,
+                safUri = safUri,
+                filePath = filePath
+            )
             activeTabIndex = openTabs.size // will be the new last index
             fileContent = content
         }
@@ -497,10 +504,30 @@ fun MainScreen() {
                             onMenuClick = { coroutineScope.launch { drawerState.open() } },
                             onSaveClick = {
                                 selectedFile?.let { fileName ->
-                                    val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-                                    if (!docsDir.exists()) docsDir.mkdirs()
-                                    val filePath = File(docsDir, fileName).absolutePath
-                                    if (saveFile(context, filePath, fileContent)) {
+                                    // Check if current tab has SAF URI or file path
+                                    val currentTab = openTabs.getOrNull(activeTabIndex)
+                                    val saved = when {
+                                        // Try SAF URI first (for files opened via SAF)
+                                        currentTab?.safUri != null -> {
+                                            saveFile(context, "", fileContent, currentTab.safUri)
+                                        }
+                                        // Try stored file path
+                                        currentTab?.filePath != null -> {
+                                            saveFile(context, currentTab.filePath, fileContent)
+                                        }
+                                        // Fall back to default Documents directory
+                                        else -> {
+                                            val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
+                                            if (!docsDir.exists()) docsDir.mkdirs()
+                                            val filePath = File(docsDir, fileName).absolutePath
+                                            saveFile(context, filePath, fileContent)
+                                        }
+                                    }
+                                    if (saved) {
+                                        // Update tab to not dirty
+                                        openTabs = openTabs.mapIndexed { index, tab ->
+                                            if (index == activeTabIndex) tab.copy(isDirty = false) else tab
+                                        }
                                         if (settings.getAnnounceChanges()) {
                                             Toast.makeText(context, "File saved successfully", Toast.LENGTH_SHORT).show()
                                         }
@@ -729,8 +756,8 @@ fun MainScreen() {
                                             onSortChanged = { fileSortBy = it },
                                             showSearch = showFileSearch,
                                             onShowSearchChanged = { showFileSearch = it },
-                                            onFileSelected = { file, content ->
-                                                openFileInTab(file, content)
+                                            onFileSelected = { file, content, safUri, filePath ->
+                                                openFileInTab(file, content, safUri, filePath)
                                             },
                                             onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
                                         )
@@ -773,8 +800,8 @@ fun MainScreen() {
                                 onSortChanged = { fileSortBy = it },
                                 showSearch = showFileSearch,
                                 onShowSearchChanged = { showFileSearch = it },
-                                onFileSelected = { file, content ->
-                                    openFileInTab(file, content)
+                                onFileSelected = { file, content, safUri, filePath ->
+                                    openFileInTab(file, content, safUri, filePath)
                                 },
                                 onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
                             )
@@ -848,8 +875,8 @@ fun MainScreen() {
                                     onSortChanged = { fileSortBy = it },
                                     showSearch = showFileSearch,
                                     onShowSearchChanged = { showFileSearch = it },
-                                    onFileSelected = { file, content ->
-                                        openFileInTab(file, content)
+                                    onFileSelected = { file, content, safUri, filePath ->
+                                        openFileInTab(file, content, safUri, filePath)
                                     },
                                     onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
                                 )
@@ -894,8 +921,8 @@ fun MainScreen() {
                             onSortChanged = { fileSortBy = it },
                             showSearch = showFileSearch,
                             onShowSearchChanged = { showFileSearch = it },
-                            onFileSelected = { file, content ->
-                                openFileInTab(file, content)
+                            onFileSelected = { file, content, safUri, filePath ->
+                                openFileInTab(file, content, safUri, filePath)
                             },
                             onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
                         )
@@ -2100,7 +2127,7 @@ fun FileBrowserScreen(
     onSortChanged: (String) -> Unit = {},
     showSearch: Boolean = false,
     onShowSearchChanged: (Boolean) -> Unit = {},
-    onFileSelected: (String, String) -> Unit,
+    onFileSelected: (String, String, Uri?, String?) -> Unit,
     onSettingsClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -2127,6 +2154,7 @@ fun FileBrowserScreen(
             delay(200)
             val children = dir.listFiles()?.toList()
             if (children != null && children.isNotEmpty()) {
+                // Successfully loaded files via direct access
                 allFiles = children.map { f ->
                     BrowsableFile(
                         name = f.name,
@@ -2137,6 +2165,12 @@ fun FileBrowserScreen(
                     )
                 }
                 isLoadingFiles = false
+            } else if (children == null) {
+                // listFiles() returned null - permission denied or access error
+                // Try to use SAF instead by prompting user to pick folder
+                allFiles = emptyList()
+                isLoadingFiles = false
+                showPermissionPrompt = true
             } else if (dir.exists() && !dir.canRead()) {
                 // Directory exists but we can't read it — likely a permission issue.
                 // Show the files as empty and prompt user to grant access or use SAF.
@@ -2144,6 +2178,7 @@ fun FileBrowserScreen(
                 isLoadingFiles = false
                 showPermissionPrompt = true
             } else {
+                // Empty directory (no files)
                 allFiles = emptyList()
                 isLoadingFiles = false
             }
@@ -2468,7 +2503,7 @@ fun FileBrowserScreen(
                     if (searchQuery.isNotEmpty()) {
                         EmptySearchState(searchQuery = searchQuery)
                     } else {
-                        EmptyFileListState(onCreateFile = { onFileSelected("untitled.txt", "") })
+                        EmptyFileListState(onCreateFile = { onFileSelected("untitled.txt", "", null, null) })
                     }
                 }
             } else {
@@ -2535,21 +2570,21 @@ fun FileBrowserScreen(
                                                     .openInputStream(file.safUri)
                                                 val content = inputStream?.bufferedReader()
                                                     ?.use { it.readText() } ?: ""
-                                                onFileSelected(fileName, content)
+                                                onFileSelected(fileName, content, file.safUri, null)
                                             } catch (e: Exception) {
                                                 Toast.makeText(
                                                     context,
                                                     "Could not read file: ${e.message}",
                                                     Toast.LENGTH_SHORT
                                                 ).show()
-                                                onFileSelected(fileName, "")
+                                                onFileSelected(fileName, "", file.safUri, null)
                                             }
                                         } else if (file.localFile != null) {
                                             try {
                                                 val content = file.localFile.readText()
-                                                onFileSelected(fileName, content)
+                                                onFileSelected(fileName, content, null, file.localFile.absolutePath)
                                             } catch (e: Exception) {
-                                                onFileSelected(fileName, "")
+                                                onFileSelected(fileName, "", null, file.localFile?.absolutePath)
                                             }
                                         }
                                     }
@@ -2630,7 +2665,7 @@ fun FileBrowserScreen(
             }
 
             OutlinedButton(
-                onClick = { onFileSelected("untitled.txt", "") },
+                onClick = { onFileSelected("untitled.txt", "", null, null) },
                 modifier = Modifier.pressScale()
             ) {
                 Icon(Icons.Filled.Add, contentDescription = "New File", modifier = Modifier.size(20.dp))
@@ -3739,7 +3774,7 @@ fun FilesScreen(
     onSortChanged: (String) -> Unit,
     showSearch: Boolean,
     onShowSearchChanged: (Boolean) -> Unit,
-    onFileSelected: (String, String) -> Unit,
+    onFileSelected: (String, String, Uri?, String?) -> Unit,
     onSettingsClick: () -> Unit
 ) {
     FileBrowserScreen(
