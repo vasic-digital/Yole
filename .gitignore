@@ -138,3 +138,4 @@ automation-screenshots/
 !website/**/*.mp4
 
 automation/node_modules/
+reports/demos/

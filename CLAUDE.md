@@ -9,6 +9,56 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. **Release Builds in Containers** — Release builds and full test suites execute inside Docker/Podman containers. Day-to-day dev uses `:shared:desktopTest` on the host JVM.
 4. **Release Naming Convention** — Artifacts in `releases/` follow: `Yole-{Platform}-{Version}-{Variant}-{VersionCodeDotted}` (e.g., `Yole-Android-1.0.0-Release-0.0.0.0.1.apk`). Both debug and release variants required per platform. Platforms: `Android`, `Desktop-linux-x64`, `Desktop-windows-x64`, `Desktop-macos-arm64`, `Web-wasm`. Version code to dotted: groups of 2 digits from right, zero-padded to 5 segments.
 
+## Definition of Done
+
+A change is NOT done because code compiles and tests pass. "Done" requires pasted
+terminal output from a real run of the real system, produced in the same session as
+the change. Coverage and passing suites measure the LLM's model of the product, not
+the product.
+
+1. **No self-certification.** *Verified, tested, working, complete, fixed, passing*
+   are forbidden in commits, PRs, and agent replies without accompanying pasted
+   output from a same-session real-system run.
+2. **Demo before code.** Every task begins with the runnable acceptance demo below.
+3. **Real system.** Android demos run against a real debug APK installed on an
+   emulator or device; desktop demos run the built Kotlin/Native or JVM binary.
+   Robolectric / JVM unit tests do not count as proof-of-done.
+4. **Skips are loud.** `@Ignore` / `@Ignored` / `assumeTrue` without a trailing
+   `SKIP-OK: #<ticket>` comment fails `make ci-validate-all`.
+5. **Contract tests on every seam.** Shared KMP↔Android↔Desktop boundaries
+   carry a smoke test that loads a real document end-to-end on each surface.
+6. **Evidence in the PR.** PR body contains a fenced `## Demo` block with exact
+   command(s) and output (or screenshot/logcat excerpt for on-device demos).
+
+### Acceptance demo for this module
+
+```bash
+# Yole acceptance demo: build the shared KMP module and the Android debug APK,
+# run the host-JVM shared test suite, and assert the APK was produced.
+set -e
+cd "$(dirname "$0")" 2>/dev/null || true
+
+# Fast host-JVM shared tests — always runs.
+./gradlew --no-daemon :shared:desktopTest
+
+# Android debug APK build — skips loudly if ANDROID_SDK_ROOT not set, rather
+# than silently doing nothing.
+if [ -z "${ANDROID_SDK_ROOT:-}" ] && [ -z "${ANDROID_HOME:-}" ]; then
+  echo "demo-android-skipped: no ANDROID_SDK_ROOT / ANDROID_HOME in env"
+  echo "demo-android-skipped: SKIP-OK: no-android-sdk-in-env"
+else
+  ./gradlew --no-daemon :androidApp:assembleDebug
+  apk=$(find androidApp/build/outputs/apk/debug -name '*.apk' | head -1)
+  [ -n "$apk" ] && [ -f "$apk" ] || { echo "no APK produced"; exit 1; }
+  echo "APK built: $apk ($(stat -c%s "$apk") bytes)"
+fi
+```
+
+Expect: `:shared:desktopTest` passes, and (when Android SDK is present) an
+APK artifact is produced at `androidApp/build/outputs/apk/debug/*.apk`.
+Without the Android SDK, the Android portion skips loudly — annotated so
+`no-silent-skips` doesn't flag it as invisible debt.
+
 ## Project Overview
 
 **Yole** is a cross-platform text editor supporting 17 text formats plus cloud/network storage protocols, built with Kotlin Multiplatform (KMP). Offline-first with optional cloud storage.
