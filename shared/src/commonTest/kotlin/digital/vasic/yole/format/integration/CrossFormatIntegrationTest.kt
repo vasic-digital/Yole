@@ -769,22 +769,24 @@ class CrossFormatIntegrationTest {
             }
         }
 
-        // Test multiple conversions without memory leaks
+        // Test multiple conversions without memory leaks. Track HTML output across
+        // iterations to ensure each parse-then-render round produces real HTML.
+        val htmlsProduced = mutableListOf<String>()
         repeat(10) { iteration ->
             val document = plainTextParser.parse(content)
             assertNotNull(document)
 
             val html = markdownParser.toHtml(document, lightMode = true)
             assertNotNull(html)
+            htmlsProduced.add(html)
 
             // Clear cache to test memory management
             document.clearHtmlCache()
 
             assertFalse(document.hasHtmlCached(lightMode = true))
         }
-
-        // Test should complete without memory issues
-        assertTrue(true)
+        assertEquals(10, htmlsProduced.size, "10 conversions must complete")
+        assertTrue(htmlsProduced.all { it.isNotEmpty() }, "every conversion must yield non-empty HTML")
     }
 
     // ==================== Integration Benchmark Tests ====================
@@ -899,8 +901,11 @@ class CrossFormatIntegrationTest {
 
         println("Deeply nested structure time: $nestedTime")
 
-        // All stress tests should complete without errors
-        assertTrue(true)
+        // All stress tests must have produced measurable timings (proves the
+        // operations actually executed; a no-op `measureTime { }` returns 0ns).
+        assertTrue(largeDocTime.inWholeNanoseconds > 0, "very-large doc parse must take measurable time")
+        assertTrue(rapidConversionTime.inWholeNanoseconds > 0, "rapid conversion must take measurable time")
+        assertTrue(nestedTime.inWholeNanoseconds > 0, "deeply nested parse must take measurable time")
     }
 
     // ==================== Helper Methods ====================

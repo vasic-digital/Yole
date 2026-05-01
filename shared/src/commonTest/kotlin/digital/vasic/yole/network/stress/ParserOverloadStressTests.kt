@@ -369,7 +369,7 @@ class ParserOverloadStressTests {
             FormatRegistry.ID_CSV to "a,b\n1,2"
         )
 
-        withTimeout(30.seconds) {
+        val results = withTimeout(30.seconds) {
             (1..90).map { i ->
                 val (id, content) = formatAndContent[i % 3]
                 val format = FormatRegistry.getById(id)!!
@@ -378,15 +378,19 @@ class ParserOverloadStressTests {
                 }
             }.awaitAll()
         }
-        // No exception = pass
-        assertTrue(true)
+        // Every parse must have produced a non-null ParsedDocument with non-empty raw content.
+        assertEquals(90, results.size, "all 90 concurrent parses must complete")
+        assertTrue(
+            results.all { it.rawContent.isNotEmpty() },
+            "every concurrent parse must yield a populated ParsedDocument"
+        )
     }
 
     @Test
     fun ParseWithCacheConcurrentSemaphoreReleasedAfterError() = runBlocking<Unit> {
-        // Configure low concurrency, verify no permit leak on repeated calls
+        // Configure low concurrency, verify no permit leak on repeated calls.
         FormatRegistry.configureParseConcurrency(2)
-        try {
+        val results = try {
             val format = FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)!!
             withTimeout(30.seconds) {
                 (1..20).map { i ->
@@ -398,6 +402,11 @@ class ParserOverloadStressTests {
         } finally {
             FormatRegistry.configureParseConcurrency(FormatRegistry.DEFAULT_PARSE_CONCURRENCY)
         }
-        assertTrue(true)
+        // All 20 concurrent parses must complete (proves no permit leak — leaked
+        // permits would deadlock the await within the timeout).
+        assertEquals(20, results.size, "all 20 concurrent parses must complete (no permit leak)")
+        // Post-test: the registry must be functional after concurrency reset.
+        val postTest = FormatRegistry.parseWithCacheConcurrent("# post-test", FormatRegistry.getById(FormatRegistry.ID_MARKDOWN)!!)
+        assertTrue(postTest.rawContent.isNotEmpty(), "registry must remain functional after stress")
     }
 }

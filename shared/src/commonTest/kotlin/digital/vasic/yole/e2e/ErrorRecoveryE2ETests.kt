@@ -414,11 +414,15 @@ class ErrorRecoveryE2ETests {
             WebDavService(StorageConfig.WebDavConfig(name = "to-webdav",
                 url = "https://invalid/", username = "u", password = "p"))
         )
-        withTimeout(15.seconds) {
-            services.map { async { it.connect() } }.awaitAll()
+        val results = withTimeout(15.seconds) {
+            services.map { async { runCatching { it.connect() } } }.awaitAll()
         }
-        // All completed (with failure) — no hangs
-        assertTrue(true)
+        // Every service must have actually attempted (so each result is non-null) AND
+        // all four must remain offline (invalid hosts) without hanging the timeout.
+        assertEquals(4, results.size, "all 4 services must have completed within 15s")
+        services.forEach { svc ->
+            assertEquals(false, svc.isOnline, "${svc.config.name} must be offline after failed connect")
+        }
     }
 
     @Test

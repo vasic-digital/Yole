@@ -90,10 +90,13 @@ class AppScreenTests {
  * iOS Platform Integration Tests
  */
 class IOSPlatformIntegrationTests {
-    
+
     @Test
     fun testPlatformModuleAccessible() {
-        // Verify iOS-specific imports are available
-        assertTrue(true) // Platform module test placeholder
+        // Verify iOS-specific implementations are reachable from the iosTest source set
+        // by instantiating a platform-specific type. If the iOS platform module fails to
+        // link, this test fails to compile (proving the import surface is intact).
+        val settings = YoleIOSSettings()
+        assertNotNull(settings, "YoleIOSSettings must be instantiable from iosTest source set")
     }
 }
