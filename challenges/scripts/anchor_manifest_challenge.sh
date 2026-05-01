@@ -49,9 +49,16 @@ for row in "${ROWS[@]}"; do
         failed=1
         continue
       fi
-      # Crude symbol check: grep the file for the test name.
+      # Crude symbol check: grep the file for the test name. Tries:
+      #   1. Plain Go/Kotlin: `func name` or `fun name`
+      #   2. Kotlin backticked: `fun \`name with spaces\``
       first_sym="${sym_part%%::*}"
-      if ! grep -qE "(func[[:space:]]+|fun[[:space:]]+)${first_sym}\b" "${ROOT_DIR}/${file_part}"; then
+      escaped_sym="$(printf '%s' "${first_sym}" | sed 's/[][\.*+?(){}|^$]/\\&/g')"
+      if grep -qE "(func[[:space:]]+|fun[[:space:]]+)${escaped_sym}\b" "${ROOT_DIR}/${file_part}"; then
+        : # plain match
+      elif grep -qF "fun \`${first_sym}\`" "${ROOT_DIR}/${file_part}"; then
+        : # backticked match
+      else
         echo "FAIL: ${id}: symbol ${first_sym} not found in ${file_part}." >&2
         failed=1
       fi

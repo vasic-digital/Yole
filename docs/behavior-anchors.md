@@ -48,7 +48,16 @@ method is available.
 | CAP-017 | app | Render WikiText to HTML wrapped in wikitext div | shared/src/commonTest/kotlin/digital/vasic/yole/format/wikitext/WikitextParserHtmlTest.kt::testWrappedInWikitextDiv | MediaWiki-style markup renders inside `<div class='wikitext'>` | active |
 | CAP-018 | app | FormatRegistry exposes ID constants for all 17 core formats | shared/src/commonTest/kotlin/digital/vasic/yole/format/FormatRegistryUnitTest.kt::idConstantsExistForAllCoreFormats | Every format has a stable string ID constant on TextFormat.Companion | active |
 | CAP-019 | app | TextFormat ID constants are unique across all formats | shared/src/commonTest/kotlin/digital/vasic/yole/format/TextFormatComprehensiveTest.kt::allFormatIdConstantsAreUnique | No two formats share the same ID — detection unambiguous | active |
+| CAP-020 | app | Connect to Dropbox cloud storage with valid OAuth token | shared/src/commonTest/kotlin/digital/vasic/yole/network/protocols/dropbox/DropboxMockHttpTest.kt::01 connect succeeds with valid token and account info | DropboxStorageService.connect() against mock HTTP returns success and populates account info | active |
+| CAP-021 | app | Connect to FTP server | shared/src/commonTest/kotlin/digital/vasic/yole/network/protocols/ftp/FtpServiceTest.kt::testConnectSuccess | FtpService.connect() returns success and toggles isOnline | active |
+| CAP-022 | app | Connect to Git remote with valid refs | shared/src/commonTest/kotlin/digital/vasic/yole/network/protocols/git/GitMockHttpTest.kt::connect with valid git refs sets connected | GitService.connect() against mock HTTP returns success and refs are reachable | active |
+| CAP-023 | app | Connect to Google Drive with valid OAuth token | shared/src/commonTest/kotlin/digital/vasic/yole/network/protocols/googledrive/GoogleDriveMockHttpTest.kt::testConnectWithValidTokenSucceeds | GoogleDriveService.connect() returns success and authenticates | active |
+| CAP-024 | app | Connect to OneDrive with valid OAuth token | shared/src/commonTest/kotlin/digital/vasic/yole/network/protocols/onedrive/OneDriveMockHttpTest.kt::testConnectWithValidTokenSucceeds | OneDriveService.connect() returns success and authenticates | active |
+| CAP-025 | app | Connect to SFTP server | shared/src/commonTest/kotlin/digital/vasic/yole/network/protocols/sftp/SftpServiceTest.kt::testConnectSuccess | SftpService.connect() returns success and toggles isOnline | active |
+| CAP-026 | app | Connect to SMB share | shared/src/commonTest/kotlin/digital/vasic/yole/network/protocols/smb/SmbServiceTest.kt::testConnectSuccess | SmbService.connect() returns success and toggles isOnline | active |
+| CAP-027 | app | Connect to WebDAV server | shared/src/commonTest/kotlin/digital/vasic/yole/network/protocols/webdav/WebDavMockHttpTest.kt::connect succeeds with 200 OPTIONS response | WebDavService.connect() against mock HTTP returns success after 200 OPTIONS | active |
 
-(Format-layer rows complete: 17 formats — 16 `active` + 1 `pending-anchor`.
-KMP module rows, network-protocol rows, and app-screen rows are populated
-in subsequent iterations of sub-project 3.)
+(Format layer + network-protocol layer complete. Subsequent iterations
+of sub-project 3 add: KMP module anchors (handled in their own repos
+since modules consume themselves), app-screen anchors, document model,
+monitoring, and submodule cross-recheck.)
