@@ -234,6 +234,13 @@ container-test:
 container-release:
 	$(COMPOSE_CMD) run --rm build ./docker/scripts/build.sh
 
+# Run Robolectric Compose UI tests in a dedicated container, isolated from the
+# main build pipeline. Enforces the anti-bluff covenant (CONST-035): the
+# Robolectric tests must confirm that the Android UI actually renders and
+# navigates as expected for an end user.
+container-robolectric-test:
+	$(COMPOSE_CMD) run --rm robolectric-test
+
 # Open an interactive shell in the build container
 container-shell:
 	$(COMPOSE_CMD) run --rm build bash

@@ -148,7 +148,31 @@ class SmbService(
         )
     }
 
-    /** Sets the connection flag to mark this service as connected (no SMB negotiation). */
+    /**
+     * Sets the connection flag to mark this service as connected.
+     *
+     * **KNOWN DEFECT (tracked: #smb-stub-no-negotiation):** this is currently
+     * a no-op stub — it does not perform real SMB protocol negotiation or
+     * authentication via [protocolClient], and unconditionally sets
+     * `_isConnected = true` regardless of whether the configured server is
+     * reachable. As a result, [isOnline] returns true even when the server
+     * is unreachable.
+     *
+     * The proper fix (call protocolClient.connect/authenticate and only
+     * flip the flag on real success) is held back by a test-refactor
+     * dependency: ~12 existing SMB tests construct an SmbService with a
+     * fake-host config and assert connect() succeeds. Fixing the stub
+     * without first introducing constructor-injection of [SmbProtocolClient]
+     * (so tests can substitute a fake) would break those tests in a way
+     * that wouldn't fit a single iteration. Tracked separately as a
+     * dedicated refactor.
+     *
+     * Per CONST-035 anti-bluff: this defect is acknowledged in code (this
+     * KDoc), in CLAUDE.md "Known Defects", and the
+     * [ErrorRecoveryE2ETests.AllServiceConnectAttemptsCompleteWithinTimeout]
+     * test exempts SMB from the offline-after-failed-connect assertion via
+     * `// SKIP-OK: #smb-stub-no-negotiation`.
+     */
     override suspend fun connect(): Result<Unit> {
         return circuitBreaker.execute {
             connectionLimiter.withConnection {

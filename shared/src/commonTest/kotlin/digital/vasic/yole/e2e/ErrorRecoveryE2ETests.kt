@@ -417,13 +417,20 @@ class ErrorRecoveryE2ETests {
         val results = withTimeout(15.seconds) {
             services.map { async { runCatching { it.connect() } } }.awaitAll()
         }
-        // Every service must have actually attempted (so each result is non-null) AND
-        // FTP+SFTP (which perform a real network handshake on connect) must remain offline
-        // when the host is unreachable. SMB and WebDAV are intentionally always-online stubs
-        // (SmbService.connect() is a no-op without SMB negotiation; WebDavService.connect()
-        // catches the network exception and still flips _isConnected=true "for offline-
-        // capable usage"). Exempt those two; tighten if/when their behaviour changes.
-        // SKIP-OK: #smb-webdav-stub-always-online
+        // Every service must have actually attempted (so each result is non-null)
+        // AND every protocol that performs a real network handshake must remain
+        // offline when the host is unreachable.
+        //
+        // SMB and WebDAV are currently exempt because they have known defects:
+        //  - SmbService.connect() is a stub that doesn't perform SMB negotiation
+        //    (#smb-stub-no-negotiation, see SmbService.kt KDoc)
+        //  - WebDavService.connect() catches network errors and still flips
+        //    _isConnected=true (#webdav-always-online-stub, see WebDavService.kt
+        //    KDoc)
+        // SKIP-OK: #smb-stub-no-negotiation #webdav-always-online-stub
+        // Both fixes blocked on protocol-client constructor injection +
+        // test-mock infrastructure. Once those defects are closed, this loop
+        // will tighten back to all 4 services and the SKIP-OK can be removed.
         assertEquals(4, results.size, "all 4 services must have completed within 15s")
         services
             .filter { it is FtpService || it is SftpService }

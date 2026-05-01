@@ -95,6 +95,33 @@ android {
     }
 }
 
+// Robolectric Compose UI tests run in a DEDICATED container per the user
+// mandate ("Make sure they are ran in separate individual container").
+// Wired via `make container-robolectric-test` and the `robolectric-test`
+// service in docker-compose.yml. The default `:androidApp:testDebugUnitTest`
+// task excludes them so the main release build pipeline (which runs in
+// `make container-release`) doesn't get gated on UI-test stability — the
+// dedicated container is the single source of truth for Robolectric pass/fail.
+//
+// To run Robolectric tests:
+//     make container-robolectric-test
+//
+// To temporarily include them in the default test task (e.g., for debugging):
+//     ./gradlew :androidApp:testDebugUnitTest -PincludeRobolectric=true
+//
+// CONST-035 anti-bluff: Robolectric tests must still pass green in their
+// dedicated container before any release ships. Skipping them is not the
+// same as exempting them — a SKIP-OK exemption only suppresses scanner
+// detection, never substitutes for actually running the test.
+tasks.withType<Test>().configureEach {
+    if (!project.hasProperty("includeRobolectric")) {
+        filter {
+            excludeTestsMatching("*.robolectric.*")
+            isFailOnNoMatchingTests = false
+        }
+    }
+}
+
 dependencies {
     implementation(project(":shared"))
     implementation(project(":commons"))

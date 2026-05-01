@@ -54,11 +54,20 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Check and request storage permissions on startup
+        // Check and request storage permissions on startup. Wrapped in
+        // try/catch because Robolectric's shadow Environment can throw
+        // ArrayIndexOutOfBoundsException from isExternalStorageManager()
+        // (no UID-to-storage-app mapping in test env). Real devices return
+        // a normal boolean. Catching here keeps unit tests boot-able while
+        // preserving the production-runtime behaviour.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Android 11+ (API 30+): Need MANAGE_EXTERNAL_STORAGE for full access
-            if (!Environment.isExternalStorageManager()) {
-                requestManageExternalStoragePermission()
+            try {
+                if (!Environment.isExternalStorageManager()) {
+                    requestManageExternalStoragePermission()
+                }
+            } catch (_: Throwable) {
+                // Robolectric / unsupported test environment — skip the
+                // permission probe. Production never hits this path.
             }
         }
         
@@ -76,10 +85,17 @@ class MainActivity : ComponentActivity() {
     
     override fun onResume() {
         super.onResume()
-        // Check permission every time app resumes and request if not granted
+        // Check permission every time app resumes and request if not granted.
+        // Try/catch protects against Robolectric's shadow Environment which
+        // throws ArrayIndexOutOfBoundsException; production-runtime paths
+        // return a normal boolean.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) {
-                requestManageExternalStoragePermission()
+            try {
+                if (!Environment.isExternalStorageManager()) {
+                    requestManageExternalStoragePermission()
+                }
+            } catch (_: Throwable) {
+                // Robolectric / unsupported test env — skip.
             }
         }
     }

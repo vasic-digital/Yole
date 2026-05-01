@@ -24,11 +24,30 @@ class VersionConsistencyTests {
     companion object {
         const val EXPECTED_VERSION = "1.0.0"
         const val EXPECTED_VERSION_CODE = 7
+
+        /**
+         * Resolves a path relative to the project root regardless of the
+         * Gradle test task's working directory. Walks up from the JVM's
+         * working dir until it finds a parent containing
+         * `gradle/libs.versions.toml` (the canonical project-root marker).
+         * Falls back to the unmodified relative path if no marker is found.
+         */
+        private fun projectFile(relative: String): File {
+            var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
+            while (dir != null) {
+                if (File(dir, "gradle/libs.versions.toml").exists() &&
+                    File(dir, "settings.gradle.kts").exists()) {
+                    return File(dir, relative)
+                }
+                dir = dir.parentFile
+            }
+            return File(relative)
+        }
     }
 
     @Test
     fun testAndroidBuildGradleVersion() {
-        val buildFile = File("androidApp/build.gradle.kts")
+        val buildFile = projectFile("androidApp/build.gradle.kts")
         assertTrue("Build file should exist", buildFile.exists())
         
         val content = buildFile.readText()
@@ -40,7 +59,7 @@ class VersionConsistencyTests {
 
     @Test
     fun testDesktopBuildGradleVersion() {
-        val buildFile = File("desktopApp/build.gradle.kts")
+        val buildFile = projectFile("desktopApp/build.gradle.kts")
         assertTrue("Desktop build file should exist", buildFile.exists())
         
         val content = buildFile.readText()
@@ -50,7 +69,7 @@ class VersionConsistencyTests {
 
     @Test
     fun testAndroidAppVersionStrings() {
-        val appFile = File("androidApp/src/main/java/digital/vasic/yole/android/ui/YoleApp.kt")
+        val appFile = projectFile("androidApp/src/main/java/digital/vasic/yole/android/ui/YoleApp.kt")
         assertTrue("Android app file should exist", appFile.exists())
         
         val content = appFile.readText()
@@ -70,7 +89,7 @@ class VersionConsistencyTests {
 
     @Test
     fun testDesktopAppVersionStrings() {
-        val appFile = File("desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/YoleApp.kt")
+        val appFile = projectFile("desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/YoleApp.kt")
         assertTrue("Desktop app file should exist", appFile.exists())
         
         val content = appFile.readText()
@@ -86,7 +105,7 @@ class VersionConsistencyTests {
 
     @Test
     fun testDesktopDialogsVersionStrings() {
-        val dialogFile = File("desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/Dialogs.kt")
+        val dialogFile = projectFile("desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/Dialogs.kt")
         assertTrue("Desktop dialogs file should exist", dialogFile.exists())
         
         val content = dialogFile.readText()
@@ -102,8 +121,8 @@ class VersionConsistencyTests {
 
     @Test
     fun testWebAppVersionStrings() {
-        val mainFile = File("webApp/src/wasmJsMain/kotlin/digital/vasic/yole/web/Main.kt")
-        val enhancedFile = File("webApp/src/wasmJsMain/kotlin/digital/vasic/yole/web/EnhancedWebApp.kt")
+        val mainFile = projectFile("webApp/src/wasmJsMain/kotlin/digital/vasic/yole/web/Main.kt")
+        val enhancedFile = projectFile("webApp/src/wasmJsMain/kotlin/digital/vasic/yole/web/EnhancedWebApp.kt")
         
         assertTrue("Main web file should exist", mainFile.exists())
         assertTrue("Enhanced web file should exist", enhancedFile.exists())
@@ -126,7 +145,7 @@ class VersionConsistencyTests {
 
     @Test
     fun testDesktopAutomationTestVersionStrings() {
-        val testFile = File("desktopApp/src/test/kotlin/digital/vasic/yole/desktop/FullUIAutomationTest.kt")
+        val testFile = projectFile("desktopApp/src/test/kotlin/digital/vasic/yole/desktop/FullUIAutomationTest.kt")
         assertTrue("Desktop test file should exist", testFile.exists())
         
         val content = testFile.readText()
@@ -150,10 +169,15 @@ class VersionConsistencyTests {
         
         var foundOldVersion = false
         for (dir in codeDirs) {
-            val dirFile = File(dir)
+            val dirFile = projectFile(dir)
             if (dirFile.exists()) {
                 dirFile.walkTopDown()
                     .filter { it.isFile && (it.extension == "kt" || it.extension == "java") }
+                    // Skip test files: they may legitimately contain version
+                    // strings inside assertFalse messages or similar
+                    // string-literal contexts. The audit target is production
+                    // source, not the audit code itself.
+                    .filter { !it.path.contains("/test/") && !it.path.contains("/androidTest/") }
                     .forEach { file ->
                         val content = file.readText()
                         if (content.contains("2.19.3") || content.contains("2.19.35")) {
@@ -163,7 +187,7 @@ class VersionConsistencyTests {
                     }
             }
         }
-        
+
         assertFalse("Should not find any old version references in code", foundOldVersion)
     }
 }

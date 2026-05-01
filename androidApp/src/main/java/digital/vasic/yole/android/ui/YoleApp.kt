@@ -2207,10 +2207,18 @@ fun FileBrowserScreen(
         }
     }
 
-    // Check if we have broad file access (Android 11+)
+    // Check if we have broad file access (Android 11+).
+    // Try/catch protects Robolectric where the shadow Environment throws
+    // ArrayIndexOutOfBoundsException; production-runtime returns a normal
+    // boolean. In the test path we conservatively default to false so the
+    // permission prompt logic is exercised.
     val hasFileAccess = remember {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            Environment.isExternalStorageManager()
+            try {
+                Environment.isExternalStorageManager()
+            } catch (_: Throwable) {
+                false
+            }
         } else {
             true // Pre-Android 11: legacy permissions suffice
         }

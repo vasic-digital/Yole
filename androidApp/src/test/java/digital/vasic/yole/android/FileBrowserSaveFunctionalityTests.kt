@@ -205,9 +205,28 @@ Line 5 after empty line"""
         assertTrue("Should be readable in test environment", canRead)
     }
 
+    /**
+     * Resolves a path relative to the project root regardless of the
+     * Gradle test task's working directory. Walks up from the JVM's
+     * working dir until it finds a parent containing
+     * `gradle/libs.versions.toml` AND `settings.gradle.kts`.
+     */
+    private fun projectFile(relative: String): File {
+        var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
+        while (dir != null) {
+            if (File(dir, "gradle/libs.versions.toml").exists() &&
+                File(dir, "settings.gradle.kts").exists()) {
+                return File(dir, relative)
+            }
+            dir = dir.parentFile
+        }
+        return File(relative)
+    }
+
     @Test
     fun testVersionCodeIsIncremented() {
-        val buildFile = File("androidApp/build.gradle.kts")
+        val buildFile = projectFile("androidApp/build.gradle.kts")
+        assertTrue("Build file should exist", buildFile.exists())
         val content = buildFile.readText()
         
         // Extract version code
@@ -226,7 +245,7 @@ Line 5 after empty line"""
     fun testSaveFileFunctionSignature() {
         // Verify the saveFile function accepts all required parameters
         val method = try {
-            Class.forName("digital.vasic.yole.android.YoleAppKt")
+            Class.forName("digital.vasic.yole.android.ui.YoleAppKt")
                 .getMethod("saveFile", Context::class.java, String::class.java, String::class.java, Uri::class.java)
         } catch (e: Exception) {
             null
@@ -239,7 +258,7 @@ Line 5 after empty line"""
     fun testCreateFileWithSAFFunctionSignature() {
         // Verify the createFileWithSAF function exists
         val method = try {
-            Class.forName("digital.vasic.yole.android.YoleAppKt")
+            Class.forName("digital.vasic.yole.android.ui.YoleAppKt")
                 .getMethod("createFileWithSAF", Context::class.java, Uri::class.java, String::class.java, String::class.java)
         } catch (e: Exception) {
             null
