@@ -58,6 +58,7 @@ run_kt_fixture "BluffK004Assume.kt"           "BLUFF-K-004" "${SCRIPT_DIR}/fixtu
 run_kt_fixture "BluffK006Empty.kt"            "BLUFF-K-006" "${SCRIPT_DIR}/fixtures/BluffK006Empty.kt"            || failed=1
 run_kt_fixture "BluffK008Suppress.kt"         "BLUFF-K-008" "${SCRIPT_DIR}/fixtures/BluffK008Suppress.kt"         || failed=1
 run_kt_fixture "Clean.kt"                     ""             "${SCRIPT_DIR}/fixtures/Clean.kt"                     || failed=1
+run_kt_fixture "CleanWithStringLiterals.kt"   ""             "${SCRIPT_DIR}/fixtures/CleanWithStringLiterals.kt"   || failed=1
 
 if (( failed )); then
   echo "Scanner self-test FAILED"
