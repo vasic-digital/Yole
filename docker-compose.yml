@@ -65,7 +65,7 @@ services:
     command:
       - bash
       - -c
-      - "./gradlew :androidApp:testDebugUnitTest --tests '*.robolectric.*' --no-daemon"
+      - "./gradlew :androidApp:testDebugUnitTest --tests '*.robolectric.*' -PincludeRobolectric=true --no-daemon"
     mem_limit: 6g
     memswap_limit: 9g
     cpus: 2

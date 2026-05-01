@@ -24,22 +24,28 @@ class FormatDetectionRobolectricTest {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
-    @Test
-    fun markdownContentRendersInPreview() {
+    private fun openNewDocumentEditor() {
         composeTestRule.onAllNodesWithText("Files").onFirst().performClick()
         composeTestRule.onNodeWithContentDescription("Add").performClick()
-        composeTestRule.onAllNodesWithText("Start typing...").onFirst().performTextInput("# Markdown Heading\n\n**bold** and *italic*")
-        composeTestRule.onNodeWithContentDescription("Preview").performClick()
-        // Preview renders via HTML/WebView, not Compose nodes — verify mode switch succeeds
+        composeTestRule.onAllNodesWithText("Create").onFirst().performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    @Test
+    fun markdownContentRendersInPreview() {
+        openNewDocumentEditor()
+        composeTestRule.onNodeWithContentDescription("Code editor for untitled.md")
+            .performTextInput("# Markdown Heading\n\n**bold** and *italic*")
+        composeTestRule.onNodeWithContentDescription("Preview document").performClick()
         composeTestRule.waitForIdle()
     }
 
     @Test
     fun plainTextContentRendersInPreview() {
-        composeTestRule.onAllNodesWithText("Files").onFirst().performClick()
-        composeTestRule.onNodeWithContentDescription("Add").performClick()
-        composeTestRule.onAllNodesWithText("Start typing...").onFirst().performTextInput("Just plain text content here.")
-        composeTestRule.onNodeWithContentDescription("Preview").performClick()
+        openNewDocumentEditor()
+        composeTestRule.onNodeWithContentDescription("Code editor for untitled.md")
+            .performTextInput("Just plain text content here.")
+        composeTestRule.onNodeWithContentDescription("Preview document").performClick()
         composeTestRule.waitForIdle()
     }
 

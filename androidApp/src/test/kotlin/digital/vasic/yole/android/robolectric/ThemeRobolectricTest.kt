@@ -35,8 +35,8 @@ class ThemeRobolectricTest {
         composeTestRule.onAllNodesWithText("More").onFirst().performClick()
         composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
         composeTestRule.onAllNodesWithText("Light theme").onFirst().assertExists()
-        composeTestRule.onAllNodesWithText("Dark theme").onFirst().assertExists()
-        composeTestRule.onAllNodesWithText("System theme (follows system setting)").onFirst().assertExists()
+        composeTestRule.onAllNodesWithText("Dark theme (IDE)").onFirst().assertExists()
+        composeTestRule.onAllNodesWithText("System theme").onFirst().assertExists()
     }
 
     @Test
@@ -52,7 +52,7 @@ class ThemeRobolectricTest {
     fun darkThemeCanBeSelected() {
         composeTestRule.onAllNodesWithText("More").onFirst().performClick()
         composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
-        composeTestRule.onAllNodesWithText("Dark theme").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("Dark theme (IDE)").onFirst().performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onAllNodesWithText("Settings").onFirst().assertExists()
     }
@@ -61,7 +61,7 @@ class ThemeRobolectricTest {
     fun systemThemeCanBeSelected() {
         composeTestRule.onAllNodesWithText("More").onFirst().performClick()
         composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
-        composeTestRule.onAllNodesWithText("System theme (follows system setting)").onFirst().performClick()
+        composeTestRule.onAllNodesWithText("System theme").onFirst().performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onAllNodesWithText("Settings").onFirst().assertExists()
     }

@@ -24,54 +24,59 @@ class FileEditingRobolectricTest {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
-    @Test
-    fun createNewFile() {
+    private fun openNewDocumentEditor() {
         composeTestRule.onAllNodesWithText("Files").onFirst().performClick()
         composeTestRule.onNodeWithContentDescription("Add").performClick()
-        composeTestRule.onAllNodesWithText("Editing: untitled.txt").onFirst().assertExists()
+        composeTestRule.onAllNodesWithText("Create").onFirst().performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    @Test
+    fun createNewFile() {
+        openNewDocumentEditor()
+        composeTestRule.onAllNodesWithText("untitled.md").onFirst().assertExists()
     }
 
     @Test
     fun editFileContent() {
-        composeTestRule.onAllNodesWithText("Files").onFirst().performClick()
-        composeTestRule.onNodeWithContentDescription("Add").performClick()
-        composeTestRule.onAllNodesWithText("Start typing...").onFirst().performTextInput("# Hello World\n\nThis is a test.")
+        openNewDocumentEditor()
+        composeTestRule.onNodeWithContentDescription("Code editor for untitled.md")
+            .performTextInput("# Hello World\n\nThis is a test.")
         composeTestRule.waitForIdle()
     }
 
     @Test
     fun switchToPreviewMode() {
-        composeTestRule.onAllNodesWithText("Files").onFirst().performClick()
-        composeTestRule.onNodeWithContentDescription("Add").performClick()
-        composeTestRule.onAllNodesWithText("Start typing...").onFirst().performTextInput("# Test Document")
-        composeTestRule.onNodeWithContentDescription("Preview").performClick()
-        // Preview renders via HTML/WebView, not Compose nodes — verify mode switch succeeds
+        openNewDocumentEditor()
+        composeTestRule.onNodeWithContentDescription("Code editor for untitled.md")
+            .performTextInput("# Test Document")
+        composeTestRule.onNodeWithContentDescription("Preview document").performClick()
         composeTestRule.waitForIdle()
     }
 
     @Test
     fun switchBackToEditMode() {
-        composeTestRule.onAllNodesWithText("Files").onFirst().performClick()
-        composeTestRule.onNodeWithContentDescription("Add").performClick()
-        composeTestRule.onAllNodesWithText("Start typing...").onFirst().performTextInput("# Test")
-        composeTestRule.onNodeWithContentDescription("Preview").performClick()
+        openNewDocumentEditor()
+        composeTestRule.onNodeWithContentDescription("Code editor for untitled.md")
+            .performTextInput("# Test")
+        composeTestRule.onNodeWithContentDescription("Preview document").performClick()
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithContentDescription("Edit").performClick()
-        composeTestRule.onAllNodesWithText("Editing: untitled.txt").onFirst().assertExists()
+        composeTestRule.onAllNodesWithText("untitled.md").onFirst().assertExists()
     }
 
     @Test
     fun saveFile() {
-        composeTestRule.onAllNodesWithText("Files").onFirst().performClick()
-        composeTestRule.onNodeWithContentDescription("Add").performClick()
-        composeTestRule.onAllNodesWithText("Start typing...").onFirst().performTextInput("test content")
-        composeTestRule.onNodeWithContentDescription("Save").performClick()
+        openNewDocumentEditor()
+        composeTestRule.onNodeWithContentDescription("Code editor for untitled.md")
+            .performTextInput("test content")
+        composeTestRule.onNodeWithContentDescription("Save file").performClick()
         composeTestRule.waitForIdle()
     }
 
     @Test
     fun navigateBackFromEditor() {
-        composeTestRule.onAllNodesWithText("Files").onFirst().performClick()
-        composeTestRule.onNodeWithContentDescription("Add").performClick()
+        openNewDocumentEditor()
         composeTestRule.onNodeWithContentDescription("Back").performClick()
         composeTestRule.onAllNodesWithText("File Browser").onFirst().assertExists()
     }

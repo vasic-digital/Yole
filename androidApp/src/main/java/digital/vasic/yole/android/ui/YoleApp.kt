@@ -1651,7 +1651,7 @@ fun IdeBottomNavBar(
             )
             NavigationBarItem(
                 icon = { Icon(Icons.Filled.Edit, contentDescription = "QuickNote") },
-                label = { Text("Edit", fontSize = 10.sp) },
+                label = { Text("QuickNote", fontSize = 10.sp) },
                 selected = currentScreen == Screen.QUICKNOTE,
                 onClick = { onScreenSelected(Screen.QUICKNOTE) },
                 colors = NavigationBarItemDefaults.colors(
