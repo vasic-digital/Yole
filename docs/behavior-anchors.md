@@ -68,11 +68,20 @@ method is available.
 | CAP-037 | app | Android: file save with direct file-system access succeeds | androidApp/src/test/java/digital/vasic/yole/android/FileBrowserSaveFunctionalityTests.kt::testSaveFileWithDirectAccess | save-then-read round-trip on a directly-accessible path returns identical bytes | active |
 | CAP-038 | app | Desktop: parser detects Markdown by file extension | desktopApp/src/test/kotlin/digital/vasic/yole/desktop/DesktopAppParserTest.kt::should detect markdown format by extension | DesktopApp wires FormatRegistry.detectByExtension and returns ID_MARKDOWN for `.md` | active |
 | CAP-039 | app | Desktop: file save round-trip via file manager | desktopApp/src/test/kotlin/digital/vasic/yole/desktop/DesktopFileManagerTest.kt::should save file with content successfully | DesktopFileManager.save() then re-read returns the same content | active |
+| CAP-040 | app | iOS: YoleIOSSettings is instantiable from iosTest source set | shared/src/iosTest/kotlin/digital/vasic/yole/ios/IOSPlatformTests.kt::testSettingsClassExists | YoleIOSSettings constructor returns a non-null instance — proves iOS platform module links | active |
+| CAP-041 | app | Web (Wasm): detect Markdown format from filename | webApp/src/wasmJsTest/kotlin/digital/vasic/yole/web/FormatDetectionTest.kt::should detect markdown format correctly | WebApp's format detector returns ID_MARKDOWN for `.md` files in browser environment | active |
+| CAP-042 | app | Web (Wasm): download file with correct content and filename | webApp/src/wasmJsTest/kotlin/digital/vasic/yole/web/FileOperationsTest.kt::should download file with correct content and filename | Download API produces a Blob with the correct bytes and filename | active |
+| CAP-043 | app | Web (Wasm): parse Markdown for web display | webApp/src/wasmJsTest/kotlin/digital/vasic/yole/web/WebAppParserTest.kt::should parse markdown for web display | WebApp parses Markdown content via shared parser and produces HTML | active |
+| CAP-044 | app | Web (Wasm): integrate file download with document content | webApp/src/wasmJsTest/kotlin/digital/vasic/yole/web/WebAppIntegrationTest.kt::should integrate file download with document content | E2E flow: load document → render → download trigger produces correct artifact | active |
+| CAP-045 | app | Web (Wasm): render main app shell correctly | webApp/src/wasmJsTest/kotlin/digital/vasic/yole/web/WebAppUITest.kt::should render main web app correctly | WebApp UI renders root composition without exception in Wasm | active |
+| CAP-046 | app | Wasm: FormatRegistry exposes formats list on Wasm target | shared/src/wasmJsTest/kotlin/digital/vasic/yole/format/WasmPlatformIntegrationTests.kt::FormatRegistry is available on Wasm | shared FormatRegistry compiles + runs on Wasm (no JVM-only deps leaked) | active |
+| CAP-047 | app | Wasm: detect Markdown by `.md` extension | shared/src/wasmJsTest/kotlin/digital/vasic/yole/format/WasmFormatDetectionTests.kt::detect Markdown by extension md | shared format-detection logic returns ID_MARKDOWN for `.md` on Wasm | active |
+| CAP-048 | app | Wasm: encrypted data round-trips through Web SecureStorage | shared/src/wasmJsTest/kotlin/digital/vasic/yole/network/platform/WebSecureStorageTest.kt::should store encrypted data in localStorage | Web SecureStorage write+read returns plaintext after encryption round-trip | active |
+| CAP-049 | app | Wasm: FtpProtocolClient stub instantiates without browser-incompatible deps | shared/src/wasmJsTest/kotlin/digital/vasic/yole/network/platform/WasmProtocolStubTests.kt::FtpProtocolClient can be instantiated on Wasm | FTP stub for Wasm (browser cannot do raw TCP) constructs cleanly — exposes documented "unsupported on Web" error path rather than crashing | active |
 
-(Format + network-protocol + document/monitoring/UI + app-layer rows
-complete: 39 capability rows total covering 16 of 17 formats, all 8
-protocols, document model, monitoring, UI accessibility/theme/animation,
-and Android+Desktop app-layer wiring. Remaining iterations of sub-project
-3: iOS / Web app-layer, KMP module cross-checks via the consuming code
-paths in Yole, and the long tail of public-API capabilities surfaced
-during sub-project 4 audit.)
+(Manifest now spans all 4 platform targets — Android, Desktop, iOS,
+Web/Wasm — plus document model, monitoring, UI, format layer (16/17
+formats), network-protocol layer (all 8 services), and cross-format
+infrastructure. Total: 49 capability rows. Remaining iterations of
+sub-project 3 add the long tail of public-API capabilities
+surfaced during sub-project 4's deeper audit.)
