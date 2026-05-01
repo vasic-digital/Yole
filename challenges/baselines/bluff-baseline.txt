@@ -17,3 +17,4 @@ shared/src/iosTest/kotlin/digital/vasic/yole/ios/IOSPlatformTests.kt:BLUFF-K-002
 # === SECTION 2: PER-FILE MUTATION KILL RATES ===
 # (deferred to sub-project 4 — Pitest full-tree pass too slow for sub-project 1)
 # === SECTION 3: ANCHOR-MANIFEST GAPS ===
+CAP-002:MISSING_ANCHOR
