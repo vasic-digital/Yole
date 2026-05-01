@@ -43,12 +43,20 @@ run_kt_fixture() {
 }
 
 failed=0
-run_go_fixture "bluff_g_001_skip.go"    "BLUFF-G-001" "${SCRIPT_DIR}/fixtures/bluff_g_001_skip.go"    || failed=1
-run_go_fixture "bluff_g_007_trivial.go" "BLUFF-G-007" "${SCRIPT_DIR}/fixtures/bluff_g_007_trivial.go" || failed=1
-run_go_fixture "clean_test.go"          ""            "${SCRIPT_DIR}/fixtures/clean_test.go"          || failed=1
-run_kt_fixture "BluffK002Trivial.kt"    "BLUFF-K-002" "${SCRIPT_DIR}/fixtures/BluffK002Trivial.kt"    || failed=1
-run_kt_fixture "BluffK003Ignore.kt"     "BLUFF-K-003" "${SCRIPT_DIR}/fixtures/BluffK003Ignore.kt"     || failed=1
-run_kt_fixture "Clean.kt"               ""            "${SCRIPT_DIR}/fixtures/Clean.kt"               || failed=1
+# Go fixtures — one per BLUFF-G-NNN we currently detect.
+run_go_fixture "bluff_g_001_skip.go"          "BLUFF-G-001" "${SCRIPT_DIR}/fixtures/bluff_g_001_skip.go"          || failed=1
+run_go_fixture "bluff_g_003_log.go"           "BLUFF-G-003" "${SCRIPT_DIR}/fixtures/bluff_g_003_log.go"           || failed=1
+run_go_fixture "bluff_g_005_empty_subtest.go" "BLUFF-G-005" "${SCRIPT_DIR}/fixtures/bluff_g_005_empty_subtest.go" || failed=1
+run_go_fixture "bluff_g_006_empty_body.go"    "BLUFF-G-006" "${SCRIPT_DIR}/fixtures/bluff_g_006_empty_body.go"    || failed=1
+run_go_fixture "bluff_g_007_trivial.go"       "BLUFF-G-007" "${SCRIPT_DIR}/fixtures/bluff_g_007_trivial.go"       || failed=1
+run_go_fixture "clean_test.go"                ""             "${SCRIPT_DIR}/fixtures/clean_test.go"                || failed=1
+# Kotlin fixtures — one per BLUFF-K-NNN we currently detect.
+run_kt_fixture "BluffK002Trivial.kt"          "BLUFF-K-002" "${SCRIPT_DIR}/fixtures/BluffK002Trivial.kt"          || failed=1
+run_kt_fixture "BluffK003Ignore.kt"           "BLUFF-K-003" "${SCRIPT_DIR}/fixtures/BluffK003Ignore.kt"           || failed=1
+run_kt_fixture "BluffK004Assume.kt"           "BLUFF-K-004" "${SCRIPT_DIR}/fixtures/BluffK004Assume.kt"           || failed=1
+run_kt_fixture "BluffK006Empty.kt"            "BLUFF-K-006" "${SCRIPT_DIR}/fixtures/BluffK006Empty.kt"            || failed=1
+run_kt_fixture "BluffK008Suppress.kt"         "BLUFF-K-008" "${SCRIPT_DIR}/fixtures/BluffK008Suppress.kt"         || failed=1
+run_kt_fixture "Clean.kt"                     ""             "${SCRIPT_DIR}/fixtures/Clean.kt"                     || failed=1
 
 if (( failed )); then
   echo "Scanner self-test FAILED"
