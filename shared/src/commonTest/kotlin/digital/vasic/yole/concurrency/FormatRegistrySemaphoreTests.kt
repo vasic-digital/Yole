@@ -160,9 +160,12 @@ class FormatRegistrySemaphoreTests {
 
     @Test
     fun `Boundary - 1 is valid, 0 is invalid`() {
-        // 1 should succeed
+        // 1 should succeed AND the registry must remain operational afterwards.
         FormatRegistry.configureParseConcurrency(1)
-        assertTrue(true)
+        assertTrue(
+            FormatRegistry.formats.isNotEmpty(),
+            "registry must remain operational after configureParseConcurrency(1)"
+        )
 
         // 0 should fail
         assertFailsWith<IllegalArgumentException> {
@@ -175,9 +178,12 @@ class FormatRegistrySemaphoreTests {
 
     @Test
     fun `Boundary - 16 is valid, 17 is invalid`() {
-        // 16 should succeed
+        // 16 should succeed AND the registry must remain operational afterwards.
         FormatRegistry.configureParseConcurrency(16)
-        assertTrue(true)
+        assertTrue(
+            FormatRegistry.formats.isNotEmpty(),
+            "registry must remain operational after configureParseConcurrency(16)"
+        )
 
         // 17 should fail
         assertFailsWith<IllegalArgumentException> {

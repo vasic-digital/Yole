@@ -352,7 +352,8 @@ class TimeoutRecoveryTests {
 
     @Test
     fun RapidOpenCloseCyclingNoMemoryLeak() = runBlocking<Unit> {
-        // Create and discard 100 circuit breakers — verify no hang
+        // Create and discard 100 circuit breakers — verify no hang AND that a
+        // fresh breaker after the storm still functions (proves no global state leak).
         withTimeout(10.seconds) {
             (1..100).map { i ->
                 async(Dispatchers.Default) {
@@ -363,7 +364,10 @@ class TimeoutRecoveryTests {
                 }
             }.awaitAll()
         }
-        assertTrue(true)
+        // Post-storm: a brand-new circuit breaker must still succeed cleanly.
+        val verifier = CircuitBreaker(failureThreshold = 3, name = "post-storm-verifier")
+        val verifyResult = verifier.execute { "ok" }
+        assertEquals("ok", verifyResult, "circuit breaker must remain functional after rapid cycling")
     }
 
     @Test

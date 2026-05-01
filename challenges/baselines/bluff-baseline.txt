@@ -7,12 +7,10 @@
 #   at sub-project 1 close.
 # Section 3: anchor-manifest gaps, format <capability-id>:MISSING_ANCHOR.
 # === SECTION 1: STATIC SCANNER HITS ===
-shared/src/commonTest/kotlin/digital/vasic/yole/concurrency/FormatRegistrySemaphoreTests.kt:BLUFF-K-002
 shared/src/commonTest/kotlin/digital/vasic/yole/e2e/ErrorRecoveryE2ETests.kt:BLUFF-K-002
 shared/src/commonTest/kotlin/digital/vasic/yole/format/integration/CrossFormatIntegrationTest.kt:BLUFF-K-002
 shared/src/commonTest/kotlin/digital/vasic/yole/network/NetworkErrorHandlingTest.kt:BLUFF-K-002
 shared/src/commonTest/kotlin/digital/vasic/yole/network/stress/ParserOverloadStressTests.kt:BLUFF-K-002
-shared/src/commonTest/kotlin/digital/vasic/yole/network/stress/TimeoutRecoveryTests.kt:BLUFF-K-002
 shared/src/iosTest/kotlin/digital/vasic/yole/ios/IOSPlatformTests.kt:BLUFF-K-002
 # === SECTION 2: PER-FILE MUTATION KILL RATES ===
 # (deferred to sub-project 4 — Pitest full-tree pass too slow for sub-project 1)
