@@ -2,12 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Precedence:** `CONSTITUTION.md` is the authoritative rule set. When a rule here conflicts with the Constitution, the Constitution wins.
+
 ## MANDATORY Rules
 
 1. **No CI/CD Pipelines** — No `.github/workflows/`, `.gitlab-ci.yml`, Jenkinsfile, or any CI config. All builds/tests run manually or via Makefile. Permanent and non-negotiable.
 2. **Never Remove or Disable Tests** — Fix root causes (source or test code), never skip/disable/delete tests. All fixes must be covered by tests, verified by challenges, and documented.
 3. **Release Builds in Containers** — Release builds and full test suites execute inside Docker/Podman containers. Day-to-day dev uses `:shared:desktopTest` on the host JVM.
 4. **Release Naming Convention** — Artifacts in `releases/` follow: `Yole-{Platform}-{Version}-{Variant}-{VersionCodeDotted}` (e.g., `Yole-Android-1.0.0-Release-0.0.0.0.1.apk`). Both debug and release variants required per platform. Platforms: `Android`, `Desktop-linux-x64`, `Desktop-windows-x64`, `Desktop-macos-arm64`, `Web-wasm`. Version code to dotted: groups of 2 digits from right, zero-padded to 5 segments.
+5. **Conventional Commits** for every commit (CONST mandatory standard #4).
+6. **SSH-only for git** (`git@…` remotes); HTTPS prohibited (CONST mandatory standard #5).
+
+## Definition of Done (CONSTITUTION.md)
+
+A change is done only when **all** of the following hold:
+
+1. The code change is committed.
+2. All project-level tests pass on a clean clone.
+3. All challenges in `challenges/scripts/` pass on the running host.
+4. Governance docs (`CONSTITUTION.md`, `AGENTS.md`, `CLAUDE.md`) remain coherent with the change.
 
 ## Project Overview
 
@@ -121,6 +134,7 @@ network/                 # Network storage system
 └── protocols/           # Protocol implementations (8 services)
 ui/                      # Shared UI (Compose Multiplatform)
 util/                    # Facade bridges (LazyLoading.kt, RateLimiting.kt)
+monitoring/              # MetricsReporter, MetricsSnapshot, PerformanceMetrics
 ```
 
 ### Text Parsing Pipeline
