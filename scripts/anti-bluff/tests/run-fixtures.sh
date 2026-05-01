@@ -46,6 +46,7 @@ failed=0
 # Go fixtures — one per BLUFF-G-NNN we currently detect.
 run_go_fixture "bluff_g_001_skip.go"          "BLUFF-G-001" "${SCRIPT_DIR}/fixtures/bluff_g_001_skip.go"          || failed=1
 run_go_fixture "bluff_g_003_log.go"           "BLUFF-G-003" "${SCRIPT_DIR}/fixtures/bluff_g_003_log.go"           || failed=1
+run_go_fixture "bluff_g_003_log_with_keyword_strings.go" "BLUFF-G-003" "${SCRIPT_DIR}/fixtures/bluff_g_003_log_with_keyword_strings.go" || failed=1
 run_go_fixture "bluff_g_005_empty_subtest.go" "BLUFF-G-005" "${SCRIPT_DIR}/fixtures/bluff_g_005_empty_subtest.go" || failed=1
 run_go_fixture "bluff_g_006_empty_body.go"    "BLUFF-G-006" "${SCRIPT_DIR}/fixtures/bluff_g_006_empty_body.go"    || failed=1
 run_go_fixture "bluff_g_007_trivial.go"       "BLUFF-G-007" "${SCRIPT_DIR}/fixtures/bluff_g_007_trivial.go"       || failed=1
