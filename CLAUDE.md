@@ -81,7 +81,7 @@ make qa-all                               # Full QA pipeline
 
 - **AGP version mismatch**: `androidApp` tests may fail due to AGP version conflicts. Use `:shared:desktopTest` for routine testing.
 - **Container OOM**: Exit code 137 = OOM kill. Increase container memory limits (`mem_limit` in `docker-compose.yml`).
-- **Go flaky tests**: `TestStress_ConcurrentJWTRefresh` (Auth) and `TestGenericPool_HealthyConnectionsSurvive` (Database) are pre-existing.
+- ~~**Go flaky tests**: `TestStress_ConcurrentJWTRefresh` (Auth) and `TestGenericPool_HealthyConnectionsSurvive` (Database) are pre-existing.~~ — **resolved upstream** (Auth: commit `3d1c01f`, 2026-04-11; Database: commit `545e320`). Both made deterministic.
 
 ## Architecture
 
