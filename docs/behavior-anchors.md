@@ -56,8 +56,23 @@ method is available.
 | CAP-025 | app | Connect to SFTP server | shared/src/commonTest/kotlin/digital/vasic/yole/network/protocols/sftp/SftpServiceTest.kt::testConnectSuccess | SftpService.connect() returns success and toggles isOnline | active |
 | CAP-026 | app | Connect to SMB share | shared/src/commonTest/kotlin/digital/vasic/yole/network/protocols/smb/SmbServiceTest.kt::testConnectSuccess | SmbService.connect() returns success and toggles isOnline | active |
 | CAP-027 | app | Connect to WebDAV server | shared/src/commonTest/kotlin/digital/vasic/yole/network/protocols/webdav/WebDavMockHttpTest.kt::connect succeeds with 200 OPTIONS response | WebDavService.connect() against mock HTTP returns success after 200 OPTIONS | active |
+| CAP-028 | app | Document model: construct Document with content + format | shared/src/commonTest/kotlin/digital/vasic/yole/model/DocumentTest.kt::testDocumentCreation | Document constructor produces a usable document with content and format ID set | active |
+| CAP-029 | app | Document model: ID constants for all 17 formats are exposed | shared/src/commonTest/kotlin/digital/vasic/yole/model/DocumentFormatTest.kt::testAllFormatConstants | All 17 format ID constants are reachable from Document.kt | active |
+| CAP-030 | app | Monitoring: MetricsReporter starts inactive | shared/src/commonTest/kotlin/digital/vasic/yole/monitoring/MetricsReporterUnitTest.kt::reporterIsNotActiveInitially | New MetricsReporter has isActive == false until explicitly started | active |
+| CAP-031 | app | Monitoring: PerformanceMetrics records parse latency and increments counter | shared/src/commonTest/kotlin/digital/vasic/yole/monitoring/PerformanceMetricsTests.kt::recordParseIncrementsCountAndTotal | recordParse(format, durationMs) increments per-format count and accumulates total | active |
+| CAP-032 | app | Monitoring: every format parses sample content within 500ms budget | shared/src/commonTest/kotlin/digital/vasic/yole/monitoring/MetricsCollectionTest.kt::allFormatsParseSampleContentUnder500ms | All 17 format parsers complete a sample doc parse in under 500ms (perf budget enforcement) | active |
+| CAP-033 | app | UI: light theme TextPrimary on SurfacePrimary meets WCAG AA contrast | shared/src/commonTest/kotlin/digital/vasic/yole/ui/ThemeAccessibilityTests.kt::light theme TextPrimary on SurfacePrimary meets WCAG AA | computed contrast ratio between TextPrimary and SurfacePrimary in light theme is ≥ 4.5 | active |
+| CAP-034 | app | UI: touch targets meet WCAG 48dp minimum | shared/src/commonTest/kotlin/digital/vasic/yole/ui/AccessibilityTest.kt::touch target sizes meet WCAG guidelines | every defined touch target is ≥ 48.dp on at least one axis | active |
+| CAP-035 | app | UI: animation timing constants are correctly mapped | shared/src/commonTest/kotlin/digital/vasic/yole/ui/AnimationsTests.kt::timing VERY_QUICK is 100ms | Animations.timing.VERY_QUICK == 100.milliseconds (other constants verified by sibling tests) | active |
+| CAP-036 | app | Android: build.gradle version code matches release manifest | androidApp/src/test/java/digital/vasic/yole/android/VersionConsistencyTests.kt::testAndroidBuildGradleVersion | versionCode parsed from build.gradle.kts matches the release manifest entry | active |
+| CAP-037 | app | Android: file save with direct file-system access succeeds | androidApp/src/test/java/digital/vasic/yole/android/FileBrowserSaveFunctionalityTests.kt::testSaveFileWithDirectAccess | save-then-read round-trip on a directly-accessible path returns identical bytes | active |
+| CAP-038 | app | Desktop: parser detects Markdown by file extension | desktopApp/src/test/kotlin/digital/vasic/yole/desktop/DesktopAppParserTest.kt::should detect markdown format by extension | DesktopApp wires FormatRegistry.detectByExtension and returns ID_MARKDOWN for `.md` | active |
+| CAP-039 | app | Desktop: file save round-trip via file manager | desktopApp/src/test/kotlin/digital/vasic/yole/desktop/DesktopFileManagerTest.kt::should save file with content successfully | DesktopFileManager.save() then re-read returns the same content | active |
 
-(Format layer + network-protocol layer complete. Subsequent iterations
-of sub-project 3 add: KMP module anchors (handled in their own repos
-since modules consume themselves), app-screen anchors, document model,
-monitoring, and submodule cross-recheck.)
+(Format + network-protocol + document/monitoring/UI + app-layer rows
+complete: 39 capability rows total covering 16 of 17 formats, all 8
+protocols, document model, monitoring, UI accessibility/theme/animation,
+and Android+Desktop app-layer wiring. Remaining iterations of sub-project
+3: iOS / Web app-layer, KMP module cross-checks via the consuming code
+paths in Yole, and the long tail of public-API capabilities surfaced
+during sub-project 4 audit.)
