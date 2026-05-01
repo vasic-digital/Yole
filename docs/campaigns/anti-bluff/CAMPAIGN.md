@@ -259,17 +259,66 @@ BLUFF-K-008 intentionally inspects original line (it detects a
 BLUFF-NNN identifier inside @Suppress's string argument). Regression
 fixture `CleanWithStringLiterals.kt` locks in the fix.
 
-## Cumulative progress as of iter 14
+### Iter 15 (2026-05-01) — comprehensive CAMPAIGN.md update
+This file rewritten to reflect iters 6–14 progress; cumulative
+metrics table added. Commit `082d2d0b`.
 
-| Metric | Sub-project 1 close | Iter 14 |
+### Iter 16 (2026-05-01) — sub-project 4: clear stale Go flaky-tests Known Issue
+Both flaky tests in CLAUDE.md ("TestStress_ConcurrentJWTRefresh",
+"TestGenericPool_HealthyConnectionsSurvive") had been deterministically
+fixed upstream (Auth `3d1c01f`, Database `545e320`). Strike-through
+retained as audit trail. Commit `24a5ac37`.
+
+### Iter 17 (2026-05-01) — sub-project 4: clear AGP + Container OOM Known Issues
+AGP version mismatch was fixed in `af49959e` (2026-03-17). Container
+OOM was real: docker-compose.yml `mem_limit: 4g` couldn't fit Gradle
+JVM (-Xmx4g) + Kotlin daemon (-Xmx4g) concurrently. Bumped to 8g
+(memswap 12g). All 3 original CLAUDE.md "Known Issues" now cleared.
+Commit `911287b3`.
+
+### Iter 18 (2026-05-01) — sub-project 6 prep: bootstrap target + TODO/FIXME audit
+Audit found ZERO actual `// TODO`/`// FIXME` comments in source.
+Added `make bootstrap` target for fresh-clone setup. *(Caveat: the
+target had a real bluff caught in iter 21 — see below.)* Commit
+`2fd266e9`.
+
+### Iter 19 (2026-05-01) — sub-project 3: iOS + Web/Wasm anchors
+Added 10 capability rows covering all 4 platform targets including
+the previously-unanchored iOS and Web/Wasm. Yole manifest 39 → 49
+rows. Cross-repo total 113 → 123. Commit `80ded562`.
+
+### Iter 20 (2026-05-01) — milestone summary doc
+Added `docs/campaigns/anti-bluff/MILESTONE-2026-05-01.md` —
+executive-summary view of the campaign suitable for handoff/resume.
+Complements this iter-by-iter log. Commit `55390a9c`.
+
+### Iter 21 (2026-05-01) — self-correction: bootstrap was bluff
+Background task notification revealed iter-18's `make bootstrap` was
+**actually failing with exit 128** on
+HelixQA/tools/opensource/unstructured (a deeply nested transitive
+submodule with an unresolvable SHA). The original commit's smoke-test
+piped through `tail -10` which masked the failure exit. Real-run
+captured this session as evidence per Definition of Done. Fix:
+two-tier submodule init (top-level non-recursive first, then
+recursive with non-fatal failure handling). All 4 anti-bluff
+pre-commit hooks now reliably install on fresh clone. **The
+campaign caught its own author bluffing — exactly what CONST-035
+exists for.** Commit `276c0731`.
+
+## Cumulative progress as of iter 21
+
+| Metric | Sub-project 1 close | Iter 21 |
 |--------|---------------------|---------|
-| Anchor rows across all 4 repos | 0 | 113 |
-| Pre-existing bluff hits in baselines | 24 | 0 |
-| Scanner self-test fixtures | 6 | 13 |
-| Detected BLUFF-{G,K}-NNN patterns with self-test fixtures | 4 of 8 | 8 of 8 |
-| Repos with `qa-all` self-verifying scanner | 0 | 4 |
-| Scanner precision fixes (false-positive/negative) | 0 | 2 (Go + Kotlin) |
-| Commits across iters 6–14 | 0 | 30+ |
+| Anchor rows across all 4 repos | 0 | **123** |
+| Pre-existing bluff hits in baselines | 24 | **0** |
+| Scanner self-test fixtures | 6 | **13** |
+| Detected BLUFF-{G,K}-NNN patterns with self-test fixtures | 4 of 8 | **8 of 8** |
+| Repos with `qa-all` self-verifying scanner | 0 | **4 of 4** |
+| Scanner precision fixes (false-positive/negative) | 0 | **2 (Go + Kotlin)** |
+| CLAUDE.md "Known Issues" resolved | 0 of 3 | **3 of 3** |
+| Bootstrap target for fresh-clone setup | none | **`make bootstrap`, end-to-end verified** |
+| Bluffs caught and corrected in the campaign itself | 0 | **1 (iter 21)** |
+| Commits across iters 6–21 | 0 | **40+** |
 
 ## Open follow-ups
 
@@ -287,4 +336,9 @@ fixture `CleanWithStringLiterals.kt` locks in the fix.
   unmeasured.
 - **Sub-project 6** — Conventional Commits gate, "demo before code"
   enforcement, AI-agent concurrency caps surfaced in CLAUDE.md per
-  submodule, hook installation as part of `make bootstrap`.
+  submodule, hook installation as part of `make bootstrap` (done
+  in iter 21).
+- **HelixQA's broken transitive submodules** (e.g.,
+  `tools/opensource/unstructured`) — these are a separate operational
+  hygiene issue; bootstrap now tolerates them but they should be
+  fixed at source (likely in HelixQA's vendoring strategy).
