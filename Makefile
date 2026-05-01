@@ -85,6 +85,7 @@ help:
 	@echo "  make clean              Clean build artifacts and caches"
 	@echo "  make clean-deep         Deep clean including Gradle caches"
 	@echo "  make submodules         Initialize and update git submodules"
+	@echo "  make bootstrap          One-time setup for fresh clone (installs anti-bluff pre-commit hook + initialises submodules)"
 	@echo ""
 	@echo "Environment Variables:"
 	@echo "  ANDROID_SDK_ROOT        Path to Android SDK (required for Android targets)"
@@ -97,6 +98,21 @@ help:
 
 env-%:
 	@: $(if ${${*}},,$(error Environment variable $* not set))
+
+# One-time setup for a fresh clone. Idempotent — safe to re-run.
+.PHONY: bootstrap
+bootstrap:
+	@echo "[bootstrap] Initialising git submodules…"
+	@git submodule update --init --recursive
+	@echo "[bootstrap] Installing anti-bluff pre-commit hook (CONST-035)…"
+	@bash scripts/anti-bluff/install-hooks.sh
+	@for sub in Challenges Containers HelixQA; do \
+		if [ -x "$$sub/scripts/anti-bluff/install-hooks.sh" ]; then \
+			echo "[bootstrap] Installing pre-commit hook in $$sub…"; \
+			(cd "$$sub" && bash scripts/anti-bluff/install-hooks.sh); \
+		fi; \
+	done
+	@echo "[bootstrap] Done. Run 'make qa-all' to verify the gates work."
 
 $(DIST_DIR):
 	mkdir -p ${DIST_DIR}
