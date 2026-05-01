@@ -324,8 +324,31 @@ helixqa-validate:
 	bash automation/helixqa-validate.sh --platform all
 	@echo "-----------------------------------------------------------------------------------"
 
-# Run full QA pipeline: unit tests + Go tests + automation + evidence validation
-qa-all: test-shared challenge helixqa-test
+# === CONST-035 anti-bluff gates ===
+.PHONY: anti-bluff anti-bluff-scan anti-bluff-anchors anti-bluff-mutation anti-bluff-mutation-changed update-baseline
+
+anti-bluff-scan:
+	@bash scripts/anti-bluff/bluff-scanner.sh --mode all
+
+anti-bluff-anchors:
+	@bash challenges/scripts/anchor_manifest_challenge.sh
+
+anti-bluff-mutation:
+	@bash challenges/scripts/mutation_ratchet_challenge.sh
+
+anti-bluff-mutation-changed:
+	@bash challenges/scripts/mutation_ratchet_challenge.sh
+
+anti-bluff: anti-bluff-scan anti-bluff-anchors anti-bluff-mutation
+
+update-baseline:
+	@echo "Manual baseline update — see docs/ANTI_BLUFF.md"
+	@echo "1. Run scanner: bash scripts/anti-bluff/bluff-scanner.sh --mode all"
+	@echo "2. Run mutation: bash challenges/scripts/mutation_ratchet_challenge.sh"
+	@echo "3. Edit challenges/baselines/bluff-baseline.txt to reflect new state."
+
+# Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
+qa-all: test-shared challenge helixqa-test anti-bluff
 	bash automation/run-qa-all.sh --skip-unit --skip-build
 	@echo "-----------------------------------------------------------------------------------"
 
