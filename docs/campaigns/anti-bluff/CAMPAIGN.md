@@ -24,10 +24,10 @@ checkpoint with status ≠ done, resume there.
 
 | Repo | Branch | Last checkpoint | Next checkpoint | Last push |
 |------|--------|------------------|-------------------|-----------|
-| Challenges | main | submodule sync done; campaign branch not yet created | 1.1 (create campaign/anti-bluff) | 8410d176 |
-| Containers | main | submodule sync done; campaign branch not yet created | 1.1 (create campaign/anti-bluff) | 85b7d04e |
-| HelixQA    | main | submodule sync done; campaign branch not yet created | 1.1 (create campaign/anti-bluff) | 389ef93f |
-| Yole       | campaign/anti-bluff | 0.2 (this commit) | 2.1 (after Phase 1 done) | (pending) |
+| Challenges | main | 1.12 merged | n/a (Phase 1 done; Section 2 baseline deferred to sub-project 4) | 13f490b |
+| Containers | main | 1.12 merged | n/a (Phase 1 done; Section 2 baseline deferred to sub-project 4) | 002bd39 |
+| HelixQA    | main | 1.12 merged | n/a (Phase 1 done; Section 2 captured 86.3% on buildable subset) | fa02c7f |
+| Yole       | campaign/anti-bluff | 0.2 (tracker stub) | 2.1 (Phase 2 main repo work) | a3a390fb |
 
 ### Decisions log (Q1–Q8 from brainstorming)
 
@@ -99,7 +99,29 @@ When pushing, iterate by remote name: `for r in $REMOTES; do git push "$r" <bran
 - [x] 0.1 Create `campaign/anti-bluff` branch in main Yole repo.
 - [x] 0.2 Create `docs/campaigns/anti-bluff/CAMPAIGN.md` (this file).
 
-### Phase 1 — per-submodule rollout (pending; 3 parallel agents)
+### Phase 1 — per-submodule rollout (DONE — completed 2026-05-01)
+
+Three parallel implementer agents ran against Challenges/Containers/HelixQA.
+HelixQA completed end-to-end including Section 2 mutation baseline.
+Challenges and Containers stalled on the full-tree go-mutesting pass and
+were finished by the controller; their Section 2 baselines are empty and
+will be populated incrementally in sub-project 4.
+
+**Phase 1 deliverables, per submodule (all 3):**
+
+- [x] 1.1 `campaign/anti-bluff` branch created.
+- [x] 1.2 `docs/ANTI_BLUFF.md` runbook added.
+- [x] ~~1.3 / 1.4 — already in place upstream~~
+- [x] 1.5 `scripts/anti-bluff/` (scanner + Go pattern lib + hook installer + fixtures + self-test).
+- [x] 1.6 Section 1 baseline captured.
+- [x] 1.7 `go-mutesting` configured.
+- [PARTIAL] 1.8 Section 2 baseline — captured for HelixQA only; Challenges/Containers deferred to sub-project 4.
+- [x] 1.9 `docs/behavior-anchors.md` skeleton.
+- [x] 1.10 Three challenge scripts + Makefile/qa-all wiring.
+- [x] 1.11 End-to-end + tripwire test passing in all 3.
+- [x] 1.12 Merged to `main`, pushed to all remotes.
+
+### Phase 2 — main Yole rollout (pending; sequential after Phase 1)
 
 For each of `Challenges`, `Containers`, `HelixQA`:
 
