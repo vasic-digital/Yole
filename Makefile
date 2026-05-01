@@ -100,16 +100,29 @@ env-%:
 	@: $(if ${${*}},,$(error Environment variable $* not set))
 
 # One-time setup for a fresh clone. Idempotent — safe to re-run.
+#
+# Two-tier submodule strategy: top-level submodules (Challenges,
+# Containers, HelixQA) are initialised non-recursively so we always
+# get the project's anti-bluff infrastructure even when deeply nested
+# transitive submodules in HelixQA's tools/opensource/ tree have
+# broken pointer SHAs (which they do — see HelixQA's vendoring of
+# external open-source tools). Recursive init is then attempted but
+# its failure does not abort the bootstrap.
 .PHONY: bootstrap
 bootstrap:
-	@echo "[bootstrap] Initialising git submodules…"
-	@git submodule update --init --recursive
-	@echo "[bootstrap] Installing anti-bluff pre-commit hook (CONST-035)…"
+	@echo "[bootstrap] Initialising top-level git submodules (non-recursive)…"
+	@git submodule update --init Challenges Containers HelixQA
+	@echo "[bootstrap] Attempting recursive submodule init (failures non-fatal)…"
+	@git submodule update --init --recursive 2>&1 | tail -3 || \
+		echo "[bootstrap] Recursive init had errors — top-level submodules are present, continuing."
+	@echo "[bootstrap] Installing anti-bluff pre-commit hook in main repo (CONST-035)…"
 	@bash scripts/anti-bluff/install-hooks.sh
 	@for sub in Challenges Containers HelixQA; do \
 		if [ -x "$$sub/scripts/anti-bluff/install-hooks.sh" ]; then \
 			echo "[bootstrap] Installing pre-commit hook in $$sub…"; \
 			(cd "$$sub" && bash scripts/anti-bluff/install-hooks.sh); \
+		else \
+			echo "[bootstrap] WARNING: $$sub/scripts/anti-bluff/install-hooks.sh missing or not executable; skipping."; \
 		fi; \
 	done
 	@echo "[bootstrap] Done. Run 'make qa-all' to verify the gates work."
