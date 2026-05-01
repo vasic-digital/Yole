@@ -14,6 +14,9 @@ import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import digital.vasic.yole.android.ui.deleteFile
+import digital.vasic.yole.android.ui.loadFile
+import digital.vasic.yole.android.ui.saveFile
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.Assert.*

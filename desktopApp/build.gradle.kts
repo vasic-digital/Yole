@@ -17,7 +17,12 @@ plugins {
 }
 
 kotlin {
-    jvmToolchain(21)
+    // jvmToolchain set to 17 to match the canonical container build image
+    // (thyrlian/android-sdk ships JDK 17 only). The project's stated standard
+    // is "Java 11+" (CLAUDE.md), so 17 satisfies that floor while remaining
+    // buildable in the container without auto-download. JDK 21 is too new
+    // for the image; JDK 11 isn't installed.
+    jvmToolchain(17)
 
     compilerOptions {
         freeCompilerArgs.add("-opt-in=org.jetbrains.compose.ExperimentalComposeLibrary")

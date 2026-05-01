@@ -366,8 +366,8 @@ class TimeoutRecoveryTests {
         }
         // Post-storm: a brand-new circuit breaker must still succeed cleanly.
         val verifier = CircuitBreaker(failureThreshold = 3, name = "post-storm-verifier")
-        val verifyResult = verifier.execute { "ok" }
-        assertEquals("ok", verifyResult, "circuit breaker must remain functional after rapid cycling")
+        val verifyResult = verifier.execute<String> { "ok" }
+        assertEquals("ok", verifyResult.getOrThrow(), "circuit breaker must remain functional after rapid cycling")
     }
 
     @Test
