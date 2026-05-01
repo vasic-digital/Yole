@@ -1,22 +1,21 @@
 # Campaign — Anti-Bluff Discipline (CONST-035)
 
 **Started:** 2026-05-01
-**Status:** sub-project 1 DONE (anti-bluff foundation in main + 3 submodules); sub-project 2 next
+**Status:** sub-projects 1 DONE; 3+4+5 actively in flight (interleaved iters 6–14)
 **Resume protocol:** read this file top to bottom, find the first
 checkpoint with status ≠ done, resume there.
 
 ## Sub-projects
 
-1. [done 2026-05-01] Anti-Bluff Foundation — see spec
+1. [done 2026-05-01] **Anti-Bluff Foundation** — see spec
    `docs/superpowers/specs/2026-05-01-anti-bluff-foundation-design.md`,
-   adjustments
-   `docs/superpowers/specs/2026-05-01-anti-bluff-foundation-ADJUSTMENTS.md`,
-   and plan `docs/superpowers/plans/2026-05-01-anti-bluff-foundation.md`.
-2. [pending] Resumable Campaign Tracker formalisation
-3. [pending] Bluff audit of existing tests/Challenges
-4. [pending] Punch list fixes (round 1)
-5. [pending] Coverage push (component-by-component)
-6. [pending] Operational cadence formalisation
+   adjustments `…-ADJUSTMENTS.md`, and plan
+   `docs/superpowers/plans/2026-05-01-anti-bluff-foundation.md`.
+2. [folded into iter-by-iter CAMPAIGN.md updates] **Resumable Campaign Tracker formalisation** — this file IS the tracker; updated each iteration.
+3. [in progress] **Bluff audit + anchor population** — see iter notes below.
+4. [in progress] **Punch list fixes** — see iter notes below.
+5. [in progress, prep] **Coverage push (scanner precision improvements)** — see iter notes below.
+6. [pending] **Operational cadence formalisation** — push cadence, submodule sync rules, AI-agent concurrency caps.
 
 ## Sub-project 1 — Anti-Bluff Foundation
 
@@ -191,3 +190,101 @@ Per the spec's acceptance criteria, in each of the 4 repos:
   PR body" / "demo before code" mandates from CLAUDE.md are not yet
   mechanically enforced. Sub-project 6 (operational cadence) addresses
   this.
+
+---
+
+## Iter log (sub-projects 3+4+5 interleaved)
+
+Each iteration produces a self-contained chunk of forward progress
+across the three active sub-projects. Pushed to `main` AND `master` on
+every reachable remote per repo (Yole has 3 remotes; Challenges and
+Containers have 4 each; HelixQA has 6 with 2 unreachable for SSH-auth
+reasons).
+
+### Iter 6 (2026-05-01) — sub-project 4: BLUFF-K-002 baseline reduction (Yole, round 1)
+Replaced trivial `assertTrue(true)` with real semantic checks in
+`FormatRegistrySemaphoreTests` and `TimeoutRecoveryTests`. Section 1
+baseline: 7 → 5. Commit `14a08278`.
+
+### Iter 7 (2026-05-01) — sub-project 4: complete BLUFF-K-002 elimination
+Replaced remaining 5 `assertTrue(true)` placeholders across
+`ErrorRecoveryE2ETests`, `CrossFormatIntegrationTest`,
+`NetworkErrorHandlingTest`, `ParserOverloadStressTests`, and
+`IOSPlatformTests`. **Yole Section 1 baseline: 5 → 0.** Commit `f65ef0e1`.
+
+### Iter 8 (2026-05-01) — sub-project 4: scanner exempt-marker expansion
+Recognized `// bluff-scan: no-assert-ok` as a 3rd valid exempt marker
+alongside SKIP-OK and ANTI-BLUFF-EXEMPT. **17 baseline entries auto-
+cleared across submodules** (every pre-existing hit was already
+marked with the prior author's bluff-scan convention; scanner just
+hadn't been looking for it).
+- Challenges: 1 → 0
+- Containers: 4 → 0
+- HelixQA: 12 → 0
+- **Total Section 1 baseline across all 4 repos: 24 → 0.**
+
+### Iter 9 (2026-05-01) — sub-project 3: extend Yole anchor manifest
+Added 12 capability rows beyond format/protocol layer: document model,
+monitoring, UI, Android app, Desktop app. Yole manifest: 27 → 39 rows.
+Commit `fbbe2093`.
+
+### Iter 10 (2026-05-01) — sub-project 3: extend submodule anchors
+Added 33 second-pass capability rows: Challenges runner-parallel/
+pipeline/anti-bluff/plugin/monitor/userflow (10→24); Containers
+failover/distributed-build/network/ctop/event (14→23); HelixQA
+geo-probe/cost-tracking/llamacpp/recorder/replay (17→27). Total
+across all 4 repos: 80 → 113 anchor rows.
+
+### Iter 11 (2026-05-01) — sub-project 4: scanner self-test wired into challenge
+`bluff_scanner_challenge.sh` now runs the 11-fixture self-test as
+phase 1 (failing fast on scanner regression) before phase 2 (the
+actual tree scan). Satisfies CONST-035's verification-of-itself
+requirement. Applied to all 4 repos.
+
+### Iter 12 (2026-05-01) — sub-project 4: extended fixture coverage
+Added 6 missing fixtures: BLUFF-G-003/005/006 in submodules;
+BLUFF-K-004/006/008 in Yole. Self-test now covers all 8 detected
+patterns. Discovered and documented scanner false-negative on
+`assert.` substring inside string literals (fixed in iter 13).
+
+### Iter 13 (2026-05-01) — sub-project 5 prep: Go scanner precision
+String-literal stripping in BLUFF-G-003 (and brace counting after
+stripping). Body-level exempt markers honored. Regression fixture
+`bluff_g_003_log_with_keyword_strings.go` locks in the fix.
+Canonical `lib/go.sh` propagated to all 3 submodules.
+
+### Iter 14 (2026-05-01) — sub-project 5 prep: Kotlin scanner precision
+String-literal + comment stripping in BLUFF-K-002/003/004/006.
+BLUFF-K-008 intentionally inspects original line (it detects a
+BLUFF-NNN identifier inside @Suppress's string argument). Regression
+fixture `CleanWithStringLiterals.kt` locks in the fix.
+
+## Cumulative progress as of iter 14
+
+| Metric | Sub-project 1 close | Iter 14 |
+|--------|---------------------|---------|
+| Anchor rows across all 4 repos | 0 | 113 |
+| Pre-existing bluff hits in baselines | 24 | 0 |
+| Scanner self-test fixtures | 6 | 13 |
+| Detected BLUFF-{G,K}-NNN patterns with self-test fixtures | 4 of 8 | 8 of 8 |
+| Repos with `qa-all` self-verifying scanner | 0 | 4 |
+| Scanner precision fixes (false-positive/negative) | 0 | 2 (Go + Kotlin) |
+| Commits across iters 6–14 | 0 | 30+ |
+
+## Open follow-ups
+
+- **Pitest configuration** for `:shared:jvm` + 10 KMP modules — full
+  Section 2 baseline capture for Yole main. Deferred from sub-project 1
+  (multi-hour first run); sub-project 5 work.
+- **AST-aware scanner patterns** — BLUFF-K-001 (mock-self),
+  BLUFF-K-005 (runBlocking no-op), BLUFF-K-007 (SUT-via-mock-only),
+  BLUFF-G-002 (testing.Short short-circuit), BLUFF-G-004 (gomock
+  same-package SUT). Need real Kotlin/Go parsers; out of scope for
+  awk-based scanner.
+- **Mutation testing for Containers + Challenges** — go-mutesting
+  full-tree pass timed out in Phase 1; HelixQA captured a partial
+  baseline (86.3% on pkg/nexus). Other Go submodules remain
+  unmeasured.
+- **Sub-project 6** — Conventional Commits gate, "demo before code"
+  enforcement, AI-agent concurrency caps surfaced in CLAUDE.md per
+  submodule, hook installation as part of `make bootstrap`.
