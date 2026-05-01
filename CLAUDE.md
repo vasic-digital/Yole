@@ -79,8 +79,8 @@ make qa-all                               # Full QA pipeline
 
 ## Known Issues
 
-- **AGP version mismatch**: `androidApp` tests may fail due to AGP version conflicts. Use `:shared:desktopTest` for routine testing.
-- **Container OOM**: Exit code 137 = OOM kill. Increase container memory limits (`mem_limit` in `docker-compose.yml`).
+- ~~**AGP version mismatch**: `androidApp` tests may fail due to AGP version conflicts. Use `:shared:desktopTest` for routine testing.~~ — **resolved upstream** (commit `af49959e`, 2026-03-17). AGP unified at 8.9.0 across `gradle/libs.versions.toml` and `androidApp/build.gradle.kts`. `:shared:desktopTest` remains the recommended day-to-day test target because it doesn't require an Android SDK install, but androidApp tests should now pass when SDK is available.
+- ~~**Container OOM**: Exit code 137 = OOM kill. Increase container memory limits (`mem_limit` in `docker-compose.yml`).~~ — **resolved upstream** (default `mem_limit` bumped from 4g→8g, `memswap_limit` from 6g→12g). Sized to fit `Gradle JVM (-Xmx4096m) + Kotlin daemon (-Xmx4096m)` concurrently. Operators with smaller host RAM should override via `docker-compose.override.yml`.
 - ~~**Go flaky tests**: `TestStress_ConcurrentJWTRefresh` (Auth) and `TestGenericPool_HealthyConnectionsSurvive` (Database) are pre-existing.~~ — **resolved upstream** (Auth: commit `3d1c01f`, 2026-04-11; Database: commit `545e320`). Both made deterministic.
 
 ## Architecture

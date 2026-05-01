@@ -17,8 +17,15 @@ services:
       - ANDROID_SDK_ROOT=/opt/android-sdk
     working_dir: /workspace
     command: sleep infinity
-    mem_limit: 4g
-    memswap_limit: 6g
+    # Sized to fit Gradle JVM (-Xmx4096m) + Kotlin daemon (-Xmx4096m) +
+    # JVM metaspace + JIT + IO buffers concurrently. The previous 4g limit
+    # produced exit-137 OOM kills during shared:desktopTest because the
+    # two JVMs together exceeded the limit. See §12 / §12.6 in
+    # CONSTITUTION.md — total project usage on host stays well under 60%
+    # of typical 32 GiB workstation RAM. Operators with smaller hosts
+    # should override via docker-compose.override.yml.
+    mem_limit: 8g
+    memswap_limit: 12g
     cpus: 2
 
   # Alternative using thyrlian/android-sdk
