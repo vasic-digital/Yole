@@ -39,7 +39,7 @@ for "what's done"; read `CAMPAIGN.md` for "what each iter changed".
 
 | Repo | Anchor rows | Coverage areas |
 |------|-------------|----------------|
-| Yole (main) | 49 (48 active + 1 pending) | Format×16 + Protocol×8 + Document/Monitoring/UI×8 + Android×2 + Desktop×2 + iOS×1 + Web-Wasm×9 + cross-format×3 |
+| Yole (main) | 49 (all active) | Format×17 + Protocol×8 + Document/Monitoring/UI×8 + Android×2 + Desktop×2 + iOS×1 + Web-Wasm×9 + cross-format×2 |
 | Challenges | 24 | Runner+registry+plugin+monitor+infra+userflow+anti-bluff metatest+CLI |
 | Containers | 23 | Runtime+orchestration+distribution+remote/SSH+lifecycle+failover+integration |
 | HelixQA | 27 | Orchestrator+detector+validator+evidence+ticket+autonomous-pipeline+LLM+vision+CLI |
