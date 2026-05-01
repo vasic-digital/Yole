@@ -7,15 +7,18 @@ services:
     image: docker.io/thyrlian/android-sdk:latest
     container_name: yole-build
     volumes:
-      - .:/workspace
-      - ./releases:/workspace/releases
+      # Mount parent dir at /workspace so settings.gradle.kts's
+      # includeBuild("../RateLimiter-KMP") etc. resolve to the actual
+      # sibling KMP repos. Yole itself lives at /workspace/Yole.
+      - ..:/workspace
+      - ./releases:/workspace/Yole/releases
       - ${HOME}/.gradle:/root/.gradle
       - ${HOME}/.m2:/root/.m2
       - ${HOME}/Android/Sdk:/opt/android-sdk
     environment:
       - ANDROID_HOME=/opt/android-sdk
       - ANDROID_SDK_ROOT=/opt/android-sdk
-    working_dir: /workspace
+    working_dir: /workspace/Yole
     command: sleep infinity
     # Sized to fit Gradle JVM (-Xmx4096m) + Kotlin daemon (-Xmx4096m) +
     # JVM metaspace + JIT + IO buffers concurrently. The previous 4g limit
