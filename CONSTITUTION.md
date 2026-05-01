@@ -79,6 +79,119 @@ runbook.
 
 <!-- END host-power-management addendum (CONST-033) -->
 
+<!-- BEGIN anti-bluff addendum (CONST-035) -->
+
+### CONST-035 — Anti-Bluff Tests & Challenges
+
+**Status:** Mandatory. Non-negotiable. Applies to every test, challenge,
+script, and verification artifact in this repository and its submodules.
+
+Tests and Challenges in this project MUST verify the product, not the
+LLM's mental model of the product. A test that passes when the feature
+is broken is worse than a missing test — it gives false confidence and
+lets defects ship to users. Functional probes at the protocol layer are
+mandatory:
+
+- TCP-open is the FLOOR, not the ceiling. Postgres → execute `SELECT 1`.
+  Redis → `PING` returns `PONG`. ChromaDB → `GET /api/v1/heartbeat`
+  returns 200. MCP server → TCP connect + valid JSON-RPC handshake.
+  HTTP gateway → real request, real response, non-empty body.
+- Container `Up` is NOT application healthy. A `docker/podman ps` `Up`
+  status only means PID 1 is running; the application may be
+  crash-looping internally.
+- No mocks/fakes outside unit tests. CONST-035 raises the cost of a
+  mock-driven false pass to the same severity as a regression.
+- Re-verify after every change. Don't assume a previously-passing
+  test still verifies the same scope after a refactor.
+- Verification of CONST-035 itself: deliberately break the feature
+  (e.g. mutate a parser, swap a config). The test MUST fail. If it
+  still passes, the test is non-conformant and MUST be tightened.
+
+#### Three-layer "user-visible behaviour" definition
+
+This project is mixed: a Kotlin Multiplatform app + 10 KMP library modules + 3 Go testing-framework submodules. CONST-035 has a per-context definition of "user-visible":
+
+- **App layer** (Android, Desktop, iOS, Web): user-visible means a real
+  human user can observe the result. Anchor signal: UI screenshot diff,
+  file written to disk and re-read, network request observed on a real
+  socket, intent/activity dispatched and asserted.
+- **KMP module layer** (RateLimiter, Concurrency, UI-Components, Auth,
+  Security, Document, Config, Database, Storage, Formatters):
+  user-visible means a developer consuming the public API can observe
+  the documented contract. Anchor signal: integration test calling only
+  the public API, using real coroutines / real clock / real I/O where
+  applicable, asserting the contract in the API's KDoc.
+- **Go submodule layer** (Challenges, Containers, HelixQA): user-visible
+  means an operator invoking the CLI/binary can observe the result.
+  Anchor signal: CLI invocation against a real target producing an
+  observable artifact (file on disk, exit code, log line), asserted by
+  the test.
+
+#### Bluff taxonomy (each pattern observed and now forbidden)
+
+- **Wrapper bluff** — assertions PASS but the wrapper's exit-code logic
+  is buggy, marking the run FAILED (or the inverse: assertions FAIL but
+  the wrapper swallows them). Every aggregating wrapper MUST use a
+  robust counter (`! grep -qs "|FAILED|" "$LOG"` style).
+- **Contract bluff** — the system advertises a capability but rejects
+  it in dispatch. Every advertised capability MUST be exercised by a
+  test or Challenge that actually invokes it.
+- **Structural bluff** — `check_file_exists "foo_test.kt"` passes if
+  the file is present but doesn't run the test or assert anything
+  about its content. File-existence checks MUST be paired with at
+  least one functional assertion.
+- **Comment bluff** — a code comment promises a behavior the code
+  doesn't actually have. Documentation MUST be re-verified against the
+  code on every change touching the documented function.
+- **Skip bluff** — `t.Skip("not running yet")` / `@Ignore` without a
+  `SKIP-OK: #<ticket>` marker silently passes. Every skip needs the
+  marker; gates fail on bare skips.
+
+#### Defence in depth (mandatory artifacts)
+
+1. `scripts/anti-bluff/bluff-scanner.sh` — static scanner. Exits non-zero
+   on any forbidden pattern outside the baseline.
+2. `challenges/baselines/bluff-baseline.txt` — captured pre-existing
+   bluff hits and per-file mutation kill rates. Ratchet enforces the
+   baseline never worsens.
+3. `docs/behavior-anchors.md` — anchor manifest. Every user-facing
+   capability has at least one row pointing at one anchor test that
+   proves the capability end-to-end.
+4. `challenges/scripts/bluff_scanner_challenge.sh` — wraps the scanner
+   as a challenge.
+5. `challenges/scripts/mutation_ratchet_challenge.sh` — runs Pitest
+   (Kotlin/JVM) or `go-mutesting` (Go), enforces 90% kill on changed
+   code and 80% project-wide ratchet.
+6. `challenges/scripts/anchor_manifest_challenge.sh` — verifies every
+   anchor row points at a callable test that exists.
+
+**Enforcement.** All three challenges MUST run in `runChallenges` /
+`make qa-all`. A violation in any channel blocks merge. Adding files
+to scanner `EXCLUDE_PATHS` or expanding the baseline requires an
+explicit justification comment naming the non-bluff context.
+
+**Hard block scope.** New code (any file modified in the working tree)
+must produce zero net new scanner hits AND must not lower the project
+mutation kill rate. Pre-existing bluff hits are recorded in the
+baseline; baseline reduction is the work of campaign sub-projects 4–5.
+
+**Skip-marker convention.** `// SKIP-OK: #<ticket>` (Go and Kotlin) is
+the canonical exempt marker. `// ANTI-BLUFF-EXEMPT: <reason>` is
+accepted as a synonym for forward compat.
+
+**Why.** The project has a documented history of feature regressions
+that test suites failed to catch — tests passed while features were
+unusable. CONST-035 makes that class of failure detectable and blocks
+its recurrence. See the verbatim user-mandate forensic anchor in
+`CLAUDE.md` and `AGENTS.md`.
+
+**See also:** `docs/ANTI_BLUFF.md` (background and runbook),
+`docs/behavior-anchors.md` (manifest), `docs/campaigns/anti-bluff/CAMPAIGN.md`
+(active campaign tracker), and the cascaded copies of CONST-035 in each
+submodule's `CONSTITUTION.md`.
+
+<!-- END anti-bluff addendum (CONST-035) -->
+
 ## Definition of Done
 
 A change is done when:

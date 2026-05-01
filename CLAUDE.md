@@ -306,3 +306,56 @@ Both must PASS.
 
 <!-- END host-power-management addendum (CONST-033) -->
 
+<!-- BEGIN anti-bluff addendum (CONST-035) -->
+
+## ⚠️ Anti-Bluff Test Discipline — CONST-035
+
+**STRICTLY FORBIDDEN: never write a test that can pass without
+exercising the user-visible behavior it claims to verify.** This
+includes mocking the unit under test, trivial-assertion-only tests,
+permanent skips without an exempt ticket reference, no-op
+`runBlocking { }` bodies, and any test whose body would still pass if
+every line of the unit under test were replaced with a trivial stub.
+See CONST-035 in `CONSTITUTION.md` for the full rule.
+
+### MANDATORY ANTI-BLUFF COVENANT — END-USER QUALITY GUARANTEE (User mandate, 2026-04-28)
+
+**Forensic anchor — direct user mandate (verbatim):**
+
+> "We had been in position that all tests do execute with success
+> and all Challenges as well, but in reality the most of the
+> features does not work and can't be used! This MUST NOT be the
+> case and execution of tests and Challenges MUST guarantee the
+> quality, the completion and full usability by end users of the
+> product!"
+
+**Operative rule:** the bar for shipping is **not** "tests pass"
+but **"users can use the feature."** Every PASS in this codebase
+MUST carry positive evidence captured during execution that the
+feature works for the end user. Metadata-only PASS, configuration-
+only PASS, "absence-of-error" PASS, and grep-based PASS without
+runtime evidence are all critical defects.
+
+**Tests AND Challenges (HelixQA) are bound equally** — a Challenge
+that scores PASS on a non-functional feature is the same class of
+defect as a unit test that does.
+
+### Verification commands
+
+Run before claiming a fix is complete:
+
+```bash
+bash scripts/anti-bluff/bluff-scanner.sh --mode all
+bash challenges/scripts/anchor_manifest_challenge.sh
+bash challenges/scripts/mutation_ratchet_challenge.sh
+```
+
+All three must PASS. Pre-existing bluff hits are tracked in
+`challenges/baselines/bluff-baseline.txt`; do not extend the baseline
+without an explicit justification comment.
+
+**Skip-marker convention:** `// SKIP-OK: #<ticket>` (canonical),
+`// ANTI-BLUFF-EXEMPT: <reason>` (synonym).
+
+<!-- END anti-bluff addendum (CONST-035) -->
+
