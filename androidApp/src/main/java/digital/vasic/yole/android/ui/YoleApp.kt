@@ -75,6 +75,7 @@ import digital.vasic.opoc.model.GsSharedPreferencesPropertyBackend
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.ParseOptions
+import digital.vasic.yole.format.TextFormat
 import digital.vasic.yole.network.common.StorageConfig
 import digital.vasic.yole.network.common.StorageType
 import digital.vasic.yole.network.config.NetworkStorageConfigService
@@ -154,6 +155,13 @@ class YoleSettings(context: android.content.Context) : GsSharedPreferencesProper
     // Animation settings
     fun getAnimationsEnabled(): Boolean = getBool("animations_enabled", true)
     fun setAnimationsEnabled(enabled: Boolean) = setBool("animations_enabled", enabled)
+
+    // Format toggle settings
+    fun getEnabledFormatIds(): Set<String> {
+        val raw = getString("enabled_format_ids", "markdown") // Default: only Markdown
+        return raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+    }
+    fun setEnabledFormatIds(ids: Set<String>) = setString("enabled_format_ids", ids.joinToString(","))
 }
 
 /**
@@ -323,6 +331,9 @@ fun MainScreen() {
     var showLineNumbers by remember { mutableStateOf(settings.getShowLineNumbers()) }
     var autoSave by remember { mutableStateOf(settings.getAutoSave()) }
     var animationsEnabled by remember { mutableStateOf(settings.getAnimationsEnabled()) }
+    var enabledFormatIds by remember {
+        mutableStateOf(settings.getEnabledFormatIds().also { FormatRegistry.setEnabledFormatIds(it) })
+    }
 
     // IDE theme colors
     val bg = if (isDarkTheme) IdeTheme.darkBackground else IdeTheme.lightBackground
@@ -736,6 +747,18 @@ fun MainScreen() {
                                 onAnimationsEnabledChanged = {
                                     animationsEnabled = it
                                     settings.setAnimationsEnabled(it)
+                                },
+                                enabledFormatIds = enabledFormatIds,
+                                onFormatToggled = { id, enabled ->
+                                    val newIds = if (enabled) {
+                                        enabledFormatIds + id
+                                    } else {
+                                        enabledFormatIds - id
+                                    }
+                                    enabledFormatIds = newIds
+                                    settings.setEnabledFormatIds(newIds)
+                                    if (enabled) FormatRegistry.setFormatEnabled(id)
+                                    else FormatRegistry.setFormatDisabled(id)
                                 }
                             )
                             null -> {
@@ -868,6 +891,18 @@ fun MainScreen() {
                             onAnimationsEnabledChanged = {
                                 animationsEnabled = it
                                 settings.setAnimationsEnabled(it)
+                            },
+                            enabledFormatIds = enabledFormatIds,
+                            onFormatToggled = { id, enabled ->
+                                val newIds = if (enabled) {
+                                    enabledFormatIds + id
+                                } else {
+                                    enabledFormatIds - id
+                                }
+                                enabledFormatIds = newIds
+                                settings.setEnabledFormatIds(newIds)
+                                if (enabled) FormatRegistry.setFormatEnabled(id)
+                                else FormatRegistry.setFormatDisabled(id)
                             }
                         )
                         null -> {
@@ -1920,25 +1955,8 @@ fun IdeNewDocumentDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val formats = listOf(
-        "markdown" to "Markdown (.md)",
-        "plaintext" to "Plain Text (.txt)",
-        "todotxt" to "Todo.txt (.todo.txt)",
-        "csv" to "CSV (.csv)",
-        "latex" to "LaTeX (.tex)",
-        "orgmode" to "Org Mode (.org)",
-        "asciidoc" to "AsciiDoc (.adoc)",
-        "wikitext" to "WikiText (.wiki)",
-        "restructuredtext" to "reStructuredText (.rst)",
-        "rmarkdown" to "R Markdown (.Rmd)",
-        "taskpaper" to "TaskPaper (.taskpaper)",
-        "textile" to "Textile (.textile)",
-        "creole" to "Creole (.creole)",
-        "tiddlywiki" to "TiddlyWiki (.tid)",
-        "jupyter" to "Jupyter Notebook (.ipynb)",
-        "keyvalue" to "Key-Value (.properties)",
-        "binary" to "Binary (.bin)"
-    )
+    val enabledFormats = FormatRegistry.getEnabledTextFormats()
+    val formats = enabledFormats.map { it.id to "${it.name} (${it.defaultExtension})" }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -2935,7 +2953,9 @@ fun SettingsScreen(
     autoSave: Boolean,
     onAutoSaveChanged: (Boolean) -> Unit,
     animationsEnabled: Boolean,
-    onAnimationsEnabledChanged: (Boolean) -> Unit
+    onAnimationsEnabledChanged: (Boolean) -> Unit,
+    enabledFormatIds: Set<String>,
+    onFormatToggled: (String, Boolean) -> Unit
 ) {
     val isDarkTheme = isSystemInDarkTheme()
     val bg = if (isDarkTheme) IdeTheme.darkBackground else IdeTheme.lightBackground
@@ -3065,19 +3085,30 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Supported formats: ${FormatRegistry.formats.size}",
-            style = MaterialTheme.typography.bodyMedium
+            text = "Toggle which formats appear in the New Document dialog. Markdown is always enabled.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        FormatRegistry.formats.take(5).forEach { format ->
-            Text(
-                text = "  ${format.name} (${format.extensions.joinToString(", ")})",
-                style = MaterialTheme.typography.bodySmall,
-                fontFamily = FontFamily.Monospace,
-                modifier = Modifier.padding(vertical = 2.dp)
-            )
+        FormatRegistry.getTextFormats().forEach { format ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "${format.name} (${format.defaultExtension})",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = format.id in enabledFormatIds,
+                    onCheckedChange = { onFormatToggled(format.id, it) },
+                    enabled = format.id != TextFormat.ID_MARKDOWN
+                )
+            }
         }
 
         if (FormatRegistry.formats.size > 5) {

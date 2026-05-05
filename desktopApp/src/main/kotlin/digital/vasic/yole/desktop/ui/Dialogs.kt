@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.*
 import digital.vasic.yole.desktop.storage.DesktopSettingsStorage
 import digital.vasic.yole.format.FormatRegistry
+import digital.vasic.yole.format.TextFormat
 import java.net.URI
 
 /**
@@ -217,6 +218,11 @@ fun SettingsDialog(
                         selected = selectedCategory == "advanced",
                         onClick = { selectedCategory = "advanced" }
                     )
+                    SettingsCategoryItem(
+                        title = "Formats",
+                        selected = selectedCategory == "formats",
+                        onClick = { selectedCategory = "formats" }
+                    )
                 }
                 
                 // Settings content
@@ -264,6 +270,7 @@ fun SettingsDialog(
                                 currentSettings = currentSettings.copy(advanced = newAdvanced)
                             }
                         )
+                        "formats" -> FormatsSettings()
                     }
                     
                     Spacer(modifier = Modifier.weight(1f))
@@ -653,6 +660,57 @@ private fun AdvancedSettings(
                 onCheckedChange = { onSettingsChanged(settings.copy(enableBetaFeatures = it)) }
             )
             Text("Enable beta features")
+        }
+    }
+}
+
+/**
+ * Formats settings section - toggle text formats on/off.
+ */
+@Composable
+private fun FormatsSettings() {
+    val settings = remember { YoleDesktopSettings() }
+    var enabledIds by remember {
+        mutableStateOf(settings.getEnabledFormatIds().also { FormatRegistry.setEnabledFormatIds(it) })
+    }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Format Toggles",
+            style = MaterialTheme.typography.headlineSmall
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "Toggle which formats appear in the New Document dialog. Markdown is always enabled.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        FormatRegistry.getTextFormats().forEach { format ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = format.id in enabledIds,
+                    onCheckedChange = { toggled ->
+                        val newIds = if (toggled) {
+                            enabledIds + format.id
+                        } else {
+                            enabledIds - format.id
+                        }
+                        enabledIds = newIds
+                        settings.setEnabledFormatIds(newIds)
+                        if (toggled) FormatRegistry.setFormatEnabled(format.id)
+                        else FormatRegistry.setFormatDisabled(format.id)
+                    },
+                    enabled = format.id != TextFormat.ID_MARKDOWN
+                )
+                Text("${format.name} (${format.defaultExtension})")
+            }
         }
     }
 }

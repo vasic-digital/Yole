@@ -143,6 +143,13 @@ class YoleDesktopSettings {
     // Font size setting
     fun getFontSize(): Int = prefs.getInt("font_size", 14)
     fun setFontSize(size: Int) = prefs.putInt("font_size", size)
+
+    // Format toggle settings
+    fun getEnabledFormatIds(): Set<String> {
+        val raw = prefs.get("enabled_format_ids", "markdown")
+        return raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+    }
+    fun setEnabledFormatIds(ids: Set<String>) = prefs.put("enabled_format_ids", ids.joinToString(","))
 }
 
 enum class Screen {

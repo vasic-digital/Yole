@@ -238,25 +238,7 @@ fun FormatList(
     selectedFormat: String,
     onFormatSelected: (String, String) -> Unit
 ) {
-    val formats = listOf(
-        "Markdown" to ".md",
-        "Plain Text" to ".txt",
-        "Todo.txt" to ".txt",
-        "CSV" to ".csv",
-        "LaTeX" to ".tex",
-        "Org Mode" to ".org",
-        "AsciiDoc" to ".adoc",
-        "WikiText" to ".wiki",
-        "reStructuredText" to ".rst",
-        "RMarkdown" to ".rmd",
-        "TaskPaper" to ".taskpaper",
-        "Textile" to ".textile",
-        "Creole" to ".creole",
-        "TiddlyWiki" to ".tid",
-        "Jupyter" to ".ipynb",
-        "Key-Value" to ".properties",
-        "Binary" to ".bin"
-    )
+    val formats = FormatRegistry.getEnabledTextFormats().map { it.name to it.defaultExtension }
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         formats.forEach { (name, extension) ->

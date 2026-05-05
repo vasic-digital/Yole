@@ -62,6 +62,90 @@ object FormatRegistry {
     val isFormatsInitialized: Boolean get() = lazyFormats.isInitialized()
 
     /**
+     * Set of format IDs that are currently enabled by the user.
+     * Default: only Markdown is enabled; all other formats are off.
+     * Network storage format IDs (dropbox, ftp, etc.) are permanently enabled.
+     */
+    private val enabledFormatIds: MutableSet<String> = mutableSetOf(ID_MARKDOWN)
+
+    /**
+     * Network storage format IDs that are always enabled and not user-togglable.
+     */
+    private val networkFormatIds: Set<String> = setOf(
+        ID_DROPBOX, ID_FTP, ID_GOOGLEDRIVE, ID_ONEDRIVE, ID_SFTP
+    )
+
+    /**
+     * Returns all text-editor formats (excludes network storage formats).
+     */
+    fun getTextFormats(): List<TextFormat> {
+        return formats.filter { it.id !in networkFormatIds }
+    }
+
+    /**
+     * Returns only user-enabled text-editor formats.
+     * Network storage formats are always included regardless of toggle state.
+     */
+    fun getEnabledFormats(): List<TextFormat> {
+        return formats.filter { it.id in enabledFormatIds || it.id in networkFormatIds }
+    }
+
+    /**
+     * Returns only user-enabled text-editor formats (excludes network storage).
+     */
+    fun getEnabledTextFormats(): List<TextFormat> {
+        return formats.filter { it.id in enabledFormatIds && it.id !in networkFormatIds }
+    }
+
+    /**
+     * Returns whether a format is currently enabled.
+     * Network storage formats always return true.
+     */
+    fun isFormatEnabled(formatId: String): Boolean {
+        return formatId in networkFormatIds || formatId in enabledFormatIds
+    }
+
+    /**
+     * Enable a format by adding its ID to the enabled set.
+     * Has no effect if already enabled.
+     * Network storage formats are always enabled and this is a no-op for them.
+     */
+    fun setFormatEnabled(formatId: String) {
+        if (formatId !in networkFormatIds) {
+            enabledFormatIds.add(formatId)
+        }
+    }
+
+    /**
+     * Disable a format by removing its ID from the enabled set.
+     * Has no effect if already disabled.
+     * Network storage formats cannot be disabled (no-op).
+     * Markdown cannot be disabled (always required as default).
+     */
+    fun setFormatDisabled(formatId: String) {
+        if (formatId != ID_MARKDOWN && formatId !in networkFormatIds) {
+            enabledFormatIds.remove(formatId)
+        }
+    }
+
+    /**
+     * Bulk-enable a set of format IDs.
+     * Used at app startup to restore saved preferences.
+     */
+    fun setEnabledFormatIds(ids: Set<String>) {
+        enabledFormatIds.clear()
+        enabledFormatIds.add(ID_MARKDOWN) // Always keep Markdown enabled
+        ids.filter { it !in networkFormatIds }.forEach { enabledFormatIds.add(it) }
+    }
+
+    /**
+     * Get the raw set of enabled format IDs (for persistence).
+     */
+    fun getEnabledFormatIds(): Set<String> {
+        return enabledFormatIds.toSet()
+    }
+
+    /**
      * Creates the format list. Extracted to a private method so it can
      * be referenced from the [lazyFormats] delegate.
      */

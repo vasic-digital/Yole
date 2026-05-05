@@ -1434,25 +1434,7 @@ fun NewDocumentDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val formats = listOf(
-        "markdown" to "Markdown (.md)",
-        "plaintext" to "Plain Text (.txt)",
-        "todotxt" to "Todo.txt (.txt)",
-        "csv" to "CSV (.csv)",
-        "latex" to "LaTeX (.tex)",
-        "orgmode" to "Org Mode (.org)",
-        "asciidoc" to "AsciiDoc (.adoc)",
-        "wikitext" to "WikiText (.wiki)",
-        "restructuredtext" to "reStructuredText (.rst)",
-        "rmarkdown" to "R Markdown (.rmd)",
-        "taskpaper" to "TaskPaper (.taskpaper)",
-        "textile" to "Textile (.textile)",
-        "creole" to "Creole (.creole)",
-        "tiddlywiki" to "TiddlyWiki (.tid)",
-        "jupyter" to "Jupyter (.ipynb)",
-        "keyvalue" to "Key-Value (.properties)",
-        "binary" to "Binary (.bin)"
-    )
+    val formats = FormatRegistry.getEnabledTextFormats().map { it.id to "${it.name} (${it.defaultExtension})" }
 
     AlertDialog(
         onDismissRequest = onDismiss,
