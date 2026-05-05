@@ -28,8 +28,8 @@ import kotlin.math.pow
  */
 object YoleColors {
 
-    /** Primary brand color (Material Blue 700). */
-    val BrandPrimary = Color(0xFF1976D2)
+    /** Primary brand color (Material Red 700). */
+    val BrandPrimary = Color(0xFFD32F2F)
     /** Secondary brand color (Material Pink A400). */
     val BrandSecondary = Color(0xFFDC004E)
     /** Tertiary brand color (Material Green 800). */
@@ -41,8 +41,8 @@ object YoleColors {
     val Warning = Color(0xFFFF9800)
     /** Semantic color indicating an error (Red 500). */
     val Error = Color(0xFFF44336)
-    /** Semantic color for informational content (Blue 500). */
-    val Info = Color(0xFF2196F3)
+    /** Semantic color for informational content (Red 600). */
+    val Info = Color(0xFFE53935)
 
     /** Primary surface color for top-level backgrounds. */
     val SurfacePrimary = Color(0xFFFFFFFF)
@@ -61,11 +61,11 @@ object YoleColors {
     val TextDisabled = Color(0xFFBDBDBD)
 
     /** Background color for hovered interactive elements. */
-    val InteractiveHover = Color(0xFFE3F2FD)
+    val InteractiveHover = Color(0xFFFFEBEE)
     /** Background color for pressed interactive elements. */
-    val InteractivePressed = Color(0xFFBBDEFB)
+    val InteractivePressed = Color(0xFFFFCDD2)
     /** Background color for focused interactive elements. */
-    val InteractiveFocus = Color(0xFF90CAF9)
+    val InteractiveFocus = Color(0xFFEF9A9A)
 
     /** Light border for subtle separation. */
     val BorderLight = Color(0xFFE0E0E0)
@@ -76,8 +76,8 @@ object YoleColors {
 
     /** Dark theme color variants optimized for dark backgrounds. */
     object Dark {
-        /** Primary brand color for dark theme (Blue 200). */
-        val BrandPrimary = Color(0xFF90CAF9)
+        /** Primary brand color for dark theme (Red 200). */
+        val BrandPrimary = Color(0xFFEF9A9A)
         /** Secondary brand color for dark theme (Pink A200). */
         val BrandSecondary = Color(0xFFFF5983)
         /** Tertiary brand color for dark theme (Green 300). */
@@ -89,8 +89,8 @@ object YoleColors {
         val Warning = Color(0xFFFFB74D)
         /** Semantic error color for dark theme (Red 400). */
         val Error = Color(0xFFEF5350)
-        /** Semantic info color for dark theme (Blue 300). */
-        val Info = Color(0xFF64B5F6)
+        /** Semantic info color for dark theme (Red 300). */
+        val Info = Color(0xFFE57373)
 
         /** Primary surface color for dark theme backgrounds. */
         val SurfacePrimary = Color(0xFF121212)
@@ -109,11 +109,11 @@ object YoleColors {
         val TextDisabled = Color(0xFF606060)
 
         /** Hover background for dark theme interactive elements. */
-        val InteractiveHover = Color(0xFF1E3A5F)
+        val InteractiveHover = Color(0xFF5F1E1E)
         /** Pressed background for dark theme interactive elements. */
-        val InteractivePressed = Color(0xFF2A4A6B)
+        val InteractivePressed = Color(0xFF6B2A2A)
         /** Focus background for dark theme interactive elements. */
-        val InteractiveFocus = Color(0xFF1565C0)
+        val InteractiveFocus = Color(0xFFC62828)
 
         /** Light border for dark theme. */
         val BorderLight = Color(0xFF404040)

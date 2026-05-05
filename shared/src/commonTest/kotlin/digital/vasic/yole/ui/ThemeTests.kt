@@ -34,8 +34,8 @@ class ThemeTests {
     // ====================================================================
 
     @Test
-    fun `light BrandPrimary is Material Blue 700`() {
-        assertEquals(Color(0xFF1976D2), YoleColors.BrandPrimary)
+    fun `light BrandPrimary is Material Red 700`() {
+        assertEquals(Color(0xFFD32F2F), YoleColors.BrandPrimary)
     }
 
     @Test
@@ -64,8 +64,8 @@ class ThemeTests {
     }
 
     @Test
-    fun `light Info is Blue 500`() {
-        assertEquals(Color(0xFF2196F3), YoleColors.Info)
+    fun `light Info is Red 600`() {
+        assertEquals(Color(0xFFE53935), YoleColors.Info)
     }
 
     @Test
@@ -83,8 +83,8 @@ class ThemeTests {
     // ====================================================================
 
     @Test
-    fun `dark BrandPrimary is Blue 200`() {
-        assertEquals(Color(0xFF90CAF9), YoleColors.Dark.BrandPrimary)
+    fun `dark BrandPrimary is Red 200`() {
+        assertEquals(Color(0xFFEF9A9A), YoleColors.Dark.BrandPrimary)
     }
 
     @Test

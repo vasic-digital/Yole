@@ -88,9 +88,9 @@ object YoleDesktopTheme {
         return if (isDarkTheme) {
             // IDE Dark Theme (VS Code inspired)
             baseScheme.copy(
-                primary = Color(0xFF007ACC),           // IDE accent blue
+                primary = Color(0xFFD32F2F),           // IDE accent red
                 onPrimary = Color.White,
-                primaryContainer = Color(0xFF264F78),
+                primaryContainer = Color(0xFF5A1E1E),
                 onPrimaryContainer = Color(0xFFD4D4D4),
                 secondary = YoleColors.BrandSecondary,
                 tertiary = YoleColors.BrandTertiary,
@@ -107,9 +107,9 @@ object YoleDesktopTheme {
         } else {
             // IDE Light Theme
             baseScheme.copy(
-                primary = Color(0xFF007ACC),
+                primary = Color(0xFFD32F2F),
                 onPrimary = Color.White,
-                primaryContainer = Color(0xFFD0E8FF),
+                primaryContainer = Color(0xFFFFCDD2),
                 onPrimaryContainer = Color(0xFF1E1E1E),
                 secondary = YoleColors.BrandSecondary,
                 tertiary = YoleColors.BrandTertiary,

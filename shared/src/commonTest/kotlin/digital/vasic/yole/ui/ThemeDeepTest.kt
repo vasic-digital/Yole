@@ -32,7 +32,7 @@ class ThemeDeepTest {
 
     @Test
     fun `light brand colors have expected ARGB values`() {
-        assertEquals(Color(0xFF1976D2), YoleColors.BrandPrimary)
+        assertEquals(Color(0xFFD32F2F), YoleColors.BrandPrimary)
         assertEquals(Color(0xFFDC004E), YoleColors.BrandSecondary)
         assertEquals(Color(0xFF2E7D32), YoleColors.BrandTertiary)
     }
@@ -42,7 +42,7 @@ class ThemeDeepTest {
         assertEquals(Color(0xFF4CAF50), YoleColors.Success)
         assertEquals(Color(0xFFFF9800), YoleColors.Warning)
         assertEquals(Color(0xFFF44336), YoleColors.Error)
-        assertEquals(Color(0xFF2196F3), YoleColors.Info)
+        assertEquals(Color(0xFFE53935), YoleColors.Info)
     }
 
     @Test
@@ -89,9 +89,9 @@ class ThemeDeepTest {
 
     @Test
     fun `light interactive color values are correct`() {
-        assertEquals(Color(0xFFE3F2FD), YoleColors.InteractiveHover)
-        assertEquals(Color(0xFFBBDEFB), YoleColors.InteractivePressed)
-        assertEquals(Color(0xFF90CAF9), YoleColors.InteractiveFocus)
+        assertEquals(Color(0xFFFFEBEE), YoleColors.InteractiveHover)
+        assertEquals(Color(0xFFFFCDD2), YoleColors.InteractivePressed)
+        assertEquals(Color(0xFFEF9A9A), YoleColors.InteractiveFocus)
     }
 
     @Test
@@ -130,7 +130,7 @@ class ThemeDeepTest {
 
     @Test
     fun `dark brand colors have expected values`() {
-        assertEquals(Color(0xFF90CAF9), YoleColors.Dark.BrandPrimary)
+        assertEquals(Color(0xFFEF9A9A), YoleColors.Dark.BrandPrimary)
         assertEquals(Color(0xFFFF5983), YoleColors.Dark.BrandSecondary)
         assertEquals(Color(0xFF81C784), YoleColors.Dark.BrandTertiary)
     }
@@ -140,7 +140,7 @@ class ThemeDeepTest {
         assertEquals(Color(0xFF81C784), YoleColors.Dark.Success)
         assertEquals(Color(0xFFFFB74D), YoleColors.Dark.Warning)
         assertEquals(Color(0xFFEF5350), YoleColors.Dark.Error)
-        assertEquals(Color(0xFF64B5F6), YoleColors.Dark.Info)
+        assertEquals(Color(0xFFE57373), YoleColors.Dark.Info)
     }
 
     @Test
@@ -181,9 +181,9 @@ class ThemeDeepTest {
 
     @Test
     fun `dark interactive color values are correct`() {
-        assertEquals(Color(0xFF1E3A5F), YoleColors.Dark.InteractiveHover)
-        assertEquals(Color(0xFF2A4A6B), YoleColors.Dark.InteractivePressed)
-        assertEquals(Color(0xFF1565C0), YoleColors.Dark.InteractiveFocus)
+        assertEquals(Color(0xFF5F1E1E), YoleColors.Dark.InteractiveHover)
+        assertEquals(Color(0xFF6B2A2A), YoleColors.Dark.InteractivePressed)
+        assertEquals(Color(0xFFC62828), YoleColors.Dark.InteractiveFocus)
     }
 
     @Test

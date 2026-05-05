@@ -74,7 +74,7 @@ val IdeDarkSurfaceVariant = Color(0xFF2D2D30)
 val IdeDarkBorder = Color(0xFF3C3C3C)
 
 /** Accent color for active elements (VS Code blue) */
-val IdeAccent = Color(0xFF007ACC)
+val IdeAccent = Color(0xFFD32F2F)
 
 /** Primary text color */
 val IdeTextPrimary = Color(0xFFD4D4D4)
