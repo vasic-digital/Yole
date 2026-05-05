@@ -12,6 +12,7 @@ package digital.vasic.yole.desktop.ui
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.*
 import digital.vasic.yole.desktop.storage.DesktopSettingsStorage
 import digital.vasic.yole.format.FormatRegistry
+import java.net.URI
 
 /**
  * Find and Replace dialog.
@@ -717,12 +719,32 @@ fun AboutDialog(
                 )
                 
                 Spacer(modifier = Modifier.weight(1f))
-                
-                Text(
-                    text = "© 2025 Milos Vasic\nLicensed under Apache 2.0",
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+
+                val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+                val copyrightAnnotated = buildAnnotatedString {
+                    append("© $currentYear ")
+                    pushStringAnnotation("URL", "https://www.milosvasic.ru/")
+                    withStyle(SpanStyle(
+                        color = MaterialTheme.colorScheme.primary,
+                        textDecoration = TextDecoration.Underline
+                    )) {
+                        append("Milos Vasic")
+                    }
+                    pop()
+                    append("\nLicensed under Apache 2.0")
+                }
+                ClickableText(
+                    text = copyrightAnnotated,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    ),
+                    onClick = { offset ->
+                        copyrightAnnotated.getStringAnnotations("URL", offset, offset)
+                            .firstOrNull()?.let {
+                                java.awt.Desktop.getDesktop().browse(URI(it.item))
+                            }
+                    }
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))

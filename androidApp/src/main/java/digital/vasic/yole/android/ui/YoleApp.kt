@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -52,6 +53,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -964,6 +968,20 @@ fun MainScreen() {
 
             // About Dialog
             if (showAboutDialog) {
+                val ctx = context
+                val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+                val copyrightAnnotated = buildAnnotatedString {
+                    append("© $currentYear ")
+                    pushStringAnnotation("URL", "https://www.milosvasic.ru/")
+                    withStyle(SpanStyle(
+                        color = MaterialTheme.colorScheme.primary,
+                        textDecoration = TextDecoration.Underline
+                    )) {
+                        append("Milos Vasic")
+                    }
+                    pop()
+                    append("\nApache-2.0 License")
+                }
                 AlertDialog(
                     onDismissRequest = { showAboutDialog = false },
                     title = { Text("About Yole") },
@@ -971,15 +989,22 @@ fun MainScreen() {
                         Column {
                             Text("Yole - Universal Text Editor")
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("Version: 2.15.1")
+                            Text("Version: 1.0.0")
                             Spacer(modifier = Modifier.height(8.dp))
                             Text("Platforms: Android, Desktop, iOS, Web")
                             Spacer(modifier = Modifier.height(8.dp))
                             Text("Supports 17+ text formats including Markdown, LaTeX, CSV, and more.")
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("(c) 2025 Milos Vasic")
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("Apache-2.0 License")
+                            ClickableText(
+                                text = copyrightAnnotated,
+                                style = MaterialTheme.typography.bodyMedium
+                            ) { offset ->
+                                copyrightAnnotated.getStringAnnotations("URL", offset, offset)
+                                    .firstOrNull()?.let {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.item))
+                                        ctx.startActivity(intent)
+                                    }
+                            }
                         }
                     },
                     confirmButton = {

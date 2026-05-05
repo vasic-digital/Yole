@@ -1,10 +1,15 @@
 # Yole - Development Guide for AI Agents
 
+> **Precedence:** `CONSTITUTION.md` is the authoritative rule set. When a rule here conflicts, the Constitution wins.
+
 ## MANDATORY Rules
 
 1. **No CI/CD Pipelines** - No `.github/workflows/`, `.gitlab-ci.yml`, Jenkinsfile, etc.
 2. **Never Remove/Disable Tests** - Fix root causes, don't skip tests
-3. **Release builds in containers** - `docker compose run --rm build ./docker/scripts/build.sh`
+3. **Conventional Commits** for every commit (Constitution mandatory standard #4)
+4. **SSH-only for git** (`git@…` remotes); HTTPS prohibited (Constitution mandatory standard #5)
+5. **Release builds in containers** - `docker compose run --rm build ./docker/scripts/build.sh`
+6. **Bootstrap fresh clone** - `make bootstrap` (installs anti-bluff pre-commit hook + submodules)
 
 ## Build Commands
 
@@ -168,6 +173,14 @@ package digital.vasic.yole.format
 | `settings.gradle.kts` | Module includes + 10 composite builds |
 | `config/detekt/detekt.yml` | Static analysis rules |
 | `Makefile` | Build automation (`make help` for all targets) |
+
+## Definition of Done
+
+A change is done only when **all** of:
+1. The code change is committed
+2. All project-level tests pass on a clean clone
+3. All challenges in `challenges/scripts/` pass on the running host
+4. Governance docs (`CONSTITUTION.md`, `AGENTS.md`, `CLAUDE.md`) remain coherent
 
 ## Quality Requirements
 
