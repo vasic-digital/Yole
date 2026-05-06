@@ -6,8 +6,8 @@
 > work left off.
 
 **Last updated:** 2026-05-07  
-**Current branch:** `master` (3 new local commits, not yet pushed)  
-**Working tree:** CLEAN (committed)
+**Current branch:** `master` (synced with all remotes)  
+**Working tree:** CLEAN (committed + pushed)
 
 ---
 
@@ -116,19 +116,13 @@ Continue implementing the next incomplete task.
 
 From `docs/KNOWN_DEFECTS.md`:
 
-### #smb-stub-no-negotiation
-- **Symptom:** SMB connect succeeds without real negotiation
-- **Discovered:** `ErrorRecoveryE2ETests.kt`
-- **Proper fix:** Wire real SMB connect/authenticate, injectable `SmbProtocolClient`, test fake
-- **Blocked by:** ~12 tests assert fake-host connect succeeds; need refactored constructor + FakeSMBProtocolClient
-- **Exemption:** `SKIP-OK: #smb-stub-no-negotiation` in ErrorRecoveryE2ETests.kt
+### ~~#smb-stub-no-negotiation~~ — FIXED (2026-05-07, commit `1f6472c9`)
+- **Fixed:** SmbService.connect() now performs real protocol negotiation and authentication via SmbProtocolClient (or injected test lambdas). `_isConnected` is set only after real success — `isOnline` honestly reflects reachability. Tests updated with lambda injection pattern.
 
-### #webdav-always-online-stub
-- **Symptom:** WebDAV connect sets isOnline=true even when unreachable
-- **Discovered:** `ErrorRecoveryE2ETests.kt`
-- **Proper fix:** Remove catch block, let exception propagate, separate `isOfflineCapable` flag
-- **Blocked by:** ~10 tests assert fake-host connect succeeds; need injectable HttpClient + MockEngine
-- **Exemption:** `SKIP-OK: #webdav-always-online-stub` in ErrorRecoveryE2ETests.kt
+### ~~#webdav-always-online-stub~~ — FIXED (2026-05-07, commit `1f6472c9`)
+- **Fixed:** WebDavService.connect() no longer catches network errors and lies about online state. Removed the `catch` block that suppressed exceptions. Added `testConnectFn` lambda injection for test control. Tests updated to handle the real connection behavior.
+
+### Current Open Defects:
 
 ### #robolectric-compose-ui-tests-brittle
 - **Symptom:** ~25 Robolectric UI tests flap on string-based matching
@@ -170,9 +164,12 @@ From `docs/campaigns/anti-bluff/MILESTONE-2026-05-01.md`:
 
 ### Main Repo
 ```
-Branch: master (3 new local commits, NOT YET PUSHED)
+Branch: master (synced with all remotes)
 Remotes: github (origin), upstream (all same git@github.com:vasic-digital/Yole.git)
 Last 10 commits:
+  1f6472c9 fix(network): resolve #smb-stub-no-negotiation and #webdav-always-online-stub
+  596e6994 chore: update submodule pointers after upstream sync
+  a734c9f9 docs(continuation): mark SAF Save Fix complete (13/13 tasks) with full artifact tracking
   a845ef65 test(save): add Android instrumentation save tests with anti-bluff evidence
   4d71c3b0 docs(continuation): update task progress to reflect completed Tasks 3-8
   5396cfe4 test(file): add Desktop-specific FileHandle roundtrip tests
@@ -180,16 +177,13 @@ Last 10 commits:
   41c4bb74 refactor(save): update EditorTab with contentUri and migrate saveFile to FileHandle
   de61d4d6 chore: update submodule pointers
   099d713a feat(file): add iOS/WASM stubs for FileHandle
-  da8e733e feat(file): add Android actual for FileHandle using ContentResolver/SAF
-  9c8f3f29 docs(continuation): create comprehensive continuation document with active tasks, known defects, and resume protocol
-  23be3ada feat(governance): add CONST-036 continuation document constraint to all governance docs
 ```
 
 ### Submodules
 ```
-Challenges:  4c8fc60 (main) — NEW: android save challenge + CONST-035 verbatim quote
-Containers:  e377dea (main) — NEW: AVD configs + Dockerfile + anchor manifest fixes
-HelixQA:     1efd359 (main) — unchanged
+Challenges:  727353b (main) — CONST-035 labels added to governance docs
+Containers:  e377dea (main) — AVD configs + Dockerfile
+HelixQA:     71560fd (main) — merged upstream governance updates
 ```
 † helixgithub/helixgitlab for HelixQA have SSH-auth errors (known issue)
 
