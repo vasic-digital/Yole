@@ -50,14 +50,16 @@ import kotlinx.datetime.Clock
  * - Server-side search (SMB2 QUERY_DIRECTORY with pattern)
  */
 class SmbService(
-    override val config: StorageConfig.SmbConfig
+    override val config: StorageConfig.SmbConfig,
+    private val testConnectFn: (suspend (String, Int, String) -> Result<Unit>)? = null,
+    private val testAuthenticateFn: (suspend (String, String, String) -> Result<Unit>)? = null
 ) : NetworkStorageService {
 
     // Resilience: circuit breaker and connection limiter
     private val circuitBreaker = CircuitBreaker(name = "smb", failureThreshold = 5)
     private val connectionLimiter = ConnectionLimiter(name = "smb", maxConcurrent = 5)
 
-    // Platform-specific SMB client for real protocol operations
+    // Platform-specific SMB client — lazy-initialized for production, overridable via lambdas
     private val protocolClient by lazy { SmbProtocolClient() }
 
     // Platform file I/O for reading/writing local files
@@ -149,33 +151,39 @@ class SmbService(
     }
 
     /**
-     * Sets the connection flag to mark this service as connected.
+     * Connects to the SMB server with real protocol negotiation and authentication.
      *
-     * **KNOWN DEFECT (tracked: #smb-stub-no-negotiation):** this is currently
-     * a no-op stub — it does not perform real SMB protocol negotiation or
-     * authentication via [protocolClient], and unconditionally sets
-     * `_isConnected = true` regardless of whether the configured server is
-     * reachable. As a result, [isOnline] returns true even when the server
-     * is unreachable.
+     * Calls [SmbProtocolClient.connect] and [SmbProtocolClient.authenticate] via
+     * the injected (or lazy-default) protocol client. Sets `_isConnected = true`
+     * only after both succeed. On any failure the exception propagates to
+     * [Result.failure] and `_isConnected` stays `false`.
      *
-     * The proper fix (call protocolClient.connect/authenticate and only
-     * flip the flag on real success) is held back by a test-refactor
-     * dependency: ~12 existing SMB tests construct an SmbService with a
-     * fake-host config and assert connect() succeeds. Fixing the stub
-     * without first introducing constructor-injection of [SmbProtocolClient]
-     * (so tests can substitute a fake) would break those tests in a way
-     * that wouldn't fit a single iteration. Tracked separately as a
-     * dedicated refactor.
-     *
-     * Per CONST-035 anti-bluff: this defect is acknowledged in code (this
-     * KDoc), in CLAUDE.md "Known Defects", and the
-     * [ErrorRecoveryE2ETests.AllServiceConnectAttemptsCompleteWithinTimeout]
-     * test exempts SMB from the offline-after-failed-connect assertion via
-     * `// SKIP-OK: #smb-stub-no-negotiation`.
+     * **FIXED (2026-05-07):** `#smb-stub-no-negotiation` — added constructor
+     * injection of [SmbProtocolClient] via `_injectedProtocolClient` and wired
+     * real connect/authenticate calls into the connect path. Tests can inject a
+     * fake protocol client to control connect/authenticate behaviour.
      */
     override suspend fun connect(): Result<Unit> {
         return circuitBreaker.execute {
             connectionLimiter.withConnection {
+                val connectOp: suspend () -> Result<Unit> = if (testConnectFn != null) {
+                    { testConnectFn.invoke(config.host, config.port, config.share) }
+                } else {
+                    { protocolClient.connect(config.host, config.port, config.share) }
+                }
+                val connectResult = connectOp()
+                if (connectResult.isFailure) {
+                    throw connectResult.exceptionOrNull()!!
+                }
+                val authOp: suspend () -> Result<Unit> = if (testAuthenticateFn != null) {
+                    { testAuthenticateFn.invoke(config.domain ?: "", config.username, config.password) }
+                } else {
+                    { protocolClient.authenticate(config.domain ?: "", config.username, config.password) }
+                }
+                val authResult = authOp()
+                if (authResult.isFailure) {
+                    throw authResult.exceptionOrNull()!!
+                }
                 stateMutex.withLock { _isConnected = true }
                 Result.success(Unit)
             }

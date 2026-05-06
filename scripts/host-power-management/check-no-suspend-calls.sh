@@ -68,6 +68,8 @@ EXCLUDE_PATHS=(
   "vtcode.toml.example"
   "/zed-extension/vtcode.toml"
   "/vtcode-config/src/core/commands.rs"
+  # Challenge documentation describing suspend-call detection (not executing):
+  "Challenges/p1-f14-sandboxed-shell/CHALLENGE.md"
 )
 
 # Forbidden grep -E patterns. Real, tight regexes — not bare words.

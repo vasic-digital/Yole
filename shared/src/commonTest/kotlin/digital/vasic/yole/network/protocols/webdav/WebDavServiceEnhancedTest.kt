@@ -39,7 +39,7 @@ class WebDavServiceEnhancedTest {
             username = "testuser",
             password = "testpass"
         )
-        service = WebDavService(config)
+        service = WebDavService(config, testConnectFn = { Result.success(Unit) })
     }
 
     // ==================== INITIALIZATION TESTS ====================

@@ -54,7 +54,13 @@ class WebDavMockHttpTest {
     )
 
     private fun createMockClient(handler: MockRequestHandler): HttpClient {
-        return HttpClient(MockEngine(handler))
+        return HttpClient(MockEngine { request ->
+            if (request.method == HttpMethod("OPTIONS")) {
+                respond("", HttpStatusCode.OK, headersOf("DAV", "1, 2, 3"))
+            } else {
+                handler(request)
+            }
+        })
     }
 
     // ==================== Shared XML Responses ====================
@@ -149,11 +155,15 @@ class WebDavMockHttpTest {
   </d:response>
 </d:multistatus>"""
 
+    private fun createRawMockClient(handler: MockRequestHandler): HttpClient {
+        return HttpClient(MockEngine(handler))
+    }
+
     // ==================== 1. connect + testConnection ====================
 
     @Test
     fun `connect succeeds with 200 OPTIONS response`() = runBlocking<Unit> {
-        val client = createMockClient { request ->
+        val client = createRawMockClient { request ->
             respond("", HttpStatusCode.OK, headersOf("DAV", "1, 2, 3"))
         }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
@@ -167,7 +177,7 @@ class WebDavMockHttpTest {
     @Test
     fun `connect sends OPTIONS method`() = runBlocking<Unit> {
         var capturedMethod: HttpMethod? = null
-        val client = createMockClient { request ->
+        val client = createRawMockClient { request ->
             capturedMethod = request.method
             respond("", HttpStatusCode.OK)
         }
@@ -180,7 +190,7 @@ class WebDavMockHttpTest {
 
     @Test
     fun `connect succeeds even with 401 response`() = runBlocking<Unit> {
-        val client = createMockClient { request ->
+        val client = createRawMockClient { request ->
             respond("Unauthorized", HttpStatusCode.Unauthorized)
         }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
@@ -193,7 +203,7 @@ class WebDavMockHttpTest {
 
     @Test
     fun `connect succeeds even with 500 response`() = runBlocking<Unit> {
-        val client = createMockClient { request ->
+        val client = createRawMockClient { request ->
             respond("Server Error", HttpStatusCode.InternalServerError)
         }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
@@ -205,16 +215,16 @@ class WebDavMockHttpTest {
     }
 
     @Test
-    fun `connect succeeds even with network error`() = runBlocking<Unit> {
-        val client = createMockClient { request ->
+    fun `connect fails with network error`() = runBlocking<Unit> {
+        val client = createRawMockClient { request ->
             throw Exception("Network unreachable")
         }
         val service = WebDavService(createConfig(), _injectedHttpClient = client)
 
         val result = service.connect()
 
-        assertTrue(result.isSuccess)
-        assertTrue(service.isOnline)
+        assertTrue(result.isFailure, "connect should fail on network error (CONST-035: no longer a stub)")
+        assertFalse(service.isOnline)
     }
 
     @Test

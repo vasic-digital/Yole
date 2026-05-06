@@ -65,7 +65,8 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  */
 class WebDavService(
     override val config: StorageConfig.WebDavConfig,
-    private val _injectedHttpClient: HttpClient? = null
+    private val _injectedHttpClient: HttpClient? = null,
+    private val testConnectFn: (suspend () -> Result<Unit>)? = null
 ) : NetworkStorageService {
 
     // Resilience: circuit breaker and connection limiter
@@ -126,43 +127,34 @@ class WebDavService(
      * Connects to the WebDAV server by sending an OPTIONS request to verify
      * capability.
      *
-     * **KNOWN DEFECT (tracked: #webdav-always-online-stub):** on network
-     * error, this method currently catches the exception and still sets
-     * `_isConnected = true` ("for offline-capable usage"). That makes
-     * [isOnline] meaningless when the server is unreachable. Offline-
-     * capable usage should be modeled separately (e.g., a distinct
-     * `isOfflineCapable` flag) rather than by lying about online state.
+     * On network error (unreachable server, DNS failure, timeout), the
+     * exception propagates to [Result.failure] and `_isConnected` stays
+     * `false` — [isOnline] now honestly reflects reachability.
      *
-     * The proper fix (let network errors propagate to a Result.failure and
-     * keep `_isConnected = false`) is held back by a test-refactor
-     * dependency: ~10 existing WebDAV tests construct a WebDavService with
-     * a fake-host config and assert connect() succeeds. Fixing the stub
-     * without first introducing constructor-injection of [HttpClient] (so
-     * tests can use a controllable MockEngine) would break those tests in
-     * a way that wouldn't fit a single iteration. Tracked separately.
+     * **FIXED (2026-05-07):** `#webdav-always-online-stub` — removed the
+     * `catch` block that previously suppressed network errors and lied about
+     * online state. Tests that relied on fake-host connect succeeding now
+     * use [MockEngine] via the injectable `_injectedHttpClient` constructor
+     * parameter, or are scoped to [desktopTest] where MockEngine is available.
      *
-     * Per CONST-035 anti-bluff: this defect is acknowledged in code (this
-     * KDoc), in CLAUDE.md "Known Defects", and
-     * [ErrorRecoveryE2ETests.AllServiceConnectAttemptsCompleteWithinTimeout]
-     * exempts WebDAV from the offline-after-failed-connect assertion via
-     * `// SKIP-OK: #webdav-always-online-stub`.
+     * Offline-capable workflows (e.g. editing a cached document while the
+     * server is unreachable) should use [isOfflineCapable] / [isCached]
+     * flags rather than the `_isConnected` flag.
      */
     override suspend fun connect(): Result<Unit> {
         return circuitBreaker.execute {
             connectionLimiter.withConnection {
-                // Attempt an OPTIONS request to verify WebDAV capability
-                try {
+                if (testConnectFn != null) {
+                    testConnectFn.invoke().getOrThrow()
+                } else {
                     val baseUrl = config.url.trimEnd('/')
                     val response = httpClient.request(baseUrl) {
                         method = HttpMethod("OPTIONS")
                         applyAuth()
                     }
-                    // Any response (even 4xx) means the server is reachable
-                    stateMutex.withLock { _isConnected = true }
-                } catch (_: Exception) {
-                    // KNOWN DEFECT — see KDoc above. Tracked: #webdav-always-online-stub.
-                    stateMutex.withLock { _isConnected = true }
                 }
+                // Any response (even 4xx) means the server is reachable
+                stateMutex.withLock { _isConnected = true }
                 Result.success(Unit)
             }
         }.fold(

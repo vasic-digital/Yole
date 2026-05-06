@@ -29,9 +29,12 @@ class WebDavServiceTest {
     
     private lateinit var webDavService: WebDavService
     
+    private fun createWebDavService(config: StorageConfig.WebDavConfig = webDavConfig) =
+        WebDavService(config, testConnectFn = { Result.success(Unit) })
+    
     @Test
     fun testWebDavServiceInitialization() {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         
         assertEquals("test-webdav", webDavService.config.name)
         assertEquals("https://webdav.example.com/remote.php/dav/files/username/", webDavService.config.url)
@@ -45,7 +48,7 @@ class WebDavServiceTest {
     
     @Test
     fun testConnectSuccess() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val result = webDavService.connect()
         
         assertTrue(result.isSuccess, "WebDAV connection should succeed")
@@ -53,7 +56,7 @@ class WebDavServiceTest {
     
     @Test
     fun testDisconnectSuccess() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         webDavService.connect()
         val result = webDavService.disconnect()
         
@@ -62,7 +65,7 @@ class WebDavServiceTest {
     
     @Test
     fun testStorageInfo() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val storageInfo = webDavService.getStorageInfo()
         
         assertEquals("webdav_test-webdav", storageInfo.id)
@@ -73,7 +76,7 @@ class WebDavServiceTest {
     
     @Test
     fun testListFilesWhenNotConnected() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val result = webDavService.listFiles("/").first()
         
         assertTrue(result.isFailure, "List files should fail when not connected")
@@ -82,7 +85,7 @@ class WebDavServiceTest {
     
     @Test
     fun testDownloadFileWhenNotConnected() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val operations = webDavService.downloadFile("/test.md", "/tmp/test.md")
         
         val firstOperation = operations.first()
@@ -93,7 +96,7 @@ class WebDavServiceTest {
     
     @Test
     fun testUploadFileWhenNotConnected() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val operations = webDavService.uploadFile("/tmp/test.md", "/test.md")
         
         val firstOperation = operations.first()
@@ -104,7 +107,7 @@ class WebDavServiceTest {
     
     @Test
     fun testDeleteFileWhenNotConnected() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val result = webDavService.deleteFile("/test.md")
         
         assertTrue(result.isSuccess, "Delete should succeed even when not connected (WebDAV pattern)")
@@ -112,7 +115,7 @@ class WebDavServiceTest {
     
     @Test
     fun testCreateFolderWhenNotConnected() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val result = webDavService.createFolder("/test-folder")
         
         assertTrue(result.isSuccess, "Create folder should succeed even when not connected (WebDAV pattern)")
@@ -123,7 +126,7 @@ class WebDavServiceTest {
     
     @Test
     fun testRenameFileWhenNotConnected() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val result = webDavService.renameFile("/test.md", "renamed.md")
         
         assertTrue(result.isSuccess, "Rename should succeed even when not connected (WebDAV pattern)")
@@ -131,7 +134,7 @@ class WebDavServiceTest {
     
     @Test
     fun testMoveFileWhenNotConnected() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val result = webDavService.moveFile("/test.md", "/moved/test.md")
         
         assertTrue(result.isSuccess, "Move should succeed even when not connected (WebDAV pattern)")
@@ -142,7 +145,7 @@ class WebDavServiceTest {
     
     @Test
     fun testCopyFileWhenNotConnected() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val result = webDavService.copyFile("/test.md", "/copy/test.md")
         
         assertTrue(result.isSuccess, "Copy should succeed even when not connected (WebDAV pattern)")
@@ -150,7 +153,7 @@ class WebDavServiceTest {
     
     @Test
     fun testGetFileInfoWhenNotConnected() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val result = webDavService.getFileInfo("/test.md")
         
         assertTrue(result.isSuccess, "Get file info should succeed even when not connected (WebDAV pattern)")
@@ -161,7 +164,7 @@ class WebDavServiceTest {
     
     @Test
     fun testGetQuotaInfoWhenNotConnected() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val result = webDavService.getQuotaInfo()
         
         assertTrue(result.isSuccess, "Get quota info should succeed even when not connected (WebDAV pattern)")
@@ -176,7 +179,7 @@ class WebDavServiceTest {
     
     @Test
     fun testExistsWhenNotConnected() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val result = webDavService.exists("/test.md")
         
         assertTrue(result.isSuccess, "Exists should succeed even when not connected (WebDAV pattern)")
@@ -186,20 +189,20 @@ class WebDavServiceTest {
     @Test
     fun testWebDavConfigurationValidation() {
         val configWithTrustAll = webDavConfig.copy(verifyCertificate = false)
-        webDavService = WebDavService(configWithTrustAll)
+        webDavService = createWebDavService(configWithTrustAll)
         
         assertEquals("https://webdav.example.com/remote.php/dav/files/username/", webDavService.config.url)
         assertFalse(webDavService.config.verifyCertificate)
         
         val configWithCustomTimeout = webDavConfig.copy(connectionTimeout = 60000)
-        webDavService = WebDavService(configWithCustomTimeout)
+        webDavService = createWebDavService(configWithCustomTimeout)
         
         assertEquals(60000, webDavService.config.connectionTimeout)
     }
     
     @Test
     fun testGetParentPath() {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         
         assertEquals("/", webDavService.getParentPath("/test.md"))
         assertEquals("/folder", webDavService.getParentPath("/folder/test.md"))
@@ -210,7 +213,7 @@ class WebDavServiceTest {
     
     @Test
     fun testValidatePath() {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         
         assertTrue(webDavService.validatePath("/test.md").isSuccess)
         assertTrue(webDavService.validatePath("/folder/test.md").isSuccess)
@@ -222,7 +225,7 @@ class WebDavServiceTest {
     
     @Test
     fun testSearchFilesWhenNotConnected() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val result = webDavService.searchFiles("test", "/", false).first()
         
         assertTrue(result.isFailure, "Search should fail when not connected")
@@ -231,7 +234,7 @@ class WebDavServiceTest {
     
     @Test
     fun testGetRecentChangesWhenNotConnected() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val since = Clock.System.now()
         val changes = webDavService.getRecentChanges(since, "/").first()
         
@@ -240,7 +243,7 @@ class WebDavServiceTest {
     
     @Test
     fun testSyncFileWhenNotConnected() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val operations = webDavService.syncFile("/test.md", false)
         
         // WebDAV syncFile returns progress updates ending with COMPLETED
@@ -257,7 +260,7 @@ class WebDavServiceTest {
     
     @Test
     fun testSyncAllWhenNotConnected() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val operations = webDavService.syncAll(false)
 
         // syncAll now returns FAILED operation when not connected
@@ -273,7 +276,7 @@ class WebDavServiceTest {
     
     @Test
     fun testActiveOperationsFlow() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val activeOps = webDavService.getActiveOperations().first()
         
         assertTrue(activeOps.isEmpty(), "Active operations should be empty initially")
@@ -281,7 +284,7 @@ class WebDavServiceTest {
     
     @Test
     fun testCacheOperations() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         
         val cacheEntries = webDavService.getCacheEntries("/").first()
         assertTrue(cacheEntries.isEmpty(), "Cache entries should be empty")
@@ -298,7 +301,7 @@ class WebDavServiceTest {
     
     @Test
     fun testSyncStatusFlow() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val syncStatus = webDavService.getSyncStatus("/").first()
         
         assertTrue(syncStatus.isEmpty(), "Sync status should be empty initially")
@@ -306,7 +309,7 @@ class WebDavServiceTest {
     
     @Test
     fun testTestConnection() = runBlocking<Unit> {
-        webDavService = WebDavService(webDavConfig)
+        webDavService = createWebDavService()
         val result = webDavService.testConnection()
         
         assertTrue(result.isSuccess, "Test connection should complete successfully")
@@ -317,17 +320,17 @@ class WebDavServiceTest {
     fun testDifferentWebDavServers() = runBlocking<Unit> {
         // Test Nextcloud URL
         val nextcloudConfig = webDavConfig.copy(url = "https://nextcloud.example.com/remote.php/dav/files/username/")
-        val nextcloudService = WebDavService(nextcloudConfig)
+        val nextcloudService = createWebDavService(nextcloudConfig)
         assertEquals(StorageType.WEBDAV, nextcloudService.getStorageInfo().type)
         
         // Test Owncloud URL
         val owncloudConfig = webDavConfig.copy(url = "https://owncloud.example.com/remote.php/dav/files/username/")
-        val owncloudService = WebDavService(owncloudConfig)
+        val owncloudService = createWebDavService(owncloudConfig)
         assertEquals(StorageType.WEBDAV, owncloudService.getStorageInfo().type)
         
         // Test Generic WebDAV
         val genericConfig = webDavConfig.copy(url = "https://dav.example.com/files/")
-        val genericService = WebDavService(genericConfig)
+        val genericService = createWebDavService(genericConfig)
         assertEquals(StorageType.WEBDAV, genericService.getStorageInfo().type)
     }
 }

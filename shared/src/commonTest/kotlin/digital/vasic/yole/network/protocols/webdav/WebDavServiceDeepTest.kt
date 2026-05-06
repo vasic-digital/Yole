@@ -55,7 +55,7 @@ class WebDavServiceDeepTest {
             password = "testpass",
             authenticationType = WebDavAuthenticationType.BASIC
         )
-        service = WebDavService(config)
+        service = WebDavService(config, testConnectFn = { Result.success(Unit) })
     }
 
     // ==================== INITIALIZATION TESTS ====================
@@ -515,7 +515,7 @@ class WebDavServiceDeepTest {
     @Test
     fun `service with different URL`() = runBlocking<Unit> {
         val differentConfig = config.copy(url = "https://nextcloud.example.com/dav/")
-        val differentService = WebDavService(differentConfig)
+        val differentService = WebDavService(differentConfig, testConnectFn = { Result.success(Unit) })
         val info = differentService.getStorageInfo()
         assertEquals("https://nextcloud.example.com/dav/", info.location)
     }
@@ -523,14 +523,14 @@ class WebDavServiceDeepTest {
     @Test
     fun `service with custom timeout`() {
         val timeoutConfig = config.copy(connectionTimeout = 60000)
-        val timeoutService = WebDavService(timeoutConfig)
+        val timeoutService = WebDavService(timeoutConfig, testConnectFn = { Result.success(Unit) })
         assertEquals(60000, (timeoutService.config as StorageConfig.WebDavConfig).connectionTimeout)
     }
 
     @Test
     fun `service with verify certificate disabled`() {
         val noVerifyConfig = config.copy(verifyCertificate = false)
-        val noVerifyService = WebDavService(noVerifyConfig)
+        val noVerifyService = WebDavService(noVerifyConfig, testConnectFn = { Result.success(Unit) })
         assertFalse((noVerifyService.config as StorageConfig.WebDavConfig).verifyCertificate)
     }
 

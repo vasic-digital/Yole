@@ -48,11 +48,11 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testConnectSuccess() = runBlocking<Unit> {
+    fun testConnectFailsWithInvalidHost() = runBlocking<Unit> {
         smbService = SmbService(smbConfig)
         val result = smbService.connect()
-        
-        assertTrue(result.isSuccess, "SMB connection should succeed")
+
+        assertTrue(result.isFailure, "SMB connect should fail with unreachable host (CONST-035: no longer a stub)")
     }
     
     @Test
@@ -314,11 +314,10 @@ class SmbServiceTest {
     }
     
     @Test
-    fun testTestConnection() = runBlocking<Unit> {
+    fun testTestConnectionFailsWhenUnreachable() = runBlocking<Unit> {
         smbService = SmbService(smbConfig)
         val result = smbService.testConnection()
-        
-        assertTrue(result.isSuccess, "Test connection should complete successfully")
-        assertTrue(result.getOrNull() ?: false, "Connection should be true (SMB testConnection attempts to connect)")
+
+        assertTrue(result.isFailure, "testConnection should fail when host unreachable (CONST-035: no longer a stub)")
     }
 }

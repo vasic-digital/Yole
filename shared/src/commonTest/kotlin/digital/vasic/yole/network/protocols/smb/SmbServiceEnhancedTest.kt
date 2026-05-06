@@ -42,7 +42,11 @@ class SmbServiceEnhancedTest {
             password = "testpass",
             path = "/shared"
         )
-        service = SmbService(config)
+        service = SmbService(
+            config,
+            testConnectFn = { _, _, _ -> Result.success(Unit) },
+            testAuthenticateFn = { _, _, _ -> Result.success(Unit) }
+        )
     }
 
     // ==================== INITIALIZATION TESTS ====================
