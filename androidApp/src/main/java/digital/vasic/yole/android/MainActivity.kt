@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import digital.vasic.yole.android.ui.YoleApp
+import digital.vasic.yole.util.AppContextHolder
 
 class MainActivity : ComponentActivity() {
     
@@ -53,6 +54,7 @@ class MainActivity : ComponentActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppContextHolder.context = applicationContext
         
         // Check and request storage permissions on startup. Wrapped in
         // try/catch because Robolectric's shadow Environment can throw
