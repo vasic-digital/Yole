@@ -12,7 +12,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 
-actual class FileHandle(uri: String) {
+actual class FileHandle actual constructor(uri: String) {
     actual val uri: String = uri
     private val parsedUri: Uri? = try {
         Uri.parse(uri)

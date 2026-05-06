@@ -76,6 +76,9 @@ import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.ParseOptions
 import digital.vasic.yole.format.TextFormat
+import digital.vasic.yole.util.FileHandle
+import digital.vasic.yole.util.readBytes
+import digital.vasic.yole.util.writeBytes
 import digital.vasic.yole.network.common.StorageConfig
 import digital.vasic.yole.network.common.StorageType
 import digital.vasic.yole.network.config.NetworkStorageConfigService
@@ -165,25 +168,24 @@ class YoleSettings(context: android.content.Context) : GsSharedPreferencesProper
 }
 
 /**
- * Save content to a file (supports both direct file access and SAF)
+ * Save content to a file using FileHandle (SAF for Android, File for Desktop).
+ * Returns Pair(saved, newUri) where newUri is non-null only when a new SAF URI was obtained.
  */
-fun saveFile(context: Context, filePath: String, content: String, safUri: Uri? = null): Boolean {
+fun saveFile(context: Context, contentUri: String?, content: String, fileName: String): Pair<Boolean, String?> {
     return try {
-        if (safUri != null) {
-            // SAF-based save
-            context.contentResolver.openOutputStream(safUri, "wt")?.use { outputStream ->
-                outputStream.write(content.toByteArray())
-            }
-            true
+        if (contentUri != null) {
+            val handle = FileHandle(contentUri)
+            val ok = handle.writeBytes(content.toByteArray())
+            if (ok) Pair(true, contentUri) else Pair(false, null)
         } else {
-            // Direct file access save
-            val file = File(filePath)
-            file.parentFile?.mkdirs()
-            file.writeText(content)
-            true
+            val cacheDir = File(context.filesDir, "autosave")
+            if (!cacheDir.exists()) cacheDir.mkdirs()
+            val cacheFile = File(cacheDir, fileName)
+            cacheFile.writeText(content)
+            Pair(true, null)
         }
     } catch (e: Exception) {
-        false
+        Pair(false, null)
     }
 }
 
@@ -248,8 +250,7 @@ data class EditorTab(
     val fileName: String,
     val content: String,
     val isDirty: Boolean = false,
-    val filePath: String? = null,
-    val safUri: Uri? = null
+    val contentUri: String? = null
 )
 
 enum class Screen {
@@ -348,7 +349,7 @@ fun MainScreen() {
     val lineNumColor = if (isDarkTheme) IdeTheme.darkLineNumbers else IdeTheme.lightLineNumbers
 
     // Helper: open file in a new tab or switch to existing tab
-    fun openFileInTab(fileName: String, content: String, safUri: Uri? = null, filePath: String? = null) {
+    fun openFileInTab(fileName: String, content: String, contentUri: String? = null) {
         val existingIndex = openTabs.indexOfFirst { it.fileName == fileName }
         if (existingIndex >= 0) {
             activeTabIndex = existingIndex
@@ -357,8 +358,7 @@ fun MainScreen() {
             openTabs = openTabs + EditorTab(
                 fileName = fileName,
                 content = content,
-                safUri = safUri,
-                filePath = filePath
+                contentUri = contentUri
             )
             activeTabIndex = openTabs.size // will be the new last index
             fileContent = content
@@ -519,32 +519,21 @@ fun MainScreen() {
                             onMenuClick = { coroutineScope.launch { drawerState.open() } },
                             onSaveClick = {
                                 selectedFile?.let { fileName ->
-                                    // Check if current tab has SAF URI or file path
                                     val currentTab = openTabs.getOrNull(activeTabIndex)
-                                    val saved = when {
-                                        // Try SAF URI first (for files opened via SAF)
-                                        currentTab?.safUri != null -> {
-                                            saveFile(context, "", fileContent, currentTab.safUri)
-                                        }
-                                        // Try stored file path
-                                        currentTab?.filePath != null -> {
-                                            saveFile(context, currentTab.filePath, fileContent)
-                                        }
-                                        // Fall back to default Documents directory
-                                        else -> {
-                                            val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-                                            if (!docsDir.exists()) docsDir.mkdirs()
-                                            val filePath = File(docsDir, fileName).absolutePath
-                                            saveFile(context, filePath, fileContent)
-                                        }
-                                    }
+                                    val (saved, newUri) = saveFile(context, currentTab?.contentUri, fileContent, currentTab?.fileName ?: fileName)
                                     if (saved) {
-                                        // Update tab to not dirty
-                                        openTabs = openTabs.mapIndexed { index, tab ->
-                                            if (index == activeTabIndex) tab.copy(isDirty = false) else tab
+                                        if (newUri != null && currentTab?.contentUri != newUri) {
+                                            openTabs = openTabs.mapIndexed { index, tab ->
+                                                if (index == activeTabIndex) tab.copy(contentUri = newUri, isDirty = false)
+                                                else tab
+                                            }
+                                        } else {
+                                            openTabs = openTabs.mapIndexed { index, tab ->
+                                                if (index == activeTabIndex) tab.copy(isDirty = false) else tab
+                                            }
                                         }
                                         if (settings.getAnnounceChanges()) {
-                                            Toast.makeText(context, "File saved successfully", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "File saved", Toast.LENGTH_SHORT).show()
                                         }
                                     } else {
                                         Toast.makeText(context, "Failed to save file", Toast.LENGTH_LONG).show()
@@ -713,10 +702,7 @@ fun MainScreen() {
                                 onBackClick = { currentSubScreen = null },
                                 onSaveClick = {
                                     selectedFile?.let { fileName ->
-                                        val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-                                        if (!docsDir.exists()) docsDir.mkdirs()
-                                        val filePath = File(docsDir, fileName).absolutePath
-                                        saveFile(context, filePath, fileContent)
+                                        saveFile(context, null, fileContent, fileName)
                                     }
                                 }
                             )
@@ -784,7 +770,7 @@ fun MainScreen() {
                                             showSearch = showFileSearch,
                                             onShowSearchChanged = { showFileSearch = it },
                                             onFileSelected = { file, content, safUri, filePath ->
-                                                openFileInTab(file, content, safUri, filePath)
+                                                openFileInTab(file, content, safUri?.toString() ?: filePath)
                                             },
                                             onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
                                         )
@@ -804,10 +790,7 @@ fun MainScreen() {
                                             content = quickNoteContent,
                                             onContentChanged = { quickNoteContent = it },
                                             onSaveClick = {
-                                                val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-                                                if (!docsDir.exists()) docsDir.mkdirs()
-                                                val filePath = File(docsDir, "quicknote.md").absolutePath
-                                                saveFile(context, filePath, quickNoteContent)
+                                                saveFile(context, null, quickNoteContent, "quicknote.md")
                                             }
                                         )
                                         Screen.MORE -> MoreScreen(
@@ -828,7 +811,7 @@ fun MainScreen() {
                                 showSearch = showFileSearch,
                                 onShowSearchChanged = { showFileSearch = it },
                                 onFileSelected = { file, content, safUri, filePath ->
-                                    openFileInTab(file, content, safUri, filePath)
+                                    openFileInTab(file, content, safUri?.toString() ?: filePath)
                                 },
                                 onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
                             )
@@ -857,10 +840,7 @@ fun MainScreen() {
                             onBackClick = { currentSubScreen = null },
                             onSaveClick = {
                                 selectedFile?.let { fileName ->
-                                    val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-                                    if (!docsDir.exists()) docsDir.mkdirs()
-                                    val filePath = File(docsDir, fileName).absolutePath
-                                    saveFile(context, filePath, fileContent)
+                                    saveFile(context, null, fileContent, fileName)
                                 }
                             }
                         )
@@ -915,7 +895,7 @@ fun MainScreen() {
                                     showSearch = showFileSearch,
                                     onShowSearchChanged = { showFileSearch = it },
                                     onFileSelected = { file, content, safUri, filePath ->
-                                        openFileInTab(file, content, safUri, filePath)
+                                        openFileInTab(file, content, safUri?.toString() ?: filePath)
                                     },
                                     onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
                                 )
@@ -935,10 +915,7 @@ fun MainScreen() {
                                     content = quickNoteContent,
                                     onContentChanged = { quickNoteContent = it },
                                     onSaveClick = {
-                                        val docsDir = File(context.getExternalFilesDir(null)?.parentFile, "Documents")
-                                        if (!docsDir.exists()) docsDir.mkdirs()
-                                        val filePath = File(docsDir, "quicknote.md").absolutePath
-                                        saveFile(context, filePath, quickNoteContent)
+                                        saveFile(context, null, quickNoteContent, "quicknote.md")
                                     }
                                 )
                                 Screen.MORE -> MoreScreen(
@@ -961,7 +938,7 @@ fun MainScreen() {
                             showSearch = showFileSearch,
                             onShowSearchChanged = { showFileSearch = it },
                             onFileSelected = { file, content, safUri, filePath ->
-                                openFileInTab(file, content, safUri, filePath)
+                                openFileInTab(file, content, safUri?.toString() ?: filePath)
                             },
                             onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
                         )
