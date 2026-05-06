@@ -6,8 +6,8 @@
 > work left off.
 
 **Last updated:** 2026-05-06  
-**Current branch:** `master` (ahead of `origin/master` by 4 commits)  
-**Working tree:** DIRTY (uncommitted files exist)
+**Current branch:** `master` (up to date with remotes)  
+**Working tree:** CLEAN (committed)
 
 ---
 
@@ -49,52 +49,31 @@ Continue implementing the next incomplete task.
 |---|------|--------|--------|
 | 1 | Create FileHandle expect declaration | DONE | `1c8ba718` |
 | 2 | Create Desktop actual implementation | DONE | `ec80e7a2` |
-| 3 | Create Android actual implementation | PARTIAL | — |
-| 4 | Create stubs for iOS and WASM | PARTIAL | — |
-| 5 | Update EditorTab to use SAF URI | NOT STARTED | — |
-| 6 | Rewrite saveFile to use FileHandle | NOT STARTED | — |
-| 7 | Write shared unit tests for FileHandle | NOT STARTED | — |
-| 8 | Write desktop-specific FileHandle tests | NOT STARTED | — |
+| 3 | Create Android actual implementation | DONE | `da8e733e` |
+| 4 | Create stubs for iOS and WASM | DONE | `099d713a` |
+| 5 | Update EditorTab to use contentUri | DONE | `41c4bb74` |
+| 6 | Rewrite saveFile to use FileHandle | DONE | `41c4bb74` |
+| 7 | Write shared unit tests for FileHandle | DONE | `34829478` |
+| 8 | Write desktop-specific FileHandle tests | DONE | `5396cfe4` |
 | 9 | Create AVD config files for Android 9-16 | NOT STARTED | — |
 | 10 | Create Android emulator Docker container | NOT STARTED | — |
 | 11 | Create Go challenge test for save verification | NOT STARTED | — |
 | 12 | Write Android instrumentation save tests | NOT STARTED | — |
 | 13 | Run full test suite and push | NOT STARTED | — |
 
-### Task 3 DETAIL (Android actual — PARTIAL)
+### Task 3 DETAIL (Android actual — DONE)
 
-**What's done:**
-- `shared/src/androidMain/kotlin/digital/vasic/yole/util/FileStorage.android.kt` — created (untracked, 81 lines)
-  - Contains: actual class FileHandle, readBytes, writeBytes, exists, displayName, AppContextHolder
-- `androidApp/src/main/java/digital/vasic/yole/android/MainActivity.kt` — modified (unstaged)
-  - Added: `import digital.vasic.yole.util.AppContextHolder`
-  - Added: `AppContextHolder.context = applicationContext` in onCreate()
+**Committed:** `da8e733e`
+- `shared/src/androidMain/kotlin/digital/vasic/yole/util/FileStorage.android.kt` — actual SAF implementation with ContentResolver
+- `androidApp/src/main/java/digital/vasic/yole/android/MainActivity.kt` — AppContextHolder initialization
 
-**What's remaining for Task 3:**
-- Verify Android compiles: `./gradlew :shared:compileKotlinAndroid --no-daemon 2>&1 | tail -5`
-- Commit:
-  ```bash
-  git add shared/src/androidMain/kotlin/digital/vasic/yole/util/FileStorage.android.kt
-  git add androidApp/src/main/java/digital/vasic/yole/android/MainActivity.kt
-  git commit -m "feat(file): add Android actual for FileHandle using ContentResolver/SAF"
-  ```
+### Task 4 DETAIL (iOS/WASM stubs — DONE)
 
-### Task 4 DETAIL (iOS/WASM stubs — PARTIAL)
+**Committed:** `099d713a`
+- `shared/src/iosMain/kotlin/digital/vasic/yole/util/FileStorage.ios.kt` — stub (all operations return null/false)
+- `shared/src/wasmJsMain/kotlin/digital/vasic/yole/util/FileStorage.wasmJs.kt` — stub (all operations return null/false)
 
-**What's done:**
-- `shared/src/iosMain/kotlin/digital/vasic/yole/util/FileStorage.ios.kt` — created (untracked, 19 lines)
-- `shared/src/wasmJsMain/kotlin/digital/vasic/yole/util/FileStorage.wasmJs.kt` — created (untracked, 19 lines)
-
-**What's remaining for Task 4:**
-- Verify all targets compile: `./gradlew :shared:compileKotlinIosArm64 :shared:compileKotlinWasmJs --no-daemon`
-- Commit:
-  ```bash
-  git add shared/src/iosMain/kotlin/digital/vasic/yole/util/FileStorage.ios.kt
-  git add shared/src/wasmJsMain/kotlin/digital/vasic/yole/util/FileStorage.wasmJs.kt
-  git commit -m "feat(file): add iOS/WASM stubs for FileHandle"
-  ```
-
-### Tasks 5-13 DETAIL
+### Tasks 9-13 DETAIL
 
 See `docs/superpowers/plans/2026-05-05-saf-save-fix-plan.md` for complete step-by-step instructions, including exact code to write, files to modify, and commands to run.
 
@@ -116,19 +95,7 @@ See `docs/superpowers/plans/2026-05-05-saf-save-fix-plan.md` for complete step-b
 
 ## 3. Uncommitted Files in Working Tree
 
-```
-Untracked:
-  shared/src/androidMain/kotlin/digital/vasic/yole/util/FileStorage.android.kt
-  shared/src/iosMain/kotlin/digital/vasic/yole/util/FileStorage.ios.kt
-  shared/src/wasmJsMain/kotlin/digital/vasic/yole/util/FileStorage.wasmJs.kt
-
-Modified (unstaged):
-  androidApp/src/main/java/digital/vasic/yole/android/MainActivity.kt
-    (+ AppContextHolder import, + AppContextHolder.context initialization)
-
-Submodule modifications:
-  Challenges — modified content (submodule pointer + Panoptic)
-```
+(None — working tree is clean)
 
 ---
 
@@ -188,22 +155,23 @@ From `docs/campaigns/anti-bluff/MILESTONE-2026-05-01.md`:
 
 ### Main Repo
 ```
-Branch: master (ahead of origin/master by 4 commits)
+Branch: master (up to date with remotes)
 Remotes: github (origin), upstream (all same git@github.com:vasic-digital/Yole.git)
-Last 4 commits:
-  ec80e7a2 feat(file): add Desktop actual for FileHandle using java.io.File
-  1c8ba718 feat(file): add FileHandle expect declaration for platform file I/O
-  307e0210 docs(plan): SAF-first file save fix implementation plan
-  abb65f2c docs(spec): SAF-first file save fix design spec
+Last 5 commits:
+  5396cfe4 test(file): add Desktop-specific FileHandle roundtrip tests
+  34829478 test(file): add FileHandle contract tests
+  41c4bb74 refactor(save): update EditorTab with contentUri and migrate saveFile to FileHandle
+  099d713a feat(file): add iOS/WASM stubs for FileHandle
+  da8e733e feat(file): add Android actual for FileHandle using ContentResolver/SAF
 ```
 
 ### Submodules
 ```
-Challenges:  d66a787 (1.0.2-dev-0.0.2-87-gd66a787) — master, remotes: github, gitlab, origin, upstream
-Containers:  6736040 (1.0.2-dev-0.0.2-93-g6736040) — master, remotes: github, gitlab, origin, upstream
-HelixQA:     50537cb (v4.0.0-214-g50537cb) — master, remotes: github, gitlab, helixgithub†, helixgitlab†, origin, upstream
+Challenges:  f2ea964 (main) — remotes: github, gitlab, origin, upstream
+Containers:  84c381c (main) — remotes: github, gitlab, origin, upstream
+HelixQA:     1efd359 (main) — remotes: github, gitlab, origin, upstream
 ```
-† helixgithub/helixgitlab have SSH-auth errors (known issue)
+† helixgithub/helixgitlab for HelixQA have SSH-auth errors (known issue)
 
 ---
 
