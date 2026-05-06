@@ -10,6 +10,15 @@
 4. **SSH-only for git** (`git@…` remotes); HTTPS prohibited (Constitution mandatory standard #5)
 5. **Release builds in containers** - `docker compose run --rm build ./docker/scripts/build.sh`
 6. **Bootstrap fresh clone** - `make bootstrap` (installs anti-bluff pre-commit hook + submodules)
+7. **Maintain Continuation Document** - `docs/CONTINUATION.md` MUST be kept in sync with current work at all times per CONST-036. After every task completion, file creation, or defect discovery, update the Continuation document so any CLI agent or LLM model can resume exactly where work left off.
+
+## Quick Resume
+
+To continue work from any session:
+```
+Read docs/CONTINUATION.md — it contains all active tasks, known defects,
+uncommitted files, and the exact prompt to resume implementation.
+```
 
 ## Build Commands
 

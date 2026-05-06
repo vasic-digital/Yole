@@ -192,6 +192,52 @@ submodule's `CONSTITUTION.md`.
 
 <!-- END anti-bluff addendum (CONST-035) -->
 
+<!-- BEGIN continuation-document addendum (CONST-036) -->
+
+### CONST-036 — Continuation Document MUST Be Maintained
+
+**Status:** Mandatory. Non-negotiable. Applies to every work session in this
+repository and its submodules.
+
+**Rule:** `docs/CONTINUATION.md` is a living document that tracks ALL
+unfinished work, active tasks, known defects, implementation phases, and
+current repo state. During ANY work — Phases implementation, debugging,
+fixing, refactoring, testing, documentation — the Continuation document
+MUST be maintained and MUST NOT be out of sync with current work.
+
+If work stops for any reason (session loss, context overflow, agent
+switch, model change, human interruption), the next CLI agent or LLM
+model MUST be able to continue exactly where work left off from the
+Continuation document alone.
+
+**Mandatory update points:**
+1. After completing ANY task or subtask — update task status immediately.
+2. When creating new files (untracked) — add to Section 3 (Uncommitted Files).
+3. When committing — update Section 6 (Repo State) with new commit SHAs.
+4. When discovering a new bug or defect — add to Section 4 (Known Defects).
+5. When starting a new feature stream or phase — add to Section 7.
+6. When the "How to Resume" prompt becomes stale — refresh Section 1.
+7. Before any `git commit` — verify Continuation document reflects reality.
+
+**Enforcement:** Before claiming work is done or before any commit, the
+agent MUST verify `docs/CONTINUATION.md` accurately reflects:
+- All active tasks and their completion status
+- All uncommitted files in the working tree
+- All known defects
+- Current branch and commit state
+
+A stale or inaccurate Continuation document is a CONST-036 violation and
+MUST be corrected before proceeding.
+
+**Why.** Session loss and agent/model switches are normal operational
+reality for AI-assisted development. Without a maintained Continuation
+document, work context is lost and must be reconstructed from scratch,
+wasting time and risking incomplete or duplicated work.
+
+**See also:** `docs/CONTINUATION.md` — the living document itself.
+
+<!-- END continuation-document addendum (CONST-036) -->
+
 ## Definition of Done
 
 A change is done when:
@@ -201,6 +247,7 @@ A change is done when:
 3. All challenges in `challenges/scripts/` pass on the running host.
 4. Governance docs (`CONSTITUTION.md`, `AGENTS.md`, `CLAUDE.md`) are
    coherent with the change.
+5. `docs/CONTINUATION.md` is updated to reflect current state per CONST-036.
 
 ## See also
 

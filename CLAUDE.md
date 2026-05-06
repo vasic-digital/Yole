@@ -12,6 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. **Release Naming Convention** — Artifacts in `releases/` follow: `Yole-{Platform}-{Version}-{Variant}-{VersionCodeDotted}` (e.g., `Yole-Android-1.0.0-Release-0.0.0.0.1.apk`). Both debug and release variants required per platform. Platforms: `Android`, `Desktop-linux-x64`, `Desktop-windows-x64`, `Desktop-macos-arm64`, `Web-wasm`. Version code to dotted: groups of 2 digits from right, zero-padded to 5 segments.
 5. **Conventional Commits** for every commit (CONST mandatory standard #4).
 6. **SSH-only for git** (`git@…` remotes); HTTPS prohibited (CONST mandatory standard #5).
+7. **Maintain Continuation Document** — `docs/CONTINUATION.md` MUST be kept in sync with current work at all times per CONST-036. After every task completion, file creation, defect discovery, or commit, update the Continuation document so any CLI agent or LLM model can resume exactly where work left off.
 
 ## Definition of Done (CONSTITUTION.md)
 
@@ -21,6 +22,7 @@ A change is done only when **all** of the following hold:
 2. All project-level tests pass on a clean clone.
 3. All challenges in `challenges/scripts/` pass on the running host.
 4. Governance docs (`CONSTITUTION.md`, `AGENTS.md`, `CLAUDE.md`) remain coherent with the change.
+5. `docs/CONTINUATION.md` is updated to reflect current state per CONST-036.
 
 ## Project Overview
 
