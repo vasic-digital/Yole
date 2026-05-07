@@ -5,10 +5,10 @@
 > document MUST enable any CLI agent or LLM model to continue exactly where
 > work left off.
 
-**Last updated:** 2026-05-07 19:50 UTC  
-**Current branch:** `master` (synced with origin)  
-**Working tree:** CLEAN (all committed + pushed to all remotes)  
-**Test status:** 8,954/8,954 PASS, 0 failures (all 45 pre-existing failures resolved)
+**Last updated:** 2026-05-07 20:10 UTC  
+**Current branch:** `master` (synced with all remotes — clean + pushed)  
+**Test status:** 8,954/8,954 PASS, 0 failures  
+**Anti-bluff gates:** scanner PASS, anchors PASS, mutation PASS, governance PASS
 
 ---
 
@@ -192,20 +192,21 @@ From `docs/KNOWN_DEFECTS.md`:
 From `docs/campaigns/anti-bluff/MILESTONE-2026-05-01.md`:
 
 ### What's Done
-- CONST-035 in all 4 repos' governance docs (12 total)
-- Verbatim user mandate quote now in ALL governance docs (fixed Challenges/CONSTITUTION.md gap)
-- Scanner enforcing CONST-035 via `make qa-all`
-- 0 pre-existing bluff hits (was 24)
+- CONST-035 in all 4 repos' governance docs (12 total) ✓
+- Verbatim user mandate quote now in ALL governance docs ✓
+- Scanner enforcing CONST-035 via `make qa-all` ✓
+- **Bootstrap verification scripts** (submodule SHA check + governance audit) ✓ NEW
+- **CONST-036 added to Challenges and Containers constitutions** ✓ NEW
+- 0 pre-existing bluff hits
 - 123 anchor manifest rows across 4 repos
 - 13 self-test fixtures covering all 8 BLUFF patterns
-- `make bootstrap` for fresh-clone setup
-- Containers anchor manifest fixed (3 stale test symbols: CAP-008, CAP-017, CAP-019)
+- `make bootstrap` for fresh-clone setup + verification
+- Containers anchor manifest fixed (3 stale test symbols)
 
 ### What's NOT Yet Enforced
 1. **AST-aware scanner patterns** — BLUFF-K-001, K-005, K-007, G-002, G-004 need real Kotlin/Go parser
 2. **Pitest mutation gate for Yole main** — `:shared:jvm` + 10 KMP modules deferred
 3. **Definition-of-Done linkage** — PR-body-evidence-block enforcement (sub-project 6)
-4. **Recursive submodule bootstrap verification** — `make bootstrap` doesn't verify nested submodule state
 
 ### Resume Protocol (from MILESTONE)
 1. Read `docs/campaigns/anti-bluff/CAMPAIGN.md` — full iter log
