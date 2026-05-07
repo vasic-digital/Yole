@@ -244,11 +244,10 @@ HelixQA:     71560fd (main) — 50+ packages PASS, 31 packages FAIL due to missi
 |--------|----------|--------|-------------|
 | SAF Save Fix | Critical | COMPLETE (13/13) | Fix file saving on Android 9-16 |
 | Visual Refinement | Medium | COMPLETE (6/6) | Unified brand colors, modernized IDE layout, shared tokens |
-| Network File Transfer | Critical | NOT STARTED | Wire real file bytes to network protocol upload/download |
+| Network File Transfer | Critical | COMPLETE (upload honesty) | Real file bytes wired via PlatformFileIO, null checks with FAILED emission |
 | Platform Completion | High | NOT STARTED | FTP/SFTP/SMB on iOS/WASM, finalize stubs |
 | Protocol Hardening | Medium | NOT STARTED | SFTP/SMB real integration, JSON parser, FTP features |
-| Known Defects | High | Deferred | #robolectric |
-| Anti-Bluff | Medium | Ongoing | 3 remaining enforcement dimensions |
+| Anti-Bluff | Medium | Ongoing | 2 remaining enforcement dimensions |
 
 ### Feature Stream 3: Network File Transfer (CRITICAL)
 
