@@ -678,7 +678,10 @@ class SafetyFixesTest {
 
     @Test
     fun testSmbMultipleConnectDisconnectCycles() = runBlocking<Unit> {
-        val service = SmbService(smbConfig())
+        val service = SmbService(smbConfig(),
+            testConnectFn = { _, _, _ -> Result.success(Unit) },
+            testAuthenticateFn = { _, _, _ -> Result.success(Unit) }
+        )
         repeat(3) {
             val connectResult = service.connect()
             assertTrue(connectResult.isSuccess, "SMB connect should succeed")
@@ -756,7 +759,10 @@ class SafetyFixesTest {
 
     @Test
     fun testSmbOnlineStateAfterConnectDisconnect() = runBlocking<Unit> {
-        val service = SmbService(smbConfig())
+        val service = SmbService(smbConfig(),
+            testConnectFn = { _, _, _ -> Result.success(Unit) },
+            testAuthenticateFn = { _, _, _ -> Result.success(Unit) }
+        )
         assertFalse(service.isOnline, "SMB should be offline initially")
         service.connect()
         assertTrue(service.isOnline, "SMB should be online after connect")
@@ -787,7 +793,10 @@ class SafetyFixesTest {
 
     @Test
     fun testSmbRapidConnectDisconnect() = runBlocking<Unit> {
-        val service = SmbService(smbConfig())
+        val service = SmbService(smbConfig(),
+            testConnectFn = { _, _, _ -> Result.success(Unit) },
+            testAuthenticateFn = { _, _, _ -> Result.success(Unit) }
+        )
         repeat(10) {
             service.connect()
             service.disconnect()

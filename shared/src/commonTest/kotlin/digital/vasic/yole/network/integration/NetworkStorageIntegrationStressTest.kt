@@ -417,7 +417,9 @@ class NetworkStorageIntegrationStressTest {
             username = "user",
             password = "pass",
             path = "/"
-        )
+        ),
+        testConnectFn = { _, _, _ -> Result.success(Unit) },
+        testAuthenticateFn = { _, _, _ -> Result.success(Unit) }
     )
 
     private fun createWebDavService(name: String) = WebDavService(
@@ -426,7 +428,8 @@ class NetworkStorageIntegrationStressTest {
             url = "https://webdav.example.com",
             username = "user",
             password = "pass"
-        )
+        ),
+        testConnectFn = { Result.success(Unit) }
     )
 
     private fun createGitService(name: String) = GitService(

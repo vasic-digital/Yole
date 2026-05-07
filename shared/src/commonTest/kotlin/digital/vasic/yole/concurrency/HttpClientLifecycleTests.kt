@@ -115,12 +115,11 @@ class HttpClientLifecycleTests {
 
     @Test
     fun `WebDavService concurrent connect disconnect cycles do not crash`() = runBlocking<Unit> {
-        val service = WebDavService(createWebDavConfig())
+        val service = WebDavService(createWebDavConfig(), testConnectFn = { Result.success(Unit) })
 
         repeat(10) { iteration ->
             val jobs = listOf(
                 async {
-                    // connect() will fail (no server) but should not crash
                     service.connect()
                 },
                 async {
@@ -130,7 +129,6 @@ class HttpClientLifecycleTests {
 
             val results = jobs.awaitAll()
             results.forEach { result ->
-                // Both connect (failure expected) and disconnect should return a Result
                 assertTrue(result.isSuccess || result.isFailure,
                     "Iteration $iteration: connect/disconnect should return a Result, not throw")
             }
@@ -161,7 +159,7 @@ class HttpClientLifecycleTests {
 
     @Test
     fun `WebDavService rapid connect disconnect alternation`() = runBlocking<Unit> {
-        val service = WebDavService(createWebDavConfig())
+        val service = WebDavService(createWebDavConfig(), testConnectFn = { Result.success(Unit) })
 
         val jobs = (1..20).map { i ->
             async {

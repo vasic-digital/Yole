@@ -27,9 +27,15 @@ class ConcurrencyStressTest {
         connectionTimeout = 5000
     )
 
+    private fun createSmbService() = SmbService(
+        smbConfig,
+        testConnectFn = { _, _, _ -> Result.success(Unit) },
+        testAuthenticateFn = { _, _, _ -> Result.success(Unit) }
+    )
+
     @Test
     fun testConcurrentConnectDisconnect() = runBlocking<Unit> {
-        val service = SmbService(smbConfig)
+        val service = createSmbService()
 
         // Rapid connect/disconnect cycles from multiple coroutines
         val jobs = (1..100).map {
@@ -48,7 +54,7 @@ class ConcurrencyStressTest {
 
     @Test
     fun testConcurrentStateAccess() = runBlocking<Unit> {
-        val service = SmbService(smbConfig)
+        val service = createSmbService()
         service.connect()
 
         // Multiple coroutines reading and writing state simultaneously
@@ -70,7 +76,7 @@ class ConcurrencyStressTest {
 
     @Test
     fun testConcurrentFileOperations() = runBlocking<Unit> {
-        val service = SmbService(smbConfig)
+        val service = createSmbService()
         service.connect()
 
         // Multiple coroutines performing file operations
@@ -93,7 +99,7 @@ class ConcurrencyStressTest {
 
     @Test
     fun testNoDeadlockUnderContention() = runBlocking<Unit> {
-        val service = SmbService(smbConfig)
+        val service = createSmbService()
 
         // High contention: many coroutines competing for the same resource
         withTimeout(10_000) { // Must complete within 10 seconds
@@ -112,7 +118,7 @@ class ConcurrencyStressTest {
 
     @Test
     fun testConnectDisconnectLeavesConsistentState() = runBlocking<Unit> {
-        val service = SmbService(smbConfig)
+        val service = createSmbService()
 
         // Connect then disconnect many times sequentially
         repeat(100) {

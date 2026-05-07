@@ -30,6 +30,17 @@ import kotlin.time.Duration.Companion.seconds
  */
 class NetworkProtocolStressTest {
 
+    private fun makeSmbService(config: StorageConfig.SmbConfig) = SmbService(
+        config,
+        testConnectFn = { _, _, _ -> Result.success(Unit) },
+        testAuthenticateFn = { _, _, _ -> Result.success(Unit) }
+    )
+
+    private fun makeWebDavService(config: StorageConfig.WebDavConfig) = WebDavService(
+        config,
+        testConnectFn = { Result.success(Unit) }
+    )
+
     // ==================== FTP STRESS TESTS ====================
 
     @Test
@@ -129,7 +140,7 @@ class NetworkProtocolStressTest {
             password = "pass",
             path = "/"
         )
-        val service = SmbService(config)
+        val service = makeSmbService(config)
 
         // Run multiple concurrent connect/disconnect cycles
         val jobs = (1..10).map { i ->
@@ -158,7 +169,7 @@ class NetworkProtocolStressTest {
             password = "pass",
             path = "/"
         )
-        val service = SmbService(config)
+        val service = makeSmbService(config)
         service.connect()
 
         // Rapid folder creation
@@ -183,7 +194,7 @@ class NetworkProtocolStressTest {
             password = "pass",
             path = "/"
         )
-        val service = SmbService(config)
+        val service = makeSmbService(config)
         service.connect()
 
         // Concurrent move operations
@@ -207,7 +218,7 @@ class NetworkProtocolStressTest {
             username = "user",
             password = "pass"
         )
-        val service = WebDavService(config)
+        val service = makeWebDavService(config)
 
         val jobs = (1..10).map { i ->
             async {
@@ -232,7 +243,7 @@ class NetworkProtocolStressTest {
             username = "user",
             password = "pass"
         )
-        val service = WebDavService(config)
+        val service = makeWebDavService(config)
 
         // Rapid sync file operations
         val results = (1..50).map { i ->
@@ -253,7 +264,7 @@ class NetworkProtocolStressTest {
             username = "user",
             password = "pass"
         )
-        val service = WebDavService(config)
+        val service = makeWebDavService(config)
 
         // Concurrent quota info requests
         val results = (1..30).map {
@@ -357,8 +368,8 @@ class NetworkProtocolStressTest {
         )
 
         val ftpService = FtpService(ftpConfig)
-        val smbService = SmbService(smbConfig)
-        val webdavService = WebDavService(webdavConfig)
+        val smbService = makeSmbService(smbConfig)
+        val webdavService = makeWebDavService(webdavConfig)
         val gitService = GitService(gitConfig)
 
         // Concurrent operations across all protocols
@@ -391,7 +402,7 @@ class NetworkProtocolStressTest {
         )
 
         val ftpService = FtpService(ftpConfig)
-        val smbService = SmbService(smbConfig)
+        val smbService = makeSmbService(smbConfig)
 
         // Rapid switching between protocols
         repeat(20) { i ->
@@ -441,7 +452,7 @@ class NetworkProtocolStressTest {
             name = "webdav", url = "https://webdav.example.com",
             username = "user", password = "pass"
         )
-        val service = WebDavService(config)
+        val service = makeWebDavService(config)
         service.connect()
 
         val specialPaths = listOf(
@@ -470,7 +481,7 @@ class NetworkProtocolStressTest {
             name = "smb", host = "192.168.1.100", share = "docs",
             domain = "WORKGROUP", username = "user", password = "pass", path = "/"
         )
-        val service = SmbService(config)
+        val service = makeSmbService(config)
 
         // Rapid state checks during connect/disconnect
         val stateChecks = mutableListOf<Boolean>()

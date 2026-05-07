@@ -83,6 +83,17 @@ class PerProtocolStressTests {
         username = "user", password = "pass"
     )
 
+    private fun createSmbService() = SmbService(
+        smbConfig(),
+        testConnectFn = { _, _, _ -> Result.success(Unit) },
+        testAuthenticateFn = { _, _, _ -> Result.success(Unit) }
+    )
+
+    private fun createWebDavService() = WebDavService(
+        webDavConfig(),
+        testConnectFn = { Result.success(Unit) }
+    )
+
     // ==================== FTP stress ====================
 
     @Test
@@ -163,7 +174,7 @@ class PerProtocolStressTests {
 
     @Test
     fun SmbConcurrentListFilesAllFailGracefully() = runBlocking<Unit> {
-        val service = SmbService(smbConfig())
+        val service = createSmbService()
         val results = withTimeout(30.seconds) {
             (1..50).map { async { service.listFiles("/").toList() } }.awaitAll()
         }
@@ -172,7 +183,7 @@ class PerProtocolStressTests {
 
     @Test
     fun SmbRapidConnectDisconnectCycles() = runBlocking<Unit> {
-        val service = SmbService(smbConfig())
+        val service = createSmbService()
         repeat(50) {
             service.connect()
             service.disconnect()
@@ -182,7 +193,7 @@ class PerProtocolStressTests {
 
     @Test
     fun SmbConcurrentGetFileInfoAllFailGracefully() = runBlocking<Unit> {
-        val service = SmbService(smbConfig())
+        val service = createSmbService()
         val results = withTimeout(30.seconds) {
             (1..100).map { i -> async { service.getFileInfo("/file$i.txt") } }.awaitAll()
         }
@@ -321,7 +332,7 @@ class PerProtocolStressTests {
 
     @Test
     fun WebDavConcurrentListFilesAllFailGracefully() = runBlocking<Unit> {
-        val service = WebDavService(webDavConfig())
+        val service = createWebDavService()
         val results = withTimeout(30.seconds) {
             (1..50).map { async { service.listFiles("/").toList() } }.awaitAll()
         }
@@ -330,7 +341,7 @@ class PerProtocolStressTests {
 
     @Test
     fun WebDavRapidConnectDisconnectCycles() = runBlocking<Unit> {
-        val service = WebDavService(webDavConfig())
+        val service = createWebDavService()
         repeat(50) {
             service.connect()
             service.disconnect()
@@ -340,7 +351,7 @@ class PerProtocolStressTests {
 
     @Test
     fun WebDavConcurrentGetFileInfoCompletesGracefully() = runBlocking<Unit> {
-        val service = WebDavService(webDavConfig())
+        val service = createWebDavService()
         val results = withTimeout(30.seconds) {
             (1..50).map { i -> async { service.getFileInfo("/file$i.txt") } }.awaitAll()
         }
@@ -357,12 +368,12 @@ class PerProtocolStressTests {
             val services = listOf(
                 async { FtpService(ftpConfig()) },
                 async { SftpService(sftpConfig()) },
-                async { SmbService(smbConfig()) },
+                async { createSmbService() },
                 async { DropboxService(dropboxConfig()) },
                 async { GoogleDriveService(googleDriveConfig()) },
                 async { OneDriveService(oneDriveConfig()) },
                 async { GitService(gitConfig()) },
-                async { WebDavService(webDavConfig()) }
+                async { createWebDavService() }
             ).awaitAll()
             assertEquals(8, services.size)
             services.forEach { assertNotNull(it) }
@@ -374,12 +385,12 @@ class PerProtocolStressTests {
         val services = listOf(
             FtpService(ftpConfig()),
             SftpService(sftpConfig()),
-            SmbService(smbConfig()),
+            createSmbService(),
             DropboxService(dropboxConfig()),
             GoogleDriveService(googleDriveConfig()),
             OneDriveService(oneDriveConfig()),
             GitService(gitConfig()),
-            WebDavService(webDavConfig())
+            createWebDavService()
         )
         withTimeout(30.seconds) {
             services.map { async { it.connect() } }.awaitAll()
@@ -393,12 +404,12 @@ class PerProtocolStressTests {
         val services = listOf(
             FtpService(ftpConfig()),
             SftpService(sftpConfig()),
-            SmbService(smbConfig()),
+            createSmbService(),
             DropboxService(dropboxConfig()),
             GoogleDriveService(googleDriveConfig()),
             OneDriveService(oneDriveConfig()),
             GitService(gitConfig()),
-            WebDavService(webDavConfig())
+            createWebDavService()
         )
         withTimeout(30.seconds) {
             val results = services.map { svc ->
