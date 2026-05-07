@@ -88,39 +88,39 @@ object YoleDesktopTheme {
         return if (isDarkTheme) {
             // IDE Dark Theme (VS Code inspired)
             baseScheme.copy(
-                primary = Color(0xFFD32F2F),           // IDE accent red
+                primary = YoleColors.BrandPrimary,
                 onPrimary = Color.White,
                 primaryContainer = Color(0xFF5A1E1E),
-                onPrimaryContainer = Color(0xFFD4D4D4),
+                onPrimaryContainer = YoleColors.Dark.TextPrimary,
                 secondary = YoleColors.BrandSecondary,
                 tertiary = YoleColors.BrandTertiary,
-                error = Color(0xFFF44747),
-                surface = Color(0xFF252526),            // Sidebar/panels
-                onSurface = Color(0xFFD4D4D4),          // Primary text
-                surfaceVariant = Color(0xFF2D2D30),     // Tab bar, status bar
-                onSurfaceVariant = Color(0xFF858585),   // Secondary text
-                background = Color(0xFF1E1E1E),         // Editor background
-                onBackground = Color(0xFFD4D4D4),
-                outline = Color(0xFF3C3C3C),            // Borders
-                outlineVariant = Color(0xFF5A5A5A)      // Muted borders
+                error = YoleColors.Error,
+                surface = YoleColors.Ide.DarkSurface,
+                onSurface = YoleColors.Dark.TextPrimary,
+                surfaceVariant = YoleColors.Ide.DarkSurfaceVariant,
+                onSurfaceVariant = YoleColors.Dark.TextSecondary,
+                background = YoleColors.Ide.DarkBackground,
+                onBackground = YoleColors.Dark.TextPrimary,
+                outline = YoleColors.Ide.DarkBorder,
+                outlineVariant = YoleColors.Ide.DarkMutedText
             )
         } else {
             // IDE Light Theme
             baseScheme.copy(
-                primary = Color(0xFFD32F2F),
+                primary = YoleColors.BrandPrimary,
                 onPrimary = Color.White,
                 primaryContainer = Color(0xFFFFCDD2),
-                onPrimaryContainer = Color(0xFF1E1E1E),
+                onPrimaryContainer = YoleColors.TextPrimary,
                 secondary = YoleColors.BrandSecondary,
                 tertiary = YoleColors.BrandTertiary,
                 error = YoleColors.Error,
-                surface = Color(0xFFF3F3F3),
-                onSurface = Color(0xFF1E1E1E),
-                surfaceVariant = Color(0xFFECECEC),
-                onSurfaceVariant = Color(0xFF6E6E6E),
-                background = Color(0xFFFFFFFF),
-                onBackground = Color(0xFF1E1E1E),
-                outline = Color(0xFFD4D4D4),
+                surface = YoleColors.Ide.LightSurface,
+                onSurface = YoleColors.TextPrimary,
+                surfaceVariant = YoleColors.Ide.LightSurfaceVariant,
+                onSurfaceVariant = YoleColors.Ide.LightMutedText,
+                background = YoleColors.Ide.LightBackground,
+                onBackground = YoleColors.TextPrimary,
+                outline = YoleColors.Ide.LightBorder,
                 outlineVariant = Color(0xFFBBBBBB)
             )
         }

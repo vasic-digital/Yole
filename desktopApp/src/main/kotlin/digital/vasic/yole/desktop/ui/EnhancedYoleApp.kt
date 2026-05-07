@@ -38,6 +38,7 @@ import digital.vasic.yole.desktop.windowVisibilityToggle
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.TextFormat
+import digital.vasic.yole.ui.YoleColors
 import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
@@ -1440,7 +1441,7 @@ private fun htmlToAnnotatedString(html: String): AnnotatedString {
                         addStyle(
                             SpanStyle(
                                 fontFamily = FontFamily.Monospace,
-                                background = Color(0xFF333333)
+                                background = YoleColors.Ide.DarkActivityBar
                             ),
                             start = startIdx,
                             end = this.length

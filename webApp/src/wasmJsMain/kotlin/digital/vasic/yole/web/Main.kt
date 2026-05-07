@@ -32,6 +32,7 @@ import androidx.compose.ui.window.CanvasBasedWindow
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.TextFormat
+import digital.vasic.yole.ui.YoleColors
 import kotlinx.browser.document
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
@@ -109,7 +110,7 @@ fun YoleWebApp() {
                 // Sidebar
                 Surface(
                     modifier = Modifier.width(250.dp).fillMaxHeight(),
-                    color = if (isDarkTheme) Color(0xFF2a2a2a) else Color(0xFFf5f5f5),
+                    color = if (isDarkTheme) YoleColors.Dark.SurfaceTertiary else YoleColors.SurfaceSecondary,
                     tonalElevation = 2.dp
                 ) {
                     Column(
@@ -180,7 +181,7 @@ fun YoleWebApp() {
                                      }
                                  },
                                   colors = ButtonDefaults.buttonColors(
-                                      containerColor = Color(0xFFD32F2F)
+                                      containerColor = YoleColors.BrandPrimary
                                   )
                               ) {
                                   Text("Load")

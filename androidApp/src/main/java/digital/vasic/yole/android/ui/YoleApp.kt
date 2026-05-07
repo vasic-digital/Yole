@@ -88,39 +88,38 @@ import digital.vasic.yole.ui.ScreenTransitions
 import digital.vasic.yole.ui.ListAnimations
 import digital.vasic.yole.ui.LoadingStateWrapper
 import digital.vasic.yole.ui.LoadingAnimations
+import digital.vasic.yole.ui.YoleColors
 import digital.vasic.yole.android.util.PdfExportUtil
 import digital.vasic.yole.android.util.BackupRestoreUtil
 import java.io.File
 
-// ===== IDE Theme Colors =====
+// ===== IDE Theme Colors (references shared YoleColors tokens) =====
 object IdeTheme {
-    // Dark
-    val darkBackground = Color(0xFF1E1E1E)
-    val darkSurface = Color(0xFF252526)
-    val darkSurfaceVariant = Color(0xFF2D2D30)
-    val darkBorder = Color(0xFF3C3C3C)
-    val darkAccent = Color(0xFFD32F2F)
-    val darkText = Color(0xFFD4D4D4)
-    val darkTextSecondary = Color(0xFF858585)
-    val darkCurrentLine = Color(0xFF2A2D2E)
-    val darkStatusBar = Color(0xFFD32F2F)
-    val darkTabActive = Color(0xFF1E1E1E)
-    val darkTabInactive = Color(0xFF2D2D30)
-    val darkLineNumbers = Color(0xFF858585)
+    val darkBackground = YoleColors.Ide.DarkBackground
+    val darkSurface = YoleColors.Ide.DarkSurface
+    val darkSurfaceVariant = YoleColors.Ide.DarkSurfaceVariant
+    val darkBorder = YoleColors.Ide.DarkBorder
+    val darkAccent = YoleColors.BrandPrimary
+    val darkText = YoleColors.Dark.TextPrimary
+    val darkTextSecondary = YoleColors.Dark.TextSecondary
+    val darkCurrentLine = YoleColors.Ide.DarkCurrentLine
+    val darkStatusBar = YoleColors.BrandPrimary
+    val darkTabActive = YoleColors.Ide.DarkBackground
+    val darkTabInactive = YoleColors.Ide.DarkSurfaceVariant
+    val darkLineNumbers = YoleColors.Dark.TextSecondary
 
-    // Light
-    val lightBackground = Color(0xFFFFFFFF)
-    val lightSurface = Color(0xFFF3F3F3)
-    val lightSurfaceVariant = Color(0xFFECECEC)
-    val lightBorder = Color(0xFFD4D4D4)
-    val lightAccent = Color(0xFFD32F2F)
-    val lightText = Color(0xFF1E1E1E)
-    val lightTextSecondary = Color(0xFF6E6E6E)
-    val lightCurrentLine = Color(0xFFF0F0F0)
-    val lightStatusBar = Color(0xFFD32F2F)
-    val lightTabActive = Color(0xFFFFFFFF)
-    val lightTabInactive = Color(0xFFECECEC)
-    val lightLineNumbers = Color(0xFF6E6E6E)
+    val lightBackground = YoleColors.Ide.LightBackground
+    val lightSurface = YoleColors.Ide.LightSurface
+    val lightSurfaceVariant = YoleColors.Ide.LightSurfaceVariant
+    val lightBorder = YoleColors.Ide.LightBorder
+    val lightAccent = YoleColors.BrandPrimary
+    val lightText = YoleColors.TextPrimary
+    val lightTextSecondary = YoleColors.Ide.LightMutedText
+    val lightCurrentLine = YoleColors.Ide.LightCurrentLine
+    val lightStatusBar = YoleColors.BrandPrimary
+    val lightTabActive = YoleColors.Ide.LightBackground
+    val lightTabInactive = YoleColors.Ide.LightSurfaceVariant
+    val lightLineNumbers = YoleColors.Ide.LightMutedText
 }
 
 /**

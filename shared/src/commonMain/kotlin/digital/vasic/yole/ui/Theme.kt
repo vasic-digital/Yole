@@ -74,6 +74,32 @@ object YoleColors {
     /** Strong border for prominent separation. */
     val BorderStrong = Color(0xFF9E9E9E)
 
+    /**
+     * IDE-specific surface and text tokens (VS Code inspired).
+     * These are shared across web, desktop, and Android targets
+     * so that all platform IDEs maintain visual consistency.
+     */
+    object Ide {
+        val DarkBackground = Color(0xFF1E1E1E)
+        val DarkSurface = Color(0xFF252526)
+        val DarkSurfaceVariant = Color(0xFF2D2D30)
+        val DarkBorder = Color(0xFF3C3C3C)
+        val DarkActivityBar = Color(0xFF333333)
+        val DarkMenuHover = Color(0xFF2A2D2E)
+        val DarkCurrentLine = Color(0xFF2A2D2E)
+        val DarkSelection = Color(0xFF264F78)
+        val DarkMutedText = Color(0xFF5A5A5A)
+
+        val LightBackground = Color(0xFFFFFFFF)
+        val LightSurface = Color(0xFFF3F3F3)
+        val LightSurfaceVariant = Color(0xFFECECEC)
+        val LightBorder = Color(0xFFD4D4D4)
+        val LightActivityBar = Color(0xFFDDDDDD)
+        val LightMenuHover = Color(0xFFE8E8E8)
+        val LightCurrentLine = Color(0xFFF0F0F0)
+        val LightMutedText = Color(0xFF6E6E6E)
+    }
+
     /** Dark theme color variants optimized for dark backgrounds. */
     object Dark {
         /** Primary brand color for dark theme (Red 200). */

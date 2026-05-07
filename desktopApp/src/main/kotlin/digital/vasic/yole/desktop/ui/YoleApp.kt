@@ -55,49 +55,30 @@ import androidx.compose.ui.unit.sp
 import digital.vasic.yole.desktop.ui.theme.YoleDesktopTheme
 import digital.vasic.yole.desktop.ui.theme.YoleDesktopThemeWithSettings
 import digital.vasic.yole.format.FormatRegistry
+import digital.vasic.yole.ui.YoleColors
 import java.util.prefs.Preferences
 
 // ============================================================================
-// IDE Dark Theme Color Palette
+// IDE Color Palette (references shared YoleColors tokens)
 // ============================================================================
 
-/** Editor background color (VS Code inspired dark) */
-val IdeDarkBackground = Color(0xFF1E1E1E)
+val IdeDarkBackground = YoleColors.Ide.DarkBackground
+val IdeDarkSurface = YoleColors.Ide.DarkSurface
+val IdeDarkSurfaceVariant = YoleColors.Ide.DarkSurfaceVariant
+val IdeDarkBorder = YoleColors.Ide.DarkBorder
+val IdeAccent = YoleColors.BrandPrimary
+val IdeTextPrimary = YoleColors.Dark.TextPrimary
+val IdeTextSecondary = YoleColors.Dark.TextSecondary
+val IdeTextMuted = YoleColors.Ide.DarkMutedText
+val IdeHighlightLine = YoleColors.Ide.DarkCurrentLine
+val IdeSelection = YoleColors.Ide.DarkSelection
 
-/** Sidebar and panel surface color */
-val IdeDarkSurface = Color(0xFF252526)
-
-/** Tab bar and status bar surface variant */
-val IdeDarkSurfaceVariant = Color(0xFF2D2D30)
-
-/** Border color for panels and separators */
-val IdeDarkBorder = Color(0xFF3C3C3C)
-
-/** Accent color for active elements (VS Code blue) */
-val IdeAccent = Color(0xFFD32F2F)
-
-/** Primary text color */
-val IdeTextPrimary = Color(0xFFD4D4D4)
-
-/** Secondary text color for line numbers, hints */
-val IdeTextSecondary = Color(0xFF858585)
-
-/** Muted text color for disabled elements */
-val IdeTextMuted = Color(0xFF5A5A5A)
-
-/** Current line highlight color */
-val IdeHighlightLine = Color(0xFF2A2D2E)
-
-/** Text selection background color */
-val IdeSelection = Color(0xFF264F78)
-
-/** IDE Light Theme Colors */
-val IdeLightBackground = Color(0xFFFFFFFF)
-val IdeLightSurface = Color(0xFFF3F3F3)
-val IdeLightSurfaceVariant = Color(0xFFECECEC)
-val IdeLightBorder = Color(0xFFD4D4D4)
-val IdeLightTextPrimary = Color(0xFF1E1E1E)
-val IdeLightTextSecondary = Color(0xFF6E6E6E)
+val IdeLightBackground = YoleColors.Ide.LightBackground
+val IdeLightSurface = YoleColors.Ide.LightSurface
+val IdeLightSurfaceVariant = YoleColors.Ide.LightSurfaceVariant
+val IdeLightBorder = YoleColors.Ide.LightBorder
+val IdeLightTextPrimary = YoleColors.TextPrimary
+val IdeLightTextSecondary = YoleColors.Ide.LightMutedText
 
 // ============================================================================
 // Settings Manager

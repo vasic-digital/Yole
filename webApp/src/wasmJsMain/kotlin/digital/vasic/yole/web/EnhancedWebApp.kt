@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
+import digital.vasic.yole.ui.YoleColors
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
 import kotlinx.coroutines.*
@@ -52,41 +53,39 @@ private fun jsNavigatorOnLine(): Boolean = jsNavigatorOnLineRaw().toBoolean()
 private fun jsWindowPrintImpl(): kotlin.js.JsAny = js("window.print()")
 private fun jsWindowPrint() { jsWindowPrintImpl() }
 
-// --- IDE Theme Colors ---
+// --- IDE Theme Colors (references shared YoleColors tokens) ---
 object IdeColors {
-    // Dark theme
-    val darkBackground = Color(0xFF1E1E1E)
-    val darkSurface = Color(0xFF252526)
-    val darkSurfaceVariant = Color(0xFF2D2D30)
-    val darkBorder = Color(0xFF3C3C3C)
-    val darkAccent = Color(0xFFD32F2F)
-    val darkText = Color(0xFFD4D4D4)
-    val darkTextSecondary = Color(0xFF858585)
-    val darkCurrentLine = Color(0xFF2A2D2E)
-    val darkStatusBar = Color(0xFFD32F2F)
-    val darkTabActive = Color(0xFF1E1E1E)
-    val darkTabInactive = Color(0xFF2D2D30)
-    val darkSidebarBg = Color(0xFF252526)
-    val darkActivityBarBg = Color(0xFF333333)
-    val darkMenuHover = Color(0xFF2A2D2E)
-    val darkDanger = Color(0xFFF44747)
+    val darkBackground = YoleColors.Ide.DarkBackground
+    val darkSurface = YoleColors.Ide.DarkSurface
+    val darkSurfaceVariant = YoleColors.Ide.DarkSurfaceVariant
+    val darkBorder = YoleColors.Ide.DarkBorder
+    val darkAccent = YoleColors.BrandPrimary
+    val darkText = YoleColors.Dark.TextPrimary
+    val darkTextSecondary = YoleColors.Dark.TextSecondary
+    val darkCurrentLine = YoleColors.Ide.DarkCurrentLine
+    val darkStatusBar = YoleColors.BrandPrimary
+    val darkTabActive = YoleColors.Ide.DarkBackground
+    val darkTabInactive = YoleColors.Ide.DarkSurfaceVariant
+    val darkSidebarBg = YoleColors.Ide.DarkSurface
+    val darkActivityBarBg = YoleColors.Ide.DarkActivityBar
+    val darkMenuHover = YoleColors.Ide.DarkMenuHover
+    val darkDanger = YoleColors.Error
 
-    // Light theme
-    val lightBackground = Color(0xFFFFFFFF)
-    val lightSurface = Color(0xFFF3F3F3)
-    val lightSurfaceVariant = Color(0xFFECECEC)
-    val lightBorder = Color(0xFFD4D4D4)
-    val lightAccent = Color(0xFFD32F2F)
-    val lightText = Color(0xFF1E1E1E)
-    val lightTextSecondary = Color(0xFF6E6E6E)
-    val lightCurrentLine = Color(0xFFF0F0F0)
-    val lightStatusBar = Color(0xFFD32F2F)
-    val lightTabActive = Color(0xFFFFFFFF)
-    val lightTabInactive = Color(0xFFECECEC)
-    val lightSidebarBg = Color(0xFFF3F3F3)
-    val lightActivityBarBg = Color(0xFFDDDDDD)
-    val lightMenuHover = Color(0xFFE8E8E8)
-    val lightDanger = Color(0xFFD32F2F)
+    val lightBackground = YoleColors.Ide.LightBackground
+    val lightSurface = YoleColors.Ide.LightSurface
+    val lightSurfaceVariant = YoleColors.Ide.LightSurfaceVariant
+    val lightBorder = YoleColors.Ide.LightBorder
+    val lightAccent = YoleColors.BrandPrimary
+    val lightText = YoleColors.TextPrimary
+    val lightTextSecondary = YoleColors.Ide.LightMutedText
+    val lightCurrentLine = YoleColors.Ide.LightCurrentLine
+    val lightStatusBar = YoleColors.BrandPrimary
+    val lightTabActive = YoleColors.Ide.LightBackground
+    val lightTabInactive = YoleColors.Ide.LightSurfaceVariant
+    val lightSidebarBg = YoleColors.Ide.LightSurface
+    val lightActivityBarBg = YoleColors.Ide.LightActivityBar
+    val lightMenuHover = YoleColors.Ide.LightMenuHover
+    val lightDanger = YoleColors.BrandPrimary
 }
 
 /** Represents an open document tab */
