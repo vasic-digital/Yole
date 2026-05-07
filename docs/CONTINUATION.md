@@ -5,9 +5,9 @@
 > document MUST enable any CLI agent or LLM model to continue exactly where
 > work left off.
 
-**Last updated:** 2026-05-07 14:30 UTC  
+**Last updated:** 2026-05-07 14:40 UTC  
 **Current branch:** `master`  
-**Working tree:** MODIFIED (visual refinement in progress)
+**Working tree:** MODIFIED (Phase 2 IDE polish complete, pending commit)
 
 ---
 
@@ -48,7 +48,7 @@ Continue implementing the next incomplete task.
 | 1 | Unify accent colors (web was blue, now red #D32F2F) | DONE | 5 files updated |
 | 2 | Modernize web loading screen | DONE | Dark gradient + Yole logo + spinner |
 | 3 | Update PWA manifest + service worker theme | DONE | #1976d2 → #D32F2F |
-| 4 | Phase 2: IDE layout polish | PENDING | Tab bar, sidebar, status bar refinement |
+| 4 | Phase 2: IDE layout polish | DONE | TabBar, Sidebar, MenuBar, StatusBar enhanced |
 | 5 | Phase 3: Shared theme tokens audit | PENDING | Eliminate hardcoded colors, use YoleColors |
 
 ### Files Modified

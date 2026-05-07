@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -740,71 +741,77 @@ fun IdeMenuBar(
     onToggleTheme: () -> Unit,
     onPrint: () -> Unit
 ) {
+    val menuHover = if (isDarkTheme) IdeColors.darkMenuHover else IdeColors.lightMenuHover
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(32.dp)
+            .height(34.dp)
             .background(surface)
-            .padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(2.dp)
+            .padding(horizontal = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // App title
-        Text(
-            "Yole",
-            color = text,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Monospace,
+        // App logo/branding
+        Box(
             modifier = Modifier
-                .padding(end = 12.dp)
-                .semantics { contentDescription = "Yole editor application" }
-        )
+                .padding(horizontal = 10.dp, vertical = 4.dp)
+                .background(accent, RoundedCornerShape(4.dp))
+                .padding(horizontal = 8.dp, vertical = 2.dp)
+        ) {
+            Text(
+                "YOLE",
+                color = Color.White,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 1.sp
+            )
+        }
 
-        // Menu items as compact text buttons
-        IdeMenuButton("File", text, isDarkTheme, onNewFile)
-        IdeMenuButton("Open", text, isDarkTheme, onOpenFile)
-        IdeMenuButton("Save", text, isDarkTheme, onSaveFile)
-        IdeMenuButton("SaveAs", text, isDarkTheme, onSaveAs)
+        Spacer(modifier = Modifier.width(8.dp))
 
-        Box(modifier = Modifier.width(1.dp).height(16.dp).background(border))
+        IdeMenuButton("File", text, menuHover, onClick = onNewFile)
+        IdeMenuButton("Open", text, menuHover, onClick = onOpenFile)
+        IdeMenuButton("Save", text, menuHover, onClick = onSaveFile)
+        IdeMenuButton("Save As", text, menuHover, onClick = onSaveAs)
 
-        IdeMenuButton("Find", text, isDarkTheme, onFindReplace)
-        IdeMenuButton("GoTo", text, isDarkTheme, onGoToLine)
+        Box(modifier = Modifier.width(1.dp).height(18.dp).background(border.copy(alpha = 0.5f)))
 
-        Box(modifier = Modifier.width(1.dp).height(16.dp).background(border))
+        IdeMenuButton("Find", text, menuHover, onClick = onFindReplace)
+        IdeMenuButton("Go To", text, menuHover, onClick = onGoToLine)
 
-        IdeMenuButton("Preview", text, isDarkTheme, onTogglePreview)
-        IdeMenuButton("Explorer", text, isDarkTheme, onToggleSidebar)
+        Box(modifier = Modifier.width(1.dp).height(18.dp).background(border.copy(alpha = 0.5f)))
 
-        Box(modifier = Modifier.width(1.dp).height(16.dp).background(border))
+        IdeMenuButton("Preview", text, menuHover, onClick = onTogglePreview)
+        IdeMenuButton("Explorer", text, menuHover, onClick = onToggleSidebar)
 
-        IdeMenuButton("Export", text, isDarkTheme, onExport)
-        IdeMenuButton("Print", text, isDarkTheme, onPrint)
+        Box(modifier = Modifier.width(1.dp).height(18.dp).background(border.copy(alpha = 0.5f)))
+
+        IdeMenuButton("Export", text, menuHover, onClick = onExport)
+        IdeMenuButton("Print", text, menuHover, onClick = onPrint)
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Right side: theme toggle and settings
-        IdeMenuButton(
-            if (isDarkTheme) "Light" else "Dark",
-            text,
-            isDarkTheme,
-            onToggleTheme
+        Text(
+            if (isDarkTheme) "\u263D" else "\u2600",
+            color = textSecondary,
+            fontSize = 12.sp,
+            modifier = Modifier
+                .clickable(onClick = onToggleTheme)
+                .padding(horizontal = 6.dp, vertical = 4.dp)
+                .semantics { contentDescription = "Toggle theme" }
         )
-        IdeMenuButton("Settings", text, isDarkTheme, onSettings)
+        IdeMenuButton("Settings", text, menuHover, onClick = onSettings)
     }
 
-    // Bottom border
     Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(border))
 }
 
 @Composable
-fun IdeMenuButton(label: String, textColor: Color, isDarkTheme: Boolean, onClick: () -> Unit) {
-    val hoverBg = if (isDarkTheme) IdeColors.darkMenuHover else IdeColors.lightMenuHover
+fun IdeMenuButton(label: String, textColor: Color, hoverBg: Color, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clickable(onClick = onClick)
-            .padding(horizontal = 6.dp, vertical = 4.dp)
+            .padding(horizontal = 8.dp, vertical = 6.dp)
             .semantics { contentDescription = "$label button" }
     ) {
         Text(
@@ -834,48 +841,65 @@ fun IdeSidebar(
 ) {
     Column(
         modifier = Modifier
-            .width(220.dp)
+            .width(230.dp)
             .fillMaxHeight()
             .background(sidebarBg)
     ) {
-        // Sidebar header
+        // Sidebar header with accent stripe
+        Box(modifier = Modifier.fillMaxWidth().height(3.dp).background(accent))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(32.dp)
-                .padding(horizontal = 12.dp),
+                .height(36.dp)
+                .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
                 "EXPLORER",
                 color = textSecondary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 1.sp
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.5.sp
             )
             Box(
                 modifier = Modifier
                     .clickable(onClick = onNewDocument)
-                    .padding(4.dp)
+                    .background(
+                        if (isDarkTheme) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f),
+                        RoundedCornerShape(3.dp)
+                    )
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
                     .semantics { contentDescription = "New document" }
             ) {
-                Text("+", color = textSecondary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("\u2795", color = textSecondary, fontSize = 12.sp)
             }
         }
 
-        // Border
         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(border))
 
-        // Section: Open Documents
-        Text(
-            "OPEN DOCUMENTS",
-            color = textSecondary,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 0.5.sp,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-        )
+        // Section header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "OPEN EDITORS",
+                color = textSecondary.copy(alpha = 0.7f),
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Text(
+                "${openTabs.size}",
+                color = textSecondary.copy(alpha = 0.5f),
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
 
         // Document list
         val scrollState = rememberScrollState()
@@ -886,35 +910,66 @@ fun IdeSidebar(
         ) {
             openTabs.forEach { tab ->
                 val isActive = tab.id == activeTabId
-                val itemBg = if (isActive) accent.copy(alpha = 0.2f) else Color.Transparent
-                val itemText = if (isActive) text else textSecondary
+                val itemBg = if (isActive) {
+                    if (isDarkTheme) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.04f)
+                } else Color.Transparent
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onTabSelected(tab.id) }
                         .background(itemBg)
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .padding(start = if (isActive) 14.dp else 14.dp)
+                        .padding(vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Active indicator
+                    if (isActive) {
+                        Box(
+                            modifier = Modifier
+                                .width(2.dp)
+                                .height(16.dp)
+                                .background(accent)
+                                .offset(x = (-14).dp)
+                        )
+                    }
+
                     Row(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Format icon
                         Text(
                             getFormatIcon(tab.format),
                             color = getFormatColor(tab.format),
                             fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Monospace
                         )
-                        Text(
-                            tab.name + if (tab.isDirty) " *" else "",
-                            color = itemText,
-                            fontSize = 12.sp,
-                            maxLines = 1
+                        Column {
+                            Text(
+                                tab.name,
+                                color = if (isActive) text else textSecondary,
+                                fontSize = 12.sp,
+                                maxLines = 1
+                            )
+                            Text(
+                                tab.format.replaceFirstChar { it.uppercase() },
+                                color = textSecondary.copy(alpha = 0.5f),
+                                fontSize = 9.sp,
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+                    // Dirty indicator
+                    if (tab.isDirty) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(accent, CircleShape)
+                                .padding(end = 6.dp)
+                                .semantics { contentDescription = "Unsaved changes" }
                         )
                     }
 
@@ -922,41 +977,32 @@ fun IdeSidebar(
                     Box(
                         modifier = Modifier
                             .clickable { onDeleteDocument(tab.id) }
-                            .padding(2.dp)
+                            .padding(horizontal = 6.dp)
                             .semantics { contentDescription = "Delete ${tab.name}" }
                     ) {
                         Text(
-                            "x",
-                            color = textSecondary.copy(alpha = 0.5f),
-                            fontSize = 11.sp
+                            "\u2715",
+                            color = textSecondary.copy(alpha = if (isActive) 0.5f else 0.3f),
+                            fontSize = 10.sp
                         )
                     }
                 }
             }
         }
 
-        // Bottom: storage info
+        // Bottom info
         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(border))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                "localStorage",
-                color = textSecondary,
-                fontSize = 10.sp
-            )
-            Text(
-                "${openTabs.size} docs",
-                color = textSecondary,
-                fontSize = 10.sp
-            )
+            Text("localStorage", color = textSecondary.copy(alpha = 0.5f), fontSize = 9.sp)
+            Text("${openTabs.size} docs", color = textSecondary.copy(alpha = 0.4f), fontSize = 9.sp)
         }
     }
 
-    // Right border
     Box(modifier = Modifier.fillMaxHeight().width(1.dp).background(border))
 }
 
@@ -976,69 +1022,105 @@ fun IdeTabBar(
     onTabSelected: (String) -> Unit,
     onTabClosed: (String) -> Unit
 ) {
+    val tabBarBg = if (isDarkTheme) IdeColors.darkSurfaceVariant else IdeColors.lightSurfaceVariant
     Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(36.dp)
-                .background(if (isDarkTheme) IdeColors.darkSurfaceVariant else IdeColors.lightSurfaceVariant)
+                .background(tabBarBg)
                 .horizontalScroll(rememberScrollState()),
             verticalAlignment = Alignment.Bottom
         ) {
-            openTabs.forEach { tab ->
+            openTabs.forEachIndexed { index, tab ->
                 val isActive = tab.id == activeTabId
-                val tabBg = if (isActive) tabActive else tabInactive
-                val tabText = if (isActive) text else textSecondary
+                val tabBg = if (isActive) tabActive else Color.Transparent
 
                 Row(
                     modifier = Modifier
-                        .height(34.dp)
+                        .height(36.dp)
+                        .then(
+                            if (isActive) Modifier
+                                .background(tabBg)
+                                .padding(top = 3.dp)
+                            else Modifier
+                        )
                         .clickable { onTabSelected(tab.id) }
-                        .background(tabBg)
-                        .padding(horizontal = 12.dp),
+                        .padding(horizontal = if (isActive) 14.dp else 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(7.dp)
                 ) {
+                    // Accent indicator for active tab
+                    if (isActive) {
+                        Box(
+                            modifier = Modifier
+                                .width(20.dp)
+                                .height(2.dp)
+                                .background(accent)
+                                .offset(y = (-12).dp)
+                        )
+                    }
+
                     Text(
                         getFormatIcon(tab.format),
-                        color = getFormatColor(tab.format),
-                        fontSize = 11.sp
+                        color = if (isActive) getFormatColor(tab.format) else getFormatColor(tab.format).copy(alpha = 0.5f),
+                        fontSize = 11.sp,
+                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal
                     )
                     Text(
-                        tab.name + if (tab.isDirty) " *" else "",
-                        color = tabText,
+                        tab.name,
+                        color = if (isActive) text else textSecondary,
                         fontSize = 12.sp,
                         maxLines = 1,
+                        fontWeight = if (isActive) FontWeight.Medium else FontWeight.Normal,
                         modifier = Modifier.semantics { contentDescription = "Tab: ${tab.name}" }
                     )
+
+                    if (tab.isDirty) {
+                        Box(
+                            modifier = Modifier
+                                .size(7.dp)
+                                .background(
+                                    if (isActive) Color.White.copy(alpha = 0.9f) else textSecondary.copy(alpha = 0.6f),
+                                    CircleShape
+                                )
+                        )
+                    }
+
                     // Close button
                     Box(
                         modifier = Modifier
                             .clickable { onTabClosed(tab.id) }
-                            .padding(start = 4.dp)
+                            .size(18.dp)
+                            .background(
+                                if (isActive) Color.White.copy(alpha = 0.06f) else Color.Transparent,
+                                CircleShape
+                            )
+                            .wrapContentSize(Alignment.Center)
                             .semantics { contentDescription = "Close tab ${tab.name}" }
                     ) {
                         Text(
-                            "x",
-                            color = textSecondary.copy(alpha = if (isActive) 0.7f else 0.4f),
-                            fontSize = 11.sp
+                            "\u2715",
+                            color = textSecondary.copy(alpha = if (isActive) 0.6f else 0.3f),
+                            fontSize = 9.sp,
+                            modifier = Modifier.align(Alignment.Center)
                         )
                     }
                 }
 
-                // Tab separator
-                if (!isActive) {
+                // Tab separator between inactive tabs
+                if (!isActive && index < openTabs.size - 1 && openTabs.getOrNull(index + 1)?.id != activeTabId) {
                     Box(
                         modifier = Modifier
                             .width(1.dp)
-                            .height(20.dp)
-                            .background(border)
+                            .height(22.dp)
+                            .align(Alignment.CenterVertically)
+                            .background(border.copy(alpha = 0.3f))
                     )
                 }
             }
         }
 
-        // Active tab indicator line
         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(border))
     }
 }
@@ -1318,108 +1400,108 @@ fun IdeStatusBar(
     val wordCount = content.split(Regex("\\s+")).filter { it.isNotEmpty() }.size
     val lineCount = content.lines().size
     val charCount = content.length
+    val separatorColor = Color.White.copy(alpha = 0.15f)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(24.dp)
             .background(statusBarBg)
-            .padding(horizontal = 8.dp),
+            .padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // Left side
+        // Left side: connection + storage
         Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Connection status
+            val connColor = if (isOffline) Color(0xFFFF9800) else Color(0xFF4CAF50)
+            Box(modifier = Modifier.size(7.dp).background(connColor, CircleShape))
+
+            Spacer(modifier = Modifier.width(4.dp))
+
             Text(
                 if (isOffline) "Offline" else "Online",
                 color = text,
-                fontSize = 11.sp
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium
             )
 
-            // Storage indicator
+            Box(modifier = Modifier.width(1.dp).height(14.dp).background(separatorColor).padding(horizontal = 6.dp))
+
             Text(
                 "localStorage",
-                color = text.copy(alpha = 0.8f),
-                fontSize = 11.sp
+                color = text.copy(alpha = 0.7f),
+                fontSize = 10.sp
             )
 
             if (lastSavedTimestamp != null) {
+                Box(modifier = Modifier.width(1.dp).height(14.dp).background(separatorColor).padding(horizontal = 6.dp))
                 Text(
-                    "Saved",
-                    color = text.copy(alpha = 0.8f),
-                    fontSize = 11.sp
+                    "\u2713 Saved",
+                    color = Color(0xFF4CAF50).copy(alpha = 0.9f),
+                    fontSize = 10.sp
                 )
             }
         }
 
-        // Right side
+        // Right side: editor info + toggles
         Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (activeTab != null) {
-                // Cursor position
-                Text(
-                    "Ln $cursorLine, Col $cursorCol",
-                    color = text,
-                    fontSize = 11.sp,
-                    modifier = Modifier.semantics {
-                        contentDescription = "Line $cursorLine, Column $cursorCol"
-                    }
+                StatusBarItem("Ln $cursorLine, Col $cursorCol", text, "Line $cursorLine, Column $cursorCol")
+                Box(modifier = Modifier.width(1.dp).height(14.dp).background(separatorColor))
+
+                StatusBarItem("$wordCount words", text.copy(alpha = 0.7f))
+                Box(modifier = Modifier.width(1.dp).height(14.dp).background(separatorColor))
+
+                StatusBarItem("UTF-8", text.copy(alpha = 0.7f))
+                Box(modifier = Modifier.width(1.dp).height(14.dp).background(separatorColor))
+
+                StatusBarItem(
+                    activeTab.format.replaceFirstChar { it.uppercase() },
+                    text.copy(alpha = 0.9f),
+                    "Format: ${activeTab.format}"
                 )
 
-                // Word count
-                Text(
-                    "$wordCount words",
-                    color = text.copy(alpha = 0.8f),
-                    fontSize = 11.sp
-                )
+                Box(modifier = Modifier.width(1.dp).height(14.dp).background(separatorColor))
 
-                // Encoding
-                Text(
-                    "UTF-8",
-                    color = text,
-                    fontSize = 11.sp
-                )
-
-                // Format
-                Box(
-                    modifier = Modifier
-                        .clickable { /* format dropdown would go here */ }
-                        .semantics { contentDescription = "Format: ${activeTab.format}" }
-                ) {
-                    Text(
-                        activeTab.format.replaceFirstChar { it.uppercase() },
-                        color = text,
-                        fontSize = 11.sp
-                    )
-                }
-
-                // Toggle buttons
-                StatusBarToggle("Preview", showPreview, text, onTogglePreview)
-                StatusBarToggle("Wrap", wordWrap, text, onToggleWordWrap)
-                StatusBarToggle("Ln#", showLineNumbers, text, onToggleLineNumbers)
+                StatusBarToggleCompact("Preview", showPreview, text, onTogglePreview)
+                StatusBarToggleCompact("Wrap", wordWrap, text, onToggleWordWrap)
+                StatusBarToggleCompact("Ln#", showLineNumbers, text, onToggleLineNumbers)
             }
         }
     }
 }
 
 @Composable
-private fun StatusBarToggle(label: String, enabled: Boolean, text: Color, onClick: () -> Unit) {
+private fun StatusBarItem(label: String, color: Color, description: String? = null) {
+    Text(
+        label,
+        color = color,
+        fontSize = 10.sp,
+        modifier = Modifier
+            .padding(horizontal = 4.dp)
+            .then(if (description != null) Modifier.semantics { contentDescription = description } else Modifier)
+    )
+}
+
+@Composable
+private fun StatusBarToggleCompact(label: String, enabled: Boolean, text: Color, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp)
+            .padding(horizontal = 5.dp, vertical = 3.dp)
             .semantics { contentDescription = "$label: ${if (enabled) "on" else "off"}" }
     ) {
         Text(
             label,
-            color = if (enabled) text else text.copy(alpha = 0.4f),
-            fontSize = 11.sp
+            color = if (enabled) text else text.copy(alpha = 0.35f),
+            fontSize = 10.sp,
+            fontWeight = if (enabled) FontWeight.Medium else FontWeight.Normal
         )
     }
 }
