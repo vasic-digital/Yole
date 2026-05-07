@@ -179,11 +179,11 @@ fun YoleWebApp() {
                                          currentFormat = format
                                      }
                                  },
-                                 colors = ButtonDefaults.buttonColors(
-                                     containerColor = Color(0xFF1976d2)
-                                 )
-                             ) {
-                                 Text("Load")
+                                  colors = ButtonDefaults.buttonColors(
+                                      containerColor = Color(0xFFD32F2F)
+                                  )
+                              ) {
+                                  Text("Load")
                              }
                         }
                     }

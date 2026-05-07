@@ -195,7 +195,7 @@ function offlineFallback(request) {
                 '<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;' +
                 'height:100vh;margin:0;background:#f5f5f5;color:#333;}' +
                 '.container{text-align:center;padding:32px;}' +
-                'h1{color:#1976d2;}</style></head>' +
+                'h1{color:#D32F2F;}</style></head>' +
                 '<body><div class="container"><h1>Yole</h1>' +
                 '<p>You are currently offline.</p>' +
                 '<p>Please check your internet connection and try again.</p>' +

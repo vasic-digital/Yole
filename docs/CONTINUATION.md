@@ -5,9 +5,9 @@
 > document MUST enable any CLI agent or LLM model to continue exactly where
 > work left off.
 
-**Last updated:** 2026-05-07  
-**Current branch:** `master` (synced with all remotes)  
-**Working tree:** CLEAN (committed + pushed)
+**Last updated:** 2026-05-07 14:30 UTC  
+**Current branch:** `master`  
+**Working tree:** MODIFIED (visual refinement in progress)
 
 ---
 
@@ -35,9 +35,47 @@ Continue implementing the next incomplete task.
 
 ---
 
-## 2. Active Work Stream: SAF-First File Save Fix
+## 2. Active Work Stream: Visual Refinement (Phase 1)
 
-**Priority:** Critical — blocks basic app usage on Android 16 (API 36)
+**Priority:** Medium — brand consistency and modern UI polish
+
+**Feature Stream:** #2 of 5 (after SAF Save Fix)
+
+### Task Progress (Visual Refinement)
+
+| # | Task | Status | Description |
+|---|------|--------|-------------|
+| 1 | Unify accent colors (web was blue, now red #D32F2F) | DONE | 5 files updated |
+| 2 | Modernize web loading screen | DONE | Dark gradient + Yole logo + spinner |
+| 3 | Update PWA manifest + service worker theme | DONE | #1976d2 → #D32F2F |
+| 4 | Phase 2: IDE layout polish | PENDING | Tab bar, sidebar, status bar refinement |
+| 5 | Phase 3: Shared theme tokens audit | PENDING | Eliminate hardcoded colors, use YoleColors |
+
+### Files Modified
+
+- `webApp/src/wasmJsMain/kotlin/digital/vasic/yole/web/EnhancedWebApp.kt` — accent/statusBar from #007ACC → #D32F2F
+- `webApp/src/wasmJsMain/kotlin/digital/vasic/yole/web/Main.kt` — Load button from #1976d2 → #D32F2F
+- `webApp/src/wasmJsMain/resources/index.html` — theme-color, loading screen redesign
+- `webApp/src/wasmJsMain/resources/manifest.json` — theme_color → #D32F2F
+- `webApp/src/wasmJsMain/resources/service-worker.js` — offline page heading → #D32F2F
+
+### Resume Prompt for Visual Refinement
+
+```
+Continue with Yole visual refinement. Read docs/CONTINUATION.md Section 2
+for the current state. The web accent colors are unified. Next: IDE layout
+polish (tab bar, sidebar, status bar) and shared theme token audit to
+eliminate hardcoded colors in favor of YoleColors from shared/ui/Theme.kt.
+
+Start by reading:
+- webApp/.../EnhancedWebApp.kt (IdeColors object + composables)
+- shared/.../ui/Theme.kt (YoleColors tokens)
+- desktopApp/.../theme/Theme.kt (desktop theme reference)
+```
+
+---
+
+## 2b. Completed Work Stream: SAF-First File Save Fix
 
 **Feature Stream:** #1 of 5  
 **Full plan:** `docs/superpowers/plans/2026-05-05-saf-save-fix-plan.md`  
@@ -108,7 +146,15 @@ Continue implementing the next incomplete task.
 
 ## 3. Uncommitted Files in Working Tree
 
-(None — working tree is clean)
+| File | Change |
+|------|--------|
+| `webApp/.../EnhancedWebApp.kt` | Accent #007ACC → #D32F2F |
+| `webApp/.../Main.kt` | Load button #1976d2 → #D32F2F |
+| `webApp/.../index.html` | Loading screen redesign + theme-color |
+| `webApp/.../manifest.json` | theme_color → #D32F2F |
+| `webApp/.../service-worker.js` | Offline heading → #D32F2F |
+
+(Waiting to be staged and committed)
 
 ---
 
@@ -193,9 +239,10 @@ HelixQA:     71560fd (main) — merged upstream governance updates
 
 | Stream | Priority | Status | Description |
 |--------|----------|--------|-------------|
-| SAF Save Fix | Critical | COMPLETE (13/13 tasks, pending push) | Fix file saving on Android 9-16 |
-| (TBD) | — | Not started | Additional feature streams 2-5 |
-| Known Defects | High | Deferred | #smb, #webdav, #robolectric |
+| SAF Save Fix | Critical | COMPLETE (13/13 tasks) | Fix file saving on Android 9-16 |
+| Visual Refinement | Medium | IN PROGRESS (Phase 1 done) | Unify brand colors, modernize UI |
+| (TBD) | — | Not started | Additional feature streams 3-5 |
+| Known Defects | High | Deferred | #robolectric |
 | Anti-Bluff | Medium | Ongoing | 4 remaining enforcement dimensions |
 
 ---
