@@ -252,6 +252,7 @@ class WebDavService(
 
     /**
      * Upload a file to the WebDAV server using HTTP PUT with progress tracking.
+     * Reads local file bytes via PlatformFileIO and sends real HTTP PUT body.
      */
     override suspend fun uploadFile(localPath: String, remotePath: String): Flow<NetworkOperation> = flow {
         if (!isConnected()) {
@@ -272,13 +273,11 @@ class WebDavService(
         )
 
         try {
-            // Track operation
             operationsMutex.withLock { activeOperations[operation.id] = operation }
 
             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.0))
 
             val fullUrl = buildWebDavUrl(remotePath)
-            // Read file bytes from local filesystem
             val fileBytes = fileIO.readFileBytes(localPath).getOrElse { byteArrayOf() }
             val response = httpClient.put(fullUrl) {
                 applyAuth()
@@ -288,13 +287,27 @@ class WebDavService(
 
             if (response.status.value in 200..299 || response.status == HttpStatusCode.Created ||
                 response.status == HttpStatusCode.NoContent) {
-                emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.5))
+                emit(operation.copy(
+                    status = NetworkOperation.Status.IN_PROGRESS,
+                    progress = 0.5,
+                    totalSize = fileBytes.size.toLong(),
+                    bytesTransferred = fileBytes.size.toLong() / 2
+                ))
 
-                // Update sync status
                 syncMutex.withLock { syncStatusMap[remotePath] = SyncStatus.SYNCED }
 
-                emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 1.0))
-                emit(operation.copy(status = NetworkOperation.Status.COMPLETED, progress = 1.0))
+                emit(operation.copy(
+                    status = NetworkOperation.Status.IN_PROGRESS,
+                    progress = 1.0,
+                    totalSize = fileBytes.size.toLong(),
+                    bytesTransferred = fileBytes.size.toLong()
+                ))
+                emit(operation.copy(
+                    status = NetworkOperation.Status.COMPLETED,
+                    progress = 1.0,
+                    totalSize = fileBytes.size.toLong(),
+                    bytesTransferred = fileBytes.size.toLong()
+                ))
             } else {
                 emit(operation.copy(
                     status = NetworkOperation.Status.FAILED,
@@ -303,10 +316,10 @@ class WebDavService(
             }
         } catch (e: Exception) {
             if (e is kotlin.coroutines.cancellation.CancellationException) throw e
-            // Fallback: emit progress sequence for offline/test scenarios
-            emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.5))
-            emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 1.0))
-            emit(operation.copy(status = NetworkOperation.Status.COMPLETED, progress = 1.0))
+            emit(operation.copy(
+                status = NetworkOperation.Status.FAILED,
+                error = "Upload error: ${e.message}"
+            ))
         } finally {
             operationsMutex.withLock { activeOperations.remove(operation.id) }
         }
@@ -380,10 +393,10 @@ class WebDavService(
             }
         } catch (e: Exception) {
             if (e is kotlin.coroutines.cancellation.CancellationException) throw e
-            // Fallback: emit progress sequence for offline/test scenarios
-            emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.5))
-            emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 1.0))
-            emit(operation.copy(status = NetworkOperation.Status.COMPLETED, progress = 1.0))
+            emit(operation.copy(
+                status = NetworkOperation.Status.FAILED,
+                error = "Download error: ${e.message}"
+            ))
         } finally {
             operationsMutex.withLock { activeOperations.remove(operation.id) }
         }
