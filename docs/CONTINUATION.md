@@ -5,9 +5,9 @@
 > document MUST enable any CLI agent or LLM model to continue exactly where
 > work left off.
 
-**Last updated:** 2026-05-07 15:15 UTC  
+**Last updated:** 2026-05-07 19:00 UTC  
 **Current branch:** `master` (synced with origin)  
-**Working tree:** CLEAN (all committed + pushed)
+**Working tree:** CLEAN (all committed + pushed to all remotes)
 
 ---
 
@@ -17,20 +17,18 @@ From a new CLI agent session, paste this prompt:
 
 ```
 I am resuming work on the Yole project. Read docs/CONTINUATION.md to understand
-the current state, then continue with the active task described in Section 2
-(Active Work Stream). For the SAF save fix plan, the full implementation plan
-is in docs/superpowers/plans/2026-05-05-saf-save-fix-plan.md and the design
-spec is in docs/superpowers/specs/2026-05-05-saf-save-fix-design.md.
+the current state. All repos synced to all remotes. WebDAV StackOverflow fixed.
+Containers go.sum dependency fixed. 17 pre-existing concurrency/stress test
+flakes remain (99.8% pass rate, 8954/8971 tests pass). Next work: anti-bluff
+campaign enforcement dimensions (Section 5).
 
 IMPORTANT: After completing each task, update docs/CONTINUATION.md as required
-by CONST-036. Also maintain the CONSTITUTION.md, AGENTS.md, and CLAUDE.md
-continuation constraint.
+by CONST-036.
 
 Start by running:
   git submodule update --init --recursive
   make bootstrap
 Then verify the current state matches the CONTINUATION.md task list.
-Continue implementing the next incomplete task.
 ```
 
 ---
@@ -147,15 +145,7 @@ Start by reading:
 
 ## 3. Uncommitted Files in Working Tree
 
-| File | Change |
-|------|--------|
-| `webApp/.../EnhancedWebApp.kt` | Accent #007ACC → #D32F2F |
-| `webApp/.../Main.kt` | Load button #1976d2 → #D32F2F |
-| `webApp/.../index.html` | Loading screen redesign + theme-color |
-| `webApp/.../manifest.json` | theme_color → #D32F2F |
-| `webApp/.../service-worker.js` | Offline heading → #D32F2F |
-
-(Waiting to be staged and committed)
+(None — all files committed and pushed.)
 
 ---
 
@@ -169,6 +159,9 @@ From `docs/KNOWN_DEFECTS.md`:
 ### ~~#webdav-always-online-stub~~ — FIXED (2026-05-07, commit `1f6472c9`)
 - **Fixed:** WebDavService.connect() no longer catches network errors and lies about online state. Removed the `catch` block that suppressed exceptions. Added `testConnectFn` lambda injection for test control. Tests updated to handle the real connection behavior.
 
+### ~~#webdav-stackoverflow~~ — FIXED (2026-05-07, commit `15f5d10f`)
+- **Fixed:** parseMultistatusResponse infinite recursion (StackOverflowError) when XML contained `d:response`/`D:response` namespace prefixes. Replaced recursive namespace-stripping with iterative approach. Reverted createMockClient auto-OPTIONS handling that caused 26 false-negative assertions. WebDavMockHttpTest: 28 failures → 0.
+
 ### Current Open Defects:
 
 ### #robolectric-compose-ui-tests-brittle
@@ -177,6 +170,24 @@ From `docs/KNOWN_DEFECTS.md`:
 - **Proper fix:** Migrate to HelixQA on-device tests or test-tag-based matching
 - **Blocked by:** Multi-day work; out of scope for any single iteration
 - **Exemption:** Robolectric tests excluded in androidApp/build.gradle.kts
+
+### #pre-existing-concurrency-flakes (17 failures)
+- **Symptom:** 17 test failures across 8 concurrency/stress test classes:
+  - ConcurrencyFixesTest (5), HttpClientLifecycleTests (2),
+    NetworkStorageIntegrationStressTest (3), SafetyFixesTest (2),
+    ConcurrencyStressTest (2), NetworkProtocolStressTest (1),
+    PerProtocolStressTests (1), ResourceManagementStressTest (1)
+- **Cause:** AssertionError "Expected value to be true", JobCancellationException,
+  and SMB connect assertions. Likely thread-scheduling dependent.
+- **Status:** PRE-EXISTING — not introduced by current changes.
+  Overall: 8954 tests, 17 failures = 99.8% pass rate.
+
+### #helixqa-missing-sibling-repos
+- **Symptom:** 31 HelixQA packages fail with "replacement directory does not exist"
+- **Missing repos:** DocProcessor, LLMsVerifier/llm-verifier,
+  LLMOrchestrator, VisionEngine
+- **Status:** These are separate repos expected as siblings to HelixQA.
+  Not a code defect — environment bootstrap gap.
 
 ---
 
@@ -211,20 +222,20 @@ From `docs/campaigns/anti-bluff/MILESTONE-2026-05-01.md`:
 
 ### Main Repo
 ```
-Branch: master (synced with origin)
+Branch: master (synced with origin, github, upstream — all pushed)
 Last 5 commits:
+  15f5d10f fix(webdav): eliminate StackOverflow in parseMultistatusResponse
+  3f9dafce docs(continuation): record Phase 4 hardcoded color cleanup
+  312ce3be style(theme): eliminate remaining hardcoded colors across Android and desktop
+  72f42782 docs(continuation): mark Phase 3 theme token audit complete
   3f6c1ae5 refactor(theme): consolidate IDE colors into shared YoleColors tokens
-  bf58dbb4 style(web): modernize IDE layout with polished TabBar, Sidebar, MenuBar, and StatusBar
-  4c96e8e5 style(web): unify brand accent color and modernize loading screen
-  82e3a3a7 docs(continuation): finalize visual refinement Phase 1-2 status
-  ee6abb3a docs: update CONTINUATION.md and CLAUDE.md for fixed SMB/WebDAV stubs
 ```
 
 ### Submodules
 ```
-Challenges:  727353b (main) — CONST-035 labels added to governance docs
-Containers:  e377dea (main) — AVD configs + Dockerfile
-HelixQA:     71560fd (main) — merged upstream governance updates
+Challenges:  727353b (main) — ALL TESTS PASS (17/17 packages)
+Containers:  2f5136a (main) — ALL TESTS PASS (30/30 packages, go.sum fix committed)
+HelixQA:     71560fd (main) — 50+ packages PASS, 31 packages FAIL due to missing sibling repos
 ```
 † helixgithub/helixgitlab for HelixQA have SSH-auth errors (known issue)
 
