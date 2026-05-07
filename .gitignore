@@ -138,3 +138,10 @@ automation-screenshots/
 !website/**/*.mp4
 
 automation/node_modules/
+
+# HelixQA sibling repos (cloned for development, not submodules)
+DocProcessor/
+LLMOrchestrator/
+LLMsVerifier/
+Security/
+VisionEngine/

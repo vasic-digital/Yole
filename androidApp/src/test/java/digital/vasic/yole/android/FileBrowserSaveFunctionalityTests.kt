@@ -43,71 +43,70 @@ class FileBrowserSaveFunctionalityTests {
     @Test
     fun testSaveFileWithDirectAccess() {
         val fileName = "test_save_direct.txt"
-        val filePath = File(testDir, fileName).absolutePath
         val content = "Test content for direct file save"
 
-        val result = saveFile(context, filePath, content, null)
-        
-        assertTrue("Save should succeed", result)
-        
-        val savedFile = File(filePath)
-        assertTrue("File should exist", savedFile.exists())
+        val result = saveFile(context, null, content, fileName)
+
+        assertTrue("Save should succeed", result.first)
+
+        val savedFile = File(context.filesDir, "autosave/$fileName")
+        assertTrue("File should exist at ${savedFile.absolutePath}", savedFile.exists())
         assertEquals("Content should match", content, savedFile.readText())
     }
 
     @Test
     fun testSaveFileCreatesParentDirectories() {
-        val nestedDir = File(testDir, "nested/deep/directory")
-        val filePath = File(nestedDir, "test.txt").absolutePath
+        val fileName = "test.txt"
         val content = "Test content"
 
-        val result = saveFile(context, filePath, content, null)
-        
-        assertTrue("Save should succeed", result)
-        assertTrue("Parent directories should be created", nestedDir.exists())
-        assertTrue("File should exist", File(filePath).exists())
+        val result = saveFile(context, null, content, fileName)
+
+        assertTrue("Save should succeed", result.first)
+        val savedFile = File(context.filesDir, "autosave/$fileName")
+        assertTrue("Parent directories should be created", savedFile.parentFile!!.exists())
+        assertTrue("File should exist at ${savedFile.absolutePath}", savedFile.exists())
     }
 
     @Test
     fun testSaveFileWithEmptyContent() {
         val fileName = "test_empty.txt"
-        val filePath = File(testDir, fileName).absolutePath
         val content = ""
 
-        val result = saveFile(context, filePath, content, null)
-        
-        assertTrue("Save should succeed with empty content", result)
-        assertTrue("File should exist", File(filePath).exists())
-        assertEquals("Content should be empty", "", File(filePath).readText())
+        val result = saveFile(context, null, content, fileName)
+
+        assertTrue("Save should succeed with empty content", result.first)
+        val savedFile = File(context.filesDir, "autosave/$fileName")
+        assertTrue("File should exist at ${savedFile.absolutePath}", savedFile.exists())
+        assertEquals("Content should be empty", "", savedFile.readText())
     }
 
     @Test
     fun testSaveFileWithSpecialCharacters() {
         val fileName = "test_special_ñ_中_🎉.txt"
-        val filePath = File(testDir, fileName).absolutePath
         val content = "Special content: ñ 中 🎉 émojis"
 
-        val result = saveFile(context, filePath, content, null)
-        
-        assertTrue("Save should succeed with special characters", result)
-        assertTrue("File should exist", File(filePath).exists())
-        assertEquals("Content should match", content, File(filePath).readText())
+        val result = saveFile(context, null, content, fileName)
+
+        assertTrue("Save should succeed with special characters", result.first)
+        val savedFile = File(context.filesDir, "autosave/$fileName")
+        assertTrue("File should exist", savedFile.exists())
+        assertEquals("Content should match", content, savedFile.readText())
     }
 
     @Test
     fun testSaveFileWithMultilineContent() {
         val fileName = "test_multiline.txt"
-        val filePath = File(testDir, fileName).absolutePath
         val content = """Line 1
 Line 2
 Line 3
 
 Line 5 after empty line"""
 
-        val result = saveFile(context, filePath, content, null)
-        
-        assertTrue("Save should succeed with multiline content", result)
-        assertEquals("Content should match", content, File(filePath).readText())
+        val result = saveFile(context, null, content, fileName)
+
+        assertTrue("Save should succeed with multiline content", result.first)
+        val savedFile = File(context.filesDir, "autosave/$fileName")
+        assertEquals("Content should match", content, savedFile.readText())
     }
 
     @Test
@@ -243,14 +242,14 @@ Line 5 after empty line"""
 
     @Test
     fun testSaveFileFunctionSignature() {
-        // Verify the saveFile function accepts all required parameters
+        // Verify the saveFile function exists with ContentResolver/SAF-first signature
         val method = try {
             Class.forName("digital.vasic.yole.android.ui.YoleAppKt")
-                .getMethod("saveFile", Context::class.java, String::class.java, String::class.java, Uri::class.java)
+                .getMethod("saveFile", Context::class.java, String::class.java, String::class.java, String::class.java)
         } catch (e: Exception) {
             null
         }
-        
+
         assertNotNull("saveFile function should exist with SAF support", method)
     }
 
