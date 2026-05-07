@@ -7,7 +7,15 @@
 #   at sub-project 1 close.
 # Section 3: anchor-manifest gaps, format <capability-id>:MISSING_ANCHOR.
 # === SECTION 1: STATIC SCANNER HITS ===
-# (empty — all pre-existing BLUFF-K-002 hits eliminated by sub-project 4 iters 6-7)
+# BLUFF-K-011: getOrElse { byteArrayOf() } — silent empty upload on read failure.
+# Tracked for Feature Stream 3 (Network File Transfer). These 6 sites need
+# null-check + emit FAILED instead of silently uploading zero bytes.
+# See docs/CONTINUATION.md Section 7, Feature Stream 3.
+shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/dropbox/DropboxService.kt:BLUFF-K-011
+shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/git/GitService.kt:BLUFF-K-011
+shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/googledrive/GoogleDriveService.kt:BLUFF-K-011
+shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/onedrive/OneDriveService.kt:BLUFF-K-011
+shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/webdav/WebDavService.kt:BLUFF-K-011
 # === SECTION 2: PER-FILE MUTATION KILL RATES ===
 # (deferred to sub-project 4 — Pitest full-tree pass too slow for sub-project 1)
 # === SECTION 3: ANCHOR-MANIFEST GAPS ===

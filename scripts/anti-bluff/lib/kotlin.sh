@@ -114,4 +114,43 @@ scan_kotlin() {
       if (!(NR in exempt)) print rel ":" NR ":BLUFF-K-008:@Suppress(\"BLUFF...\") without justification"
     }
   ' "$fpath"
+
+  # BLUFF-K-009: catch block that emits COMPLETED on error — the "silent
+  # success" pattern where exceptions are swallowed and the operation is
+  # falsely reported as successful. Context-sensitive: checks for catch
+  # keyword followed by emit(COMPLETED) within a few lines.
+  awk -v rel="${relpath}" "${_KT_STRIP_PRELUDE}"'
+    { stripped = strip_kt($0) }
+    stripped ~ /^[[:space:]]*\} catch/ { in_catch = 1; catch_start = NR; next }
+    in_catch == 1 && stripped ~ /\.COMPLETED/ {
+      print rel ":" catch_start ":BLUFF-K-009:catch block may emit COMPLETED (silent success bluff)"
+      in_catch = 0; next
+    }
+    in_catch == 1 && stripped ~ /^[[:space:]]*\}[[:space:]]*finally/ { in_catch = 0; next }
+    in_catch == 1 && stripped ~ /^[[:space:]]*\}[[:space:]]*$/ { in_catch = 0; next }
+    in_catch > 0 && NR > catch_start + 10 { in_catch = 0 }
+  ' "$fpath"
+
+  # BLUFF-K-010: simulated/fallback operations emitting COMPLETED — comments
+  # like "Fallback", "simulated", "offline/test scenarios" next to emission
+  # of COMPLETED status.
+  awk -v rel="${relpath}" "${_KT_STRIP_PRELUDE}"'
+    { stripped = strip_kt($0) }
+    /Fallback|simulated|offline.test.scenario/ { fallback_hint = 1; fallback_line = NR; next }
+    fallback_hint == 1 && stripped ~ /\.COMPLETED/ {
+      print rel ":" fallback_line ":BLUFF-K-010:fallback/simulated code may emit COMPLETED (bluff)"
+      fallback_hint = 0; next
+    }
+    fallback_hint > 0 && NR > fallback_line + 5 { fallback_hint = 0 }
+  ' "$fpath"
+
+  # BLUFF-K-011: silent data loss — readFileBytes().getOrElse { byteArrayOf() }
+  # uploads empty bytes when local file read fails. Must fail explicitly
+  # instead of silently transmitting zero bytes.
+  awk -v rel="${relpath}" "${_KT_STRIP_PRELUDE}"'
+    { stripped = strip_kt($0) }
+    stripped ~ /readFileBytes.*getOrElse.*byteArrayOf/ {
+      print rel ":" NR ":BLUFF-K-011:getOrElse { byteArrayOf() } — silent empty upload on read failure"
+    }
+  ' "$fpath"
 }
