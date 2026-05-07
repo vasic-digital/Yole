@@ -13,6 +13,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.text.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
@@ -1615,13 +1616,13 @@ private fun buildHighlightedText(
             if (pos < text.length) {
                 if (index == currentMatchIndex) {
                     addStyle(
-                        SpanStyle(background = Color(0xFFFF9800)),
+                        SpanStyle(background = YoleColors.Warning),
                         start = pos,
                         end = end
                     )
                 } else {
                     addStyle(
-                        SpanStyle(background = Color(0xFFFFEB3B).copy(alpha = 0.3f)),
+                        SpanStyle(background = YoleColors.Warning.copy(alpha = 0.3f)),
                         start = pos,
                         end = end
                     )
@@ -1868,7 +1869,7 @@ private fun IdeWelcomeButton(
     Box(
         modifier = Modifier
             .clickable(onClick = onClick)
-            .border(width = 1.dp, color = IdeDarkBorder)
+            .border(width = 1.dp, color = IdeDarkBorder, shape = RoundedCornerShape(6.dp))
             .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

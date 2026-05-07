@@ -1431,7 +1431,7 @@ fun IdeEditorScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(if (isDarkTheme) Color(0xFF252526) else Color(0xFFF3F3F3))
+                    .background(if (isDarkTheme) YoleColors.Ide.DarkSurface else YoleColors.Ide.LightSurface)
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1469,7 +1469,7 @@ fun IdeEditorScreen(
             // Line number gutter
             if (showLineNumbers) {
                 val lines = text.lines()
-                val gutterBg = if (isDarkTheme) Color(0xFF1E1E1E) else Color(0xFFF8F8F8)
+                val gutterBg = if (isDarkTheme) YoleColors.Ide.DarkBackground else Color(0xFFF8F8F8)
                 val gutterWidth = when {
                     lines.size >= 1000 -> 48.dp
                     lines.size >= 100 -> 40.dp
@@ -1955,7 +1955,7 @@ fun IdeNewDocumentDialog(
                             .fillMaxWidth()
                             .clickable { onFormatSelected(id) }
                             .background(
-                                if (selectedFormat == id) Color(0xFFD32F2F).copy(alpha = 0.2f)
+                                if (selectedFormat == id) YoleColors.BrandPrimary.copy(alpha = 0.2f)
                                 else Color.Transparent
                             )
                             .padding(horizontal = 12.dp, vertical = 8.dp),

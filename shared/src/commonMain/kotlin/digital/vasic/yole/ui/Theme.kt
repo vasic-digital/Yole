@@ -84,6 +84,7 @@ object YoleColors {
         val DarkSurface = Color(0xFF252526)
         val DarkSurfaceVariant = Color(0xFF2D2D30)
         val DarkBorder = Color(0xFF3C3C3C)
+        val DarkPrimaryContainer = Color(0xFF5A1E1E)
         val DarkActivityBar = Color(0xFF333333)
         val DarkMenuHover = Color(0xFF2A2D2E)
         val DarkCurrentLine = Color(0xFF2A2D2E)

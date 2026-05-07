@@ -90,7 +90,7 @@ object YoleDesktopTheme {
             baseScheme.copy(
                 primary = YoleColors.BrandPrimary,
                 onPrimary = Color.White,
-                primaryContainer = Color(0xFF5A1E1E),
+                primaryContainer = YoleColors.Ide.DarkPrimaryContainer,
                 onPrimaryContainer = YoleColors.Dark.TextPrimary,
                 secondary = YoleColors.BrandSecondary,
                 tertiary = YoleColors.BrandTertiary,
@@ -109,7 +109,7 @@ object YoleDesktopTheme {
             baseScheme.copy(
                 primary = YoleColors.BrandPrimary,
                 onPrimary = Color.White,
-                primaryContainer = Color(0xFFFFCDD2),
+                primaryContainer = YoleColors.InteractivePressed,
                 onPrimaryContainer = YoleColors.TextPrimary,
                 secondary = YoleColors.BrandSecondary,
                 tertiary = YoleColors.BrandTertiary,
@@ -121,7 +121,7 @@ object YoleDesktopTheme {
                 background = YoleColors.Ide.LightBackground,
                 onBackground = YoleColors.TextPrimary,
                 outline = YoleColors.Ide.LightBorder,
-                outlineVariant = Color(0xFFBBBBBB)
+                outlineVariant = YoleColors.BorderMedium
             )
         }
     }
