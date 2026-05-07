@@ -800,7 +800,7 @@ class GitMockHttpTest {
     }
 
     @Test
-    fun `downloadFile GitHub with 404 still completes via fallback`() = runBlocking<Unit> {
+    fun `downloadFile GitHub with 404 fails honestly`() = runBlocking<Unit> {
         val client = createMockClient { request ->
             val url = request.url.toString()
             when {
@@ -815,8 +815,8 @@ class GitMockHttpTest {
         val operations = service.downloadFile("/nonexistent.txt", "/tmp/local/nonexistent.txt").toList()
 
         assertTrue(operations.isNotEmpty())
-        val completed = operations.find { it.status == NetworkOperation.Status.COMPLETED }
-        assertNotNull(completed, "Download should complete via fallback even on 404")
+        val failed = operations.find { it.status == NetworkOperation.Status.FAILED }
+        assertNotNull(failed, "Download should fail honestly on 404 (CONST-035: no bluff fallback)")
     }
 
     // ==================== 5. UPLOAD FILE GITHUB ====================

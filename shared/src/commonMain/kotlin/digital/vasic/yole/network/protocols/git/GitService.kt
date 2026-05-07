@@ -556,10 +556,11 @@ class GitService(
                 }
             }
 
-            // Fallback: simulated download for offline/test scenarios
-            emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.5))
-            emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 1.0))
-            emit(operation.copy(status = NetworkOperation.Status.COMPLETED, progress = 1.0))
+            // Download failed — emit honest failure, not simulated success
+            emit(operation.copy(
+                status = NetworkOperation.Status.FAILED,
+                error = "Download failed: no network access or unsupported Git host"
+            ))
         } catch (e: Exception) {
             if (e is kotlin.coroutines.cancellation.CancellationException) throw e
             emit(operation.copy(
