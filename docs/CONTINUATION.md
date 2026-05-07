@@ -242,11 +242,63 @@ HelixQA:     71560fd (main) — 50+ packages PASS, 31 packages FAIL due to missi
 
 | Stream | Priority | Status | Description |
 |--------|----------|--------|-------------|
-| SAF Save Fix | Critical | COMPLETE (13/13 tasks) | Fix file saving on Android 9-16 |
-| Visual Refinement | Medium | COMPLETE (Phases 1-3 done) | Unified brand colors, modernized IDE layout, shared tokens |
-| (TBD) | — | Not started | Additional feature streams 3-5 |
+| SAF Save Fix | Critical | COMPLETE (13/13) | Fix file saving on Android 9-16 |
+| Visual Refinement | Medium | COMPLETE (6/6) | Unified brand colors, modernized IDE layout, shared tokens |
+| Network File Transfer | Critical | NOT STARTED | Wire real file bytes to network protocol upload/download |
+| Platform Completion | High | NOT STARTED | FTP/SFTP/SMB on iOS/WASM, finalize stubs |
+| Protocol Hardening | Medium | NOT STARTED | SFTP/SMB real integration, JSON parser, FTP features |
 | Known Defects | High | Deferred | #robolectric |
-| Anti-Bluff | Medium | Ongoing | 4 remaining enforcement dimensions |
+| Anti-Bluff | Medium | Ongoing | 3 remaining enforcement dimensions |
+
+### Feature Stream 3: Network File Transfer (CRITICAL)
+
+**Problem:** All 8 network protocol services (WebDAV, Git, Dropbox, Google Drive,
+OneDrive, FTP, SFTP, SMB) declare `uploadFile` sends empty bytes and `downloadFile`
+does not write to local filesystem. The APIs, auth, and protocol negotiation work
+correctly, but no actual file data can be transferred between cloud storage and
+the device. This makes cloud sync completely non-functional for end users.
+
+**Scope:**
+1. Wire `PlatformFileIO` into `uploadFile()` — read local file bytes and send
+   via HTTP PUT / STOR / SFTP write / SMB write
+2. Wire `PlatformFileIO` into `downloadFile()` — receive bytes and write to
+   local filesystem via FileHandle
+3. Add progress tracking with real byte counts (currently emits progress but
+   without actual data transfer)
+4. Anti-bluff: end-to-end tests that upload a known file, download it back,
+   and verify byte-for-byte equality across all 8 protocols
+
+### Feature Stream 4: Platform Completion (HIGH)
+
+**Problem:** FTP, SFTP, and SMB are COMPLETELY non-functional on iOS and WASM
+(all methods throw `PlatformNotSupportedException`). Users on mobile/web cannot
+use these protocols at all.
+
+**iOS scope:**
+1. Implement FTP via NWConnection or libcurl cinterop
+2. Implement SFTP via libssh2 Kotlin/Native cinterop
+3. Implement SMB via libsmb2 Kotlin/Native cinterop
+4. Implement iOS FileHandle for local file I/O
+
+**WASM scope:**
+1. Implement FTP/SFTP/SMB via server-side WebSocket proxy bridges
+2. Implement WASM FileHandle for browser file I/O (IndexedDB/OPFS)
+3. Ensure HTTP-based protocols (WebDAV, Git, Dropbox, GDrive, OneDrive)
+   actually function on WASM (they inherit from commonMain via ktor)
+
+### Feature Stream 5: Protocol Hardening (MEDIUM)
+
+**Problem:** Multiple protocol implementations have simulation gaps.
+
+**Scope:**
+1. SFTP service: commonMain currently uses in-memory virtual filesystem instead
+   of real SshClient/SftpChannel — wire the real protocol
+2. SMB service: commonMain uses in-memory file tree — wire SmbProtocolClient
+3. JSON format: registered in FormatRegistry but has no parser — implement JSON
+   syntax highlighting/formatter
+4. FTP: add server-side operations (if protocol supports) or document limitations
+5. Fix `NetworkProtocolStatus.kt` discrepancies — some protocols claim
+   `FULLY_IMPLEMENTED` but their KDoc says `PARTIALLY_IMPLEMENTED`
 
 ---
 
