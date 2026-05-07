@@ -11,6 +11,7 @@ import digital.vasic.yole.network.StorageQuota
 import digital.vasic.yole.network.auth.AuthTokenManager
 import digital.vasic.yole.network.auth.GoogleDriveOAuth2Flow
 import digital.vasic.yole.network.common.*
+import digital.vasic.yole.network.platform.PlatformFileIO
 import digital.vasic.yole.network.platform.PlatformFileIOFactory
 import digital.vasic.yole.network.protocol.createHttpClient
 import io.ktor.client.*
@@ -68,7 +69,8 @@ import kotlin.coroutines.coroutineContext
 class GoogleDriveService(
     override val config: StorageConfig.GoogleDriveConfig,
     private val _injectedHttpClient: HttpClient? = null,
-    private val _injectedAuthTokenManager: AuthTokenManager? = null
+    private val _injectedAuthTokenManager: AuthTokenManager? = null,
+    private val testFileIO: PlatformFileIO? = null
 ) : NetworkStorageService {
 
     // Resilience: circuit breaker and connection limiter
@@ -76,7 +78,7 @@ class GoogleDriveService(
     private val connectionLimiter = ConnectionLimiter(name = "googledrive", maxConcurrent = 5)
 
     // Platform file I/O for reading/writing local files
-    private val fileIO by lazy { PlatformFileIOFactory.create() }
+    private val fileIO by lazy { testFileIO ?: PlatformFileIOFactory.create() }
 
     // Lazy initialization of HttpClient to avoid resource allocation if never used
     // Use named lazy delegate so disconnect() can check isInitialized() without a race

@@ -9,6 +9,7 @@ package digital.vasic.yole.network.protocols.webdav
 import digital.vasic.yole.network.NetworkStorageService
 import digital.vasic.yole.network.StorageQuota
 import digital.vasic.yole.network.common.*
+import digital.vasic.yole.network.platform.PlatformFileIO
 import digital.vasic.yole.network.platform.PlatformFileIOFactory
 import digital.vasic.yole.network.protocol.createHttpClient
 import digital.vasic.yole.util.Volatile
@@ -66,7 +67,8 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 class WebDavService(
     override val config: StorageConfig.WebDavConfig,
     private val _injectedHttpClient: HttpClient? = null,
-    private val testConnectFn: (suspend () -> Result<Unit>)? = null
+    private val testConnectFn: (suspend () -> Result<Unit>)? = null,
+    private val testFileIO: PlatformFileIO? = null
 ) : NetworkStorageService {
 
     // Resilience: circuit breaker and connection limiter
@@ -74,7 +76,7 @@ class WebDavService(
     private val connectionLimiter = ConnectionLimiter(name = "webdav", maxConcurrent = 5)
 
     // Platform file I/O for reading/writing local files
-    private val fileIO by lazy { PlatformFileIOFactory.create() }
+    private val fileIO by lazy { testFileIO ?: PlatformFileIOFactory.create() }
 
     // Lazy initialization of HttpClient to avoid resource allocation if never used
     private val httpClient by lazy {
@@ -279,6 +281,14 @@ class WebDavService(
 
             val fullUrl = buildWebDavUrl(remotePath)
             val fileBytes = fileIO.readFileBytes(localPath).getOrElse { byteArrayOf() }
+            if (fileBytes == null) {
+                emit(operation.copy(
+                    status = NetworkOperation.Status.FAILED,
+                    error = "Failed to read local file: $localPath"
+                ))
+                return@flow
+            }
+
             val response = httpClient.put(fullUrl) {
                 applyAuth()
                 header("Content-Type", "application/octet-stream")

@@ -15,6 +15,7 @@
 package digital.vasic.yole.network.protocols.webdav
 
 import digital.vasic.yole.network.common.*
+import digital.vasic.yole.network.platform.PlatformFileIO
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*
 import io.ktor.http.*
@@ -153,6 +154,22 @@ class WebDavMockHttpTest {
         return HttpClient(MockEngine(handler))
     }
 
+    private val testFileIO = object : PlatformFileIO {
+        override suspend fun readFileBytes(path: String): Result<ByteArray> {
+            return Result.success("Mock file content for $path".encodeToByteArray())
+        }
+        override suspend fun writeFileBytes(path: String, bytes: ByteArray): Result<Unit> {
+            return Result.success(Unit)
+        }
+        override suspend fun fileExists(path: String): Boolean = true
+        override suspend fun fileSize(path: String): Long = 1024L
+        override suspend fun ensureParentDirectories(path: String): Result<Unit> =
+            Result.success(Unit)
+    }
+
+    private fun createService(config: StorageConfig.WebDavConfig, client: HttpClient) =
+        WebDavService(config, _injectedHttpClient = client, testFileIO = testFileIO)
+
     // ==================== 1. connect + testConnection ====================
 
     @Test
@@ -160,7 +177,7 @@ class WebDavMockHttpTest {
         val client = createRawMockClient { request ->
             respond("", HttpStatusCode.OK, headersOf("DAV", "1, 2, 3"))
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         val result = service.connect()
 
@@ -175,7 +192,7 @@ class WebDavMockHttpTest {
             capturedMethod = request.method
             respond("", HttpStatusCode.OK)
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         service.connect()
 
@@ -187,7 +204,7 @@ class WebDavMockHttpTest {
         val client = createRawMockClient { request ->
             respond("Unauthorized", HttpStatusCode.Unauthorized)
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         val result = service.connect()
 
@@ -200,7 +217,7 @@ class WebDavMockHttpTest {
         val client = createRawMockClient { request ->
             respond("Server Error", HttpStatusCode.InternalServerError)
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         val result = service.connect()
 
@@ -213,7 +230,7 @@ class WebDavMockHttpTest {
         val client = createRawMockClient { request ->
             throw Exception("Network unreachable")
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         val result = service.connect()
 
@@ -224,7 +241,7 @@ class WebDavMockHttpTest {
     @Test
     fun `testConnection returns true when already connected`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.testConnection()
@@ -236,7 +253,7 @@ class WebDavMockHttpTest {
     @Test
     fun `testConnection performs connect-disconnect when not connected`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         val result = service.testConnection()
 
@@ -249,7 +266,7 @@ class WebDavMockHttpTest {
     @Test
     fun `disconnect sets isOnline to false`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
         assertTrue(service.isOnline)
 
@@ -261,7 +278,7 @@ class WebDavMockHttpTest {
     @Test
     fun `disconnect returns success`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.disconnect()
@@ -280,7 +297,7 @@ class WebDavMockHttpTest {
                 headersOf(HttpHeaders.ContentType, "application/xml")
             )
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -295,7 +312,7 @@ class WebDavMockHttpTest {
     @Test
     fun `listFiles parses file name correctly`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val docs = service.listFiles("/").first().getOrThrow()
@@ -307,7 +324,7 @@ class WebDavMockHttpTest {
     @Test
     fun `listFiles parses file size correctly`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val docs = service.listFiles("/").first().getOrThrow()
@@ -319,7 +336,7 @@ class WebDavMockHttpTest {
     @Test
     fun `listFiles parses content type correctly`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val docs = service.listFiles("/").first().getOrThrow()
@@ -331,7 +348,7 @@ class WebDavMockHttpTest {
     @Test
     fun `listFiles identifies folders correctly`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val docs = service.listFiles("/").first().getOrThrow()
@@ -343,7 +360,7 @@ class WebDavMockHttpTest {
     @Test
     fun `listFiles identifies files as non-folders`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val docs = service.listFiles("/").first().getOrThrow()
@@ -361,7 +378,7 @@ class WebDavMockHttpTest {
             capturedMethod = request.method
             respond(multistatusXml, HttpStatusCode.MultiStatus)
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.listFiles("/").toList()
@@ -377,7 +394,7 @@ class WebDavMockHttpTest {
             capturedDepth = request.headers["Depth"]
             respond(multistatusXml, HttpStatusCode.MultiStatus)
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.listFiles("/").toList()
@@ -393,7 +410,7 @@ class WebDavMockHttpTest {
             capturedContentType = request.body.contentType
             respond(multistatusXml, HttpStatusCode.MultiStatus)
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.listFiles("/").toList()
@@ -410,7 +427,7 @@ class WebDavMockHttpTest {
             capturedAuth = request.headers["Authorization"]
             respond(multistatusXml, HttpStatusCode.MultiStatus)
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.listFiles("/").toList()
@@ -428,7 +445,7 @@ class WebDavMockHttpTest {
             capturedAuth = request.headers["Authorization"]
             respond(multistatusXml, HttpStatusCode.MultiStatus)
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.listFiles("/").toList()
@@ -449,7 +466,7 @@ class WebDavMockHttpTest {
             password = "oauth_token_123",
             authType = WebDavAuthenticationType.OAUTH
         )
-        val service = WebDavService(config, _injectedHttpClient = client)
+        val service = createService(config, client)
         service.connect()
 
         service.listFiles("/").toList()
@@ -466,7 +483,7 @@ class WebDavMockHttpTest {
             respond(multistatusXml, HttpStatusCode.MultiStatus)
         }
         val config = createConfig(authType = WebDavAuthenticationType.NONE)
-        val service = WebDavService(config, _injectedHttpClient = client)
+        val service = createService(config, client)
         service.connect()
 
         service.listFiles("/").toList()
@@ -477,7 +494,7 @@ class WebDavMockHttpTest {
     @Test
     fun `listFiles skips parent directory entry`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val docs = service.listFiles("/").first().getOrThrow()
@@ -488,7 +505,7 @@ class WebDavMockHttpTest {
     @Test
     fun `listFiles parses empty multistatus directory`() = runBlocking<Unit> {
         val client = createMockClient { respond(emptyDirXml, HttpStatusCode.MultiStatus) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -506,7 +523,7 @@ class WebDavMockHttpTest {
             capturedUrl = request.url.toString()
             respond(multistatusXml, HttpStatusCode.MultiStatus)
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.listFiles("Documents/work").toList()
@@ -524,7 +541,7 @@ class WebDavMockHttpTest {
             respond(multistatusXml, HttpStatusCode.MultiStatus)
         }
         val config = createConfig(url = "https://cloud.example.com/dav/")
-        val service = WebDavService(config, _injectedHttpClient = client)
+        val service = createService(config, client)
         service.connect()
 
         service.listFiles("photos").toList()
@@ -536,7 +553,7 @@ class WebDavMockHttpTest {
     @Test
     fun `listFiles handles 200 OK response as success`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -556,7 +573,7 @@ class WebDavMockHttpTest {
         }
 
         val client = createMockClient { respond(manyFilesXml, HttpStatusCode.MultiStatus) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -568,7 +585,7 @@ class WebDavMockHttpTest {
     @Test
     fun `listFiles sets storageId to webdav`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val docs = service.listFiles("/").first().getOrThrow()
@@ -580,7 +597,7 @@ class WebDavMockHttpTest {
     @Test
     fun `listFiles sets syncStatus to SYNCED`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val docs = service.listFiles("/").first().getOrThrow()
@@ -592,7 +609,7 @@ class WebDavMockHttpTest {
     @Test
     fun `listFiles sets permissions for files`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val docs = service.listFiles("/").first().getOrThrow()
@@ -605,7 +622,7 @@ class WebDavMockHttpTest {
     @Test
     fun `listFiles sets permissions for folders with EXECUTE`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val docs = service.listFiles("/").first().getOrThrow()
@@ -618,7 +635,7 @@ class WebDavMockHttpTest {
     @Test
     fun `listFiles returns error on 403 response`() = runBlocking<Unit> {
         val client = createMockClient { respond("Forbidden", HttpStatusCode.Forbidden) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -632,7 +649,7 @@ class WebDavMockHttpTest {
         val client = createMockClient {
             respond("Internal Server Error", HttpStatusCode.InternalServerError)
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -646,7 +663,7 @@ class WebDavMockHttpTest {
         val client = createMockClient {
             respond("Unauthorized", HttpStatusCode.Unauthorized)
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -658,7 +675,7 @@ class WebDavMockHttpTest {
     @Test
     fun `listFiles when not connected returns error`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         // Don't connect
 
         val results = service.listFiles("/").toList()
@@ -679,7 +696,7 @@ class WebDavMockHttpTest {
                 throw Exception("Connection reset")
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -707,7 +724,7 @@ class WebDavMockHttpTest {
                 )
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val operations = service.downloadFile("/document.txt", "/local/document.txt").toList()
@@ -735,7 +752,7 @@ class WebDavMockHttpTest {
                 )
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val operations = service.downloadFile("/big.bin", "/local/big.bin").toList()
@@ -756,7 +773,7 @@ class WebDavMockHttpTest {
                 respond("data", HttpStatusCode.OK, headersOf(HttpHeaders.ContentLength, "4"))
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val firstOp = service.downloadFile("/file.bin", "/tmp/file.bin").first()
@@ -774,7 +791,7 @@ class WebDavMockHttpTest {
                 respond("Not Found", HttpStatusCode.NotFound)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val operations = service.downloadFile("/missing.txt", "/local/missing.txt").toList()
@@ -795,7 +812,7 @@ class WebDavMockHttpTest {
                 respond("Server Error", HttpStatusCode.InternalServerError)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val operations = service.downloadFile("/error.txt", "/local/error.txt").toList()
@@ -807,7 +824,7 @@ class WebDavMockHttpTest {
     @Test
     fun `downloadFile when not connected emits error`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         val operations = service.downloadFile("/file.txt", "/local/file.txt").toList()
 
@@ -832,7 +849,7 @@ class WebDavMockHttpTest {
                 respond("data", HttpStatusCode.OK, headersOf(HttpHeaders.ContentLength, "4"))
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.downloadFile("/file.txt", "/local/file.txt").toList()
@@ -856,7 +873,7 @@ class WebDavMockHttpTest {
                 respond("data", HttpStatusCode.OK, headersOf(HttpHeaders.ContentLength, "4"))
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.downloadFile("/documents/readme.md", "/local/readme.md").toList()
@@ -878,7 +895,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.Created)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val operations = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
@@ -900,7 +917,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.NoContent)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val operations = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
@@ -920,7 +937,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.OK)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val operations = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
@@ -940,7 +957,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.Created)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val firstOp = service.uploadFile("/local/file.txt", "/remote/file.txt").first()
@@ -958,7 +975,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.Created)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val operations = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
@@ -984,7 +1001,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.Created)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
@@ -997,7 +1014,7 @@ class WebDavMockHttpTest {
     @Test
     fun `uploadFile when not connected emits error`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         val operations = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
 
@@ -1019,7 +1036,7 @@ class WebDavMockHttpTest {
                 respond("Insufficient Storage", HttpStatusCode.InsufficientStorage)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val operations = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
@@ -1039,7 +1056,7 @@ class WebDavMockHttpTest {
                 respond("Payload Too Large", HttpStatusCode.PayloadTooLarge)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val operations = service.uploadFile("/local/big.bin", "/remote/big.bin").toList()
@@ -1059,7 +1076,7 @@ class WebDavMockHttpTest {
                 respond("Forbidden", HttpStatusCode.Forbidden)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val operations = service.uploadFile("/local/file.txt", "/remote/file.txt").toList()
@@ -1084,7 +1101,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.NoContent)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.deleteFile("/document.txt")
@@ -1107,7 +1124,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.NoContent)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.deleteFile("/path/to/file.txt")
@@ -1130,7 +1147,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.NoContent)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.deleteFile("/file.txt")
@@ -1150,7 +1167,7 @@ class WebDavMockHttpTest {
                 throw Exception("Network error")
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.deleteFile("/document.txt")
@@ -1169,7 +1186,7 @@ class WebDavMockHttpTest {
                 respond("Server Error", HttpStatusCode.InternalServerError)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.deleteFile("/file.txt")
@@ -1181,7 +1198,7 @@ class WebDavMockHttpTest {
     @Test
     fun `deleteFile when not connected still succeeds`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         val result = service.deleteFile("/file.txt")
 
@@ -1206,7 +1223,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.Created)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.copyFile("/source.txt", "/dest.txt")
@@ -1231,7 +1248,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.NoContent)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.copyFile("/source.txt", "/dest.txt")
@@ -1250,7 +1267,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.NoContent)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.copyFile("/a.txt", "/b.txt")
@@ -1261,7 +1278,7 @@ class WebDavMockHttpTest {
     @Test
     fun `copyFile when not connected still succeeds`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         val result = service.copyFile("/source.txt", "/dest.txt")
 
@@ -1286,7 +1303,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.Created)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.moveFile("/source/file.txt", "/dest/file.txt")
@@ -1311,7 +1328,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.Created)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.moveFile("/a.txt", "/b.txt")
@@ -1330,7 +1347,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.Created)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.moveFile("/old/file.txt", "/new/file.txt")
@@ -1344,7 +1361,7 @@ class WebDavMockHttpTest {
     @Test
     fun `moveFile when not connected still succeeds`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         val result = service.moveFile("/source.txt", "/dest.txt")
 
@@ -1369,7 +1386,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.Created)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.renameFile("/docs/old.txt", "new.txt")
@@ -1394,7 +1411,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.Created)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.renameFile("/old.txt", "new.txt")
@@ -1418,7 +1435,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.Created)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.createFolder("/new-folder")
@@ -1438,7 +1455,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.Created)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.createFolder("/new-folder")
@@ -1460,7 +1477,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.Created)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val doc = service.createFolder("/synced-folder").getOrThrow()
@@ -1479,7 +1496,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.Created)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val doc = service.createFolder("/folder").getOrThrow()
@@ -1504,7 +1521,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.Created)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.createFolder("/deep/nested/folder")
@@ -1524,7 +1541,7 @@ class WebDavMockHttpTest {
                 throw Exception("Network error")
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.createFolder("/new-folder")
@@ -1536,7 +1553,7 @@ class WebDavMockHttpTest {
     @Test
     fun `createFolder when not connected still succeeds`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         val result = service.createFolder("/offline-folder")
 
@@ -1560,7 +1577,7 @@ class WebDavMockHttpTest {
                 respond(singleFileXml, HttpStatusCode.MultiStatus)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.getFileInfo("/readme.md")
@@ -1580,7 +1597,7 @@ class WebDavMockHttpTest {
                 respond(singleFileXml, HttpStatusCode.MultiStatus)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.getFileInfo("/readme.md")
@@ -1603,7 +1620,7 @@ class WebDavMockHttpTest {
                 respond("Not Found", HttpStatusCode.NotFound)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.getFileInfo("/fallback.txt")
@@ -1626,7 +1643,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.OK)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.exists("/document.txt")
@@ -1646,7 +1663,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.exists("/missing.txt")
@@ -1669,7 +1686,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.OK)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.exists("/check.txt")
@@ -1680,7 +1697,7 @@ class WebDavMockHttpTest {
     @Test
     fun `exists returns false when not connected`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         val result = service.exists("/some-file.txt")
 
@@ -1699,7 +1716,7 @@ class WebDavMockHttpTest {
                 throw Exception("Connection refused")
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.exists("/unreachable.txt")
@@ -1721,7 +1738,7 @@ class WebDavMockHttpTest {
                 respond(quotaXml, HttpStatusCode.MultiStatus)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.getQuotaInfo()
@@ -1746,7 +1763,7 @@ class WebDavMockHttpTest {
                 respond("Server Error", HttpStatusCode.InternalServerError)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.getQuotaInfo()
@@ -1766,7 +1783,7 @@ class WebDavMockHttpTest {
             capturedDepth = request.headers["Depth"]
             respond(multistatusXml, HttpStatusCode.MultiStatus)
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         service.searchFiles("document").first()
@@ -1777,7 +1794,7 @@ class WebDavMockHttpTest {
     @Test
     fun `searchFiles filters results by query`() = runBlocking<Unit> {
         val client = createMockClient { respond(multistatusXml, HttpStatusCode.MultiStatus) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val result = service.searchFiles("document").first()
@@ -1790,7 +1807,7 @@ class WebDavMockHttpTest {
     @Test
     fun `searchFiles when not connected returns error`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         val result = service.searchFiles("test").first()
 
@@ -1810,7 +1827,7 @@ class WebDavMockHttpTest {
                 respond("", HttpStatusCode.OK) // HEAD
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val operations = service.syncFile("/file.txt").toList()
@@ -1832,7 +1849,7 @@ class WebDavMockHttpTest {
                 respond(multistatusXml, HttpStatusCode.MultiStatus) // PROPFIND
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val operations = service.syncAll().toList()
@@ -1845,7 +1862,7 @@ class WebDavMockHttpTest {
     @Test
     fun `syncAll when not connected emits FAILED`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         val operations = service.syncAll().toList()
 
@@ -1864,7 +1881,7 @@ class WebDavMockHttpTest {
             respond(multistatusXml, HttpStatusCode.MultiStatus)
         }
         val config = createConfig(authType = WebDavAuthenticationType.DIGEST)
-        val service = WebDavService(config, _injectedHttpClient = client)
+        val service = createService(config, client)
         service.connect()
 
         service.listFiles("/").toList()
@@ -1882,7 +1899,7 @@ class WebDavMockHttpTest {
             respond(multistatusXml, HttpStatusCode.MultiStatus)
         }
         val config = createConfig(username = "", password = "")
-        val service = WebDavService(config, _injectedHttpClient = client)
+        val service = createService(config, client)
         service.connect()
 
         service.listFiles("/").toList()
@@ -1895,7 +1912,7 @@ class WebDavMockHttpTest {
     @Test
     fun `getStorageInfo returns correct storage type and name`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val info = service.getStorageInfo()
@@ -1910,7 +1927,7 @@ class WebDavMockHttpTest {
     @Test
     fun `getStorageInfo reflects connection state`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
 
         val infoBefore = service.getStorageInfo()
         assertFalse(infoBefore.isOnline)
@@ -1988,7 +2005,7 @@ class WebDavMockHttpTest {
                 else -> respond("", HttpStatusCode.OK)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         // Create folder
@@ -2016,7 +2033,7 @@ class WebDavMockHttpTest {
                 else -> respond("", HttpStatusCode.OK)
             }
         }
-        val service = WebDavService(createConfig(), _injectedHttpClient = client)
+        val service = createService(createConfig(), client)
         service.connect()
 
         val copyResult = service.copyFile("/source.txt", "/backup.txt")
