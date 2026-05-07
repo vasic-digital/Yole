@@ -125,6 +125,12 @@ bootstrap:
 			echo "[bootstrap] WARNING: $$sub/scripts/anti-bluff/install-hooks.sh missing or not executable; skipping."; \
 		fi; \
 	done
+	@echo "[bootstrap] Verifying submodule integrity…"
+	@bash scripts/bootstrap-verify-submodules.sh
+	@echo "[bootstrap] Running anti-bluff gates…"
+	@bash scripts/anti-bluff/bluff-scanner.sh --mode all
+	@echo "[bootstrap] Verifying governance docs exist in all repos…"
+	@bash scripts/bootstrap-verify-governance.sh
 	@echo "[bootstrap] Done. Run 'make qa-all' to verify the gates work."
 
 $(DIST_DIR):
