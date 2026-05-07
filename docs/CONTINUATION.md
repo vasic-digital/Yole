@@ -5,9 +5,9 @@
 > document MUST enable any CLI agent or LLM model to continue exactly where
 > work left off.
 
-**Last updated:** 2026-05-07 14:40 UTC  
-**Current branch:** `master`  
-**Working tree:** MODIFIED (Phase 2 IDE polish complete, pending commit)
+**Last updated:** 2026-05-07 14:45 UTC  
+**Current branch:** `master` (synced with origin)  
+**Working tree:** CLEAN (all committed + pushed)
 
 ---
 
@@ -210,19 +210,13 @@ From `docs/campaigns/anti-bluff/MILESTONE-2026-05-01.md`:
 
 ### Main Repo
 ```
-Branch: master (synced with all remotes)
-Remotes: github (origin), upstream (all same git@github.com:vasic-digital/Yole.git)
-Last 10 commits:
+Branch: master (synced with origin)
+Last 5 commits:
+  bf58dbb4 style(web): modernize IDE layout with polished TabBar, Sidebar, MenuBar, and StatusBar
+  4c96e8e5 style(web): unify brand accent color and modernize loading screen
+  ee6abb3a docs: update CONTINUATION.md and CLAUDE.md for fixed SMB/WebDAV stubs
   1f6472c9 fix(network): resolve #smb-stub-no-negotiation and #webdav-always-online-stub
   596e6994 chore: update submodule pointers after upstream sync
-  a734c9f9 docs(continuation): mark SAF Save Fix complete (13/13 tasks) with full artifact tracking
-  a845ef65 test(save): add Android instrumentation save tests with anti-bluff evidence
-  4d71c3b0 docs(continuation): update task progress to reflect completed Tasks 3-8
-  5396cfe4 test(file): add Desktop-specific FileHandle roundtrip tests
-  34829478 test(file): add FileHandle contract tests
-  41c4bb74 refactor(save): update EditorTab with contentUri and migrate saveFile to FileHandle
-  de61d4d6 chore: update submodule pointers
-  099d713a feat(file): add iOS/WASM stubs for FileHandle
 ```
 
 ### Submodules
