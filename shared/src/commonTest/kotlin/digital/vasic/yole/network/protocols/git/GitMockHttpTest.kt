@@ -15,6 +15,7 @@
 package digital.vasic.yole.network.protocols.git
 
 import digital.vasic.yole.network.common.*
+import digital.vasic.yole.network.platform.PlatformFileIO
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*
 import io.ktor.http.*
@@ -88,6 +89,20 @@ class GitMockHttpTest {
         return HttpClient(MockEngine(handler))
     }
 
+    private val testFileIO = object : PlatformFileIO {
+        override suspend fun readFileBytes(path: String): Result<ByteArray> =
+            Result.success("Mock Git file content for $path".encodeToByteArray())
+        override suspend fun writeFileBytes(path: String, bytes: ByteArray): Result<Unit> =
+            Result.success(Unit)
+        override suspend fun fileExists(path: String): Boolean = true
+        override suspend fun fileSize(path: String): Long = 1024L
+        override suspend fun ensureParentDirectories(path: String): Result<Unit> =
+            Result.success(Unit)
+    }
+
+    private fun createGitService(config: StorageConfig.GitConfig, client: HttpClient) =
+        GitService(config, _injectedHttpClient = client, testFileIO = testFileIO)
+
     // ==================== MOCK RESPONSE DATA ====================
 
     private val gitInfoRefsResponse = """001e# service=git-upload-pack
@@ -137,7 +152,7 @@ class GitMockHttpTest {
                 headers = headersOf(HttpHeaders.ContentType, "application/x-git-upload-pack-advertisement")
             )
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val result = service.connect()
 
@@ -154,7 +169,7 @@ class GitMockHttpTest {
             capturedMethod = request.method
             respond(gitInfoRefsResponse, HttpStatusCode.OK)
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         service.connect()
 
@@ -170,7 +185,7 @@ class GitMockHttpTest {
             capturedAuth = request.headers["Authorization"] ?: ""
             respond(gitInfoRefsResponse, HttpStatusCode.OK)
         }
-        val service = GitService(createGitHubConfig(token = "ghp_secrettoken"), _injectedHttpClient = client)
+        val service = createGitService(createGitHubConfig(token = "ghp_secrettoken"), client)
 
         service.connect()
 
@@ -184,7 +199,7 @@ class GitMockHttpTest {
             capturedAuth = request.headers["Authorization"] ?: ""
             respond(gitInfoRefsResponse, HttpStatusCode.OK)
         }
-        val service = GitService(createBasicAuthConfig(), _injectedHttpClient = client)
+        val service = createGitService(createBasicAuthConfig(), client)
 
         service.connect()
 
@@ -198,7 +213,7 @@ class GitMockHttpTest {
             capturedAuth = request.headers["Authorization"]
             respond(gitInfoRefsResponse, HttpStatusCode.OK)
         }
-        val service = GitService(createNoAuthConfig(), _injectedHttpClient = client)
+        val service = createGitService(createNoAuthConfig(), client)
 
         service.connect()
 
@@ -214,7 +229,7 @@ class GitMockHttpTest {
                 headers = headersOf(HttpHeaders.ContentType, "application/x-git-upload-pack-advertisement")
             )
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val result = service.connect()
 
@@ -230,7 +245,7 @@ class GitMockHttpTest {
             respond("", HttpStatusCode.OK)
         }
         val config = createGitHubConfig(repoUrl = "https://git.example.com/my/project")
-        val service = GitService(config, _injectedHttpClient = client)
+        val service = createGitService(config, client)
 
         service.connect()
 
@@ -241,7 +256,7 @@ class GitMockHttpTest {
     @Test
     fun `connect with empty response body still succeeds`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val result = service.connect()
 
@@ -265,7 +280,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -291,7 +306,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -316,7 +331,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -344,7 +359,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -373,7 +388,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         service.listFiles("/").toList()
@@ -396,7 +411,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         service.listFiles("/src").toList()
@@ -417,7 +432,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -442,7 +457,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -467,7 +482,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -492,7 +507,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -523,7 +538,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         service.listFiles("/").toList()
@@ -552,7 +567,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -577,7 +592,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitLabConfig(), _injectedHttpClient = client)
+        val service = createGitService(createGitLabConfig(), client)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -602,7 +617,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitLabConfig(), _injectedHttpClient = client)
+        val service = createGitService(createGitLabConfig(), client)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -634,7 +649,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitLabConfig(), _injectedHttpClient = client)
+        val service = createGitService(createGitLabConfig(), client)
         service.connect()
 
         service.listFiles("/").toList()
@@ -657,7 +672,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitLabConfig(), _injectedHttpClient = client)
+        val service = createGitService(createGitLabConfig(), client)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -688,7 +703,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val operations = service.downloadFile("/README.md", "/tmp/local/README.md").toList()
@@ -712,7 +727,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val operations = service.downloadFile("/README.md", "/tmp/local/README.md").toList()
@@ -736,7 +751,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val operations = service.downloadFile("/file.txt", "/tmp/local/file.txt").toList()
@@ -764,7 +779,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         service.downloadFile("/docs/guide.md", "/tmp/local/guide.md").toList()
@@ -789,7 +804,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val operations = service.downloadFile("/file.txt", "/tmp/local/file.txt").toList()
@@ -809,7 +824,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val operations = service.downloadFile("/nonexistent.txt", "/tmp/local/nonexistent.txt").toList()
@@ -839,7 +854,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val operations = service.uploadFile("/tmp/local/file.txt", "/file.txt").toList()
@@ -869,7 +884,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         service.uploadFile("/tmp/local/file.txt", "/file.txt").toList()
@@ -897,7 +912,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         service.uploadFile("/tmp/local/newfile.txt", "/newfile.txt").toList()
@@ -921,7 +936,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val operations = service.uploadFile("/tmp/local/data.txt", "/data.txt").toList()
@@ -945,7 +960,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val operations = service.uploadFile("/tmp/local/test.txt", "/test.txt").toList()
@@ -969,7 +984,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val operations = service.uploadFile("/tmp/local/f.txt", "/f.txt").toList()
@@ -994,7 +1009,7 @@ class GitMockHttpTest {
                 )
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         service.uploadFile("/tmp/local/file.txt", "/file.txt").toList()
@@ -1019,7 +1034,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitLabConfig(), _injectedHttpClient = client)
+        val service = createGitService(createGitLabConfig(), client)
         service.connect()
 
         val operations = service.uploadFile("/tmp/local/file.txt", "/file.txt").toList()
@@ -1047,7 +1062,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitLabConfig(), _injectedHttpClient = client)
+        val service = createGitService(createGitLabConfig(), client)
         service.connect()
 
         service.uploadFile("/tmp/local/newfile.txt", "/newfile.txt").toList()
@@ -1072,7 +1087,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitLabConfig(), _injectedHttpClient = client)
+        val service = createGitService(createGitLabConfig(), client)
         service.connect()
 
         service.uploadFile("/tmp/local/uploaded.txt", "/uploaded.txt").toList()
@@ -1103,7 +1118,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val result = service.deleteFile("/old-file.txt")
@@ -1131,7 +1146,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         service.deleteFile("/to-delete.txt")
@@ -1161,7 +1176,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         // Populate known files
@@ -1183,7 +1198,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.InternalServerError)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val result = service.deleteFile("/fallback-file.txt")
@@ -1196,7 +1211,7 @@ class GitMockHttpTest {
     @Test
     fun `connect with 404 response still sets connected`() = runBlocking<Unit> {
         val client = createMockClient { respond("Not Found", HttpStatusCode.NotFound) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val result = service.connect()
 
@@ -1207,7 +1222,7 @@ class GitMockHttpTest {
     @Test
     fun `connect with 500 response still sets connected`() = runBlocking<Unit> {
         val client = createMockClient { respond("Internal Server Error", HttpStatusCode.InternalServerError) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val result = service.connect()
 
@@ -1218,7 +1233,7 @@ class GitMockHttpTest {
     @Test
     fun `connect with 403 forbidden still sets connected`() = runBlocking<Unit> {
         val client = createMockClient { respond("Forbidden", HttpStatusCode.Forbidden) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val result = service.connect()
 
@@ -1229,7 +1244,7 @@ class GitMockHttpTest {
     @Test
     fun `connect with 401 unauthorized still sets connected`() = runBlocking<Unit> {
         val client = createMockClient { respond("Unauthorized", HttpStatusCode.Unauthorized) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val result = service.connect()
 
@@ -1252,7 +1267,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -1275,7 +1290,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitLabConfig(), _injectedHttpClient = client)
+        val service = createGitService(createGitLabConfig(), client)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -1289,7 +1304,7 @@ class GitMockHttpTest {
     fun `listFiles with empty repo URL returns error`() = runBlocking<Unit> {
         val client = createMockClient { respond(gitInfoRefsResponse, HttpStatusCode.OK) }
         val config = createGitHubConfig(repoUrl = "")
-        val service = GitService(config, _injectedHttpClient = client)
+        val service = createGitService(config, client)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -1312,7 +1327,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val operations = service.uploadFile("/tmp/local/secret.txt", "/secret.txt").toList()
@@ -1334,7 +1349,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         service.uploadFile("/tmp/local/tracked.txt", "/tracked.txt").toList()
@@ -1356,7 +1371,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitLabConfig(), _injectedHttpClient = client)
+        val service = createGitService(createGitLabConfig(), client)
         service.connect()
 
         val operations = service.uploadFile("/tmp/local/gl-file.txt", "/gl-file.txt").toList()
@@ -1371,7 +1386,7 @@ class GitMockHttpTest {
     @Test
     fun `listFiles when not connected emits failure`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val results = service.listFiles("/").toList()
 
@@ -1382,7 +1397,7 @@ class GitMockHttpTest {
     @Test
     fun `uploadFile when not connected emits FAILED status`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val operations = service.uploadFile("/tmp/local/x.txt", "/x.txt").toList()
 
@@ -1393,7 +1408,7 @@ class GitMockHttpTest {
     @Test
     fun `uploadFile when not connected has UPLOAD type`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val operations = service.uploadFile("/tmp/local/x.txt", "/x.txt").toList()
 
@@ -1405,7 +1420,7 @@ class GitMockHttpTest {
     @Test
     fun `downloadFile when not connected emits FAILED status`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val operations = service.downloadFile("/file.txt", "/tmp/local/file.txt").toList()
 
@@ -1416,7 +1431,7 @@ class GitMockHttpTest {
     @Test
     fun `downloadFile when not connected has DOWNLOAD type`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val operations = service.downloadFile("/file.txt", "/tmp/local/file.txt").toList()
 
@@ -1428,7 +1443,7 @@ class GitMockHttpTest {
     @Test
     fun `connect then disconnect then listFiles fails`() = runBlocking<Unit> {
         val client = createMockClient { respond(gitInfoRefsResponse, HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         service.connect()
         assertTrue(service.isOnline)
@@ -1449,7 +1464,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -1481,7 +1496,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         // List files
@@ -1501,7 +1516,7 @@ class GitMockHttpTest {
     @Test
     fun `getStorageInfo after connect shows online`() = runBlocking<Unit> {
         val client = createMockClient { respond(gitInfoRefsResponse, HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         service.connect()
         val info = service.getStorageInfo()
@@ -1524,7 +1539,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
         service.listFiles("/").toList()
 
@@ -1535,7 +1550,7 @@ class GitMockHttpTest {
     @Test
     fun `disconnect sets isOnline to false`() = runBlocking<Unit> {
         val client = createMockClient { respond(gitInfoRefsResponse, HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
         assertTrue(service.isOnline)
 
@@ -1547,7 +1562,7 @@ class GitMockHttpTest {
     @Test
     fun `getQuotaInfo returns MAX_VALUE for git`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val result = service.getQuotaInfo()
 
@@ -1561,7 +1576,7 @@ class GitMockHttpTest {
     @Test
     fun `getActiveOperations returns empty initially`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val operations = service.getActiveOperations().toList().first()
 
@@ -1577,7 +1592,7 @@ class GitMockHttpTest {
                 else -> respond("Not Found", HttpStatusCode.NotFound)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
         service.connect()
 
         val results = service.listFiles("/").toList()
@@ -1590,7 +1605,7 @@ class GitMockHttpTest {
     @Test
     fun `addToCache and getCacheEntries work with mock client`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         service.addToCache("/file.txt", 1)
         val entries = service.getCacheEntries(null).toList().first()
@@ -1601,7 +1616,7 @@ class GitMockHttpTest {
     @Test
     fun `clearCache removes all entries with mock client`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         service.addToCache("/file1.txt", 1)
         service.addToCache("/file2.txt", 2)
@@ -1614,7 +1629,7 @@ class GitMockHttpTest {
     @Test
     fun `getSyncStatus returns empty initially with mock client`() = runBlocking<Unit> {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val statuses = service.getSyncStatus(null).toList().first()
 
@@ -1630,7 +1645,7 @@ class GitMockHttpTest {
                 else -> respond("", HttpStatusCode.OK)
             }
         }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         val operations = service.syncFile("/README.md", false).toList()
 
@@ -1641,7 +1656,7 @@ class GitMockHttpTest {
     @Test
     fun `getParentPath returns correct parent for nested paths`() {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         assertEquals("/src/main", service.getParentPath("/src/main/file.kt"))
         assertEquals("/src", service.getParentPath("/src/main"))
@@ -1652,7 +1667,7 @@ class GitMockHttpTest {
     @Test
     fun `validatePath succeeds for valid paths`() {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         assertTrue(service.validatePath("/").isSuccess)
         assertTrue(service.validatePath("/src/main.kt").isSuccess)
@@ -1662,7 +1677,7 @@ class GitMockHttpTest {
     @Test
     fun `validatePath fails for blank paths`() {
         val client = createMockClient { respond("", HttpStatusCode.OK) }
-        val service = GitService(createGitHubConfig(), _injectedHttpClient = client)
+        val service = GitService(createGitHubConfig(), _injectedHttpClient = client, testFileIO = testFileIO)
 
         assertTrue(service.validatePath("").isFailure)
         assertTrue(service.validatePath("   ").isFailure)

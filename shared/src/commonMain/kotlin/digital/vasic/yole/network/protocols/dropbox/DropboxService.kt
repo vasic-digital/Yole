@@ -534,7 +534,13 @@ class DropboxService(
             emit(initialOperation)
             
             // Read file bytes from local filesystem
-            val fileBytes = fileIO.readFileBytes(localPath).getOrElse { byteArrayOf() }
+            val fileBytes = fileIO.readFileBytes(localPath).getOrNull() ?: run {
+                emit(initialOperation.copy(
+                    status = NetworkOperation.Status.FAILED,
+                    error = "Failed to read local file: $localPath"
+                ))
+                return@flow
+            }
             
             emit(initialOperation.copy(progress = 0.5, bytesTransferred = fileBytes.size.toLong() / 2L))
             

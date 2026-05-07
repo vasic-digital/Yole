@@ -11,6 +11,7 @@ package digital.vasic.yole.network.protocols.dropbox
 
 import digital.vasic.yole.network.auth.AuthTokenManager
 import digital.vasic.yole.network.common.*
+import digital.vasic.yole.network.platform.PlatformFileIO
 import digital.vasic.yole.network.platform.SecureStorage
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*
@@ -136,14 +137,25 @@ class DropboxMockHttpTest {
     private suspend fun connectedService(handler: MockRequestHandler): DropboxService {
         val auth = preparedAuthManager()
         val client = mockClient(handler)
-        return DropboxService(testConfig(), client, auth)
+        return DropboxService(testConfig(), client, auth, testFileIO = testFileIO)
     }
 
     private suspend fun offlineService(): DropboxService {
         val emptyStorage = MockSecureStorage()
         val auth = AuthTokenManager("dropbox", emptyStorage)
         val client = mockClient { respond("", HttpStatusCode.OK) }
-        return DropboxService(testConfig(), client, auth)
+        return DropboxService(testConfig(), client, auth, testFileIO = testFileIO)
+    }
+
+    private val testFileIO = object : PlatformFileIO {
+        override suspend fun readFileBytes(path: String): Result<ByteArray> =
+            Result.success("Mock file content for $path".encodeToByteArray())
+        override suspend fun writeFileBytes(path: String, bytes: ByteArray): Result<Unit> =
+            Result.success(Unit)
+        override suspend fun fileExists(path: String): Boolean = true
+        override suspend fun fileSize(path: String): Long = 1024L
+        override suspend fun ensureParentDirectories(path: String): Result<Unit> =
+            Result.success(Unit)
     }
 
     /** Standard routing: routes get_current_account to account info, everything else to [other]. */

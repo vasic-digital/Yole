@@ -280,7 +280,7 @@ class WebDavService(
             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.0))
 
             val fullUrl = buildWebDavUrl(remotePath)
-            val fileBytes = fileIO.readFileBytes(localPath).getOrElse { byteArrayOf() }
+            val fileBytes = fileIO.readFileBytes(localPath).getOrNull()
             if (fileBytes == null) {
                 emit(operation.copy(
                     status = NetworkOperation.Status.FAILED,

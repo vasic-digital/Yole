@@ -349,7 +349,13 @@ class GitService(
                         repoUrl.contains("github.com") -> {
                             val repoPath = repoUrl.trimEnd('/').removeSuffix(".git")
                                 .substringAfter("github.com/")
-                            val fileBytes = fileIO.readFileBytes(localPath).getOrElse { byteArrayOf() }
+                            val fileBytes = fileIO.readFileBytes(localPath).getOrNull() ?: run {
+                                emit(operation.copy(
+                                    status = NetworkOperation.Status.FAILED,
+                                    error = "Failed to read local file: $localPath"
+                                ))
+                                return@flow
+                            }
                             val contentBase64 = Base64.encode(fileBytes)
 
                             // Check if file exists to get its SHA (required for updates)
@@ -405,7 +411,13 @@ class GitService(
                                 .substringAfter("gitlab.com/")
                             val encodedProject = repoPath.replace("/", "%2F")
                             val encodedFilePath = cleanPath.replace("/", "%2F")
-                            val fileBytes = fileIO.readFileBytes(localPath).getOrElse { byteArrayOf() }
+                            val fileBytes = fileIO.readFileBytes(localPath).getOrNull() ?: run {
+                                emit(operation.copy(
+                                    status = NetworkOperation.Status.FAILED,
+                                    error = "Failed to read local file: $localPath"
+                                ))
+                                return@flow
+                            }
                             val contentBase64 = Base64.encode(fileBytes)
 
                             emit(operation.copy(status = NetworkOperation.Status.IN_PROGRESS, progress = 0.3))

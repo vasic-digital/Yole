@@ -579,7 +579,13 @@ class GoogleDriveService(
             emit(initialOperation)
             
             // Read file bytes from local filesystem
-            val fileBytes = fileIO.readFileBytes(localPath).getOrElse { byteArrayOf() }
+            val fileBytes = fileIO.readFileBytes(localPath).getOrNull() ?: run {
+                emit(initialOperation.copy(
+                    status = NetworkOperation.Status.FAILED,
+                    error = "Failed to read local file: $localPath"
+                ))
+                return@flow
+            }
             val fileName = remotePath.substringAfterLast("/")
             
             emit(initialOperation.copy(progress = 0.3, totalSize = fileBytes.size.toLong()))
