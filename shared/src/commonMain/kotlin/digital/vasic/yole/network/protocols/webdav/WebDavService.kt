@@ -1209,17 +1209,15 @@ class WebDavService(
         // Also compute the full base URL path for parent directory filtering
         val normalizedBasePath = extractPathFromHref(buildWebDavUrl(requestPath)).trimEnd('/')
 
-        // Split on response elements
-        val responses = splitXmlElements(xml, "response")
-        if (responses.isEmpty()) {
-            // Try with namespace prefix
-            return parseMultistatusResponse(
-                xml.replace("d:response", "response")
-                    .replace("D:response", "response"),
-                requestPath,
-                filterParent
-            ).takeIf { xml.contains("d:response") || xml.contains("D:response") }
-                ?: documents
+        // Split on response elements; if namespace-prefixed (d: or D:),
+        // strip the prefix iteratively instead of recursing to avoid
+        // StackOverflow when repeated stripping doesn't produce parseable
+        // elements.
+        var workingXml = xml
+        var responses = splitXmlElements(workingXml, "response")
+        if (responses.isEmpty() && (workingXml.contains("d:response") || workingXml.contains("D:response"))) {
+            workingXml = workingXml.replace("d:response", "response").replace("D:response", "response")
+            responses = splitXmlElements(workingXml, "response")
         }
 
         for (responseXml in responses) {

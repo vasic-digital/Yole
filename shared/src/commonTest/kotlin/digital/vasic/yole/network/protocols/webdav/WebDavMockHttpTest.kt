@@ -54,13 +54,7 @@ class WebDavMockHttpTest {
     )
 
     private fun createMockClient(handler: MockRequestHandler): HttpClient {
-        return HttpClient(MockEngine { request ->
-            if (request.method == HttpMethod("OPTIONS")) {
-                respond("", HttpStatusCode.OK, headersOf("DAV", "1, 2, 3"))
-            } else {
-                handler(request)
-            }
-        })
+        return HttpClient(MockEngine(handler))
     }
 
     // ==================== Shared XML Responses ====================
