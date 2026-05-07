@@ -5,7 +5,7 @@
 > document MUST enable any CLI agent or LLM model to continue exactly where
 > work left off.
 
-**Last updated:** 2026-05-07 14:45 UTC  
+**Last updated:** 2026-05-07 15:00 UTC  
 **Current branch:** `master` (synced with origin)  
 **Working tree:** CLEAN (all committed + pushed)
 
@@ -49,7 +49,7 @@ Continue implementing the next incomplete task.
 | 2 | Modernize web loading screen | DONE | Dark gradient + Yole logo + spinner |
 | 3 | Update PWA manifest + service worker theme | DONE | #1976d2 → #D32F2F |
 | 4 | Phase 2: IDE layout polish | DONE | TabBar, Sidebar, MenuBar, StatusBar enhanced |
-| 5 | Phase 3: Shared theme tokens audit | PENDING | Eliminate hardcoded colors, use YoleColors |
+| 5 | Phase 3: Shared theme tokens audit | DONE | Eliminated 30+ duplicate hardcoded colors, added YoleColors.Ide |
 
 ### Files Modified
 
@@ -212,11 +212,11 @@ From `docs/campaigns/anti-bluff/MILESTONE-2026-05-01.md`:
 ```
 Branch: master (synced with origin)
 Last 5 commits:
+  3f6c1ae5 refactor(theme): consolidate IDE colors into shared YoleColors tokens
   bf58dbb4 style(web): modernize IDE layout with polished TabBar, Sidebar, MenuBar, and StatusBar
   4c96e8e5 style(web): unify brand accent color and modernize loading screen
+  82e3a3a7 docs(continuation): finalize visual refinement Phase 1-2 status
   ee6abb3a docs: update CONTINUATION.md and CLAUDE.md for fixed SMB/WebDAV stubs
-  1f6472c9 fix(network): resolve #smb-stub-no-negotiation and #webdav-always-online-stub
-  596e6994 chore: update submodule pointers after upstream sync
 ```
 
 ### Submodules
@@ -234,7 +234,7 @@ HelixQA:     71560fd (main) — merged upstream governance updates
 | Stream | Priority | Status | Description |
 |--------|----------|--------|-------------|
 | SAF Save Fix | Critical | COMPLETE (13/13 tasks) | Fix file saving on Android 9-16 |
-| Visual Refinement | Medium | IN PROGRESS (Phase 1 done) | Unify brand colors, modernize UI |
+| Visual Refinement | Medium | COMPLETE (Phases 1-3 done) | Unified brand colors, modernized IDE layout, shared tokens |
 | (TBD) | — | Not started | Additional feature streams 3-5 |
 | Known Defects | High | Deferred | #robolectric |
 | Anti-Bluff | Medium | Ongoing | 4 remaining enforcement dimensions |
