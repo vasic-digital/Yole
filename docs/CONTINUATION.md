@@ -5,7 +5,7 @@
 > document MUST enable any CLI agent or LLM model to continue exactly where
 > work left off.
 
-**Last updated:** 2026-05-07 15:00 UTC  
+**Last updated:** 2026-05-07 15:15 UTC  
 **Current branch:** `master` (synced with origin)  
 **Working tree:** CLEAN (all committed + pushed)
 
@@ -50,6 +50,7 @@ Continue implementing the next incomplete task.
 | 3 | Update PWA manifest + service worker theme | DONE | #1976d2 → #D32F2F |
 | 4 | Phase 2: IDE layout polish | DONE | TabBar, Sidebar, MenuBar, StatusBar enhanced |
 | 5 | Phase 3: Shared theme tokens audit | DONE | Eliminated 30+ duplicate hardcoded colors, added YoleColors.Ide |
+| 6 | Phase 4: Eliminate remaining hardcoded colors | DONE | Android + desktop Theme.kt + EnhancedYoleApp cleaned |
 
 ### Files Modified
 
