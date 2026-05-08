@@ -10,6 +10,8 @@ package digital.vasic.yole.network.protocols.ftp
 import digital.vasic.yole.network.NetworkStorageService
 import digital.vasic.yole.network.StorageQuota
 import digital.vasic.yole.network.common.*
+import digital.vasic.yole.network.platform.PlatformFileIO
+import digital.vasic.yole.network.platform.PlatformFileIOFactory
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
@@ -49,7 +51,8 @@ import kotlinx.datetime.toInstant
  */
 class FtpService(
     override val config: StorageConfig.FtpConfig,
-    private val _injectedFtpClient: FtpProtocolClient? = null
+    private val _injectedFtpClient: FtpProtocolClient? = null,
+    private val testFileIO: PlatformFileIO? = null
 ) : NetworkStorageService {
 
     // Resilience: circuit breaker and connection limiter
@@ -57,6 +60,7 @@ class FtpService(
     private val connectionLimiter = ConnectionLimiter(name = "ftp", maxConcurrent = 5)
 
     private val ftpClient = _injectedFtpClient ?: FtpProtocolClient()
+    private val fileIO by lazy { testFileIO ?: PlatformFileIOFactory.create() }
 
     @kotlin.concurrent.Volatile
     private var _isConnected = false
@@ -387,9 +391,18 @@ class FtpService(
                 bytesTransferred = actualSize
             ))
 
-            // Step 3: Write to local file
-            // Note: actual file I/O would use platform file system APIs here
-            // For now we report the operation as successful after RETR completes
+            // Step 3: Write received data to local filesystem
+            val writeResult = fileIO.writeFileBytes(localPath, data)
+            if (writeResult.isFailure) {
+                val errorOp = initialOperation.copy(
+                    status = NetworkOperation.Status.FAILED,
+                    error = "FTP write failed: ${writeResult.exceptionOrNull()?.message}",
+                    completedAt = Clock.System.now()
+                )
+                removeActiveOperation(operationId)
+                emit(errorOp)
+                return@flow
+            }
 
             // Update sync status for the downloaded file
             syncMutex.withLock {
@@ -475,10 +488,17 @@ class FtpService(
             addActiveOperation(initialOperation)
             emit(initialOperation)
 
-            // Step 1: Read the local file
-            // Note: actual file I/O would use platform file system APIs here
-            // For now we send an empty byte array; real implementation would read from localPath
-            val fileData = ByteArray(0)
+            // Step 1: Read the local file bytes via PlatformFileIO
+            val fileData = fileIO.readFileBytes(localPath).getOrNull() ?: run {
+                val errorOp = initialOperation.copy(
+                    status = NetworkOperation.Status.FAILED,
+                    error = "FTP upload failed: cannot read local file $localPath",
+                    completedAt = Clock.System.now()
+                )
+                removeActiveOperation(operationId)
+                emit(errorOp)
+                return@flow
+            }
             val fileSize = fileData.size.toLong()
 
             emit(initialOperation.copy(progress = 0.2, totalSize = fileSize))
