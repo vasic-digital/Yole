@@ -60,8 +60,8 @@ import kotlin.coroutines.coroutineContext
  * - Cache and sync status tracking (in-memory maps)
  *
  * ### Limitations:
- * - [uploadFile] sends empty bytes (local file reading not implemented)
- * - [downloadFile] does not write bytes to local filesystem
+ * - [uploadFile] reads local bytes via PlatformFileIO; emits FAILED on read error
+ * - [downloadFile] writes received bytes to local filesystem via PlatformFileIO
  *
  * Resource Management: This class manages a lazily-initialized [HttpClient] that
  * must be properly closed. Call [disconnect] when done using this service.

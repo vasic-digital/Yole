@@ -63,7 +63,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  *
  * ### Limitations:
  * - Actual file bytes are not written to disk on download
- * - [uploadFile] sends empty bytes (local file reading not implemented)
+ * - [uploadFile] reads local bytes via PlatformFileIO; emits FAILED on read error
  * - [getQuotaInfo] returns MAX_VALUE (Git repos have no quota concept)
  * - Bitbucket and generic Git servers only support read operations
  *

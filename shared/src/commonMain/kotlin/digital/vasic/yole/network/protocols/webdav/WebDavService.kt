@@ -41,9 +41,8 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * - [disconnect] -- closes HttpClient
  * - [testConnection] -- verifies server reachability
  * - [listFiles] -- PROPFIND with Depth:1, parses multistatus XML response
- * - [downloadFile] -- HTTP GET with progress tracking
- * - [uploadFile] -- HTTP PUT with progress tracking
- *   (Note: sends empty body; actual file bytes are not read from disk)
+ * - [downloadFile] -- HTTP GET, writes received bytes to local filesystem
+ * - [uploadFile] -- HTTP PUT, reads local bytes via PlatformFileIO
  * - [copyFile] -- HTTP COPY with Destination header
  * - [deleteFile] -- HTTP DELETE
  * - [createFolder] -- HTTP MKCOL
@@ -57,9 +56,9 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * - Cache and sync status tracking (in-memory maps)
  *
  * ### Limitations:
- * - File upload sends empty body (file bytes not read from local filesystem)
- * - File download does not write bytes to local filesystem
- * - Network errors are silently caught in some operations for offline resilience
+ * - File upload/download now use real PlatformFileIO; FAILED emitted on read/write errors
+ * - XML parsing is string-based (no JVM XML parser); namespace handling is iterative
+ * - Upload uses chunked transfer; download reads entire response body at once
  *
  * Resource Management: This class manages a lazily-initialized [HttpClient] that
  * must be properly closed. Call [disconnect] when done, or use try-finally blocks.
