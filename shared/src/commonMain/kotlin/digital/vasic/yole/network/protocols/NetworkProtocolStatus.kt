@@ -27,18 +27,20 @@ package digital.vasic.yole.network.protocols
  *
  * ## Protocol Status Overview
  *
- * All eight protocols are now fully implemented with real network I/O.
+ * All eight protocols now have real network I/O for their primary operations.
+ * Local filesystem I/O (reading/writing bytes to disk) is now wired up with
+ * honest FAILED emission when file reads fail (2026-05-08, Stream 3 completion).
  *
  * | Protocol | Service Class | Tier | HTTP Client | Auth |
  * |----------|---------------|------|-------------|------|
- * | FTP | [FtpService][digital.vasic.yole.network.protocols.ftp.FtpService] | FULLY_IMPLEMENTED | No (TCP sockets) | FTP USER/PASS |
- * | SFTP | [SftpService][digital.vasic.yole.network.protocols.sftp.SftpService] | FULLY_IMPLEMENTED | No (SSH via sshj) | SSH password or public key |
- * | SMB/CIFS | [SmbService][digital.vasic.yole.network.protocols.smb.SmbService] | FULLY_IMPLEMENTED | No (SMB via smbj) | NTLM/Kerberos |
- * | WebDAV | [WebDavService][digital.vasic.yole.network.protocols.webdav.WebDavService] | FULLY_IMPLEMENTED | ktor (active) | Basic, Digest, OAuth, None |
- * | Git | [GitService][digital.vasic.yole.network.protocols.git.GitService] | FULLY_IMPLEMENTED | ktor (active) | PAT or Basic |
- * | Dropbox | [DropboxService][digital.vasic.yole.network.protocols.dropbox.DropboxService] | FULLY_IMPLEMENTED | ktor (active) | OAuth2 (DropboxOAuth2Flow) |
- * | Google Drive | [GoogleDriveService][digital.vasic.yole.network.protocols.googledrive.GoogleDriveService] | FULLY_IMPLEMENTED | ktor (active) | OAuth2 (GoogleDriveOAuth2Flow) |
- * | OneDrive | [OneDriveService][digital.vasic.yole.network.protocols.onedrive.OneDriveService] | FULLY_IMPLEMENTED | ktor (active) | OAuth2 (OneDriveOAuth2Flow) |
+ * | FTP | [FtpService][digital.vasic.yole.network.protocols.ftp.FtpService] | SUBSTANTIALLY_IMPLEMENTED | No (TCP sockets) | FTP USER/PASS |
+ * | SFTP | [SftpService][digital.vasic.yole.network.protocols.sftp.SftpService] | PARTIALLY_IMPLEMENTED | No (SSH via sshj) | SSH password or public key |
+ * | SMB/CIFS | [SmbService][digital.vasic.yole.network.protocols.smb.SmbService] | PARTIALLY_IMPLEMENTED | No (SMB via smbj) | NTLM/Kerberos |
+ * | WebDAV | [WebDavService][digital.vasic.yole.network.protocols.webdav.WebDavService] | SUBSTANTIALLY_IMPLEMENTED | ktor (active) | Basic, Digest, OAuth, None |
+ * | Git | [GitService][digital.vasic.yole.network.protocols.git.GitService] | SUBSTANTIALLY_IMPLEMENTED | ktor (active) | PAT or Basic |
+ * | Dropbox | [DropboxService][digital.vasic.yole.network.protocols.dropbox.DropboxService] | SUBSTANTIALLY_IMPLEMENTED | ktor (active) | OAuth2 (DropboxOAuth2Flow) |
+ * | Google Drive | [GoogleDriveService][digital.vasic.yole.network.protocols.googledrive.GoogleDriveService] | SUBSTANTIALLY_IMPLEMENTED | ktor (active) | OAuth2 (GoogleDriveOAuth2Flow) |
+ * | OneDrive | [OneDriveService][digital.vasic.yole.network.protocols.onedrive.OneDriveService] | SUBSTANTIALLY_IMPLEMENTED | ktor (active) | OAuth2 (OneDriveOAuth2Flow) |
  *
  * ## Platform Support
  *
