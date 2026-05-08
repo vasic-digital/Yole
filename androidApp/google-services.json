@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "578988389676",
+    "project_id": "yole-app",
+    "storage_bucket": "yole-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:578988389676:android:d61715a0a84a42c65d2889",
+        "android_client_info": {
+          "package_name": "digital.vasic.yole.android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmJQL34Of3aV0m9-KY0m2sn2BaxdgK0BU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

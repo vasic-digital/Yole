@@ -23,6 +23,10 @@ plugins {
     alias(libs.plugins.dokka) apply false
     alias(libs.plugins.kover) apply false
 
+    // Google Services (Firebase)
+    alias(libs.plugins.google.services) apply false
+    alias(libs.plugins.firebase.crashlytics) apply false
+
     // Security and code quality plugins
     id("org.owasp.dependencycheck") version "11.1.1"
     id("io.gitlab.arturbosch.detekt") version "1.23.7" apply false
