@@ -80,7 +80,7 @@ existing test method. Path format:
 
 ## Reducing the baseline
 
-`challenges/baselines/bluff-baseline.txt` is expected to shrink during
+`yole-challenges/baselines/bluff-baseline.txt` is expected to shrink during
 sub-project 4. Removing a line is a **ratchet improvement**: do it in
 the same commit that fixes the underlying bluff. The scanner exits
 with code 2 if it sees a baselined hit that is no longer present —
@@ -92,8 +92,8 @@ Run all three before declaring work done:
 
 ```bash
 bash scripts/anti-bluff/bluff-scanner.sh --mode all
-bash challenges/scripts/anchor_manifest_challenge.sh
-bash challenges/scripts/mutation_ratchet_challenge.sh
+bash yole-challenges/scripts/anchor_manifest_challenge.sh
+bash yole-challenges/scripts/mutation_ratchet_challenge.sh
 ```
 
 All three must PASS.

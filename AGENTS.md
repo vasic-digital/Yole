@@ -188,7 +188,7 @@ package digital.vasic.yole.format
 A change is done only when **all** of:
 1. The code change is committed
 2. All project-level tests pass on a clean clone
-3. All challenges in `challenges/scripts/` pass on the running host
+3. All challenges in `yole-challenges/scripts/` pass on the running host
 4. Governance docs (`CONSTITUTION.md`, `AGENTS.md`, `CLAUDE.md`) remain coherent
 
 ## Quality Requirements
@@ -235,7 +235,7 @@ future host or container is exposed.
 **Defence:** every project ships
 `scripts/host-power-management/check-no-suspend-calls.sh` (static
 scanner) and
-`challenges/scripts/no_suspend_calls_challenge.sh` (challenge wrapper).
+`yole-challenges/scripts/no_suspend_calls_challenge.sh` (challenge wrapper).
 Both MUST be wired into the project's CI / `run_all_challenges.sh`.
 
 **Full background:** `docs/HOST_POWER_MANAGEMENT.md` and `CONSTITUTION.md` (CONST-033).
@@ -280,12 +280,12 @@ unit test that does.
 
 ```bash
 bash scripts/anti-bluff/bluff-scanner.sh --mode all
-bash challenges/scripts/anchor_manifest_challenge.sh
-bash challenges/scripts/mutation_ratchet_challenge.sh
+bash yole-challenges/scripts/anchor_manifest_challenge.sh
+bash yole-challenges/scripts/mutation_ratchet_challenge.sh
 ```
 
 All three must PASS. Pre-existing bluff hits are tracked in
-`challenges/baselines/bluff-baseline.txt`; do not extend the baseline
+`yole-challenges/baselines/bluff-baseline.txt`; do not extend the baseline
 without an explicit justification comment.
 
 **Skip-marker convention:** `// SKIP-OK: #<ticket>` (canonical),

@@ -7,7 +7,7 @@
 # + logind IdleAction override.
 #
 # Self-contained — no framework.sh dependency. Drop-in for any project's
-# challenges/scripts/ directory.
+# yole-challenges/scripts/ directory.
 #
 # Pass criteria (4 assertions):
 #   1. systemctl is-enabled sleep.target / suspend.target /

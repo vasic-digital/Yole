@@ -12,7 +12,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 MODE="all"
-BASELINE="${ROOT_DIR}/challenges/baselines/bluff-baseline.txt"
+BASELINE="${ROOT_DIR}/yole-challenges/baselines/bluff-baseline.txt"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

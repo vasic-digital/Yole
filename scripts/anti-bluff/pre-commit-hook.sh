@@ -16,6 +16,6 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 "${SCRIPT_DIR}/bluff-scanner.sh" --mode changed
 
 # Run anchor manifest check (cheap, < 1s).
-if [[ -f "${ROOT_DIR}/challenges/scripts/anchor_manifest_challenge.sh" ]]; then
-  bash "${ROOT_DIR}/challenges/scripts/anchor_manifest_challenge.sh"
+if [[ -f "${ROOT_DIR}/yole-challenges/scripts/anchor_manifest_challenge.sh" ]]; then
+  bash "${ROOT_DIR}/yole-challenges/scripts/anchor_manifest_challenge.sh"
 fi

@@ -113,12 +113,12 @@ To pick up the campaign:
   commands (all 4 repos)
 - `docs/ANTI_BLUFF.md` — runbook (all 4 repos)
 - `docs/behavior-anchors.md` — the manifest (all 4 repos)
-- `challenges/baselines/bluff-baseline.txt` — the baseline (all 4
+- `yole-challenges/baselines/bluff-baseline.txt` — the baseline (all 4
   repos; Section 1 empty in all)
 - `scripts/anti-bluff/bluff-scanner.sh` — the scanner (all 4 repos)
 - `scripts/anti-bluff/lib/{go,kotlin}.sh` — pattern libraries
 - `scripts/anti-bluff/tests/run-fixtures.sh` — self-test runner
-- `challenges/scripts/bluff_scanner_challenge.sh` — qa-all wrapper
+- `yole-challenges/scripts/bluff_scanner_challenge.sh` — qa-all wrapper
   (self-test + tree scan)
 - `docs/superpowers/specs/2026-05-01-anti-bluff-foundation-design.md`
   — the original spec (sub-project 1)

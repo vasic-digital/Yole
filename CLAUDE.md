@@ -20,7 +20,7 @@ A change is done only when **all** of the following hold:
 
 1. The code change is committed.
 2. All project-level tests pass on a clean clone.
-3. All challenges in `challenges/scripts/` pass on the running host.
+3. All challenges in `yole-challenges/scripts/` pass on the running host.
 4. Governance docs (`CONSTITUTION.md`, `AGENTS.md`, `CLAUDE.md`) remain coherent with the change.
 5. `docs/CONTINUATION.md` is updated to reflect current state per CONST-036.
 
@@ -305,8 +305,8 @@ allowlist without an explicit non-host-context justification comment.
 **Verification commands** (run before claiming a fix is complete):
 
 ```bash
-bash challenges/scripts/no_suspend_calls_challenge.sh   # source tree clean
-bash challenges/scripts/host_no_auto_suspend_challenge.sh   # host hardened
+bash yole-challenges/scripts/no_suspend_calls_challenge.sh   # source tree clean
+bash yole-challenges/scripts/host_no_auto_suspend_challenge.sh   # host hardened
 ```
 
 Both must PASS.
@@ -353,12 +353,12 @@ Run before claiming a fix is complete:
 
 ```bash
 bash scripts/anti-bluff/bluff-scanner.sh --mode all
-bash challenges/scripts/anchor_manifest_challenge.sh
-bash challenges/scripts/mutation_ratchet_challenge.sh
+bash yole-challenges/scripts/anchor_manifest_challenge.sh
+bash yole-challenges/scripts/mutation_ratchet_challenge.sh
 ```
 
 All three must PASS. Pre-existing bluff hits are tracked in
-`challenges/baselines/bluff-baseline.txt`; do not extend the baseline
+`yole-challenges/baselines/bluff-baseline.txt`; do not extend the baseline
 without an explicit justification comment.
 
 **Skip-marker convention:** `// SKIP-OK: #<ticket>` (canonical),

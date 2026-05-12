@@ -6,13 +6,13 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-12 (iter 28 — deep-recursive submodule sync + CONTINUATION rewrite)
-**Current branch:** `master` (synced with github, origin, upstream — all pushed)
-**HEAD:** `0a58f372` — `docs(continuation): rewrite to current state + cascade CONST-036 (iter 28)`
-**Submodule SHAs:** Challenges `19e1c33d`, Containers `7813c986`, HelixQA `f0399a82`
-**Test status:** `:shared:desktopTest` 8,954/8,954 PASS; Robolectric (dedicated container) 49/49 PASS
+**Last updated:** 2026-05-12 (iter 29 — macOS host environment audit, ground-truth divergence record)
+**Current branch:** `master`
+**HEAD (parent of this commit):** `8c68038e` — `docs(continuation): self-reference fix — record own commit SHA + updated submodule pins`
+**Submodule SHAs (per HEAD tree):** Challenges `19e1c33d`, Containers `7813c986`, HelixQA `f0399a82`
+**Test status (last verified on Linux dev host):** `:shared:desktopTest` 8,954/8,954 PASS; Robolectric (dedicated container) 49/49 PASS — NOT reverified on macOS audit host (see §11 Environment Notes).
 **Release artifacts:** v0.0.0.0.7 present in `releases/` for Android Debug+Release, Desktop linux-x64, Web Wasm
-**Anti-bluff gates:** all PASS (scanner clean, anchor manifest valid)
+**Anti-bluff gates (last verified on Linux dev host):** PASS; NOT reverified on macOS audit host (see §11).
 
 ---
 
@@ -160,7 +160,15 @@ Containers/  7813c986  chore(governance): append CONST-036 to AGENTS.md
 
 HelixQA/     f0399a82  Merge helixgithub/main into vasic-digital fork
              - 6 remotes: github, gitlab, helixgithub, helixgitlab, origin, upstream — ALL pushed
-             - 30+ nested third-party submodules in tools/opensource (pinned, not pulled)
+             - 30+ nested third-party submodules in tools/opensource
+               * AS-OF iter 29 audit on macOS host: 18 of these nested submodules show
+                 working-tree drift (M) vs the SHAs HelixQA's f0399a82 commit pins.
+                 Drift not committed inside HelixQA. Touched: allure2, appium,
+                 browser-use, chroma, docker-android, docling, kiwi-tcms,
+                 llama-index, marker, mem0, midscene, moondream, perfetto, scrcpy,
+                 signoz, skyvern, stagehand, unstructured.
+               * Decision needed (see §11 Environment Notes): reset to pinned SHAs
+                 OR commit the bumps inside HelixQA and bump HelixQA pointer.
 ```
 
 ### Sibling KMP Modules (composite builds)
@@ -259,12 +267,12 @@ make container-release
 
 # Anti-bluff gates
 bash scripts/anti-bluff/bluff-scanner.sh --mode all
-bash challenges/scripts/anchor_manifest_challenge.sh
-bash challenges/scripts/mutation_ratchet_challenge.sh
+bash yole-challenges/scripts/anchor_manifest_challenge.sh
+bash yole-challenges/scripts/mutation_ratchet_challenge.sh
 
 # Host power management ban (CONST-033)
-bash challenges/scripts/no_suspend_calls_challenge.sh
-bash challenges/scripts/host_no_auto_suspend_challenge.sh
+bash yole-challenges/scripts/no_suspend_calls_challenge.sh
+bash yole-challenges/scripts/host_no_auto_suspend_challenge.sh
 
 # Full QA
 make qa-all
@@ -298,6 +306,86 @@ Each submodule (`Challenges/`, `Containers/`, `HelixQA/`) has its own governance
 3. Then return to the superproject and bump the submodule pointer in a follow-up commit.
 
 The main Yole CONTINUATION.md tracks SUPERPROJECT state; submodule-local state is tracked in each submodule's own CONTINUATION.md.
+
+---
+
+## 11. Environment Notes — Host Capability Matrix (NEW iter 29)
+
+> Recorded after a macOS host audit on 2026-05-12. CONST-035 (zero-bluff)
+> demands that test/gate status only be reported as PASS when reverified
+> on the current host. This section captures which hosts CAN run which
+> verifications so future agents know what their environment supports.
+
+### Linux primary dev host (`/run/media/milosvasic/DATA4TB/Projects/Yole`)
+- Full Gradle build + `:shared:desktopTest` runnable (8,954/8,954 last green).
+- Container release pipeline runnable.
+- Bluff scanner + anchor + mutation challenges runnable.
+- Sibling KMP repos present in `../`.
+- This is the canonical workstation. Test/gate green claims at the top
+  of this document refer to this host's most recent run.
+
+### macOS audit host (`/Users/milosvasic/Projects/Yole`) — LIMITED
+The following make the macOS host UNABLE to reverify the green claims at
+the top of this document. They are environment gaps, not code defects:
+
+1. **`Challenges/` vs `challenges/` case-collision — RESOLVED iter 29.**
+   Parent repo previously registered `Challenges` (capital) as a submodule
+   AND tracked a separate `challenges` (lowercase) tree at the root, which
+   collided on macOS case-insensitive filesystems. Resolved by renaming
+   the lowercase parent-tracked tree to `yole-challenges/` (`git mv`,
+   blob history preserved). All live references in CLAUDE.md / AGENTS.md
+   / CONSTITUTION.md / Makefile / docs/ANTI_BLUFF.md /
+   docs/HOST_POWER_MANAGEMENT.md / docs/behavior-anchors.md /
+   docs/campaigns/anti-bluff/{CAMPAIGN,MILESTONE-2026-05-01}.md /
+   scripts/anti-bluff/{bluff-scanner,pre-commit-hook}.sh /
+   scripts/host-power-management/install-host-suspend-guard.sh and the
+   six renamed scripts' own self-refs updated to `yole-challenges/`.
+   Verification: `bash yole-challenges/scripts/no_suspend_calls_challenge.sh`
+   PASSES from the new path (iter 29 verified). Historical plan/spec
+   docs in `docs/plans/` and `docs/superpowers/` retain the old
+   `challenges/` paths as accurate snapshots of past planning state —
+   left intentionally untouched. Challenges submodule now initializes
+   cleanly on macOS (verified at SHA `19e1c33d` + nested Panoptic at
+   `c22df66`).
+
+2. **10 sibling KMP repos missing.** `settings.gradle.kts` declares
+   `includeBuild()` for `../RateLimiter-KMP`, `../Concurrency-KMP`,
+   `../UI-Components-KMP`, `../Auth-KMP`, `../Security-KMP`,
+   `../Document-KMP`, `../Config-KMP`, `../Database-KMP`,
+   `../Storage-KMP`, `../Formatters-KMP`. All absent on this host →
+   Gradle resolution fails with "Included build does not exist".
+   No `:shared:desktopTest`, no test verification on this host.
+
+3. **`GRADLE_USER_HOME` hard-pointed to `/Volumes/T7/Gradle`** (external
+   SSD, not mounted). Workaround: `GRADLE_USER_HOME=~/.gradle ./gradlew …`.
+   Useless without #2 resolved.
+
+4. **`bluff-scanner.sh` requires bash 4+** (uses `mapfile`). macOS default
+   bash is 3.2. Either install bash 4+ via Homebrew (`brew install bash`)
+   or run the scanner inside the project's build container.
+
+5. **HelixQA nested submodule drift** (18 of `tools/opensource/*` modified):
+   independent of macOS — would show on any host that ran a recursive
+   submodule update. The drift was likely introduced during iter 28's
+   "Deep-recursive submodule fetch + pull + cross-fork merge" and never
+   committed inside HelixQA. Section 6 above now reflects this honestly.
+
+### What CAN be run on the macOS host
+- `bash yole-challenges/scripts/no_suspend_calls_challenge.sh` → PASS (iter 29 verified).
+- File edits, git operations, documentation updates.
+- `host_no_auto_suspend_challenge.sh` (host-state gate, not run yet — independent of build).
+
+### What CANNOT be run on the macOS host
+- Anything that needs Gradle dependency resolution (all test targets).
+- Anti-bluff scanner (`scripts/anti-bluff/bluff-scanner.sh`).
+- Anchor manifest challenge / mutation ratchet (need Go + initialized submodules).
+- Container release pipeline (no Docker/Podman tested here yet).
+
+### Implication for "Resume work" on macOS
+Until #1 and #2 above are resolved, work on the macOS host is restricted
+to documentation, text-only edits, and the few bash-3.2-compatible
+challenges. Feature work on §7.4 / §7.5 / §7.6 / §7.7 MUST be done from
+the Linux dev host, or after fixing the macOS environment gaps.
 
 ---
 

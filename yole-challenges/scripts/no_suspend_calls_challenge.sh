@@ -5,7 +5,7 @@
 # source tree contains zero forbidden host-power-management invocations.
 #
 # Resolves the scanner relative to its own location, so it works
-# whether executed from the project root or from challenges/scripts/.
+# whether executed from the project root or from yole-challenges/scripts/.
 #
 # Exit:
 #   0 = clean
@@ -16,7 +16,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # The scanner is in scripts/host-power-management/, but we may be in
-# challenges/scripts/. Resolve the project root by walking up until
+# yole-challenges/scripts/. Resolve the project root by walking up until
 # we find scripts/host-power-management/check-no-suspend-calls.sh.
 find_project_root() {
   local d="$1"

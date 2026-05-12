@@ -162,12 +162,12 @@ Per the spec's acceptance criteria, in each of the 4 repos:
 - `grep -l "CONST-035" CONSTITUTION.md CLAUDE.md AGENTS.md` returns
   all three files (verified).
 - `scripts/anti-bluff/bluff-scanner.sh` exists and is executable.
-- `challenges/baselines/bluff-baseline.txt` exists with 3 sections.
+- `yole-challenges/baselines/bluff-baseline.txt` exists with 3 sections.
 - `docs/behavior-anchors.md` exists.
 - `docs/ANTI_BLUFF.md` exists.
 - `bash scripts/anti-bluff/bluff-scanner.sh --mode all` exits 0.
-- `bash challenges/scripts/anchor_manifest_challenge.sh` exits 0.
-- `bash challenges/scripts/mutation_ratchet_challenge.sh` exits 0
+- `bash yole-challenges/scripts/anchor_manifest_challenge.sh` exits 0.
+- `bash yole-challenges/scripts/mutation_ratchet_challenge.sh` exits 0
   (Yole main: stub; submodules: real go-mutesting in HelixQA, stub
   in Challenges/Containers pending sub-project 4).
 

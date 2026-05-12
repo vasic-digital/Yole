@@ -8,11 +8,11 @@
 #
 # Sub-project 4 will replace this stub with a real Pitest invocation
 # parsing build/reports/pitest/<run>/mutations.xml against
-# challenges/baselines/bluff-baseline.txt Section 2.
+# yole-challenges/baselines/bluff-baseline.txt Section 2.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-BASELINE="${ROOT_DIR}/challenges/baselines/bluff-baseline.txt"
+BASELINE="${ROOT_DIR}/yole-challenges/baselines/bluff-baseline.txt"
 
 if [[ ! -f "${BASELINE}" ]]; then
   echo "FAIL: baseline file missing at ${BASELINE}" >&2

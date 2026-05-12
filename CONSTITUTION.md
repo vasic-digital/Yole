@@ -63,9 +63,9 @@ are unsafe for this host.
    `start.sh` / `setup.sh` / `bootstrap.sh`.
 3. `scripts/host-power-management/check-no-suspend-calls.sh` —
    static scanner. Exits non-zero on any forbidden invocation.
-4. `challenges/scripts/host_no_auto_suspend_challenge.sh` — asserts
+4. `yole-challenges/scripts/host_no_auto_suspend_challenge.sh` — asserts
    the running host's state matches layer-1 masking.
-5. `challenges/scripts/no_suspend_calls_challenge.sh` — wraps the
+5. `yole-challenges/scripts/no_suspend_calls_challenge.sh` — wraps the
    scanner as a challenge that runs in CI / `run_all_challenges.sh`.
 
 **Enforcement:** Every project's CI / `run_all_challenges.sh`
@@ -151,18 +151,18 @@ This project is mixed: a Kotlin Multiplatform app + 10 KMP library modules + 3 G
 
 1. `scripts/anti-bluff/bluff-scanner.sh` — static scanner. Exits non-zero
    on any forbidden pattern outside the baseline.
-2. `challenges/baselines/bluff-baseline.txt` — captured pre-existing
+2. `yole-challenges/baselines/bluff-baseline.txt` — captured pre-existing
    bluff hits and per-file mutation kill rates. Ratchet enforces the
    baseline never worsens.
 3. `docs/behavior-anchors.md` — anchor manifest. Every user-facing
    capability has at least one row pointing at one anchor test that
    proves the capability end-to-end.
-4. `challenges/scripts/bluff_scanner_challenge.sh` — wraps the scanner
+4. `yole-challenges/scripts/bluff_scanner_challenge.sh` — wraps the scanner
    as a challenge.
-5. `challenges/scripts/mutation_ratchet_challenge.sh` — runs Pitest
+5. `yole-challenges/scripts/mutation_ratchet_challenge.sh` — runs Pitest
    (Kotlin/JVM) or `go-mutesting` (Go), enforces 90% kill on changed
    code and 80% project-wide ratchet.
-6. `challenges/scripts/anchor_manifest_challenge.sh` — verifies every
+6. `yole-challenges/scripts/anchor_manifest_challenge.sh` — verifies every
    anchor row points at a callable test that exists.
 
 **Enforcement.** All three challenges MUST run in `runChallenges` /
@@ -244,7 +244,7 @@ A change is done when:
 
 1. The code change is committed.
 2. All project-level tests pass on a clean clone.
-3. All challenges in `challenges/scripts/` pass on the running host.
+3. All challenges in `yole-challenges/scripts/` pass on the running host.
 4. Governance docs (`CONSTITUTION.md`, `AGENTS.md`, `CLAUDE.md`) are
    coherent with the change.
 5. `docs/CONTINUATION.md` is updated to reflect current state per CONST-036.

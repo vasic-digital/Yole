@@ -373,21 +373,21 @@ anti-bluff-scan:
 	@bash scripts/anti-bluff/bluff-scanner.sh --mode all
 
 anti-bluff-anchors:
-	@bash challenges/scripts/anchor_manifest_challenge.sh
+	@bash yole-challenges/scripts/anchor_manifest_challenge.sh
 
 anti-bluff-mutation:
-	@bash challenges/scripts/mutation_ratchet_challenge.sh
+	@bash yole-challenges/scripts/mutation_ratchet_challenge.sh
 
 anti-bluff-mutation-changed:
-	@bash challenges/scripts/mutation_ratchet_challenge.sh
+	@bash yole-challenges/scripts/mutation_ratchet_challenge.sh
 
 anti-bluff: anti-bluff-scan anti-bluff-anchors anti-bluff-mutation
 
 update-baseline:
 	@echo "Manual baseline update — see docs/ANTI_BLUFF.md"
 	@echo "1. Run scanner: bash scripts/anti-bluff/bluff-scanner.sh --mode all"
-	@echo "2. Run mutation: bash challenges/scripts/mutation_ratchet_challenge.sh"
-	@echo "3. Edit challenges/baselines/bluff-baseline.txt to reflect new state."
+	@echo "2. Run mutation: bash yole-challenges/scripts/mutation_ratchet_challenge.sh"
+	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
 qa-all: test-shared challenge helixqa-test anti-bluff

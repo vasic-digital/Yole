@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 MANIFEST="${ROOT_DIR}/docs/behavior-anchors.md"
-BASELINE="${ROOT_DIR}/challenges/baselines/bluff-baseline.txt"
+BASELINE="${ROOT_DIR}/yole-challenges/baselines/bluff-baseline.txt"
 CAPABILITIES="${ROOT_DIR}/docs/CAPABILITIES.md"
 
 if [[ ! -f "${MANIFEST}" ]]; then
