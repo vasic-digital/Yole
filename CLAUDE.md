@@ -81,14 +81,12 @@ make qa-all                               # Full QA pipeline
 
 ## Known Issues
 
-- ~~**AGP version mismatch**: `androidApp` tests may fail due to AGP version conflicts. Use `:shared:desktopTest` for routine testing.~~ — **resolved upstream** (commit `af49959e`, 2026-03-17). AGP unified at 8.9.0 across `gradle/libs.versions.toml` and `androidApp/build.gradle.kts`. `:shared:desktopTest` remains the recommended day-to-day test target because it doesn't require an Android SDK install, but androidApp tests should now pass when SDK is available.
-- ~~**Container OOM**: Exit code 137 = OOM kill. Increase container memory limits (`mem_limit` in `docker-compose.yml`).~~ — **resolved upstream** (default `mem_limit` bumped from 4g→8g, `memswap_limit` from 6g→12g). Sized to fit `Gradle JVM (-Xmx4096m) + Kotlin daemon (-Xmx4096m)` concurrently. Operators with smaller host RAM should override via `docker-compose.override.yml`.
-- ~~**KMP composite-build resolution fails for all 10 sibling modules**~~ — **resolved iter 25** by adding `group = "digital.vasic.<name>"` + `version = "1.0.0"` to each KMP module's `build.gradle.kts`, aligning AGP to 8.9.0 across all 10, adding `jvmTarget = "11"` to each `jvm("desktop")` target, mounting parent dir at `/workspace` in `docker-compose.yml` so siblings are visible in the build container, and lowering `desktopApp` toolchain to JDK 17 (canonical container has 17, not 21). Fresh v0.0.0.0.7 artifacts built end-to-end via `make container-release`.
-- **KNOWN DEFECTS surfaced by anti-bluff campaign (CONST-035)**: see `docs/KNOWN_DEFECTS.md` for the tracked list. Each defect has its own ticket ID, a documented `SKIP-OK: #<ticket>` exemption in the corresponding test, and a stated proper-fix approach with its blocker. Previously open as of iter 26:
-  - ~~**`#smb-stub-no-negotiation`** — `SmbService.connect()` was a no-op stub that didn't perform real SMB protocol negotiation.~~ **FIXED (2026-05-07):** connect() now calls `SmbProtocolClient.connect()` and `authenticate()` for real protocol negotiation. Lambda injection (`testConnectFn`/`testAuthenticateFn`) enables test control. 441/441 SMB+WebDAV tests pass.
-  - ~~**`#webdav-always-online-stub`** — `WebDavService.connect()` caught network errors and still flipped `_isConnected = true`.~~ **FIXED (2026-05-07):** Removed the catch block that suppressed network errors. Added `testConnectFn` lambda injection. `isOnline` now honestly reflects reachability per CONST-035.
-  - **`#robolectric-compose-ui-tests-brittle`** — ~25 Robolectric UI tests flap on string-based matching. Tracker only.
-- ~~**Go flaky tests**: `TestStress_ConcurrentJWTRefresh` (Auth) and `TestGenericPool_HealthyConnectionsSurvive` (Database) are pre-existing.~~ — **resolved upstream** (Auth: commit `3d1c01f`, 2026-04-11; Database: commit `545e320`). Both made deterministic.
+The active list is in `docs/KNOWN_DEFECTS.md`. As of 2026-05-12:
+
+- **`#robolectric-compose-ui-tests-brittle`** — ~25 Robolectric UI tests historically flapped on string-based matching. Mitigated since iter 27 by running them in a dedicated `robolectric-test` container (`make container-robolectric-test`) isolated from the main build. Long-term fix: migrate to HelixQA on-device automation or `testTag`-based matching. Tracker only — does not gate release.
+- **`#helixqa-missing-sibling-repos`** — 31 HelixQA packages fail to compile when their expected sibling repos (DocProcessor, LLMsVerifier/llm-verifier, LLMOrchestrator, VisionEngine) aren't present in the parent directory. Environment bootstrap gap, not a code defect.
+
+Resolved-and-purged historical entries (AGP mismatch, container OOM, KMP composite-build resolution, SMB/WebDAV stubs, Go flaky tests) are recorded in git history and `CHANGELOG.md`; removed from here to keep the live list short.
 
 ## Architecture
 

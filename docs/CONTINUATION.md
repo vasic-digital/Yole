@@ -10,7 +10,7 @@
 **Current branch:** `master`
 **HEAD (parent of this commit):** `62b93272` — `refactor: rename challenges/ → yole-challenges/ (macOS case-collision fix)` (one earlier commit; this commit lands the script-portability batch on top).
 **Submodule SHAs (per HEAD tree):** Challenges `19e1c33d`, Containers `7813c986`, HelixQA `f0399a82` (all initialized; HelixQA nested submodules reset to pinned SHAs).
-**Test status:** Linux dev host last green at 8,954/8,954; macOS host `:shared:desktopTest` in-flight at iter-29 close (see §12 — to be updated with concrete pass/fail when run completes).
+**Test status:** `:shared:desktopTest` 8,954/8,954 PASS on macOS audit host (iter 29 verified, 2026-05-12, 8m25s); Linux dev host last green at same count. Robolectric (dedicated container) 49/49 PASS on Linux — not reverified on macOS yet.
 **Release artifacts:** v0.0.0.0.7 present in `releases/` for Android Debug+Release, Desktop linux-x64, Web Wasm
 **Anti-bluff gates (macOS iter 29 reverified under bash 5):** `bluff-scanner.sh --mode all` PASS, `anchor_manifest_challenge.sh` PASS, `mutation_ratchet_challenge.sh` PASS (stub), `no_suspend_calls_challenge.sh` PASS, `host_no_auto_suspend_challenge.sh` PASS (2/2 macOS pmset assertions).
 
@@ -412,21 +412,28 @@ require container-based artifacts.
 
 ---
 
-## 12. Iter 29 In-Flight Verification — `:shared:desktopTest`
+## 12. Iter 29 Verification — `:shared:desktopTest` ON macOS
 
-The desktopTest run kicked off at iter 29 close as the canonical
-verification of CONTINUATION.md's `8,954/8,954 PASS` claim on the macOS
-host post-remediation. Status as of this commit:
+Canonical zero-bluff reverification of CONTINUATION.md's
+`8,954/8,954 PASS` claim, run on the macOS audit host immediately
+after the iter 29 environment remediation.
 
-- **Started:** 2026-05-12 during iter 29 polish phase.
+- **Date:** 2026-05-12
 - **Command:** `GRADLE_USER_HOME=~/.gradle ./gradlew :shared:desktopTest --no-daemon`
-- **Status at commit:** in-flight (Gradle dependency resolution + compilation phase visible; test execution not yet reported).
-- **Outcome:** to be recorded here in the next commit once the run completes. Per CONST-035 (zero-bluff) the outcome will be reported truthfully — pass count, fail count, and any environment-induced failures distinguished from real defects.
+- **Duration:** 8 minutes 25 seconds
+- **Result (from `shared/build/reports/tests/desktopTest/index.html`):**
+  - **Tests:** 8,954
+  - **Failures:** 0
+  - **Ignored:** 0
+- **Build status:** `BUILD SUCCESSFUL`, exit code 0.
+- **Conclusion:** Doc claim PROVEN on macOS post-remediation. The two
+  dev hosts (Linux primary + macOS audit) are now both functional
+  workstations for primary test target.
 
-If a resuming agent sees this section still saying "in-flight," they should:
-1. Check whether the run is still alive (`ps`, or recent log mtime).
-2. If still running, monitor `:shared:desktopTest --info` output.
-3. If finished, record outcome here verbatim.
+If this section needs further updates (different test target, new host
+introduction, regression observed), agents resuming should append a
+dated subsection rather than overwrite — historical verification
+records are evidence per CONST-035.
 
 ---
 
