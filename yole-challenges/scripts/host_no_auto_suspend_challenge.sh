@@ -36,6 +36,50 @@ assert_fail() { echo "FAIL: $*"; FAIL_COUNT=$((FAIL_COUNT + 1)); FAIL_DETAILS+=(
 echo "=== host_no_auto_suspend_challenge ==="
 echo
 
+OS_KIND="$(uname -s)"
+
+# === macOS branch (pmset-based) =========================================
+# macOS doesn't ship systemd; the same CONST-033 guarantee is enforced
+# through `pmset`. Two real assertions: system-sleep prevented (via
+# config sleep=0 OR a runtime prevention annotation), and disk-sleep
+# disabled (so mid-workload I/O isn't interrupted).
+if [[ "$OS_KIND" == "Darwin" ]]; then
+  echo "[macOS / pmset]"
+  echo
+  pmset_out="$(pmset -g 2>&1)"
+  sleep_val="$(printf '%s\n' "$pmset_out" | awk '/^[[:space:]]+sleep[[:space:]]/ {print $2; exit}')"
+  sleep_annotation="$(printf '%s\n' "$pmset_out" | awk -F'\\(' '/^[[:space:]]+sleep[[:space:]]/ {gsub(/\)[[:space:]]*$/,"",$2); print $2; exit}')"
+
+  echo "[1/2] System won't auto-sleep?"
+  echo "    pmset sleep: $sleep_val${sleep_annotation:+  (prevention: $sleep_annotation)}"
+  if [[ "$sleep_val" == "0" ]]; then
+    assert_pass "pmset sleep=0 (never auto-sleep)"
+  elif [[ -n "$sleep_annotation" ]]; then
+    assert_pass "system actively prevented from sleeping ($sleep_annotation)"
+  else
+    assert_fail "pmset sleep=$sleep_val with no runtime prevention. Run: sudo pmset -a sleep 0"
+  fi
+
+  echo "[2/2] Disk sleep disabled?"
+  disksleep_val="$(printf '%s\n' "$pmset_out" | awk '/^[[:space:]]+disksleep[[:space:]]/ {print $2; exit}')"
+  echo "    pmset disksleep: $disksleep_val"
+  if [[ "$disksleep_val" == "0" ]]; then
+    assert_pass "pmset disksleep=0"
+  else
+    assert_fail "pmset disksleep=$disksleep_val — Run: sudo pmset -a disksleep 0"
+  fi
+
+  echo
+  echo "=== summary: $PASS_COUNT pass, $FAIL_COUNT fail ==="
+  [[ $FAIL_COUNT -eq 0 ]] && exit 0 || exit 1
+fi
+
+# === Linux branch (systemd-based, original) =============================
+if [[ "$OS_KIND" != "Linux" ]]; then
+  echo "FAIL: unsupported OS '$OS_KIND' — CONST-033 host gate has Linux + macOS branches only." >&2
+  exit 2
+fi
+
 # --- Test 1: sleep targets masked ---
 echo "[1/4] sleep / suspend / hibernate / hybrid-sleep targets masked?"
 unmasked=()

@@ -7,6 +7,14 @@
 #   3. Every pending-anchor row appears in baseline Section 3.
 #   4. Cross-check against docs/CAPABILITIES.md if present (no-op if absent).
 set -euo pipefail
+
+# Uses `mapfile`, a bash 4+ builtin. macOS default is bash 3.2 — install
+# bash 4+ (e.g., `brew install bash`) and invoke via `/opt/homebrew/bin/bash`.
+if (( BASH_VERSINFO[0] < 4 )); then
+  echo "FAIL: anchor_manifest_challenge.sh requires bash 4+; current shell is ${BASH_VERSION}." >&2
+  exit 3
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
@@ -20,6 +28,15 @@ if [[ ! -f "${MANIFEST}" ]]; then
 fi
 
 failed=0
+# Trim leading/trailing whitespace from a string. Pure-bash so it works
+# under BSD xargs (macOS) which rejects apostrophes as unterminated quotes.
+trim() {
+  local s="$1"
+  s="${s#"${s%%[![:space:]]*}"}"
+  s="${s%"${s##*[![:space:]]}"}"
+  printf '%s' "$s"
+}
+
 # Extract data rows (Markdown table after header line containing "anchor_test_path").
 mapfile -t ROWS < <(awk '
   /^\| *id *\|/ { in_table=1; next }
@@ -30,12 +47,12 @@ mapfile -t ROWS < <(awk '
 for row in "${ROWS[@]}"; do
   IFS='|' read -ra cols <<< "${row}"
   # cols[0] is empty (leading |), real columns are cols[1..6]
-  id="$(echo "${cols[1]:-}"   | xargs || true)"
-  layer="$(echo "${cols[2]:-}" | xargs || true)"
-  capability="$(echo "${cols[3]:-}" | xargs || true)"
-  anchor="$(echo "${cols[4]:-}" | xargs || true)"
-  verifies="$(echo "${cols[5]:-}" | xargs || true)"
-  status="$(echo "${cols[6]:-}" | xargs || true)"
+  id="$(trim "${cols[1]:-}")"
+  layer="$(trim "${cols[2]:-}")"
+  capability="$(trim "${cols[3]:-}")"
+  anchor="$(trim "${cols[4]:-}")"
+  verifies="$(trim "${cols[5]:-}")"
+  status="$(trim "${cols[6]:-}")"
 
   if [[ -z "${id}" ]]; then continue; fi
 

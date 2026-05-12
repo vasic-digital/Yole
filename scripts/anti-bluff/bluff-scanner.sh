@@ -8,6 +8,13 @@
 #   3 invocation error
 set -euo pipefail
 
+# Uses `mapfile`, a bash 4+ builtin. macOS default is bash 3.2 — install
+# bash 4+ (e.g., `brew install bash`) and invoke via `/opt/homebrew/bin/bash`.
+if (( BASH_VERSINFO[0] < 4 )); then
+  echo "FAIL: bluff-scanner.sh requires bash 4+; current shell is ${BASH_VERSION}." >&2
+  exit 3
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 

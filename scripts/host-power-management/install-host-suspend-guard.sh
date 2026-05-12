@@ -23,6 +23,28 @@
 
 set -euo pipefail
 
+OS_KIND="$(uname -s)"
+if [[ "$OS_KIND" == "Darwin" ]]; then
+    cat >&2 <<'EOF'
+ERROR: install-host-suspend-guard.sh is Linux/systemd-only.
+
+On macOS use pmset directly:
+    sudo pmset -a sleep 0
+    sudo pmset -a disksleep 0
+    sudo pmset -a hibernatemode 0  # optional: no on-disk hibernation
+    caffeinate -di -t 0 &          # runtime keep-awake during long workloads
+
+Verify with:
+    bash yole-challenges/scripts/host_no_auto_suspend_challenge.sh
+EOF
+    exit 2
+fi
+
+if [[ "$OS_KIND" != "Linux" ]]; then
+    echo "ERROR: unsupported OS '$OS_KIND' — install-host-suspend-guard.sh supports Linux + macOS only." >&2
+    exit 2
+fi
+
 if [[ "$EUID" -ne 0 ]]; then
     echo "ERROR: must be run as root (sudo)." >&2
     exit 1

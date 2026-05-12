@@ -6,13 +6,13 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-12 (iter 29 — macOS host environment audit, ground-truth divergence record)
+**Last updated:** 2026-05-12 (iter 29 — macOS environment remediation: case-collision fix + sibling KMP clone + bash 5 + HelixQA reset + macOS pmset branch + BSD-portability trim)
 **Current branch:** `master`
-**HEAD (parent of this commit):** `8c68038e` — `docs(continuation): self-reference fix — record own commit SHA + updated submodule pins`
-**Submodule SHAs (per HEAD tree):** Challenges `19e1c33d`, Containers `7813c986`, HelixQA `f0399a82`
-**Test status (last verified on Linux dev host):** `:shared:desktopTest` 8,954/8,954 PASS; Robolectric (dedicated container) 49/49 PASS — NOT reverified on macOS audit host (see §11 Environment Notes).
+**HEAD (parent of this commit):** `62b93272` — `refactor: rename challenges/ → yole-challenges/ (macOS case-collision fix)` (one earlier commit; this commit lands the script-portability batch on top).
+**Submodule SHAs (per HEAD tree):** Challenges `19e1c33d`, Containers `7813c986`, HelixQA `f0399a82` (all initialized; HelixQA nested submodules reset to pinned SHAs).
+**Test status:** Linux dev host last green at 8,954/8,954; macOS host `:shared:desktopTest` in-flight at iter-29 close (see §12 — to be updated with concrete pass/fail when run completes).
 **Release artifacts:** v0.0.0.0.7 present in `releases/` for Android Debug+Release, Desktop linux-x64, Web Wasm
-**Anti-bluff gates (last verified on Linux dev host):** PASS; NOT reverified on macOS audit host (see §11).
+**Anti-bluff gates (macOS iter 29 reverified under bash 5):** `bluff-scanner.sh --mode all` PASS, `anchor_manifest_challenge.sh` PASS, `mutation_ratchet_challenge.sh` PASS (stub), `no_suspend_calls_challenge.sh` PASS, `host_no_auto_suspend_challenge.sh` PASS (2/2 macOS pmset assertions).
 
 ---
 
@@ -348,44 +348,85 @@ the top of this document. They are environment gaps, not code defects:
    cleanly on macOS (verified at SHA `19e1c33d` + nested Panoptic at
    `c22df66`).
 
-2. **10 sibling KMP repos missing.** `settings.gradle.kts` declares
-   `includeBuild()` for `../RateLimiter-KMP`, `../Concurrency-KMP`,
-   `../UI-Components-KMP`, `../Auth-KMP`, `../Security-KMP`,
-   `../Document-KMP`, `../Config-KMP`, `../Database-KMP`,
-   `../Storage-KMP`, `../Formatters-KMP`. All absent on this host →
-   Gradle resolution fails with "Included build does not exist".
-   No `:shared:desktopTest`, no test verification on this host.
+2. **10 sibling KMP repos missing — RESOLVED iter 29.**
+   `settings.gradle.kts` declares `includeBuild()` for ten sibling
+   `../*-KMP` repos. All cloned from `git@github.com:vasic-digital/*-KMP.git`
+   into `/Users/milosvasic/Projects/`. Gradle build now resolves
+   (`./gradlew :shared:tasks` succeeds; `:shared:desktopTest` invocation
+   recorded as iter 29 in-flight verification — see Section 12 below).
 
 3. **`GRADLE_USER_HOME` hard-pointed to `/Volumes/T7/Gradle`** (external
-   SSD, not mounted). Workaround: `GRADLE_USER_HOME=~/.gradle ./gradlew …`.
-   Useless without #2 resolved.
+   SSD, not mounted). Workaround in active use:
+   `GRADLE_USER_HOME=~/.gradle ./gradlew …`. macOS workflow viable.
+   Suggested follow-up: switch invocation pattern in Makefile to
+   `${GRADLE_USER_HOME:-$HOME/.gradle}` so users don't need the manual
+   override (LOW priority; not blocking).
 
-4. **`bluff-scanner.sh` requires bash 4+** (uses `mapfile`). macOS default
-   bash is 3.2. Either install bash 4+ via Homebrew (`brew install bash`)
-   or run the scanner inside the project's build container.
+4. **`bluff-scanner.sh` required bash 4+ — RESOLVED iter 29.**
+   `brew install bash` → 5.3.9 at `/opt/homebrew/bin/bash`. Both
+   `bluff-scanner.sh` and `anchor_manifest_challenge.sh` now carry a
+   `BASH_VERSINFO[0] < 4` guard that prints a clear remediation
+   message instead of the cryptic `mapfile: command not found`.
 
-5. **HelixQA nested submodule drift** (18 of `tools/opensource/*` modified):
-   independent of macOS — would show on any host that ran a recursive
-   submodule update. The drift was likely introduced during iter 28's
-   "Deep-recursive submodule fetch + pull + cross-fork merge" and never
-   committed inside HelixQA. Section 6 above now reflects this honestly.
+5. **HelixQA nested submodule drift — RESOLVED iter 29.**
+   Investigated: drift was forward-only (local SHAs descendants of
+   pinned). Cause: accidental recursive update during iter 28 cascade.
+   Reset all 18 nested submodules to pinned SHAs via
+   `git submodule update --recursive` inside HelixQA. Parent repo
+   `git status` clean.
 
-### What CAN be run on the macOS host
-- `bash yole-challenges/scripts/no_suspend_calls_challenge.sh` → PASS (iter 29 verified).
+6. **`host_no_auto_suspend_challenge.sh` was systemd-only — RESOLVED iter 29.**
+   Added Darwin branch (pmset-based). Two real assertions on macOS:
+   (a) system won't auto-sleep — passes if `pmset sleep=0` OR a
+       runtime prevention annotation present (e.g., "sleep prevented
+       by powerd, caffeinate");
+   (b) `pmset disksleep=0` so mid-workload I/O isn't interrupted.
+   `install-host-suspend-guard.sh` now exits with concrete pmset
+   commands on macOS instead of failing on `systemctl`.
+
+7. **`anchor_manifest_challenge.sh` used BSD-incompatible `xargs` for trim — RESOLVED iter 29.**
+   Replaced 6 `echo … | xargs` invocations (which threw
+   `unterminated quote` on macOS when row text contained `'`) with a
+   pure-bash `trim()` function. No semantics change; warning gone.
+
+### What CAN be run on the macOS host (iter 29)
+- `:shared:desktopTest` (in-flight verification — see §12)
+- `bash yole-challenges/scripts/no_suspend_calls_challenge.sh` → PASS
+- `bash yole-challenges/scripts/host_no_auto_suspend_challenge.sh` → PASS (2/2)
+- `bash yole-challenges/scripts/anchor_manifest_challenge.sh` → PASS (under bash 5)
+- `bash yole-challenges/scripts/mutation_ratchet_challenge.sh` → PASS (stub)
+- `bash scripts/anti-bluff/bluff-scanner.sh --mode all` → PASS (under bash 5)
 - File edits, git operations, documentation updates.
-- `host_no_auto_suspend_challenge.sh` (host-state gate, not run yet — independent of build).
 
-### What CANNOT be run on the macOS host
-- Anything that needs Gradle dependency resolution (all test targets).
+### What still CANNOT be run on the macOS host
+- Container release pipeline (`make container-release` — Docker/Podman setup not validated yet).
+- The Go-based qa-all challenges that depend on `Challenges` submodule's Go binary (untested).
 - Anti-bluff scanner (`scripts/anti-bluff/bluff-scanner.sh`).
-- Anchor manifest challenge / mutation ratchet (need Go + initialized submodules).
-- Container release pipeline (no Docker/Podman tested here yet).
+### Implication for "Resume work" on macOS (post-iter-29)
+macOS workflow is now viable for documentation, text/code edits, all
+anti-bluff and CONST-033 gates, and Gradle-driven test execution. The
+remaining gap is the container release pipeline (Docker/Podman setup
+on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
+§7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
+require container-based artifacts.
 
-### Implication for "Resume work" on macOS
-Until #1 and #2 above are resolved, work on the macOS host is restricted
-to documentation, text-only edits, and the few bash-3.2-compatible
-challenges. Feature work on §7.4 / §7.5 / §7.6 / §7.7 MUST be done from
-the Linux dev host, or after fixing the macOS environment gaps.
+---
+
+## 12. Iter 29 In-Flight Verification — `:shared:desktopTest`
+
+The desktopTest run kicked off at iter 29 close as the canonical
+verification of CONTINUATION.md's `8,954/8,954 PASS` claim on the macOS
+host post-remediation. Status as of this commit:
+
+- **Started:** 2026-05-12 during iter 29 polish phase.
+- **Command:** `GRADLE_USER_HOME=~/.gradle ./gradlew :shared:desktopTest --no-daemon`
+- **Status at commit:** in-flight (Gradle dependency resolution + compilation phase visible; test execution not yet reported).
+- **Outcome:** to be recorded here in the next commit once the run completes. Per CONST-035 (zero-bluff) the outcome will be reported truthfully — pass count, fail count, and any environment-induced failures distinguished from real defects.
+
+If a resuming agent sees this section still saying "in-flight," they should:
+1. Check whether the run is still alive (`ps`, or recent log mtime).
+2. If still running, monitor `:shared:desktopTest --info` output.
+3. If finished, record outcome here verbatim.
 
 ---
 
