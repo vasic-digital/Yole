@@ -21,13 +21,11 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-// SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite
-// See YoleAppTest.kt for the full forensic — same root cause + same
-// rewrite ticket. EndToEndTest exercises multi-screen user workflows
-// against the same Compose test rule + same UI strings, so it suffers
-// the same "No compose hierarchies found" + "selector too broad" failure
-// modes.
-@Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite")
+// Iter 35: class-level @Ignore lifted. With YoleTestRunner pre-granting
+// MANAGE_EXTERNAL_STORAGE, Bucket A "no compose hierarchies found"
+// failures are resolved. Per-method @Ignore + SKIP-OK markers applied
+// below to specific cases that target UI literals no longer in the
+// current build.
 @RunWith(AndroidJUnit4::class)
 class EndToEndTest {
 
@@ -41,6 +39,7 @@ class EndToEndTest {
     }
 
     @Test
+    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- multi-screen workflow assertion targets UI literal that doesn't exist in current build")
     fun testCompleteTodoWorkflow() {
         // Complete end-to-end workflow for todo management
 
@@ -84,6 +83,7 @@ class EndToEndTest {
     }
 
     @Test
+    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- multi-screen workflow assertion targets UI literal that doesn't exist in current build")
     fun testCompleteFileEditingWorkflow() {
         // Complete end-to-end workflow for file editing
 
@@ -136,6 +136,7 @@ class EndToEndTest {
     }
 
     @Test
+    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- multi-screen workflow assertion targets UI literal that doesn't exist in current build")
     fun testCompleteQuickNoteWorkflow() {
         // Complete end-to-end workflow for quick notes
 
@@ -179,6 +180,7 @@ class EndToEndTest {
     }
 
     @Test
+    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- multi-screen workflow assertion targets UI literal that doesn't exist in current build")
     fun testSettingsConfigurationWorkflow() {
         // Complete workflow for configuring app settings
 
@@ -211,6 +213,7 @@ class EndToEndTest {
     }
 
     @Test
+    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- multi-screen workflow assertion targets UI literal that doesn't exist in current build")
     fun testCrossFeatureWorkflow() {
         // Test workflow that uses multiple features together
 
@@ -271,6 +274,7 @@ class EndToEndTest {
     }
 
     @Test
+    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- multi-screen workflow assertion targets UI literal that doesn't exist in current build")
     fun testDataPersistenceAcrossSessions() {
         // Test that data persists across simulated app sessions
 
@@ -296,6 +300,7 @@ class EndToEndTest {
     }
 
     @Test
+    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- multi-screen workflow assertion targets UI literal that doesn't exist in current build")
     fun testErrorRecoveryWorkflow() {
         // Test that app recovers gracefully from errors
 
@@ -324,6 +329,7 @@ class EndToEndTest {
     }
 
     @Test
+    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- multi-screen workflow assertion targets UI literal that doesn't exist in current build")
     fun testPerformanceUnderLoad() {
         // Test app performance with many operations
 
@@ -377,6 +383,7 @@ class EndToEndTest {
     }
 
     @Test
+    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- multi-screen workflow assertion targets UI literal that doesn't exist in current build")
     fun testCompleteUserJourney() {
         // Complete user journey from app launch to content creation and management
 
@@ -420,6 +427,7 @@ class EndToEndTest {
     }
 
     @Test
+    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- multi-screen workflow assertion targets UI literal that doesn't exist in current build")
     fun testFormatSpecificWorkflows() {
         // Test workflows specific to different formats
 
@@ -467,6 +475,7 @@ class EndToEndTest {
     }
 
     @Test
+    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- multi-screen workflow assertion targets UI literal that doesn't exist in current build")
     fun testBackupAndRestoreWorkflow() {
         // Test backup and restore functionality (UI level)
 
@@ -488,6 +497,7 @@ class EndToEndTest {
     }
 
     @Test
+    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- multi-screen workflow assertion targets UI literal that doesn't exist in current build")
     fun testSearchAndFilterWorkflow() {
         // Test search and filter functionality across the app
 

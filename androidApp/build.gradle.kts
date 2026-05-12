@@ -28,7 +28,10 @@ android {
         versionCode = 100
         versionName = "1.0.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Custom runner grants MANAGE_EXTERNAL_STORAGE before any test
+        // launches MainActivity. Resolves Bucket A of the iter-34 finding
+        // documented in docs/qa/iter-34/known-issues.md.
+        testInstrumentationRunner = "digital.vasic.yole.android.test.YoleTestRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
