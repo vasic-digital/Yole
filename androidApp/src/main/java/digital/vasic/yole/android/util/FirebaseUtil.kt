@@ -157,12 +157,22 @@ object FirebaseUtil {
     fun fetchRemoteConfig(onComplete: (success: Boolean) -> Unit = {}) {
         val rc = remoteConfig
         if (rc == null) {
+            android.util.Log.i(
+                "FirebaseUtil",
+                "Remote Config fetchAndActivate: SKIPPED (not initialized)"
+            )
             testRemoteConfigFetchCapture?.invoke(false)
             onComplete(false)
             return
         }
+        android.util.Log.i("FirebaseUtil", "Remote Config fetchAndActivate: requested")
         rc.fetchAndActivate().addOnCompleteListener { task ->
             val ok = task.isSuccessful
+            val activated = task.result
+            android.util.Log.i(
+                "FirebaseUtil",
+                "Remote Config fetchAndActivate: success=$ok activated=$activated"
+            )
             testRemoteConfigFetchCapture?.invoke(ok)
             onComplete(ok)
         }
