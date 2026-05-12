@@ -9,7 +9,7 @@
 **Last updated:** 2026-05-12 (iter 29 — macOS environment remediation: case-collision fix + sibling KMP clone + bash 5 + HelixQA reset + macOS pmset branch + BSD-portability trim)
 **Current branch:** `master`
 **HEAD (parent of this commit):** `62b93272` — `refactor: rename challenges/ → yole-challenges/ (macOS case-collision fix)` (one earlier commit; this commit lands the script-portability batch on top).
-**Submodule SHAs (per HEAD tree):** Challenges `19e1c33d`, Containers `7813c986`, HelixQA `f0399a82` (all initialized; HelixQA nested submodules reset to pinned SHAs).
+**Submodule SHAs (per HEAD tree):** Challenges `0da3d92` (iter 30 bumped from `19e1c33d`), Containers `af51968` (iter 30 bumped from `7813c986`), HelixQA `f0399a82` (already at latest). All initialized; HelixQA nested submodules reset to pinned SHAs.
 **Test status:** `:shared:desktopTest` 8,954/8,954 PASS on macOS audit host (iter 29 verified, 2026-05-12, 8m25s); Linux dev host last green at same count. Robolectric (dedicated container) 49/49 PASS on Linux — not reverified on macOS yet.
 **Release artifacts:** v0.0.0.0.7 present in `releases/` for Android Debug+Release, Desktop linux-x64, Web Wasm
 **Anti-bluff gates (macOS iter 29 reverified under bash 5):** `bluff-scanner.sh --mode all` PASS, `anchor_manifest_challenge.sh` PASS, `mutation_ratchet_challenge.sh` PASS (stub), `no_suspend_calls_challenge.sh` PASS, `host_no_auto_suspend_challenge.sh` PASS (2/2 macOS pmset assertions).
