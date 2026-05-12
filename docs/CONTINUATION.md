@@ -6,12 +6,12 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-12 (iter 29 — macOS environment remediation: case-collision fix + sibling KMP clone + bash 5 + HelixQA reset + macOS pmset branch + BSD-portability trim)
+**Last updated:** 2026-05-12 (iter 30 — Firebase: real call sites, smart-cast bugfix, signing fallback, both variants distributed)
 **Current branch:** `master`
-**HEAD (parent of this commit):** `62b93272` — `refactor: rename challenges/ → yole-challenges/ (macOS case-collision fix)` (one earlier commit; this commit lands the script-portability batch on top).
-**Submodule SHAs (per HEAD tree):** Challenges `0da3d92` (iter 30 bumped from `19e1c33d`), Containers `af51968` (iter 30 bumped from `7813c986`), HelixQA `f0399a82` (already at latest). All initialized; HelixQA nested submodules reset to pinned SHAs.
-**Test status:** `:shared:desktopTest` 8,954/8,954 PASS on macOS audit host (iter 29 verified, 2026-05-12, 8m25s); Linux dev host last green at same count. Robolectric (dedicated container) 49/49 PASS on Linux — not reverified on macOS yet.
-**Release artifacts:** v0.0.0.0.7 present in `releases/` for Android Debug+Release, Desktop linux-x64, Web Wasm
+**HEAD (parent of this commit):** `4bdc052a` — `fix(android-signing): fall back to debug-signing when prod keystore absent`.
+**Submodule SHAs (per HEAD tree):** Challenges `0da3d92`, Containers `af51968`, HelixQA `f0399a82` (all initialized; HelixQA nested submodules at pinned SHAs).
+**Test status:** `:shared:desktopTest` 8,954/8,954 PASS on macOS audit host (re-verified post-submodule-bump, 15s with cache); Linux dev host last green at same count. Robolectric (dedicated container) 49/49 PASS on Linux — not reverified on macOS yet. `:androidApp:assembleDebug` + `:assembleRelease` BUILD SUCCESSFUL on macOS (iter 30 verified after fixing a pre-existing Kotlin compile bug in FirebaseUtil.init() introduced at d30c0408).
+**Release artifacts (Firebase App Distribution, iter 30):** Yole Android 1.0.0 (100) DEBUG release id `3ei0fa60dprig` + RELEASE release id `7em35rhf7npjo` uploaded and distributed to 3 testers (`milos85vasic@gmail.com`, `milos85vasic.2nd@gmail.com`, `milos85vasic.3rd@gmail.com`). Local `releases/` legacy v0.0.0.0.7 still present for Desktop linux-x64 + Web Wasm (those platforms don't support Firebase Distribution).
 **Anti-bluff gates (macOS iter 29 reverified under bash 5):** `bluff-scanner.sh --mode all` PASS, `anchor_manifest_challenge.sh` PASS, `mutation_ratchet_challenge.sh` PASS (stub), `no_suspend_calls_challenge.sh` PASS, `host_no_auto_suspend_challenge.sh` PASS (2/2 macOS pmset assertions).
 
 ---
@@ -409,6 +409,60 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 13. Iter 30 — Firebase real-call-sites + first macOS-host distribution
+
+### Live infrastructure (Firebase project `yole-app`, number `578988389676`)
+- Android app: `1:578988389676:android:d61715a0a84a42c65d2889`
+- iOS / Web apps: not registered (Firebase Distribution doesn't accept Desktop or Web/WASM; iOS lacks built IPA on this host).
+- Analytics + Crashlytics SDKs: present in `androidApp/build.gradle.kts`.
+
+### Bug fix (zero-bluff)
+- `FirebaseUtil.init()` (commit d30c0408 from 2026-05-08) called methods on the nullable field `crashlytics` instead of the non-null param `crashlyticsInstance`. Kotlin smart-cast can't track a mutable `var` field at the call site → compile error.
+- This bug was SILENT for 4 days because no commit between d30c0408 and iter 30 actually compiled `androidApp`. Only `:shared:desktopTest` ran in that window. Iter 27's "Robolectric 49/49 PASS" claim is therefore an unverified snapshot from before d30c0408 — accurate at the time, stale since. Action: needs reverification once any host runs `:androidApp:test`.
+- Fixed iter 30: call methods on `crashlyticsInstance` (param) directly.
+
+### Real production call sites added (resolves the CONST-035 bluff that defined `FirebaseUtil.Events.*` constants but fired them only from `androidTest`)
+- `MainActivity.onCreate()`: `logEvent(APP_OPEN)` + `recordNonFatal` on storage permission probe failure.
+- `MainActivity.onResume()`: `recordNonFatal` on storage permission probe failure.
+- `YoleApp.saveFile()`: `logEvent(FILE_SAVED)` with format + size params on success; `recordNonFatal` + `logEvent(ERROR_OCCURRED)` on exception.
+- `YoleApp.createFileWithSAF()`: `logEvent(FILE_CREATED|FILE_SAVED)` on success (branched on whether file pre-existed); error path mirrors `saveFile`.
+- `YoleApp.openFileInTab()`: `logEvent(FILE_OPENED)` with format + size params.
+- `YoleApp` LaunchedEffect init (3 catches): `recordNonFatal` wrapping SecureStorage / parser / cleanup failure paths.
+
+### Release variant signing fallback
+- `androidApp/build.gradle.kts`: `release` build type now falls back to the `debug` signing config when `docker/keys/yole.keystore` is absent. Lets the variant build on any host. Firebase App Distribution accepts debug-signed APKs for tester distribution; Play Store upload still REQUIRES the production keystore.
+
+### Distribution evidence (iter 30, 2026-05-12)
+- DEBUG: release id `3ei0fa60dprig` — 30 MB APK uploaded, "distributed to testers/groups successfully" — console: https://console.firebase.google.com/project/yole-app/appdistribution/app/android:digital.vasic.yole.android/releases/3ei0fa60dprig
+- RELEASE: release id `7em35rhf7npjo` — 24 MB APK uploaded, distributed — console: https://console.firebase.google.com/project/yole-app/appdistribution/app/android:digital.vasic.yole.android/releases/7em35rhf7npjo
+- Tester additions verified via `firebase appdistribution:testers:list --project yole-app`: `milos85vasic.3rd@gmail.com` was added at `Tue May 12 2026 14:10:40 GMT+0300` as a result of this run.
+
+### What was NOT distributed (no bluff)
+- **iOS**: no IPA — Xcode signing/provisioning not set up on this Mac.
+- **Desktop (Linux/Windows/macOS binaries)**: Firebase App Distribution doesn't accept desktop binaries. Continue using `releases/` directory.
+- **Web (WASM PWA)**: Firebase Distribution isn't a hosting product. Firebase Hosting could host the PWA; out of iter-30 scope.
+- **"Go API"**: not present in this repo. The .env.example previously had a stub `JWT_SECRET` and a "Go API" section that referenced nothing; both removed in iter 30. The submodule Go binaries (`helixqa-bridge`, `boot`, `userflow-runner`) are dev/QA tooling, not user-facing APIs.
+
+### Environment additions on the macOS host (iter 30)
+- `brew install --cask android-commandlinetools` → SDK at `/opt/homebrew/share/android-commandlinetools`.
+- `sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"`.
+- `local.properties` (gitignored) → points `sdk.dir` at the brew SDK.
+- 10 sibling KMP repos cloned into `/Users/milosvasic/Projects/` (from prior iter).
+- `brew install bash` → bash 5 at `/opt/homebrew/bin/bash` (from prior iter).
+- Firebase CLI 14.17.0 already installed; `FIREBASE_TOKEN` used inline only, never persisted to disk.
+
+### Sensitive-data discipline (iter 30)
+- The Firebase CI token was provided in-chat by the user. It was passed to firebase CLI via `FIREBASE_CLI_TOKEN=… firebase …` inline only. It was NEVER written to `.env`, `.env.example`, `local.properties`, any committed file, any log, or echoed in any text output.
+- `.env` (gitignored, line 1 of `.gitignore`) holds only the public IDs + the tester email list. No secrets.
+- `local.properties` (gitignored, line 100 of `.gitignore`) holds only the SDK path.
+
+### Next-step honesty
+1. **Robolectric reverify** — iter 27's 49/49 claim is from before d30c0408 broke androidApp compile. Now that compile is restored, `:androidApp:testFlavorDefaultDebug` should be run on macOS to refresh the claim. Recommended next iter.
+2. **Production keystore on macOS** — if the Mac will be a regular distribution host, copy `docker/keys/yole.keystore` (and the `YOLE_KEYSTORE_PASSWORD` / `YOLE_KEY_ALIAS` / `YOLE_KEY_PASSWORD` env values) from the Linux dev host. Until then, release distributions from this Mac are debug-signed (acceptable for tester distribution, NOT for Play Store).
+3. **Performance Monitoring / Remote Config** — user asked for "all major Firebase services". Iter 30 covered Analytics + Crashlytics with real production call sites. Performance Monitoring + Remote Config remain available for follow-up; both are low-effort additions on top of the existing Firebase BoM dependency.
 
 ---
 
