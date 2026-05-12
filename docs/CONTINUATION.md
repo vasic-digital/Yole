@@ -6,11 +6,11 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-12 (iter 31 — 6 new Yole submodules + HelixQA macOS-bug fixes + redistribution)
+**Last updated:** 2026-05-12 (iter 32 — emulator boot + Yole launched + live Firebase telemetry verified + HelixQA reporter-bluff fix)
 **Current branch:** `master`
-**HEAD (parent of this commit):** `d7bb8e2c` — `feat(submodules): register 6 HelixQA-sibling repos as Yole submodules + fix bluff`.
+**HEAD (parent of this commit):** `16de7175` — `docs(iter-31): record submodule expansion + HelixQA macOS bug fixes + redistribution`.
 **Submodule SHAs (per HEAD tree):**
-  Challenges `dfe769a`, Containers `af51968`, HelixQA `5b7f455` (iter-31 with macOS-portability fixes + nested-pin bumps).
+  Challenges `dfe769a`, Containers `af51968`, HelixQA `78dd4a1` (iter-32 reporter-bluff fix on top of iter-31 macOS portability + nested-pin bumps).
   6 new (iter 31):
     Dependencies/HelixDevelopment/DocProcessor    `3d11e41`
     Dependencies/HelixDevelopment/LLMOrchestrator `e744a9a`
@@ -435,6 +435,164 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 16. Iter 32 — Live Yole-on-emulator + Firebase telemetry verified + HelixQA reporter-bluff fix
+
+This iter executes the §15 "Still NOT done" emulator-driven QA work to
+the maximum extent achievable on this macOS host, and surfaces a real
+CONST-035 bluff inside HelixQA itself.
+
+### What was actually accomplished (zero-bluff, captured-evidence anchors)
+
+**Live Yole launch + UI interaction on real Android 14 emulator** —
+not a screenshot from a slide, not a Robolectric test, an actual
+Apple-Silicon-native ARM emulator booted from a fresh AVD with the
+just-built debug APK installed. Evidence persisted to
+`docs/qa/iter-32/`:
+
+1. `01-yole-launched.png` — Yole launched via `am start`, sat at
+   `MANAGE_EXTERNAL_STORAGE` permission prompt (expected first-launch
+   behavior on Android 11+).
+2. `02-yole-foreground.png` — after granting via
+   `adb shell appops set ... allow` + relaunch, the activity manager
+   confirms `mFocusedApp=digital.vasic.yole.android/.MainActivity`.
+3. `03-yole-after-tap.png` — random mid-screen tap → no UI change
+   (deliberate honesty anchor; a random tap on inert area MUST NOT
+   trigger a screen transition).
+4. `05-yole-after-quicknote-tap.png` — tapped the QuickNote tab at
+   its real uiautomator-dumped bounds (200, 616). UI changed from
+   the File Browser screen to the QuickNote editor with `Save`,
+   `Preview`, and "Start writing your quick note..." placeholder.
+5. `07-yole-after-save.png` — after typing 32 chars + tapping Save
+   at real bounds (275, 120).
+
+**Firebase Crashlytics live initialization on emulator** — captured
+via logcat in `firebase-logcat-evidence.txt`:
+- `I FirebaseCrashlytics: Initializing Firebase Crashlytics 19.4.3`
+  `for digital.vasic.yole.android`
+- `D SessionConfigFetcher: Fetched settings: {"fabric":{...
+  "bundle_id":"digital.vasic.yole.android"}, ...}` — proves the
+  emulator-running APK successfully connected to the configured
+  Firebase project's Crashlytics backend.
+- `D SessionLifecycleClient: Notified CRASHLYTICS of new session
+  36afafc41b3a4d039b460732cc7fa860` — new Crashlytics session
+  created and reachable from the Firebase console.
+
+**Firebase Analytics live event emission** — the iter-30 production
+call sites fired correctly. From the same logcat capture:
+- `V FA-SVC: Logging event: origin=app,name=app_initialized,
+  params=Bundle[{ga_event_origin(_o)=app,
+                  ga_screen_class(_sc)=MainActivity, ...}]`
+- `V FA-SVC: Logging event: origin=app,name=app_open, params=...`
+- 894 bytes uploaded to the Analytics backend within 1 second of
+  app launch.
+
+**The killer anchor — FILE_SAVED event fired by a real user-driven
+save action**:
+```
+05-12 22:17:58.200  V FA-SVC: Logging event: origin=app,name=file_saved,
+                                params=Bundle[{file_size=32,
+                                              ga_event_origin(_o)=app,
+                                              ga_screen_class(_sc)=MainActivity,
+                                              ga_screen_id(_si)=...,
+                                              file_format=md}]
+```
+
+The chain:
+- User tapped QuickNote tab → in-app navigation handler ran
+  `openFileInTab("quicknote.md", ...)` which fired `FILE_OPENED`
+  (also captured in the same logcat block).
+- User tapped text input + typed `iter32_quickNote_test_<ts>` (32 chars).
+- User tapped Save → `saveFile(context, null, content, "quicknote.md")`
+  ran, hit my iter-30 `FirebaseUtil.logEvent(Events.FILE_SAVED, ...)`
+  call site (commit 8bb926ac).
+- Event params `file_format=md` + `file_size=32` exactly match the
+  production source params (`fileName.substringAfterLast('.', "unknown")`
+  for "quicknote.md" = "md"; `content.length.toString()` for 32-char
+  string = "32").
+
+This is end-to-end positive runtime evidence per CONST-035 §11.4.2
+that the iter-30 Firebase wiring works for the END USER as claimed —
+not "Firebase initialized" (which is metadata), not "no crash on
+launch" (which is absence-of-error), but "user action → production
+code path → real telemetry to Firebase backend".
+
+### CONST-035 bluff found IN HelixQA itself + fixed
+
+While attempting to drive these tests automatically through HelixQA's
+bank runner, `helixqa run --banks file-browser.yaml --device emulator-5554
+--package digital.vasic.yole.android` reported "PASSED — All tests
+passed, no crashes" in 2.2 seconds for 22 challenges.
+
+Investigation: `HelixQA/pkg/validator/validator.go::ValidateStep`
+takes a screenshot + runs crash-detection in a 200 µs window. If
+no crash detected → StepPassed. It does NOT execute the prose
+steps from the YAML bank ("Tap/click file browser icon", "Verify
+listing", etc.). The runner is a crash-observer presented as a
+test executor.
+
+This is exactly the CONST-035 §11.4 anti-pattern the user mandate
+forbids:
+> "absence-of-error PASS, and grep-based PASS without runtime evidence
+>  are all critical defects regardless of how green the summary line
+>  looks."
+
+Fixed in HelixQA commit `78dd4a1`: smallest honest delta — the
+top-level run summary now distinguishes three states:
+- `OBSERVED - 0 challenges executed; crash-observation only. NOT a PASS`
+- `PASSED - All N challenges passed, no crashes`
+- `FAILED - X/N challenges failed or crashes detected`
+
+Real future fix (out of iter-32 scope): wire `helixqa autonomous`
+LLM-driven vision pipeline, OR build a YAML→Appium-spec translator,
+so the runner actually executes the prose steps against the device.
+Reproducer for the next agent in `docs/qa/iter-32/README.md`.
+
+### Yole HelixQA pointer bumped
+- HelixQA `5b7f455` → `78dd4a1` (iter-32 reporter-bluff fix). Verified
+  in-place: `helixqa run` against file-browser.yaml now emits the
+  OBSERVED message instead of the false PASSED message.
+
+### Tooling additions to macOS host (iter 32)
+- `sdkmanager --install emulator system-images;android-34;google_apis;arm64-v8a`
+  (~3.5 GB total; SDK now 6 GB at `/opt/homebrew/share/android-commandlinetools`)
+- AVD `yole-test` created via `avdmanager create avd -n yole-test
+  -k system-images;android-34;google_apis;arm64-v8a`
+- Containers submodule binaries built into `/tmp/yole-bin/`: `boot`,
+  `emulator-matrix`, `emulator-cleanup`, `helixqa`. Not used for the
+  actual evidence capture (emulator-matrix requires a configured AVD
+  matrix + APK pre-install path; we used direct adb interaction
+  instead which is more transparent for one-time evidence capture).
+
+### What was NOT done in iter 32 (honest)
+
+- Full HelixQA QA session against the emulator — the bank-runner
+  bluff identified above means a "full session" against the existing
+  YAML banks would still produce non-evidence. The honest path is
+  to first wire an execution backend (autonomous LLM or
+  YAML→Appium), THEN run sessions. That's a multi-day program of
+  work, properly an iter-33+ scope.
+- Containers-orchestrator-driven emulator (boot + emulator-matrix
+  binaries) — these need `.env` config for matrix definitions +
+  the APK pre-staged at expected paths. Direct adb gave us cleaner
+  one-shot evidence; the orchestrator path makes sense for parallel
+  multi-AVD release-gate runs, not single-evidence captures.
+- Performance Monitoring + Remote Config live emission verification —
+  Performance has its own `FirebasePerf` log channel not captured in
+  this run; Remote Config server-fetch needs an async-completion wait
+  not exercised here.
+- Crashlytics non-fatal recording from production — would need a
+  forced error path; not exercised this iter. Iter-30 wiring (14
+  call sites) is structurally verified by the JVM + Robolectric
+  tests; live-on-device verification is a follow-up.
+
+### Iter-32 commits
+- HelixQA `78dd4a1` — `fix(reporter): no more "PASSED — all tests
+  passed" bluff for 0-executed runs`.
+- Yole HEAD (this commit) — submodule pointer bump + iter-32
+  evidence in `docs/qa/iter-32/`.
 
 ---
 
