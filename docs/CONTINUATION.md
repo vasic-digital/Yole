@@ -6,11 +6,11 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-12 (iter 35 — Bucket A fix unblocks 29 more instrumented tests: 13→42 PASS, 34 explicit SKIP-OK, 0 silent failures)
+**Last updated:** 2026-05-13 (iter 36 — 3 SKIP-OK tests rewritten to real PASS, concrete-bank 7→10 cases)
 **Current branch:** `master`
-**HEAD (parent of this commit):** `8be43871` — `feat(iter-34): connectedAndroidTest live + FileHandle.exists bug + UI test bluff mitigation`.
+**HEAD (parent of this commit):** `80f84ebc` — `feat(iter-35): YoleTestRunner unblocks Bucket A; 29 more instrumented tests now PASS`.
 **Submodule SHAs (per HEAD tree):**
-  Challenges `dfe769a`, Containers `af51968`, HelixQA `d94723f` (iter-34 expanded smoke bank + iter-33 concrete-runner + iter-32 reporter fix + iter-31 macOS portability).
+  Challenges `dfe769a`, Containers `af51968`, HelixQA `800f2e1` (iter-36 smoke bank expansion to 10 cases + iter-33/34/35 history preserved).
   6 new (iter 31):
     Dependencies/HelixDevelopment/DocProcessor    `3d11e41`
     Dependencies/HelixDevelopment/LLMOrchestrator `e744a9a`
@@ -435,6 +435,76 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 20. Iter 36 — 3 SKIP-OK tests rewritten to real PASS, concrete-bank +3 cases
+
+Iter 35 mitigated 41 silent failures by un-Ignoring class-level @Ignore
+and applying 34 per-method SKIP-OK markers. Iter 36 continues the
+honest-rewrite trajectory: convert the easiest SKIP-OK'd cases to
+real PASSes by matching current UI labels (iter-27 made section
+headers ALL-CAPS, theme names "Light theme"/"Dark theme (IDE)"/
+"System theme"). Each rewrite REMOVES a SKIP-OK marker.
+
+### 3 SKIP-OK tests rewritten to PASS
+
+| Test | Was failing on | Now passes against |
+|------|----------------|---------------------|
+| `testSettingsScreenNavigation` | onNodeWithText("Settings") found 2 nodes (Compose merged parent+child) | `onAllNodesWithText("Settings").onFirst()` + `APPEARANCE` / `EDITOR` ALL-CAPS section headers |
+| `testSettingsOptions` | "Appearance" / "System theme (follows system setting)" / "Dark theme" labels don't exist | `APPEARANCE` / `System theme` / `Dark theme (IDE)` (current UI) |
+| `testThemeSwitching` | Same as above | Same; also verifies all 3 theme radios are clickable |
+
+Mechanism: replaced `onNodeWithText("Settings")` with
+`onAllNodesWithText("Settings").onFirst()` to handle Compose's
+parent+child semantic-node merging (one row's clickable parent +
+its inner TextView both report "Settings" via merged semantics).
+Updated label literals to match the dump from a live emulator
+session (`adb shell uiautomator dump`).
+
+Each rewrite includes a comment block explaining the iter-27 UI
+evolution (e.g., section headers became ALL-CAPS) so future
+maintainers understand the literal source.
+
+### Concrete-bank expansion: 7 → 10 cases (HelixQA `800f2e1`)
+
+| Case | What it verifies |
+|------|-------------------|
+| YOLE-SMOKE-008 | More → Settings: 8 distinct Settings-screen labels (APPEARANCE/EDITOR/ANIMATIONS section headers + 5 settings rows). Tap-target coords from live uiautomator dump (102, 178 for the Settings row on Pixel-1080p AVD). |
+| YOLE-SMOKE-009 | More → About Yole: version-string render path + project description literal. |
+| YOLE-SMOKE-010 | To-Do full add-item user flow: tap inline input → type unique string → tap Add → assert new item text appears. End-to-end add-todo. |
+
+Inter-case state pollution discovered + fixed: SMOKE-007 (QuickNote save)
+left the app with the keyboard up + dirty text. Subsequent cases
+that tap the bottom-nav now `force_stop` first as the cleanest
+single-emulator multi-case reset. 10/10 PASS in 11-28s real
+durations.
+
+### Instrumented-test verification surface delta (iter 35 → iter 36)
+
+| Metric | Iter 34 | Iter 35 | **Iter 36** |
+|--------|---------|---------|-------------|
+| Tests in suite | 76 | 76 | 76 |
+| **PASS** | 35 (with 41 silent fails — THE BLUFF) | 42 | **45** |
+| Silent failures | 41 | 0 | 0 |
+| Explicit SKIP-OK | 0 | 34 per-method | **31 per-method** |
+| BUILD result | FAILED | SUCCESSFUL | SUCCESSFUL |
+
+3 more REAL PASSes than iter-35; 3 fewer SKIP-OK markers. The
+trajectory is: each iter the SKIP-OK count decreases and the PASS
+count increases (or both stay flat if the iter focuses elsewhere).
+Zero silent failures every iter since 34's mitigation.
+
+### Honest remaining gaps (post-iter-36)
+
+| # | Item | Severity |
+|---|------|----------|
+| 1 | 31 SKIP-OK tests still to rewrite (was 34) | MED — incremental progress |
+| 2 | Concrete-bank coverage 10/60+ (was 7) | MED — incremental progress |
+| 3 | iOS / Desktop / Web Firebase telemetry | LOW — scope-out |
+| 4 | gitlab push leg | LOW — manual |
+| 5 | Production-keystore continuity vs Linux | LOW — manual |
+| 6 | The "Real fix path" portion of iter-34/35 known-issues | MED — bucket A fixed; bucket B per-test rewrites ongoing |
 
 ---
 

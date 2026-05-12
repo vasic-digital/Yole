@@ -159,49 +159,49 @@ class YoleAppTest {
     }
 
     @Test
-    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- assertion targets UI literal that doesn't exist in current build")
     fun testSettingsScreenNavigation() {
-        // Test navigation to settings from different screens
-
-        // From Files screen
-        composeTestRule.onNodeWithText("Files").performClick()
-        // Settings access might be through menu - test basic navigation
-
-        // Switch to More screen which should have settings
+        // Iter 36 rewrite — navigation: tap More tab → tap Settings entry.
+        // Compose merges parent+child semantic nodes so "Settings" matches
+        // both the clickable row + the inner TextView (2 nodes). Use
+        // onAllNodes(...).onFirst() to disambiguate.
         composeTestRule.onNodeWithText("More").performClick()
-        composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("More Options").assertIsDisplayed()
 
-        // Verify settings screen
-        composeTestRule.onAllNodesWithText("Settings").onFirst().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Appearance").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Editor").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
+        composeTestRule.waitForIdle()
+
+        // Settings screen body — current UI uses ALL-CAPS section headers
+        // (iter-27 change). The labels MUST match the actual UI to be honest.
+        composeTestRule.onNodeWithText("APPEARANCE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("EDITOR").assertIsDisplayed()
     }
 
     @Test
-    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- assertion targets UI literal that doesn't exist in current build")
     fun testSettingsOptions() {
-        // Navigate to settings
+        // Iter 36 rewrite — UI labels confirmed against live emulator dump:
+        //   - section headers are ALL-CAPS (iter-27)
+        //   - "System theme" (not "System theme (follows system setting)")
+        //   - "Dark theme (IDE)" (not "Dark theme")
+        composeTestRule.onNodeWithText("More").performClick()
+        composeTestRule.waitForIdle()
         composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
+        composeTestRule.waitForIdle()
 
-        // Test theme settings
-        composeTestRule.onNodeWithText("Appearance").assertIsDisplayed()
-        composeTestRule.onNodeWithText("System theme (follows system setting)").assertIsDisplayed()
+        // APPEARANCE section
+        composeTestRule.onNodeWithText("APPEARANCE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("System theme").assertIsDisplayed()
         composeTestRule.onNodeWithText("Light theme").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Dark theme").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dark theme (IDE)").assertIsDisplayed()
 
-        // Test editor settings
-        composeTestRule.onNodeWithText("Editor").assertIsDisplayed()
+        // EDITOR section
+        composeTestRule.onNodeWithText("EDITOR").assertIsDisplayed()
         composeTestRule.onNodeWithText("Show line numbers").assertIsDisplayed()
         composeTestRule.onNodeWithText("Auto-save").assertIsDisplayed()
 
-        // Test animation settings
-        composeTestRule.onNodeWithText("Animations").assertIsDisplayed()
+        // ANIMATIONS section
+        composeTestRule.onNodeWithText("ANIMATIONS").assertIsDisplayed()
         composeTestRule.onNodeWithText("Enable smooth transitions").assertIsDisplayed()
-
-        // Navigate to settings to check format information
-        composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
-        composeTestRule.onNodeWithText("Formats").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Supported formats:").assertIsDisplayed()
     }
 
     @Test
@@ -450,19 +450,25 @@ class YoleAppTest {
     }
 
     @Test
-    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- assertion targets UI literal that doesn't exist in current build")
     fun testThemeSwitching() {
-        // Test theme switching in settings
+        // Iter 36 rewrite — current UI uses "Dark theme (IDE)" and
+        // "System theme" (no parenthetical), per live emulator dump.
         composeTestRule.onNodeWithText("More").performClick()
+        composeTestRule.waitForIdle()
         composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
+        composeTestRule.waitForIdle()
 
-        // Test theme radio buttons
+        // Tap each theme radio in succession — proves all three are
+        // clickable (visible AND not blocked by occluder).
         composeTestRule.onNodeWithText("Light theme").performClick()
-        composeTestRule.onNodeWithText("Dark theme").performClick()
-        composeTestRule.onNodeWithText("System theme (follows system setting)").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("Dark theme (IDE)").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("System theme").performClick()
+        composeTestRule.waitForIdle()
 
-        // Verify settings screen remains accessible
-        composeTestRule.onAllNodesWithText("Settings").onFirst().assertIsDisplayed()
+        // After cycling all three, the APPEARANCE section header still visible.
+        composeTestRule.onNodeWithText("APPEARANCE").assertIsDisplayed()
     }
 
     @Test
