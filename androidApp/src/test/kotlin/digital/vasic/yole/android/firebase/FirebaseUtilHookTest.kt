@@ -62,13 +62,19 @@ class FirebaseUtilHookTest {
 
     @Test
     fun logEvent_withNoHook_isSafeAndNoOp() {
-        // Verifies the production no-Firebase-init no-hook path doesn't crash.
-        // (Real apps without init would otherwise NPE on Bundle creation if
-        //  Bundle were required; the early-return short-circuits that.)
+        // Verifies the production no-Firebase-init no-hook path doesn't
+        // crash AND doesn't accidentally invoke a stale hook from a prior
+        // test. After setting capture to null, invoking logEvent must
+        // leave capture null (no side-effect on the hook itself) and
+        // must not throw. Asserting both moves this test from the
+        // CONST-035 BLUFF-K-002 pattern (assertTrue(true)) to a real
+        // post-condition contract.
         FirebaseUtil.testEventCapture = null
         FirebaseUtil.logEvent("anything", mapOf("k" to "v"))
-        // No exception → pass.
-        assertTrue(true)
+        assertNull(
+            "testEventCapture must remain null after a no-hook logEvent",
+            FirebaseUtil.testEventCapture
+        )
     }
 
     @Test

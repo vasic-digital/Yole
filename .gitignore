@@ -139,9 +139,15 @@ automation-screenshots/
 
 automation/node_modules/
 
-# HelixQA sibling repos (cloned for development, not submodules)
-DocProcessor/
-LLMOrchestrator/
-LLMsVerifier/
-Security/
-VisionEngine/
+# NOTE (iter 31, 2026-05-12): the previous convention treated the
+# HelixQA sibling repos (DocProcessor / LLMOrchestrator / LLMsVerifier /
+# VisionEngine / LLMProvider / Security) as untracked dev-only clones.
+# Per user directive 2026-05-12 ("Make sure all submodules are always
+# initialized and updated"), these are now tracked submodules of Yole
+# at the paths HelixQA's go.mod replace directives expect:
+#   Dependencies/HelixDevelopment/{DocProcessor,LLMOrchestrator,
+#     LLMsVerifier,VisionEngine}
+#   LLMProvider
+#   Security
+# A fresh clone followed by `git submodule update --init --recursive`
+# resolves the previous "missing sibling repos" gate.
