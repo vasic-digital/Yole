@@ -6,10 +6,10 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-12 (iter 28 — deep-recursive submodule sync)
+**Last updated:** 2026-05-12 (iter 28 — deep-recursive submodule sync + CONTINUATION rewrite)
 **Current branch:** `master` (synced with github, origin, upstream — all pushed)
-**HEAD:** `492ef100` — `chore(submodules): deep-recursive fetch + pull + cross-fork merge`
-**Submodule SHAs:** Challenges `a70c5b16`, Containers `53f48c60`, HelixQA `f0399a82`
+**HEAD:** `0a58f372` — `docs(continuation): rewrite to current state + cascade CONST-036 (iter 28)`
+**Submodule SHAs:** Challenges `19e1c33d`, Containers `7813c986`, HelixQA `f0399a82`
 **Test status:** `:shared:desktopTest` 8,954/8,954 PASS; Robolectric (dedicated container) 49/49 PASS
 **Release artifacts:** v0.0.0.0.7 present in `releases/` for Android Debug+Release, Desktop linux-x64, Web Wasm
 **Anti-bluff gates:** all PASS (scanner clean, anchor manifest valid)
@@ -142,20 +142,20 @@ From `docs/KNOWN_DEFECTS.md` (authoritative — keep that file in sync with this
 ### Main Repo (Yole)
 ```
 Branch:  master  (in sync with github, origin, upstream)
-HEAD:    492ef100  chore(submodules): deep-recursive fetch + pull + cross-fork merge
+HEAD:    0a58f372  docs(continuation): rewrite to current state + cascade CONST-036 (iter 28)
+                   492ef100  chore(submodules): deep-recursive fetch + pull + cross-fork merge
                    d30c0408  feat(firebase): integrate Firebase Analytics, Crashlytics, and Distribution
                    b5e3da41  fix(ftp): wire real file I/O for upload/download via PlatformFileIO
                    20cd132c  docs(network): update KDoc to match actual file I/O implementation
-                   f9a4517b  fix(docs): correct NetworkProtocolStatus implementation tiers
 ```
 
 ### Submodules
 ```
-Challenges/  a70c5b16  Merge remote-tracking branch 'origin/main' (governance + android-save gate)
+Challenges/  19e1c33d  chore(governance): append CONST-036 to AGENTS.md
              - 4 remotes: github, gitlab, origin (multi-URL), upstream — ALL pushed
              - nested Panoptic at c22df66 (clean, in sync with origin)
 
-Containers/  53f48c60  feat: add HelixCode infrastructure configuration
+Containers/  7813c986  chore(governance): append CONST-036 to AGENTS.md
              - 4 remotes: github, gitlab, origin, upstream — ALL pushed
 
 HelixQA/     f0399a82  Merge helixgithub/main into vasic-digital fork
