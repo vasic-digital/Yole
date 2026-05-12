@@ -6,12 +6,27 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-12 (iter 30 — Firebase: real call sites, smart-cast bugfix, signing fallback, both variants distributed)
+**Last updated:** 2026-05-12 (iter 30b — proper-keystore-signed re-distribution + Performance/Remote Config + Robolectric reverification on macOS)
 **Current branch:** `master`
-**HEAD (parent of this commit):** `4bdc052a` — `fix(android-signing): fall back to debug-signing when prod keystore absent`.
+**HEAD (parent of this commit):** `8017c0d2` — `feat(firebase): Performance + Remote Config + test hooks + fix Robolectric`.
 **Submodule SHAs (per HEAD tree):** Challenges `0da3d92`, Containers `af51968`, HelixQA `f0399a82` (all initialized; HelixQA nested submodules at pinned SHAs).
-**Test status:** `:shared:desktopTest` 8,954/8,954 PASS on macOS audit host (re-verified post-submodule-bump, 15s with cache); Linux dev host last green at same count. Robolectric (dedicated container) 49/49 PASS on Linux — not reverified on macOS yet. `:androidApp:assembleDebug` + `:assembleRelease` BUILD SUCCESSFUL on macOS (iter 30 verified after fixing a pre-existing Kotlin compile bug in FirebaseUtil.init() introduced at d30c0408).
-**Release artifacts (Firebase App Distribution, iter 30):** Yole Android 1.0.0 (100) DEBUG release id `3ei0fa60dprig` + RELEASE release id `7em35rhf7npjo` uploaded and distributed to 3 testers (`milos85vasic@gmail.com`, `milos85vasic.2nd@gmail.com`, `milos85vasic.3rd@gmail.com`). Local `releases/` legacy v0.0.0.0.7 still present for Desktop linux-x64 + Web Wasm (those platforms don't support Firebase Distribution).
+**Test status (all on macOS audit host, iter 30b reverified):**
+  `:shared:desktopTest`                                      8,954 / 0 fail / 0 ignored
+  `:androidApp:testDebugUnitTest -PincludeRobolectric=true`     85 / 0 fail / 0 errors
+    breakdown: 49 Robolectric (Theme/QuickNote/Settings/FileEditing/AppLaunch/FormatDetection/TodoWorkflow/BackupRestore/Navigation/Accessibility) + 4 FirebaseWiringRobolectric + 9 FirebaseUtilHook + 15 FileBrowserSaveFunctionality + 8 VersionConsistency.
+  `:androidApp:assembleDebug` / `:assembleRelease`            BUILD SUCCESSFUL
+  Anchor manifest                                              PASS (55 capability rows)
+  Bluff scanner --mode all                                     PASS (clean)
+  CONST-033 source-tree gate                                   PASS
+  CONST-033 host-state gate (macOS pmset)                      PASS (2/2)
+**Release artifacts (Firebase App Distribution, iter 30b 2026-05-12 14:56):**
+  DEBUG   release id `4tdfobvrrs9og` (32 MB, Android Debug keystore SHA-256 846ce46c...) — replaces iter-30a `3ei0fa60dprig`
+  RELEASE release id `5fmrnhcf8k0tg` (25 MB, Yole release keystore SHA-256 8E:67:AB:AC:E5:61:52:1D:CE:B0:E3:76:5B:27:D6:9F:30:15:41:CA:0F:C6:43:99:3D:8B:1D:FC:27:0E:01:AD) — replaces iter-30a debug-signed `7em35rhf7npjo`
+  3 testers distributed (verified via firebase appdistribution:testers:list):
+    - milos85vasic@gmail.com (owner)
+    - milos85vasic.2nd@gmail.com (developer)
+    - milos85vasic.3rd@gmail.com (tester)
+  Local `releases/` legacy v0.0.0.0.7 still present for Desktop linux-x64 + Web Wasm (those platforms don't support Firebase Distribution — that's a Firebase product limitation, not a script gap).
 **Anti-bluff gates (macOS iter 29 reverified under bash 5):** `bluff-scanner.sh --mode all` PASS, `anchor_manifest_challenge.sh` PASS, `mutation_ratchet_challenge.sh` PASS (stub), `no_suspend_calls_challenge.sh` PASS, `host_no_auto_suspend_challenge.sh` PASS (2/2 macOS pmset assertions).
 
 ---
@@ -409,6 +424,138 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 14. Iter 30b — Properly-signed re-distribution + Performance/Remote Config + Robolectric reverification
+
+This iter closed the open items from §13 — proper signing, all major
+Firebase services wired, and Robolectric (broken since d30c0408 in a
+silent way) re-verified on macOS.
+
+### Production keystore generation
+- `scripts/generate-keystore.sh` — idempotent generator. Skip-if-exists
+  by default; `--force` overwrites with explicit "NEW signing identity"
+  warning. Prints SHA-1 + SHA-256 fingerprints so the operator can
+  confirm continuity.
+- Generated `docker/keys/yole.keystore` (gitignored, 0600 perms,
+  RSA-2048, 25000-day validity, alias `yole`, password defaults
+  matching androidApp/build.gradle.kts env-var fallbacks `yole123`).
+- New signing identity fingerprint:
+    SHA-1   E5:1D:0E:7C:86:58:85:8C:E8:BE:FC:80:96:87:B8:9E:63:3F:8B:0A
+    SHA-256 8E:67:AB:AC:E5:61:52:1D:CE:B0:E3:76:5B:27:D6:9F:30:15:41:CA:0F:C6:43:99:3D:8B:1D:FC:27:0E:01:AD
+- Honest note: this is NOT the Linux dev host's keystore. The two
+  signing identities are different; APKs from this Mac CANNOT install
+  in-place over APKs previously signed on Linux. User should either
+  treat the Mac keystore as canonical going forward, or transfer the
+  Linux keystore here (overwriting docker/keys/yole.keystore) to
+  preserve continuity with previously-distributed Linux APKs.
+- The iter-30a release distribution at `7em35rhf7npjo` was
+  DEBUG-SIGNED via the temporary fallback in 4bdc052a (reverted in
+  b052ff6f). Per CONST-035 this was honestly recorded; iter-30b
+  re-distributes properly.
+
+### Firebase: Performance Monitoring + Remote Config (real call sites)
+- `firebase-perf` + `firebase-config` added to libs.versions.toml; both
+  consumed in androidApp/build.gradle.kts via the existing firebase-bom.
+- `FirebaseUtil.startTrace(name)` + `stopTrace(trace)` for Performance
+  custom traces. Predefined `Traces.FILE_SAVE`, `FILE_OPEN`,
+  `APP_STARTUP_TO_FIRST_TAB`.
+- `FirebaseUtil.initPerformanceAndConfig(defaults, minimumFetchIntervalSeconds)`
+  for Remote Config init with default seeding.
+- `FirebaseUtil.fetchRemoteConfig { ok -> }` for async refresh.
+- `FirebaseUtil.getConfigString/Long/Boolean(key, default)` for sync read.
+- Predefined `ConfigKeys.EDITOR_OPEN_WARN_BYTES`, `BACKUP_RETENTION_DAYS`,
+  `ENABLE_WASM_EDITOR` — each seeded with a code-side default that's
+  active immediately on first launch (before the first server fetch).
+- Production call sites: MainActivity initializes Performance + Remote
+  Config and kicks off an async fetch alongside Analytics+Crashlytics
+  init. YoleApp.saveFile() and YoleApp.openFileInTab() wrap their
+  bodies in try/finally with startTrace(FILE_SAVE | FILE_OPEN) /
+  stopTrace. Production telemetry now records per-operation latency
+  distributions in addition to event counts.
+
+### Test-capture hooks for CONST-035 anti-bluff
+- `FirebaseUtil` exposes 4 `internal var` hooks. When set, they fire
+  on every API call BEFORE forwarding to the underlying Firebase SDK,
+  letting tests assert production call sites without a live SDK:
+    `testEventCapture`              — logEvent(name, params)
+    `testNonFatalCapture`           — recordNonFatal(throwable, ctx)
+    `testTraceCapture`              — startTrace(name) / stopTrace
+    `testRemoteConfigFetchCapture`  — fetchRemoteConfig outcome
+- `FirebaseUtilHookTest` (JVM, 9 tests) verifies each hook's contract.
+- `FirebaseWiringRobolectricTest` (Robolectric, 4 tests) calls the
+  REAL production `saveFile()` and asserts:
+    - FILE_SAVED fires exactly once on success with correct format+size
+    - ERROR_OCCURRED does NOT fire on success
+    - "unknown" format param for files without an extension
+    - FILE_SAVE Performance trace starts exactly once
+  This is positive runtime evidence per CONST-035 — a feature claim
+  ("FILE_SAVED fires when user saves") backed by an executed test that
+  runs the production code path.
+
+### Silent regression fixed: Robolectric tests blocked since d30c0408
+- d30c0408 added `FirebaseCrashlytics.getInstance()` to MainActivity.onCreate.
+- Under Robolectric with `@Config(manifest = Config.NONE)`, the merged-
+  manifest `FirebaseInitProvider` doesn't run, so FirebaseApp isn't
+  initialized, so `getInstance()` throws `IllegalStateException`.
+- Every Robolectric test that launches `MainActivity` had been failing
+  since d30c0408. The "49/49 PASS" claim in iter 27 was accurate
+  at the time (pre-d30c0408) but stale once Firebase was added. No
+  commit between d30c0408 and iter 30 ran Robolectric (`make container-
+  robolectric-test` skipped per CI ban; macOS host didn't have Robolectric
+  workable until iter 30 SDK install).
+- Fix: wrap the Firebase init block in MainActivity.onCreate in
+  try/catch. App still launches when Firebase isn't available; telemetry
+  is silently dropped. Production safety improvement too — protects
+  against Firebase outages or region restrictions.
+- After fix: 49/49 Robolectric PASS on macOS, reverifying the iter-27
+  claim under a new compile state.
+
+### Anti-bluff anchors added
+- `docs/behavior-anchors.md`: 6 new CAP rows (CAP-050 through CAP-055):
+  Analytics happy path, Analytics no-false-error, Performance trace
+  lifecycle, hook contract for logEvent + recordNonFatal, Remote Config
+  defaults. Anchor manifest challenge PASSES post-update.
+
+### Re-distribution evidence (iter 30b, 2026-05-12 14:56)
+- DEBUG variant: release id `4tdfobvrrs9og`
+  Console: https://console.firebase.google.com/project/yole-app/appdistribution/app/android:digital.vasic.yole.android/releases/4tdfobvrrs9og
+- RELEASE variant: release id `5fmrnhcf8k0tg` (properly Yole-keystore-signed; SHA-256 8E:67:AB:AC:...)
+  Console: https://console.firebase.google.com/project/yole-app/appdistribution/app/android:digital.vasic.yole.android/releases/5fmrnhcf8k0tg
+- `firebase appdistribution:testers:list --project yole-app` post-distribution shows all 3 mandated testers on the project. Both distributions completed "distributed to testers/groups successfully" with the 3-address `--testers` arg.
+
+### What is now FULLY VERIFIED on macOS (reproducible, evidence-backed)
+| Area | Evidence |
+|------|----------|
+| Submodules in sync | `git submodule status` clean; pushed to github/origin/upstream |
+| Shared tests | `:shared:desktopTest` 8954/0/0 |
+| Android compile | both `:androidApp:assembleDebug` + `:assembleRelease` SUCCESSFUL |
+| Android unit + Robolectric tests | 85/0/0 with -PincludeRobolectric=true |
+| Anti-bluff scanner | clean on full tree |
+| Anchor manifest | valid for all 55 capability rows |
+| Mutation ratchet | stub PASS |
+| CONST-033 source ban | clean |
+| CONST-033 host state | macOS pmset 2/2 PASS |
+| Firebase Analytics call sites | runtime-verified via hook tests |
+| Firebase Crashlytics non-fatal call sites | runtime-verified via hook tests |
+| Firebase Performance trace lifecycle | runtime-verified via FirebaseWiringRobolectricTest |
+| Firebase Remote Config defaults | runtime-verified via FirebaseUtilHookTest |
+| Properly-signed release APK | apksigner verify confirms Yole keystore signature |
+| Distribution to 3 testers | firebase CLI output + testers:list both confirm |
+
+### Still NOT verified / out of macOS-session scope
+- **iOS Firebase + IPA distribution**: needs Xcode signing + provisioning + Apple Developer cert. Out of scope.
+- **Desktop variant distribution**: Firebase App Distribution is mobile-only. Desktop continues to use `releases/` directory (debug + release artifacts there from v0.0.0.0.7).
+- **Web (WASM PWA) distribution**: not a Firebase Distribution target. Could use Firebase Hosting (separate product); out of iter scope.
+- **gitlab push leg** of multi-URL `origin` remotes: SSH not configured on this Mac. Linux dev host can resync.
+- **Production-keystore continuity**: this Mac's keystore is NEW. If continuity with previously-distributed Linux APKs matters, user must replace `docker/keys/yole.keystore` with the Linux original.
+- **"Go API"**: still doesn't exist in this repo. .env.example's JWT_SECRET stub was removed iter 30a. No further action.
+
+### Sensitive-data discipline
+- Firebase CI token used inline only via `FIREBASE_CLI_TOKEN=… firebase …`; NEVER written to disk (no .env, no log, no echo).
+- New keystore (docker/keys/yole.keystore) is gitignored at line 13 of .gitignore.
+- Verified: `git ls-files | grep -E "(\.env$|local\.properties|keystore)"` returns NONE.
 
 ---
 
