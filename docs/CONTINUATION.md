@@ -1,303 +1,241 @@
 # Yole — Continuation Document
 
-> **MANDATORY:** This document MUST be maintained and kept in sync during any
-> work, per CONST-036 in CONSTITUTION.md. If work stops for any reason, this
-> document MUST enable any CLI agent or LLM model to continue exactly where
-> work left off.
+> **MANDATORY (CONST-036):** This document MUST be maintained and kept in sync
+> during any work. If work stops for any reason, this document MUST enable any
+> CLI agent or LLM model to continue exactly where work left off. A stale or
+> inaccurate Continuation document is a CONST-036 violation and MUST be
+> corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-08 01:00 UTC  
-**Current branch:** `master` (synced with all remotes — clean + pushed)  
-**Test status:** 8,954/8,954 PASS (1 known flake in PerformanceBaseline)  
-**HelixQA:** 137/137 packages PASS  **Anti-bluff gates:** all PASS
+**Last updated:** 2026-05-12 (iter 28 — deep-recursive submodule sync)
+**Current branch:** `master` (synced with github, origin, upstream — all pushed)
+**HEAD:** `492ef100` — `chore(submodules): deep-recursive fetch + pull + cross-fork merge`
+**Submodule SHAs:** Challenges `a70c5b16`, Containers `53f48c60`, HelixQA `f0399a82`
+**Test status:** `:shared:desktopTest` 8,954/8,954 PASS; Robolectric (dedicated container) 49/49 PASS
+**Release artifacts:** v0.0.0.0.7 present in `releases/` for Android Debug+Release, Desktop linux-x64, Web Wasm
+**Anti-bluff gates:** all PASS (scanner clean, anchor manifest valid)
 
 ---
 
-## 1. How to Resume Work
+## 1. How to Resume Work — Paste Prompt
 
-From a new CLI agent session, paste this prompt:
+From a new CLI agent session (any model, any agent), paste this prompt verbatim:
 
 ```
-I am resuming work on the Yole project. Read docs/CONTINUATION.md to understand
-the current state. All repos synced to all remotes. ALL 8,954 tests pass
-(0 failures). WebDAV StackOverflow fixed. Containers go.sum fixed.
-Next work: anti-bluff campaign enforcement dimensions (Section 5).
+I am resuming work on the Yole project (/run/media/milosvasic/DATA4TB/Projects/Yole).
 
-IMPORTANT: After completing each task, update docs/CONTINUATION.md as required
-by CONST-036.
+CRITICAL: Read docs/CONTINUATION.md FIRST. It is the single source of truth
+for current state, in-flight work, known defects, and remaining phases.
+Per CONST-036 in CONSTITUTION.md, this document is mandatorily maintained
+and reflects exact current state.
 
-Start by running:
+After reading, verify ground truth by running (in order):
+
   git submodule update --init --recursive
-  make bootstrap
-Then verify state matches CONTINUATION.md.
+  git log --oneline -3
+  git status -s
+  cat docs/CONTINUATION.md | head -20
+
+Then check what Section 7 marks as NEXT and Section 4 marks as OPEN.
+Pick the highest-priority item that is unblocked and start there.
+
+IMPORTANT: After completing ANY task, ANY commit, ANY defect discovery, or
+ANY file creation, you MUST update docs/CONTINUATION.md in the SAME commit
+per CONST-036. The document is a living single-source-of-truth, not a
+historical log.
 ```
 
 ---
 
-## 2. Active Work Stream: Visual Refinement (Phase 1)
+## 2. Current State (Iter 28 — 2026-05-12)
 
-**Priority:** Medium — brand consistency and modern UI polish
+### What Was Just Done
 
-**Feature Stream:** #2 of 5 (after SAF Save Fix)
+- **Iter 27** (commit `5446d5d4`): All 49 Robolectric tests now pass in the
+  dedicated `robolectric-test` container per the user mandate to keep
+  Robolectric isolated. Fixed via:
+  - `docker-compose.yml`: pass `-PincludeRobolectric=true` so the include-property
+    override actually fires (the default test filter was suppressing the tests
+    even when `--tests '*.robolectric.*'` selected them).
+  - `androidApp/.../ui/YoleApp.kt`: renamed bottom-nav label `"Edit"` → `"QuickNote"`
+    so user-visible label matches the screen name everywhere else.
+  - `FileEditingRobolectricTest` / `FormatDetectionRobolectricTest`: route through
+    the New Document dialog (Add → Create), target editor via semantic
+    `contentDescription = "Code editor for untitled.md"` instead of the
+    template-hidden `"Start typing..."` placeholder, use `"Edit"` icon
+    contentDescription for the preview-back toggle.
+  - `ThemeRobolectricTest`: align with current strings (`"Dark theme (IDE)"`,
+    `"System theme"`).
 
-### Task Progress (Visual Refinement)
+- **Iter 28** (commit `492ef100`): Deep-recursive submodule fetch + pull + cross-fork merge.
+  - `Challenges` (`a70c5b16`): merged origin/main (governance cascade §§6.R/6.S/6.T/6.U/6.V/6.W + Article XI §11.9), fast-forwarded `Panoptic` to `c22df66` (bluff-scan exemption annotations + 17 upstream commits including CONSTITUTION.md scaffold), then merged the fresh `android-save` 100%-decoupled gate fix. Pushed to all 4 remotes.
+  - `Containers` (`53f48c60`): fast-forwarded 4 commits (HelixCode infra config + §§6.U/6.V/6.W cascade + boot binary refresh). Pushed; gitlab caught up.
+  - `HelixQA` (`f0399a82`): cross-fork merge with `helixgithub/main` (HelixDevelopment fork — 6 ahead) into vasic-digital fork (2 ahead). Clean `ort` strategy, no conflicts. Pulled in `cmd/helixqa-bridge` (~1.7k LoC + tests), `cmd/recording-analyzer` (~1.5k LoC + tests), `banks/atmosphere.yaml`, governance additions, `rest-demo` pointer update. Pushed to all 6 remotes.
+  - Superproject commit `492ef100` pushed to github, origin, upstream.
 
-| # | Task | Status | Description |
-|---|------|--------|-------------|
-| 1 | Unify accent colors (web was blue, now red #D32F2F) | DONE | 5 files updated |
-| 2 | Modernize web loading screen | DONE | Dark gradient + Yole logo + spinner |
-| 3 | Update PWA manifest + service worker theme | DONE | #1976d2 → #D32F2F |
-| 4 | Phase 2: IDE layout polish | DONE | TabBar, Sidebar, MenuBar, StatusBar enhanced |
-| 5 | Phase 3: Shared theme tokens audit | DONE | Eliminated 30+ duplicate hardcoded colors, added YoleColors.Ide |
-| 6 | Phase 4: Eliminate remaining hardcoded colors | DONE | Android + desktop Theme.kt + EnhancedYoleApp cleaned |
-
-### Files Modified
-
-- `webApp/src/wasmJsMain/kotlin/digital/vasic/yole/web/EnhancedWebApp.kt` — accent/statusBar from #007ACC → #D32F2F
-- `webApp/src/wasmJsMain/kotlin/digital/vasic/yole/web/Main.kt` — Load button from #1976d2 → #D32F2F
-- `webApp/src/wasmJsMain/resources/index.html` — theme-color, loading screen redesign
-- `webApp/src/wasmJsMain/resources/manifest.json` — theme_color → #D32F2F
-- `webApp/src/wasmJsMain/resources/service-worker.js` — offline page heading → #D32F2F
-
-### Resume Prompt for Visual Refinement
+### Working Tree State
 
 ```
-Continue with Yole visual refinement. Read docs/CONTINUATION.md Section 2
-for the current state. The web accent colors are unified. Next: IDE layout
-polish (tab bar, sidebar, status bar) and shared theme token audit to
-eliminate hardcoded colors in favor of YoleColors from shared/ui/Theme.kt.
-
-Start by reading:
-- webApp/.../EnhancedWebApp.kt (IdeColors object + composables)
-- shared/.../ui/Theme.kt (YoleColors tokens)
-- desktopApp/.../theme/Theme.kt (desktop theme reference)
+Clean. All submodule pointers committed. No uncommitted changes.
 ```
-
----
-
-## 2b. Completed Work Stream: SAF-First File Save Fix
-
-**Feature Stream:** #1 of 5  
-**Full plan:** `docs/superpowers/plans/2026-05-05-saf-save-fix-plan.md`  
-**Full spec:** `docs/superpowers/specs/2026-05-05-saf-save-fix-design.md`
-
-### Task Progress (13 tasks total)
-
-| # | Task | Status | Commit |
-|---|------|--------|--------|
-| 1 | Create FileHandle expect declaration | DONE | `1c8ba718` |
-| 2 | Create Desktop actual implementation | DONE | `ec80e7a2` |
-| 3 | Create Android actual implementation | DONE | `da8e733e` |
-| 4 | Create stubs for iOS and WASM | DONE | `099d713a` |
-| 5 | Update EditorTab to use contentUri | DONE | `41c4bb74` |
-| 6 | Rewrite saveFile to use FileHandle | DONE | `41c4bb74` |
-| 7 | Write shared unit tests for FileHandle | DONE | `34829478` |
-| 8 | Write desktop-specific FileHandle tests | DONE | `5396cfe4` |
-| 9 | Create AVD config files for Android 9-16 | DONE | `e377dea` (Containers) |
-| 10 | Create Android emulator Docker container | DONE | `e377dea` (Containers) |
-| 11 | Create Go challenge test for save verification | DONE | `4c8fc60` (Challenges) |
-| 12 | Write Android instrumentation save tests | DONE | `a845ef65` |
-| 13 | Run full test suite and push | PENDING PUSH | `a845ef65` |
-
-### Task 3 DETAIL (Android actual — DONE)
-
-**Committed:** `da8e733e`
-- `shared/src/androidMain/kotlin/digital/vasic/yole/util/FileStorage.android.kt` — actual SAF implementation with ContentResolver
-- `androidApp/src/main/java/digital/vasic/yole/android/MainActivity.kt` — AppContextHolder initialization
-
-### Task 4 DETAIL (iOS/WASM stubs — DONE)
-
-**Committed:** `099d713a`
-- `shared/src/iosMain/kotlin/digital/vasic/yole/util/FileStorage.ios.kt` — stub (all operations return null/false)
-- `shared/src/wasmJsMain/kotlin/digital/vasic/yole/util/FileStorage.wasmJs.kt` — stub (all operations return null/false)
-
-### Tasks 9-13 DETAIL
-
-**Tasks 9-10 (AVD configs + Docker, committed Containers e377dea):**
-- `Containers/images/android-test/avds/config_api28.ini` through `config_api36.ini` — 8 AVD configs
-- `Containers/images/android-test/Dockerfile` — emulator container with all system images
-- `Containers/images/android-test/entrypoint.sh` — loops API levels, runs SaveTests, collects SAVE_VERIFIED evidence
-- `Containers/docs/behavior-anchors.md` — fixed 3 stale anchor symbols (CAP-008, CAP-017, CAP-019)
-
-**Task 11 (Go challenge, committed Challenges 4c8fc60):**
-- `Challenges/pkg/challenge/android_save_test.go` — Go test with adb guard, emulator-only execution, anti-bluff skip on missing env
-- `Challenges/challenges/scripts/android_save_challenge.sh` — shell wrapper with SAVE_VERIFIED evidence extraction
-- `Challenges/CONSTITUTION.md` — added CONST-035 verbatim user mandate quote (was missing)
-
-**Task 12 (Android instrumentation tests, committed a845ef65):**
-- `androidApp/src/androidTest/kotlin/digital/vasic/yole/android/SaveTests.kt` — 5 instrumented tests
-  - saveToCacheAndReadBack: writes file, reads via FileHandle, asserts content
-  - writeAndExists: writes via FileHandle.writeBytes(), asserts exists()
-  - readNonExistentReturnsNull: asserts null for missing file
-  - writeEmptyContent: asserts 0-byte write succeeds
-  - writeAndReadRoundtrip: roundtrip with special characters
-  - All emit `SAVE_VERIFIED: N bytes` for anti-bluff evidence
-  - `@Before` initializes `AppContextHolder.context` for SAF resolution
-
-**Task 13 (Verification):**
-- `./gradlew :shared:desktopTest` — PASS
-- `./gradlew :desktopApp:compileKotlin :webApp:compileKotlinWasmJs` — PASS
-- `go test ./... -count=1 -short` (Challenges) — ALL PASS (TestAndroidSave skips properly)
-- `bash scripts/anti-bluff/bluff-scanner.sh --mode all` — PASS (scanner clean)
-- Anchor manifest challenges — PASS (all repos)
-- PUSH pending
 
 ---
 
 ## 3. Uncommitted Files in Working Tree
 
-(None — all files committed and pushed.)
+(None as of `492ef100`. Any new work MUST update this section before commit.)
 
 ---
 
-## 4. Known Defects (Not Yet Fixed)
+## 4. Known Defects
 
-From `docs/KNOWN_DEFECTS.md`:
+From `docs/KNOWN_DEFECTS.md` (authoritative — keep that file in sync with this section):
 
-### ~~#smb-stub-no-negotiation~~ — FIXED (2026-05-07, commit `1f6472c9`)
-- **Fixed:** SmbService.connect() now performs real protocol negotiation and authentication via SmbProtocolClient (or injected test lambdas). `_isConnected` is set only after real success — `isOnline` honestly reflects reachability. Tests updated with lambda injection pattern.
+### OPEN
 
-### ~~#webdav-always-online-stub~~ — FIXED (2026-05-07, commit `1f6472c9`)
-- **Fixed:** WebDavService.connect() no longer catches network errors and lies about online state. Removed the `catch` block that suppressed exceptions. Added `testConnectFn` lambda injection for test control. Tests updated to handle the real connection behavior.
+#### `#robolectric-compose-ui-tests-brittle` — MITIGATED (dedicated container)
+- **Symptom:** ~25 Robolectric UI tests historically matched against runtime-evolving UI strings (now `contentDescription`-based after iter 27).
+- **Mitigation (iter 27):** Tests run in dedicated `robolectric-test` container via `make container-robolectric-test` — isolated from main build, won't gate release pipeline. All 49 tests now pass green.
+- **Proper fix (still open):** Long-term, migrate to HelixQA on-device automation or `testTag`-based matching. Out of scope for any single iteration.
+- **Exemption:** `androidApp/build.gradle.kts` `tasks.withType<Test>().configureEach` excludes `"*.robolectric.*"` from default test task. Search for `SKIP-OK: #robolectric-compose-ui-tests-brittle`.
 
-### ~~#webdav-stackoverflow~~ — FIXED (2026-05-07, commit `15f5d10f`)
-- **Fixed:** parseMultistatusResponse infinite recursion (StackOverflowError) when XML contained `d:response`/`D:response` namespace prefixes. Replaced recursive namespace-stripping with iterative approach. Reverted createMockClient auto-OPTIONS handling that caused 26 false-negative assertions. WebDavMockHttpTest: 28 failures → 0.
+#### `#helixqa-missing-sibling-repos`
+- **Symptom:** 31 HelixQA packages fail with "replacement directory does not exist".
+- **Missing repos:** DocProcessor, LLMsVerifier/llm-verifier, LLMOrchestrator, VisionEngine.
+- **Status:** Not a code defect — environment bootstrap gap. These repos must be present as siblings to HelixQA for those packages to compile.
 
-### Current Open Defects:
+### CLOSED (record for forensic continuity — do NOT re-open without reason)
 
-### #robolectric-compose-ui-tests-brittle
-- **Symptom:** ~25 Robolectric UI tests flap on string-based matching
-- **Discovered:** Container-release build (iter 26)
-- **Proper fix:** Migrate to HelixQA on-device tests or test-tag-based matching
-- **Blocked by:** Multi-day work; out of scope for any single iteration
-- **Exemption:** Robolectric tests excluded in androidApp/build.gradle.kts
-
-### ~~#pre-existing-concurrency-flakes~~ — FIXED (2026-05-07, commit `30022538`)
-- **Fixed:** All 37 test failures resolved by injecting test lambdas
-  (testConnectFn/testAuthenticateFn) into SmbService and WebDavService
-  constructors across 7 test classes. Services now use simulated
-  protocol negotiation instead of attempting real network calls.
-- **Impact:** All shared:desktopTest 8954/8954 PASS, 0 failures.
-
-### #helixqa-missing-sibling-repos
-- **Symptom:** 31 HelixQA packages fail with "replacement directory does not exist"
-- **Missing repos:** DocProcessor, LLMsVerifier/llm-verifier,
-  LLMOrchestrator, VisionEngine
-- **Status:** These are separate repos expected as siblings to HelixQA.
-  Not a code defect — environment bootstrap gap.
+- `#smb-stub-no-negotiation` — FIXED 2026-05-07 (commit `1f6472c9`). `SmbService.connect()` performs real SMB protocol negotiation and authentication; `_isConnected = true` only after real success. Test lambda injection (`testConnectFn`/`testAuthenticateFn`) for test control. 441/441 SMB+WebDAV tests pass.
+- `#webdav-always-online-stub` — FIXED 2026-05-07 (commit `1f6472c9`). Removed the catch block that suppressed network errors and lied about online state. `isOnline` honestly reflects reachability per CONST-035.
+- `#webdav-stackoverflow` — FIXED 2026-05-07 (commit `15f5d10f`). Replaced recursive XML namespace stripping with iterative approach. WebDavMockHttpTest 28 failures → 0.
+- `#pre-existing-concurrency-flakes` — FIXED 2026-05-07 (commit `30022538`). All 37 test failures resolved by injecting test lambdas. 8,954/8,954 PASS.
 
 ---
 
 ## 5. Anti-Bluff Campaign (CONST-035) — Remaining Work
 
-From `docs/campaigns/anti-bluff/MILESTONE-2026-05-01.md`:
-
 ### What's Done
-- CONST-035 in all 4 repos' governance docs (12 total) ✓
-- Verbatim user mandate quote now in ALL governance docs ✓
-- Scanner enforcing CONST-035 via `make qa-all` ✓
-- **Bootstrap verification scripts** (submodule SHA check + governance audit) ✓ NEW
-- **CONST-036 added to Challenges and Containers constitutions** ✓ NEW
-- 0 pre-existing bluff hits
-- 123 anchor manifest rows across 4 repos
-- 13 self-test fixtures covering all 8 BLUFF patterns
-- `make bootstrap` for fresh-clone setup + verification
-- Containers anchor manifest fixed (3 stale test symbols)
+- CONST-035 in all 4 main repos' governance docs (CONSTITUTION/CLAUDE/AGENTS).
+- Verbatim user-mandate quote in all governance docs.
+- Scanner enforcing CONST-035 via `make qa-all` (pre-commit + pre-push hooks).
+- Bootstrap verification scripts (submodule SHA check + governance audit).
+- CONST-036 (Continuation maintenance) in main repo + Challenges, Containers, HelixQA (CONSTITUTION + CLAUDE; pending AGENTS.md in Challenges and Containers — addressed in iter 28).
+- 0 pre-existing bluff hits in scanner baseline.
+- 123 anchor manifest rows across 4 repos.
+- 13 self-test fixtures covering all 8 BLUFF patterns.
+- `make bootstrap` for fresh-clone setup + verification.
 
-### What's NOT Yet Enforced
-1. **AST-aware scanner patterns** — BLUFF-K-001, K-005, K-007, G-002, G-004 need real Kotlin/Go parser
-2. **Pitest mutation gate for Yole main** — `:shared:jvm` + 10 KMP modules deferred
-3. **Definition-of-Done linkage** — PR-body-evidence-block enforcement (sub-project 6)
+### What's NOT Yet Enforced (resume here for anti-bluff work)
+1. **AST-aware scanner patterns** — BLUFF-K-001, K-005, K-007, G-002, G-004 still grep-only; need real Kotlin/Go parser to eliminate false negatives.
+2. **Pitest mutation gate for Yole main** — `:shared:jvm` + 10 KMP modules deferred. Currently only Challenges has mutation ratchet via go-mutesting.
+3. **Definition-of-Done PR-body-evidence-block** — sub-project 6 of the anti-bluff campaign — not yet automated.
 
-### Resume Protocol (from MILESTONE)
-1. Read `docs/campaigns/anti-bluff/CAMPAIGN.md` — full iter log
-2. Read `docs/campaigns/anti-bluff/MILESTONE-2026-05-01.md` — high-level state
-3. Pick next leverage point from the "NOT yet enforced" list
+### Resume Protocol for Anti-Bluff
+1. Read `docs/campaigns/anti-bluff/CAMPAIGN.md` — full iter log.
+2. Read `docs/campaigns/anti-bluff/MILESTONE-2026-05-01.md` — high-level state.
+3. Pick the next leverage point from the "NOT yet enforced" list above.
 
 ---
 
-## 6. Repo State
+## 6. Repo State (Exact SHAs as of iter 28)
 
-### Main Repo
+### Main Repo (Yole)
 ```
-Branch: master (synced with origin, github, upstream — all pushed)
-Last 5 commits:
-  30022538 fix(tests): inject test lambdas for SMB/WebDAV connect in all test suites
-  9964e8a9 docs(continuation): record WebDAV StackOverflow fix and current repo state
-  15f5d10f fix(webdav): eliminate StackOverflow in parseMultistatusResponse
-  3f9dafce docs(continuation): record Phase 4 hardcoded color cleanup
-  312ce3be style(theme): eliminate remaining hardcoded colors across Android and desktop
+Branch:  master  (in sync with github, origin, upstream)
+HEAD:    492ef100  chore(submodules): deep-recursive fetch + pull + cross-fork merge
+                   d30c0408  feat(firebase): integrate Firebase Analytics, Crashlytics, and Distribution
+                   b5e3da41  fix(ftp): wire real file I/O for upload/download via PlatformFileIO
+                   20cd132c  docs(network): update KDoc to match actual file I/O implementation
+                   f9a4517b  fix(docs): correct NetworkProtocolStatus implementation tiers
 ```
 
 ### Submodules
 ```
-Challenges:  727353b (main) — ALL TESTS PASS (17/17 packages)
-Containers:  2f5136a (main) — ALL TESTS PASS (30/30 packages, go.sum fix committed)
-HelixQA:     71560fd (main) — 50+ packages PASS, 31 packages FAIL due to missing sibling repos
+Challenges/  a70c5b16  Merge remote-tracking branch 'origin/main' (governance + android-save gate)
+             - 4 remotes: github, gitlab, origin (multi-URL), upstream — ALL pushed
+             - nested Panoptic at c22df66 (clean, in sync with origin)
+
+Containers/  53f48c60  feat: add HelixCode infrastructure configuration
+             - 4 remotes: github, gitlab, origin, upstream — ALL pushed
+
+HelixQA/     f0399a82  Merge helixgithub/main into vasic-digital fork
+             - 6 remotes: github, gitlab, helixgithub, helixgitlab, origin, upstream — ALL pushed
+             - 30+ nested third-party submodules in tools/opensource (pinned, not pulled)
 ```
-† helixgithub/helixgitlab for HelixQA have SSH-auth errors (known issue)
+
+### Sibling KMP Modules (composite builds)
+```
+RateLimiter-KMP, Concurrency-KMP, UI-Components-KMP, Auth-KMP, Security-KMP,
+Document-KMP, Config-KMP, Database-KMP, Storage-KMP, Formatters-KMP
+- All at version 1.0.0 with group=digital.vasic.<name>
+- jvmTarget=11 across desktop targets, AGP 8.9.0 unified
+- Governance docs (CONSTITUTION/CLAUDE/AGENTS) exist but DO NOT yet carry the anti-bluff covenant —
+  see Section 7 phase "Sibling KMP Governance Cascade" for the propagation task.
+```
 
 ---
 
-## 7. Phase / Feature Streams Overview
+## 7. Phases / Feature Streams — Roadmap
 
-| Stream | Priority | Status | Description |
-|--------|----------|--------|-------------|
-| SAF Save Fix | Critical | COMPLETE (13/13) | Fix file saving on Android 9-16 |
-| Visual Refinement | Medium | COMPLETE (6/6) | Unified brand colors, modernized IDE layout, shared tokens |
-| Network File Transfer | Critical | COMPLETE (upload honesty) | Real file bytes wired via PlatformFileIO, null checks with FAILED emission |
-| Platform Completion | High | NOT STARTED | FTP/SFTP/SMB on iOS/WASM, finalize stubs |
-| Protocol Hardening | Medium | NOT STARTED | SFTP/SMB real integration, JSON parser, FTP features |
-| Anti-Bluff | Medium | Ongoing | 2 remaining enforcement dimensions |
+| # | Stream | Priority | Status | Resume Point |
+|---|--------|----------|--------|-------------|
+| 1 | SAF Save Fix | Critical | COMPLETE (13/13) | — |
+| 2 | Visual Refinement | Medium | COMPLETE (6/6) | — |
+| 3 | Network File Transfer (upload/download honesty) | Critical | COMPLETE (FTP/SFTP/SMB/WebDAV/Git/Dropbox/GDrive/OneDrive wired through PlatformFileIO) | — |
+| 4 | Platform Completion (iOS/WASM protocol coverage) | High | NOT STARTED | §7.4 below |
+| 5 | Protocol Hardening (real SFTP/SMB/JSON) | Medium | NOT STARTED | §7.5 below |
+| 6 | Anti-Bluff Enforcement (3 remaining dimensions) | Medium | Ongoing | §5 above |
+| 7 | Sibling KMP Governance Cascade | Low | NOT STARTED | §7.7 below |
+| 8 | Robolectric Long-Term Migration | Low | DEFERRED (mitigated by dedicated container) | §4 `#robolectric-compose-ui-tests-brittle` |
 
-### Feature Stream 3: Network File Transfer (CRITICAL)
+### §7.4 Platform Completion (HIGH)
 
-**Problem:** All 8 network protocol services (WebDAV, Git, Dropbox, Google Drive,
-OneDrive, FTP, SFTP, SMB) declare `uploadFile` sends empty bytes and `downloadFile`
-does not write to local filesystem. The APIs, auth, and protocol negotiation work
-correctly, but no actual file data can be transferred between cloud storage and
-the device. This makes cloud sync completely non-functional for end users.
-
-**Scope:**
-1. Wire `PlatformFileIO` into `uploadFile()` — read local file bytes and send
-   via HTTP PUT / STOR / SFTP write / SMB write
-2. Wire `PlatformFileIO` into `downloadFile()` — receive bytes and write to
-   local filesystem via FileHandle
-3. Add progress tracking with real byte counts (currently emits progress but
-   without actual data transfer)
-4. Anti-bluff: end-to-end tests that upload a known file, download it back,
-   and verify byte-for-byte equality across all 8 protocols
-
-### Feature Stream 4: Platform Completion (HIGH)
-
-**Problem:** FTP, SFTP, and SMB are COMPLETELY non-functional on iOS and WASM
-(all methods throw `PlatformNotSupportedException`). Users on mobile/web cannot
-use these protocols at all.
+**Problem:** FTP, SFTP, and SMB are completely non-functional on iOS and WASM (all methods throw `PlatformNotSupportedException`). Users on mobile/web cannot use these protocols at all.
 
 **iOS scope:**
-1. Implement FTP via NWConnection or libcurl cinterop
-2. Implement SFTP via libssh2 Kotlin/Native cinterop
-3. Implement SMB via libsmb2 Kotlin/Native cinterop
-4. Implement iOS FileHandle for local file I/O
+1. Implement FTP via NWConnection or libcurl cinterop.
+2. Implement SFTP via libssh2 Kotlin/Native cinterop.
+3. Implement SMB via libsmb2 Kotlin/Native cinterop.
+4. Implement iOS FileHandle for local file I/O.
 
 **WASM scope:**
-1. Implement FTP/SFTP/SMB via server-side WebSocket proxy bridges
-2. Implement WASM FileHandle for browser file I/O (IndexedDB/OPFS)
-3. Ensure HTTP-based protocols (WebDAV, Git, Dropbox, GDrive, OneDrive)
-   actually function on WASM (they inherit from commonMain via ktor)
+1. Implement FTP/SFTP/SMB via server-side WebSocket proxy bridges.
+2. Implement WASM FileHandle for browser file I/O (IndexedDB/OPFS).
+3. Ensure HTTP-based protocols (WebDAV, Git, Dropbox, GDrive, OneDrive) actually function on WASM (they inherit from `commonMain` via Ktor — verify with end-to-end test).
 
-### Feature Stream 5: Protocol Hardening (MEDIUM)
+**Resume command:**
+```bash
+grep -rn "PlatformNotSupportedException" shared/src/iosMain shared/src/wasmJsMain | head -10
+```
+
+### §7.5 Protocol Hardening (MEDIUM)
 
 **Problem:** Multiple protocol implementations have simulation gaps.
 
 **Scope:**
-1. SFTP service: commonMain currently uses in-memory virtual filesystem instead
-   of real SshClient/SftpChannel — wire the real protocol
-2. SMB service: commonMain uses in-memory file tree — wire SmbProtocolClient
-3. JSON format: registered in FormatRegistry but has no parser — implement JSON
-   syntax highlighting/formatter
-4. FTP: add server-side operations (if protocol supports) or document limitations
-5. Fix `NetworkProtocolStatus.kt` discrepancies — some protocols claim
-   `FULLY_IMPLEMENTED` but their KDoc says `PARTIALLY_IMPLEMENTED`
+1. SFTP service: `commonMain` currently uses in-memory virtual filesystem instead of real SshClient/SftpChannel — wire the real protocol.
+2. SMB service: `commonMain` uses in-memory file tree — wire `SmbProtocolClient` (already partially done in iter 26; finish for list/read/write operations beyond connect).
+3. JSON format: registered in `FormatRegistry` but has no parser — implement JSON syntax highlighting/formatter.
+4. FTP: add server-side operations (if protocol supports) or document limitations.
+5. Fix `NetworkProtocolStatus.kt` discrepancies — some protocols claim `FULLY_IMPLEMENTED` but their KDoc says `PARTIALLY_IMPLEMENTED`.
+
+### §7.7 Sibling KMP Governance Cascade (LOW)
+
+**Problem:** 10 sibling KMP repos (RateLimiter-KMP, Concurrency-KMP, UI-Components-KMP, Auth-KMP, Security-KMP, Document-KMP, Config-KMP, Database-KMP, Storage-KMP, Formatters-KMP) have CONSTITUTION/CLAUDE/AGENTS files but do not carry:
+- The CONST-035 anti-bluff covenant (verbatim user-mandate quote).
+- The CONST-036 Continuation maintenance constraint.
+
+**Scope:**
+1. Append CONST-035 + CONST-036 sections to each KMP's CONSTITUTION.md, CLAUDE.md, AGENTS.md.
+2. For each KMP, create or update its own `docs/CONTINUATION.md` if it carries independent in-flight work.
+3. Commit + push each KMP to its remotes.
+
+**Resume command:**
+```bash
+for kmp in ../RateLimiter-KMP ../Concurrency-KMP ../UI-Components-KMP ../Auth-KMP ../Security-KMP ../Document-KMP ../Config-KMP ../Database-KMP ../Storage-KMP ../Formatters-KMP; do
+  grep -L "MANDATORY ANTI-BLUFF COVENANT" "$kmp"/CONSTITUTION.md "$kmp"/CLAUDE.md "$kmp"/AGENTS.md 2>/dev/null
+done
+```
 
 ---
 
@@ -313,10 +251,20 @@ Before claiming any task is complete, run:
 ./gradlew :shared:desktopTest --no-daemon
 make test-shared
 
+# Robolectric (dedicated container, see iter 27)
+make container-robolectric-test
+
+# Container release pipeline
+make container-release
+
 # Anti-bluff gates
 bash scripts/anti-bluff/bluff-scanner.sh --mode all
 bash challenges/scripts/anchor_manifest_challenge.sh
 bash challenges/scripts/mutation_ratchet_challenge.sh
+
+# Host power management ban (CONST-033)
+bash challenges/scripts/no_suspend_calls_challenge.sh
+bash challenges/scripts/host_no_auto_suspend_challenge.sh
 
 # Full QA
 make qa-all
@@ -324,15 +272,32 @@ make qa-all
 
 ---
 
-## 9. After Each Task — Update This Document
+## 9. After Each Task — UPDATE THIS DOCUMENT (CONST-036)
 
-Per CONST-036 (continuation constraint in CONSTITUTION.md), after completing ANY task:
+After completing ANY task, BEFORE the commit that finishes it:
 
-1. Mark the task as DONE in Section 2
-2. Update "Last updated" timestamp at top
-3. If the working tree state changes, update Section 3
-4. If new commits are created, update Section 6
-5. Refresh the "How to Resume" prompt in Section 1 if needed
+1. **Mark the task** as DONE in Section 7 (or whichever section tracks it).
+2. **Update "Last updated"** timestamp at the top of this file to today's date.
+3. **Update "HEAD"** line at the top to the new commit SHA (after committing).
+4. **Update Section 3** (Uncommitted Files) — must be empty `(None)` after commit.
+5. **Update Section 6** (Repo State) — refresh `HEAD` and submodule SHA lines.
+6. **Refresh "How to Resume"** prompt in Section 1 if the verification commands changed.
+7. **If a new defect was discovered:** add it to Section 4 AND `docs/KNOWN_DEFECTS.md`.
+8. **If a new uncommitted file was created and is intentional:** add to Section 3 with explanation.
+
+A commit that changes code without also touching `docs/CONTINUATION.md` is a CONST-036 violation unless the change is purely a typo fix that doesn't affect state, in which case note it inline.
+
+---
+
+## 10. Submodule Independence
+
+Each submodule (`Challenges/`, `Containers/`, `HelixQA/`) has its own governance and its own continuation requirements per CONST-036. When working within a submodule:
+
+1. Update that submodule's `docs/CONTINUATION.md` (or create one if absent).
+2. Commit + push within the submodule first.
+3. Then return to the superproject and bump the submodule pointer in a follow-up commit.
+
+The main Yole CONTINUATION.md tracks SUPERPROJECT state; submodule-local state is tracked in each submodule's own CONTINUATION.md.
 
 ---
 
