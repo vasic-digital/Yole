@@ -53,7 +53,17 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            // Use production keystore if present (`docker/keys/yole.keystore`);
+            // otherwise fall back to debug signing so the variant still builds
+            // on hosts that don't have the keystore (e.g. macOS dev host,
+            // fresh CI). The debug-signed release APK is acceptable for
+            // Firebase App Distribution; it is NOT acceptable for Play Store
+            // upload — that path REQUIRES the production keystore.
+            signingConfig = if (rootProject.file("docker/keys/yole.keystore").exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 
