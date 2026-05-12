@@ -196,6 +196,8 @@ robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectr
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 firebase-crashlytics-lib = { module = "com.google.firebase:firebase-crashlytics" }
+firebase-perf = { module = "com.google.firebase:firebase-perf" }
+firebase-config = { module = "com.google.firebase:firebase-config" }
 
 # AndroidX Testing
 androidx-test-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-junit" }

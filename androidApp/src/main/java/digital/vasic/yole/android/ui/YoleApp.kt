@@ -172,6 +172,7 @@ class YoleSettings(context: android.content.Context) : GsSharedPreferencesProper
  * Returns Pair(saved, newUri) where newUri is non-null only when a new SAF URI was obtained.
  */
 fun saveFile(context: Context, contentUri: String?, content: String, fileName: String): Pair<Boolean, String?> {
+    val trace = FirebaseUtil.startTrace(FirebaseUtil.Traces.FILE_SAVE)
     return try {
         val (ok, newUri) = if (contentUri != null) {
             val handle = FileHandle(contentUri)
@@ -204,6 +205,8 @@ fun saveFile(context: Context, contentUri: String?, content: String, fileName: S
             )
         )
         Pair(false, null)
+    } finally {
+        FirebaseUtil.stopTrace(trace)
     }
 }
 
@@ -381,28 +384,33 @@ fun MainScreen() {
 
     // Helper: open file in a new tab or switch to existing tab
     fun openFileInTab(fileName: String, content: String, contentUri: String? = null) {
-        val existingIndex = openTabs.indexOfFirst { it.fileName == fileName }
-        if (existingIndex >= 0) {
-            activeTabIndex = existingIndex
-            fileContent = openTabs[existingIndex].content
-        } else {
-            openTabs = openTabs + EditorTab(
-                fileName = fileName,
-                content = content,
-                contentUri = contentUri
+        val trace = FirebaseUtil.startTrace(FirebaseUtil.Traces.FILE_OPEN)
+        try {
+            val existingIndex = openTabs.indexOfFirst { it.fileName == fileName }
+            if (existingIndex >= 0) {
+                activeTabIndex = existingIndex
+                fileContent = openTabs[existingIndex].content
+            } else {
+                openTabs = openTabs + EditorTab(
+                    fileName = fileName,
+                    content = content,
+                    contentUri = contentUri
+                )
+                activeTabIndex = openTabs.size // will be the new last index
+                fileContent = content
+            }
+            selectedFile = fileName
+            currentSubScreen = SubScreen.EDITOR
+            FirebaseUtil.logEvent(
+                FirebaseUtil.Events.FILE_OPENED,
+                mapOf(
+                    FirebaseUtil.Params.FILE_FORMAT to fileName.substringAfterLast('.', "unknown"),
+                    FirebaseUtil.Params.FILE_SIZE to content.length.toString()
+                )
             )
-            activeTabIndex = openTabs.size // will be the new last index
-            fileContent = content
+        } finally {
+            FirebaseUtil.stopTrace(trace)
         }
-        selectedFile = fileName
-        currentSubScreen = SubScreen.EDITOR
-        FirebaseUtil.logEvent(
-            FirebaseUtil.Events.FILE_OPENED,
-            mapOf(
-                FirebaseUtil.Params.FILE_FORMAT to fileName.substringAfterLast('.', "unknown"),
-                FirebaseUtil.Params.FILE_SIZE to content.length.toString()
-            )
-        )
     }
 
     // File pickers

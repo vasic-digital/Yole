@@ -59,12 +59,33 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         AppContextHolder.context = applicationContext
 
-        // Initialize Firebase Analytics and Crashlytics
-        FirebaseUtil.init(
-            FirebaseAnalytics.getInstance(this),
-            FirebaseCrashlytics.getInstance()
-        )
-        FirebaseUtil.logEvent(FirebaseUtil.Events.APP_OPEN)
+        // Initialize Firebase Analytics, Crashlytics, Performance + Remote Config.
+        // Wrapped in try/catch so the app launches cleanly when Firebase isn't
+        // available — most notably under Robolectric (where @Config(manifest=NONE)
+        // skips the merged-manifest FirebaseInitProvider). Firebase is non-critical:
+        // if it fails to init, the app continues to work; telemetry is silently
+        // dropped. Without this guard, MainActivity.onCreate would throw
+        // IllegalStateException at FirebaseCrashlytics.getInstance() and
+        // every UI test fails.
+        try {
+            FirebaseUtil.init(
+                FirebaseAnalytics.getInstance(this),
+                FirebaseCrashlytics.getInstance()
+            )
+            FirebaseUtil.initPerformanceAndConfig(
+                defaults = mapOf(
+                    FirebaseUtil.ConfigKeys.EDITOR_OPEN_WARN_BYTES to 5L * 1024 * 1024,  // 5 MB
+                    FirebaseUtil.ConfigKeys.BACKUP_RETENTION_DAYS to 30L,
+                    FirebaseUtil.ConfigKeys.ENABLE_WASM_EDITOR to false
+                )
+            )
+            FirebaseUtil.fetchRemoteConfig()  // async, no-op on failure
+            FirebaseUtil.logEvent(FirebaseUtil.Events.APP_OPEN)
+        } catch (t: Throwable) {
+            // Robolectric / unsupported test env / Firebase outage — log only.
+            // Cannot recordNonFatal here because crashlytics itself failed.
+            android.util.Log.w("MainActivity", "Firebase init skipped: ${t.message}")
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             try {

@@ -169,6 +169,8 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics.lib)
+    implementation(libs.firebase.perf)
+    implementation(libs.firebase.config)
 
     // Testing
     testImplementation(libs.junit)

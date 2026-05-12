@@ -78,10 +78,17 @@ method is available.
 | CAP-047 | app | Wasm: detect Markdown by `.md` extension | shared/src/wasmJsTest/kotlin/digital/vasic/yole/format/WasmFormatDetectionTests.kt::detect Markdown by extension md | shared format-detection logic returns ID_MARKDOWN for `.md` on Wasm | active |
 | CAP-048 | app | Wasm: encrypted data round-trips through Web SecureStorage | shared/src/wasmJsTest/kotlin/digital/vasic/yole/network/platform/WebSecureStorageTest.kt::should store encrypted data in localStorage | Web SecureStorage write+read returns plaintext after encryption round-trip | active |
 | CAP-049 | app | Wasm: FtpProtocolClient stub instantiates without browser-incompatible deps | shared/src/wasmJsTest/kotlin/digital/vasic/yole/network/platform/WasmProtocolStubTests.kt::FtpProtocolClient can be instantiated on Wasm | FTP stub for Wasm (browser cannot do raw TCP) constructs cleanly — exposes documented "unsupported on Web" error path rather than crashing | active |
+| CAP-050 | app | Firebase Analytics: FILE_SAVED event fires on successful save (CONST-035 anti-bluff) | androidApp/src/test/kotlin/digital/vasic/yole/android/robolectric/FirebaseWiringRobolectricTest.kt::saveFile_emitsFileSavedEvent_onSuccessfulCacheSave | Calling production saveFile() under Robolectric with a real Context emits exactly one FILE_SAVED event with correct format + size params | active |
+| CAP-051 | app | Firebase Analytics: ERROR_OCCURRED does NOT fire on successful save | androidApp/src/test/kotlin/digital/vasic/yole/android/robolectric/FirebaseWiringRobolectricTest.kt::saveFile_doesNotEmitErrorEvent_whenSuccessful | Happy-path saveFile produces zero ERROR_OCCURRED events and zero recorded non-fatals — proves the error-path wiring is not over-triggered | active |
+| CAP-052 | app | Firebase Performance: FILE_SAVE custom trace wraps saveFile | androidApp/src/test/kotlin/digital/vasic/yole/android/robolectric/FirebaseWiringRobolectricTest.kt::saveFile_startsAndStopsPerformanceTrace | Calling saveFile() under Robolectric invokes FirebaseUtil.startTrace(Traces.FILE_SAVE) exactly once — verified via testTraceCapture hook | active |
+| CAP-053 | app | FirebaseUtil: logEvent test-capture hook intercepts event name + params | androidApp/src/test/kotlin/digital/vasic/yole/android/firebase/FirebaseUtilHookTest.kt::logEvent_invokesCaptureHook_withEventNameAndParams | Setting FirebaseUtil.testEventCapture and invoking logEvent records the exact event name and parameter map — enables runtime verification of production call sites without a live Firebase SDK | active |
+| CAP-054 | app | FirebaseUtil: recordNonFatal test-capture hook intercepts throwable + context | androidApp/src/test/kotlin/digital/vasic/yole/android/firebase/FirebaseUtilHookTest.kt::recordNonFatal_invokesCaptureHook_withThrowableAndContext | Setting FirebaseUtil.testNonFatalCapture and invoking recordNonFatal records the original Throwable instance and context hint — supports CONST-035 anchors for error-path wiring | active |
+| CAP-055 | app | Firebase Remote Config: defaults returned when Remote Config not initialized | androidApp/src/test/kotlin/digital/vasic/yole/android/firebase/FirebaseUtilHookTest.kt::remoteConfigDefaults_returnedWhenConfigNotInitialized | getConfigString/Long/Boolean return the caller-supplied default when initPerformanceAndConfig hasn't run — proves the feature-flag layer fails safe without server connectivity | active |
 
-(Manifest now spans all 4 platform targets — Android, Desktop, iOS,
-Web/Wasm — plus document model, monitoring, UI, format layer (16/17
-formats), network-protocol layer (all 8 services), and cross-format
-infrastructure. Total: 49 capability rows. Remaining iterations of
-sub-project 3 add the long tail of public-API capabilities
-surfaced during sub-project 4's deeper audit.)
+(Manifest spans all 4 platform targets — Android, Desktop, iOS, Web/Wasm
+— plus document model, monitoring, UI, format layer (16/17 formats),
+network-protocol layer (all 8 services), cross-format infrastructure,
+and now Firebase telemetry / Performance / Remote Config wiring on
+Android. Total: 55 capability rows. Remaining iterations of sub-project
+3 add the long tail of public-API capabilities surfaced during sub-
+project 4's deeper audit.)
