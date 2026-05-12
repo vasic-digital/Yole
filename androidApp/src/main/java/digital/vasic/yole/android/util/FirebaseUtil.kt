@@ -30,8 +30,10 @@ object FirebaseUtil {
     fun init(analyticsInstance: FirebaseAnalytics, crashlyticsInstance: FirebaseCrashlytics) {
         analytics = analyticsInstance
         crashlytics = crashlyticsInstance
-        crashlytics.setCrashlyticsCollectionEnabled(true)
-        crashlytics.log("FirebaseUtil initialized")
+        // Use the non-null params directly; Kotlin can't smart-cast the
+        // `var` field as non-null at the call site even after assignment.
+        crashlyticsInstance.setCrashlyticsCollectionEnabled(true)
+        crashlyticsInstance.log("FirebaseUtil initialized")
         logEvent("app_initialized", emptyMap())
     }
 

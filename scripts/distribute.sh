@@ -33,24 +33,27 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # ---------------------------------------------------------------------------
 # Load .env
 # ---------------------------------------------------------------------------
+# Token + tester list may come from either .env or pre-exported env vars.
+# Env vars take precedence so that callers (CI, shell rc) can supply the
+# CI token without writing it to disk.
 if [ -f "${ROOT_DIR}/.env" ]; then
+    # Don't clobber already-exported env vars — only set values .env defines.
     set -a
+    # shellcheck disable=SC1091
     source "${ROOT_DIR}/.env"
     set +a
-else
-    echo "ERROR: .env file not found at ${ROOT_DIR}/.env"
-    echo "Copy .env.example to .env and fill in your Firebase credentials."
-    exit 1
 fi
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-FIREBASE_TOKEN="${FIREBASE_CLI_TOKEN:-}"
+# Allow FIREBASE_CLI_TOKEN OR FIREBASE_TOKEN (firebase CLI's own canonical name).
+FIREBASE_TOKEN="${FIREBASE_CLI_TOKEN:-${FIREBASE_TOKEN:-}}"
 PROJECT_ID="${FIREBASE_PROJECT_ID:-yole-app}"
 ANDROID_APP_ID="${FIREBASE_ANDROID_APP_ID:-1:578988389676:android:d61715a0a84a42c65d2889}"
 TESTER_GROUP="${FIREBASE_TESTER_GROUP:-}"
 BUILD_TYPE="release"
+BUILD_BOTH=false
 RELEASE_NOTES=""
 
 # ---------------------------------------------------------------------------
@@ -58,25 +61,39 @@ RELEASE_NOTES=""
 # ---------------------------------------------------------------------------
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --debug)   BUILD_TYPE="debug"; shift ;;
-        --release) BUILD_TYPE="release"; shift ;;
+        --debug)   BUILD_TYPE="debug"; BUILD_BOTH=false; shift ;;
+        --release) BUILD_TYPE="release"; BUILD_BOTH=false; shift ;;
+        --both)    BUILD_BOTH=true; shift ;;
         --notes)   RELEASE_NOTES="$2"; shift 2 ;;
         --notes=*) RELEASE_NOTES="${1#*=}"; shift ;;
         --help|-h)
-            echo "usage: distribute.sh [--debug|--release] [--notes <text>]"
-            echo ""
-            echo "Builds and distributes the Yole Android app via Firebase."
-            echo ""
-            echo "Options:"
-            echo "  --debug      Build debug variant"
-            echo "  --release    Build release variant (default)"
-            echo "  --notes TEXT Custom release notes for testers"
-            echo ""
-            echo "Environment (loaded from .env):"
-            echo "  FIREBASE_CLI_TOKEN       Firebase CI token (required)"
-            echo "  FIREBASE_PROJECT_ID      Firebase project ID"
-            echo "  FIREBASE_ANDROID_APP_ID  Firebase Android app ID"
-            echo "  FIREBASE_TESTER_GROUP    Comma-separated tester emails"
+            cat <<EOF
+usage: distribute.sh [--debug|--release|--both] [--notes <text>]
+
+Builds and distributes the Yole Android app via Firebase App Distribution.
+
+Options:
+  --debug      Build debug variant only.
+  --release    Build release variant only (default).
+  --both       Build AND distribute BOTH debug + release in one run.
+  --notes TXT  Custom release notes for testers (per-variant if --both).
+
+Token sources (highest priority first):
+  1. FIREBASE_CLI_TOKEN env var (export it; never commit to a file)
+  2. FIREBASE_TOKEN env var (firebase CLI's canonical name)
+  3. FIREBASE_CLI_TOKEN line in .env (gitignored — safer than shell rc)
+
+Env (loaded from .env if present; env-var wins on conflict):
+  FIREBASE_PROJECT_ID      Firebase project ID (default: yole-app)
+  FIREBASE_ANDROID_APP_ID  Firebase Android app ID
+  FIREBASE_TESTER_GROUP    Comma-separated tester emails
+
+Examples:
+  bash scripts/distribute.sh                       # release only
+  bash scripts/distribute.sh --both                # both variants
+  bash scripts/distribute.sh --debug --notes "WIP" # debug with notes
+  FIREBASE_CLI_TOKEN=\$TOK bash scripts/distribute.sh --both
+EOF
             exit 0
             ;;
         *) echo "Unknown argument: $1"; exit 1 ;;
@@ -87,14 +104,25 @@ done
 # Validation
 # ---------------------------------------------------------------------------
 if [ -z "$FIREBASE_TOKEN" ]; then
-    echo "ERROR: FIREBASE_CLI_TOKEN is not set in .env"
+    echo "ERROR: no Firebase CI token available."
+    echo "Either export FIREBASE_CLI_TOKEN / FIREBASE_TOKEN, or set FIREBASE_CLI_TOKEN in .env."
     echo "Generate one with: firebase login:ci"
     exit 1
 fi
 
 if [ -z "$TESTER_GROUP" ]; then
-    echo "ERROR: FIREBASE_TESTER_GROUP is not set in .env"
+    echo "ERROR: FIREBASE_TESTER_GROUP not set (neither env nor .env)."
     exit 1
+fi
+
+VERSION_NAME=$(grep "versionName" "$ROOT_DIR/androidApp/build.gradle.kts" | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+VERSION_CODE=$(grep -E "versionCode\s*=\s*[0-9]+" "$ROOT_DIR/androidApp/build.gradle.kts" | head -1 | sed -E 's/.*=[[:space:]]*([0-9]+).*/\1/')
+
+# Resolve which variants we'll distribute this run.
+if [ "$BUILD_BOTH" = true ]; then
+    VARIANTS=("debug" "release")
+else
+    VARIANTS=("$BUILD_TYPE")
 fi
 
 echo "============================================="
@@ -102,84 +130,74 @@ echo " Yole — Firebase Distribution"
 echo "============================================="
 echo " Project:    $PROJECT_ID"
 echo " App ID:     $ANDROID_APP_ID"
-echo " Build:      $BUILD_TYPE"
+echo " Variants:   ${VARIANTS[*]}"
+echo " Version:    ${VERSION_NAME} (${VERSION_CODE})"
 echo " Testers:    $TESTER_GROUP"
 echo "============================================="
 
-# ---------------------------------------------------------------------------
-# Build APK
-# ---------------------------------------------------------------------------
-echo ""
-echo "[1/3] Building Android APK ($BUILD_TYPE)..."
+NOTES_FILE="$(mktemp -t yole-release-notes.XXXXXX)"
+trap 'rm -f "$NOTES_FILE"' EXIT
 
-cd "$ROOT_DIR"
+# Distribute each requested variant in turn. A failure of one variant
+# aborts the run (zero-bluff: a single FAIL must not be masked by a
+# parallel PASS).
+for variant in "${VARIANTS[@]}"; do
+    echo ""
+    echo "============================================="
+    echo " Variant: $variant"
+    echo "============================================="
 
-if [ "$BUILD_TYPE" = "release" ]; then
-    ./gradlew :androidApp:assembleRelease --no-daemon 2>&1 | tail -5
-    APK_DIR="androidApp/build/outputs/apk/release"
-    APK_PATTERN="*.apk"
-else
-    ./gradlew :androidApp:assembleDebug --no-daemon 2>&1 | tail -5
-    APK_DIR="androidApp/build/outputs/apk/debug"
-    APK_PATTERN="*.apk"
-fi
+    # ---- Build ----------------------------------------------------------
+    echo "[1/3] Building Android APK ($variant)..."
+    cd "$ROOT_DIR"
+    if [ "$variant" = "release" ]; then
+        ./gradlew :androidApp:assembleRelease --no-daemon 2>&1 | tail -5
+        APK_DIR="androidApp/build/outputs/apk/release"
+    else
+        ./gradlew :androidApp:assembleDebug --no-daemon 2>&1 | tail -5
+        APK_DIR="androidApp/build/outputs/apk/debug"
+    fi
 
-if [ $? -ne 0 ]; then
-    echo "ERROR: Build failed"
-    exit 1
-fi
-
-APK_FILE=$(find "$APK_DIR" -name "$APK_PATTERN" -not -name "*unsigned*" 2>/dev/null | head -1)
-if [ -z "$APK_FILE" ]; then
-    echo "ERROR: No APK found in $APK_DIR"
-    exit 1
-fi
-
-echo "  APK: $APK_FILE ($(du -h "$APK_FILE" | cut -f1))"
-
-# ---------------------------------------------------------------------------
-# Generate release notes
-# ---------------------------------------------------------------------------
-echo ""
-echo "[2/3] Preparing release notes..."
-
-if [ -z "$RELEASE_NOTES" ]; then
-    RELEASE_NOTES=$(cat <<EOF
-Yole Android ${BUILD_TYPE} build
-Build date: $(date -u +"%Y-%m-%d %H:%M UTC")
-Version: $(grep "versionName" "$ROOT_DIR/androidApp/build.gradle.kts" | grep -oP '"\K[^"]+')
-Version code: $(grep "versionCode" "$ROOT_DIR/androidApp/build.gradle.kts" | grep -oP '=\s*\K\d+')
-EOF
-)
-fi
-
-echo "$RELEASE_NOTES" > /tmp/yole-release-notes.txt
-echo "  Notes: $(head -1 /tmp/yole-release-notes.txt)"
-
-# ---------------------------------------------------------------------------
-# Distribute via Firebase
-# ---------------------------------------------------------------------------
-echo ""
-echo "[3/3] Distributing via Firebase App Distribution..."
-
-firebase appdistribution:distribute "$APK_FILE" \
-    --app "$ANDROID_APP_ID" \
-    --project "$PROJECT_ID" \
-    --token "$FIREBASE_TOKEN" \
-    --release-notes-file /tmp/yole-release-notes.txt \
-    --testers "$TESTER_GROUP" 2>&1 || {
-        echo "ERROR: Distribution failed"
-        rm -f /tmp/yole-release-notes.txt
+    APK_FILE=$(find "$APK_DIR" -name "*.apk" -not -name "*unsigned*" 2>/dev/null | head -1)
+    if [ -z "$APK_FILE" ]; then
+        echo "ERROR: No APK produced for variant '$variant' in $APK_DIR"
         exit 1
-    }
+    fi
+    echo "  APK: $APK_FILE ($(du -h "$APK_FILE" | cut -f1))"
+
+    # ---- Notes ----------------------------------------------------------
+    echo "[2/3] Preparing release notes..."
+    if [ -n "$RELEASE_NOTES" ]; then
+        printf '%s\n' "$RELEASE_NOTES" > "$NOTES_FILE"
+    else
+        cat > "$NOTES_FILE" <<EOF
+Yole Android — $variant build
+Build date: $(date -u +"%Y-%m-%d %H:%M UTC")
+Version: ${VERSION_NAME} (${VERSION_CODE})
+EOF
+    fi
+    echo "  Notes: $(head -1 "$NOTES_FILE")"
+
+    # ---- Distribute -----------------------------------------------------
+    echo "[3/3] Distributing via Firebase App Distribution..."
+    firebase appdistribution:distribute "$APK_FILE" \
+        --app "$ANDROID_APP_ID" \
+        --project "$PROJECT_ID" \
+        --token "$FIREBASE_TOKEN" \
+        --release-notes-file "$NOTES_FILE" \
+        --testers "$TESTER_GROUP" 2>&1 || {
+            echo "ERROR: Distribution of '$variant' failed."
+            exit 1
+        }
+done
 
 # ---------------------------------------------------------------------------
 # Cleanup
 # ---------------------------------------------------------------------------
-rm -f /tmp/yole-release-notes.txt
+# Notes file removed by EXIT trap.
 
 echo ""
 echo "============================================="
-echo " Distribution complete!"
+echo " Distribution complete: ${VARIANTS[*]}"
 echo " Testers will receive an email invitation."
 echo "============================================="

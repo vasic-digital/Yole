@@ -76,6 +76,7 @@ import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.ParseOptions
 import digital.vasic.yole.format.TextFormat
+import digital.vasic.yole.android.util.FirebaseUtil
 import digital.vasic.yole.util.FileHandle
 import digital.vasic.yole.util.readBytes
 import digital.vasic.yole.util.writeBytes
@@ -172,10 +173,10 @@ class YoleSettings(context: android.content.Context) : GsSharedPreferencesProper
  */
 fun saveFile(context: Context, contentUri: String?, content: String, fileName: String): Pair<Boolean, String?> {
     return try {
-        if (contentUri != null) {
+        val (ok, newUri) = if (contentUri != null) {
             val handle = FileHandle(contentUri)
-            val ok = handle.writeBytes(content.toByteArray())
-            if (ok) Pair(true, contentUri) else Pair(false, null)
+            val writeOk = handle.writeBytes(content.toByteArray())
+            if (writeOk) Pair(true, contentUri) else Pair(false, null)
         } else {
             val cacheDir = File(context.filesDir, "autosave")
             if (!cacheDir.exists()) cacheDir.mkdirs()
@@ -183,7 +184,25 @@ fun saveFile(context: Context, contentUri: String?, content: String, fileName: S
             cacheFile.writeText(content)
             Pair(true, null)
         }
+        if (ok) {
+            FirebaseUtil.logEvent(
+                FirebaseUtil.Events.FILE_SAVED,
+                mapOf(
+                    FirebaseUtil.Params.FILE_FORMAT to (fileName.substringAfterLast('.', "unknown")),
+                    FirebaseUtil.Params.FILE_SIZE to content.length.toString()
+                )
+            )
+        }
+        Pair(ok, newUri)
     } catch (e: Exception) {
+        FirebaseUtil.recordNonFatal(e, "saveFile failed for ${fileName.substringAfterLast('/', fileName)}")
+        FirebaseUtil.logEvent(
+            FirebaseUtil.Events.ERROR_OCCURRED,
+            mapOf(
+                FirebaseUtil.Params.ERROR_TYPE to "save_failed",
+                FirebaseUtil.Params.ERROR_MESSAGE to (e.message ?: e.javaClass.simpleName)
+            )
+        )
         Pair(false, null)
     }
 }
@@ -195,15 +214,13 @@ fun createFileWithSAF(context: Context, parentUri: Uri, fileName: String, conten
     return try {
         val parentDoc = DocumentFile.fromTreeUri(context, parentUri)
         if (parentDoc != null && parentDoc.isDirectory) {
-            // Check if file already exists
             val existingFile = parentDoc.findFile(fileName)
+            val isNew = existingFile == null
             if (existingFile != null) {
-                // Update existing file
                 context.contentResolver.openOutputStream(existingFile.uri, "wt")?.use { outputStream ->
                     outputStream.write(content.toByteArray())
                 }
             } else {
-                // Create new file
                 val newFile = parentDoc.createFile("text/plain", fileName)
                 if (newFile != null) {
                     context.contentResolver.openOutputStream(newFile.uri, "wt")?.use { outputStream ->
@@ -211,11 +228,26 @@ fun createFileWithSAF(context: Context, parentUri: Uri, fileName: String, conten
                     }
                 }
             }
+            FirebaseUtil.logEvent(
+                if (isNew) FirebaseUtil.Events.FILE_CREATED else FirebaseUtil.Events.FILE_SAVED,
+                mapOf(
+                    FirebaseUtil.Params.FILE_FORMAT to fileName.substringAfterLast('.', "unknown"),
+                    FirebaseUtil.Params.FILE_SIZE to content.length.toString()
+                )
+            )
             true
         } else {
             false
         }
     } catch (e: Exception) {
+        FirebaseUtil.recordNonFatal(e, "createFileWithSAF failed for $fileName")
+        FirebaseUtil.logEvent(
+            FirebaseUtil.Events.ERROR_OCCURRED,
+            mapOf(
+                FirebaseUtil.Params.ERROR_TYPE to "saf_create_failed",
+                FirebaseUtil.Params.ERROR_MESSAGE to (e.message ?: e.javaClass.simpleName)
+            )
+        )
         false
     }
 }
@@ -364,6 +396,13 @@ fun MainScreen() {
         }
         selectedFile = fileName
         currentSubScreen = SubScreen.EDITOR
+        FirebaseUtil.logEvent(
+            FirebaseUtil.Events.FILE_OPENED,
+            mapOf(
+                FirebaseUtil.Params.FILE_FORMAT to fileName.substringAfterLast('.', "unknown"),
+                FirebaseUtil.Params.FILE_SIZE to content.length.toString()
+            )
+        )
     }
 
     // File pickers
@@ -393,17 +432,20 @@ fun MainScreen() {
             digital.vasic.yole.network.platform.SecureStorageFactory.initialize(context)
         } catch (e: Exception) {
             android.util.Log.e("YoleApp", "Failed to initialize secure storage", e)
+            FirebaseUtil.recordNonFatal(e, "SecureStorageFactory.initialize failed")
         }
         try {
             digital.vasic.yole.format.ParserInitializer.registerAllParsersLazy()
         } catch (e: Exception) {
             android.util.Log.e("YoleApp", "Failed to initialize parsers", e)
+            FirebaseUtil.recordNonFatal(e, "ParserInitializer.registerAllParsersLazy failed")
         }
         try {
             PdfExportUtil.cleanupOldPdfs(context)
             BackupRestoreUtil.cleanupOldBackups(context)
         } catch (e: Exception) {
             android.util.Log.e("YoleApp", "Failed to cleanup old files", e)
+            FirebaseUtil.recordNonFatal(e, "PDF/backup cleanup failed")
         }
     }
 

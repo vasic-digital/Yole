@@ -64,21 +64,18 @@ class MainActivity : ComponentActivity() {
             FirebaseAnalytics.getInstance(this),
             FirebaseCrashlytics.getInstance()
         )
+        FirebaseUtil.logEvent(FirebaseUtil.Events.APP_OPEN)
 
-        // Check and request storage permissions on startup. Wrapped in
-        // try/catch because Robolectric's shadow Environment can throw
-        // ArrayIndexOutOfBoundsException from isExternalStorageManager()
-        // (no UID-to-storage-app mapping in test env). Real devices return
-        // a normal boolean. Catching here keeps unit tests boot-able while
-        // preserving the production-runtime behaviour.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             try {
                 if (!Environment.isExternalStorageManager()) {
                     requestManageExternalStoragePermission()
                 }
-            } catch (_: Throwable) {
-                // Robolectric / unsupported test environment — skip the
-                // permission probe. Production never hits this path.
+            } catch (t: Throwable) {
+                // Robolectric's shadow Environment can throw from
+                // isExternalStorageManager(). Production rarely hits this,
+                // but if it does, surface to Crashlytics as a non-fatal.
+                FirebaseUtil.recordNonFatal(t, "storage permission probe failed at onCreate")
             }
         }
         
@@ -105,8 +102,8 @@ class MainActivity : ComponentActivity() {
                 if (!Environment.isExternalStorageManager()) {
                     requestManageExternalStoragePermission()
                 }
-            } catch (_: Throwable) {
-                // Robolectric / unsupported test env — skip.
+            } catch (t: Throwable) {
+                FirebaseUtil.recordNonFatal(t, "storage permission probe failed at onResume")
             }
         }
     }
