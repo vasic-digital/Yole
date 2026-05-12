@@ -15,6 +15,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import digital.vasic.yole.util.AppContextHolder
 import digital.vasic.yole.util.FileHandle
+import digital.vasic.yole.util.exists
+import digital.vasic.yole.util.readBytes
+import digital.vasic.yole.util.writeBytes
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull

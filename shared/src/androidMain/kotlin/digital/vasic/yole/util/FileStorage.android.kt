@@ -49,6 +49,19 @@ actual fun FileHandle.writeBytes(data: ByteArray): Boolean {
 actual fun FileHandle.exists(): Boolean {
     val androidUri = getAndroidUri() ?: return false
     val context = AppContextHolder.context ?: return false
+    // file:// URIs map directly to a filesystem path; ContentResolver.query()
+    // returns null for them, which the original `?: false` collapsed into
+    // a silent false. Fall back to java.io.File.exists() so plain-file
+    // FileHandles get correct semantics. Caught iter-34 (2026-05-12) by
+    // SaveTests.writeAndExists running on emulator for the first time.
+    if (androidUri.scheme == "file") {
+        val path = androidUri.path ?: return false
+        return try {
+            java.io.File(path).exists()
+        } catch (_: Exception) {
+            false
+        }
+    }
     return try {
         context.contentResolver.query(androidUri, null, null, null, null)?.use {
             it.count > 0

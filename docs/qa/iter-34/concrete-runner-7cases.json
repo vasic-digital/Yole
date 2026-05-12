@@ -1,0 +1,440 @@
+[
+  {
+    "case_id": "YOLE-SMOKE-001",
+    "case_name": "Cold launch produces foreground MainActivity",
+    "passed": true,
+    "steps": [
+      {
+        "index": 1,
+        "description": "Stop any prior Yole instance",
+        "action": "force_stop:digital.vasic.yole.android",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 2,
+        "description": "Wait for force-stop to settle",
+        "action": "wait:1s",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 3,
+        "description": "Launch MainActivity",
+        "action": "launch_activity:digital.vasic.yole.android/.MainActivity",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 4,
+        "description": "Wait for Compose first frame",
+        "action": "wait:5s",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 5,
+        "description": "MainActivity must be the focused activity",
+        "action": "assert_activity_current:digital.vasic.yole.android/.MainActivity",
+        "passed": true,
+        "evidence": "mFocusedApp=digital.vasic.yole.android/.MainActivity",
+        "duration": 0
+      },
+      {
+        "index": 6,
+        "description": "Bottom-nav tab 'Files' must be visible",
+        "action": "assert_text_present:Files",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-001/step06-screen-pass.png",
+        "duration": 0
+      },
+      {
+        "index": 7,
+        "description": "Bottom-nav tab 'QuickNote' must be visible",
+        "action": "assert_text_present:QuickNote",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-001/step07-screen-pass.png",
+        "duration": 0
+      }
+    ],
+    "start_time": "2026-05-13T01:11:07.069021+05:00",
+    "end_time": "2026-05-13T01:11:17.518692+05:00",
+    "evidence_path": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-001"
+  },
+  {
+    "case_id": "YOLE-SMOKE-002",
+    "case_name": "Bottom-nav navigates to QuickNote screen",
+    "passed": true,
+    "steps": [
+      {
+        "index": 1,
+        "description": "Ensure app is foreground",
+        "action": "launch_activity:digital.vasic.yole.android/.MainActivity",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 2,
+        "description": "Wait for first frame",
+        "action": "wait:2s",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 3,
+        "description": "Tap the QuickNote tab",
+        "action": "tap_text:QuickNote",
+        "passed": true,
+        "evidence": "center=(200,616) bounds=[174,608][227,624]",
+        "duration": 0
+      },
+      {
+        "index": 4,
+        "description": "Wait for transition",
+        "action": "wait:1s",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 5,
+        "description": "QuickNote editor must show its 'Save' affordance",
+        "action": "assert_text_present:Save",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-002/step05-screen-pass.png",
+        "duration": 0
+      },
+      {
+        "index": 6,
+        "description": "QuickNote editor must show the empty-state placeholder",
+        "action": "assert_text_present:Start writing your quick note...",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-002/step06-screen-pass.png",
+        "duration": 0
+      }
+    ],
+    "start_time": "2026-05-13T01:11:17.518695+05:00",
+    "end_time": "2026-05-13T01:11:26.958352+05:00",
+    "evidence_path": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-002"
+  },
+  {
+    "case_id": "YOLE-SMOKE-003",
+    "case_name": "Top app bar exposes Search and Settings affordances",
+    "passed": true,
+    "steps": [
+      {
+        "index": 1,
+        "description": "Ensure app is foreground",
+        "action": "launch_activity:digital.vasic.yole.android/.MainActivity",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 2,
+        "description": "Wait for first frame",
+        "action": "wait:2s",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 3,
+        "description": "Top app bar must expose a 'Search' affordance",
+        "action": "assert_desc_present:Search",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-003/step03-screen-pass.png",
+        "duration": 0
+      },
+      {
+        "index": 4,
+        "description": "Top app bar must expose a 'Settings' affordance",
+        "action": "assert_desc_present:Settings",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-003/step04-screen-pass.png",
+        "duration": 0
+      }
+    ],
+    "start_time": "2026-05-13T01:11:26.958356+05:00",
+    "end_time": "2026-05-13T01:11:33.229095+05:00",
+    "evidence_path": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-003"
+  },
+  {
+    "case_id": "YOLE-SMOKE-004",
+    "case_name": "Bottom-nav navigates to To-Do empty state",
+    "passed": true,
+    "steps": [
+      {
+        "index": 1,
+        "description": "Ensure app is foreground",
+        "action": "launch_activity:digital.vasic.yole.android/.MainActivity",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 2,
+        "description": "Wait for first frame",
+        "action": "wait:2s",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 3,
+        "description": "Tap the To-Do tab",
+        "action": "tap_text:To-Do",
+        "passed": true,
+        "evidence": "center=(118,616) bounds=[103,608][134,624]",
+        "duration": 0
+      },
+      {
+        "index": 4,
+        "description": "Wait for transition",
+        "action": "wait:1s",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 5,
+        "description": "To-Do screen title must be visible",
+        "action": "assert_text_present:To-Do List",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-004/step05-screen-pass.png",
+        "duration": 0
+      },
+      {
+        "index": 6,
+        "description": "Empty-state placeholder must be visible",
+        "action": "assert_text_present:No tasks yet",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-004/step06-screen-pass.png",
+        "duration": 0
+      },
+      {
+        "index": 7,
+        "description": "Add-new-task input must be visible",
+        "action": "assert_text_present:Add new todo...",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-004/step07-screen-pass.png",
+        "duration": 0
+      }
+    ],
+    "start_time": "2026-05-13T01:11:33.229097+05:00",
+    "end_time": "2026-05-13T01:11:44.735821+05:00",
+    "evidence_path": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-004"
+  },
+  {
+    "case_id": "YOLE-SMOKE-005",
+    "case_name": "Bottom-nav More tab exposes Backup, Settings, and About",
+    "passed": true,
+    "steps": [
+      {
+        "index": 1,
+        "description": "Ensure app is foreground",
+        "action": "launch_activity:digital.vasic.yole.android/.MainActivity",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 2,
+        "description": "Wait for first frame",
+        "action": "wait:2s",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 3,
+        "description": "Tap the More tab",
+        "action": "tap_text:More",
+        "passed": true,
+        "evidence": "center=(282,616) bounds=[269,608][296,624]",
+        "duration": 0
+      },
+      {
+        "index": 4,
+        "description": "Wait for transition",
+        "action": "wait:1s",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 5,
+        "description": "More screen title must be visible",
+        "action": "assert_text_present:More Options",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-005/step05-screen-pass.png",
+        "duration": 0
+      },
+      {
+        "index": 6,
+        "description": "Backup \u0026 Restore option must be visible",
+        "action": "assert_text_present:Backup \u0026 Restore",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-005/step06-screen-pass.png",
+        "duration": 0
+      },
+      {
+        "index": 7,
+        "description": "About Yole option must be visible",
+        "action": "assert_text_present:About Yole",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-005/step07-screen-pass.png",
+        "duration": 0
+      },
+      {
+        "index": 8,
+        "description": "Version line must be visible (proves version-string render path)",
+        "action": "assert_text_present:Version 1.0.0 - Text editor for Android, Desktop, iOS \u0026 Web",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-005/step08-screen-pass.png",
+        "duration": 0
+      }
+    ],
+    "start_time": "2026-05-13T01:11:44.735824+05:00",
+    "end_time": "2026-05-13T01:11:58.311556+05:00",
+    "evidence_path": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-005"
+  },
+  {
+    "case_id": "YOLE-SMOKE-006",
+    "case_name": "File Browser shows quick-access chips for Documents, Downloads, Internal Storage",
+    "passed": true,
+    "steps": [
+      {
+        "index": 1,
+        "description": "Ensure app is foreground",
+        "action": "launch_activity:digital.vasic.yole.android/.MainActivity",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 2,
+        "description": "Wait for first frame",
+        "action": "wait:2s",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 3,
+        "description": "Tap the Files tab",
+        "action": "tap_text:Files",
+        "passed": true,
+        "evidence": "center=(37,616) bounds=[24,608][50,624]",
+        "duration": 0
+      },
+      {
+        "index": 4,
+        "description": "Wait for transition",
+        "action": "wait:1s",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 5,
+        "description": "File Browser title must be visible",
+        "action": "assert_text_present:File Browser",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-006/step05-screen-pass.png",
+        "duration": 0
+      },
+      {
+        "index": 6,
+        "description": "Documents chip must be visible",
+        "action": "assert_text_present:Documents",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-006/step06-screen-pass.png",
+        "duration": 0
+      },
+      {
+        "index": 7,
+        "description": "Downloads chip must be visible",
+        "action": "assert_text_present:Downloads",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-006/step07-screen-pass.png",
+        "duration": 0
+      },
+      {
+        "index": 8,
+        "description": "Internal Storage chip must be visible",
+        "action": "assert_text_present:Internal Storage",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-006/step08-screen-pass.png",
+        "duration": 0
+      }
+    ],
+    "start_time": "2026-05-13T01:11:58.311561+05:00",
+    "end_time": "2026-05-13T01:12:11.914655+05:00",
+    "evidence_path": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-006"
+  },
+  {
+    "case_id": "YOLE-SMOKE-007",
+    "case_name": "QuickNote: type + tap Save fires the iter-30 FILE_SAVED Firebase event",
+    "passed": true,
+    "steps": [
+      {
+        "index": 1,
+        "description": "Ensure app is foreground",
+        "action": "launch_activity:digital.vasic.yole.android/.MainActivity",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 2,
+        "description": "Wait for first frame",
+        "action": "wait:2s",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 3,
+        "description": "Tap the QuickNote tab",
+        "action": "tap_text:QuickNote",
+        "passed": true,
+        "evidence": "center=(200,616) bounds=[174,608][227,624]",
+        "duration": 0
+      },
+      {
+        "index": 4,
+        "description": "Wait for transition",
+        "action": "wait:1s",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 5,
+        "description": "Editor empty-state placeholder must be visible",
+        "action": "assert_text_present:Start writing your quick note...",
+        "passed": true,
+        "evidence": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-007/step05-screen-pass.png",
+        "duration": 0
+      },
+      {
+        "index": 6,
+        "description": "Tap the text input area mid-screen",
+        "action": "tap_xy:160,350",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 7,
+        "description": "Type a known string",
+        "action": "type_text:iter34_concrete_save_test",
+        "passed": true,
+        "duration": 0
+      },
+      {
+        "index": 8,
+        "description": "Tap Save",
+        "action": "tap_text:Save",
+        "passed": true,
+        "evidence": "center=(275,120) bounds=[259,110][292,130]",
+        "duration": 0
+      },
+      {
+        "index": 9,
+        "description": "Wait for save + UI settle",
+        "action": "wait:2s",
+        "passed": true,
+        "duration": 0
+      }
+    ],
+    "start_time": "2026-05-13T01:12:11.914657+05:00",
+    "end_time": "2026-05-13T01:12:23.426976+05:00",
+    "evidence_path": "/tmp/yole-qa-iter34-expanded/YOLE-SMOKE-007"
+  }
+]

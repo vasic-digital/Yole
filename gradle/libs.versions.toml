@@ -203,6 +203,7 @@ firebase-config = { module = "com.google.firebase:firebase-config" }
 androidx-test-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-junit" }
 androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-test-espresso" }
 androidx-test-compose-ui = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "material3" }
+androidx-test-rules = { module = "androidx.test:rules", version = "1.6.1" }
 
 [bundles]
 # Kotlinx bundle for common use

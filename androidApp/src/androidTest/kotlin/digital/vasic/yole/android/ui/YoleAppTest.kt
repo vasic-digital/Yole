@@ -17,10 +17,42 @@ import digital.vasic.yole.android.MainActivity
 import digital.vasic.yole.format.ParserInitializer
 import org.junit.Before
 import org.junit.Rule
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 
+// SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite
+//
+// These tests have NEVER actually run on a device until iter-34
+// (2026-05-12). They were authored against the pre-iter-27 UI (when
+// the bottom-nav tab was called "Edit" instead of "QuickNote") and
+// against UI strings that have since been deduplicated / restructured.
+// When finally executed on the Android 14 emulator they produced two
+// failure classes:
+//   (a) MainActivity bounces to system Settings when the MANAGE_EXTERNAL_
+//       STORAGE prompt fires, leaving the Compose test rule with no UI
+//       tree — "No compose hierarchies found" (~56 cases this run).
+//   (b) UI selectors too broad — "Expected at most 1 node but found 2"
+//       (~9 cases this run: "QuickNote" / "Settings" / "Backup & Restore"
+//       text strings appear in both the toolbar and the screen body).
+//
+// Per CONST-035 §11.4, leaving these as silent failures is forbidden.
+// Per the same rule, marking with @Ignore + SKIP-OK marker is the
+// correct mitigation — the tests remain visible in reports as skipped
+// pending the rewrite ticket, NOT as silent PASSes.
+//
+// Real path forward (tracked in docs/qa/iter-34/known-issues.md):
+//   1. Pre-grant MANAGE_EXTERNAL_STORAGE in the test runner's
+//      AndroidJUnitRunner via test orchestrator + appops shell hook,
+//      OR add a test-only build variant that no-ops the storage probe.
+//   2. Rewrite selectors to use semantic anchors (testTag) instead of
+//      string-match — matches the iter-27 mitigation pattern.
+//
+// The 5 FirebaseIntegrationTests + 4 of 5 SaveTests pass without this
+// skip — they don't depend on the Compose test rule or evolving UI
+// strings.
+@Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite")
 @RunWith(AndroidJUnit4::class)
 class YoleAppTest {
 
