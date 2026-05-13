@@ -487,7 +487,7 @@ require container-based artifacts.
 
 ### Iter-44 commit
 
-`<<sha-placeholder>>` — see §6 for canonical record. Evidence at `docs/qa/iter-44/`.
+`489148ad` — see §6 for canonical record. Evidence at `docs/qa/iter-44/`.
 
 ---
 
