@@ -1,0 +1,108 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="digital.vasic.yole.android.FirebaseIntegrationTests" tests="76" failures="0" errors="0" skipped="12" time="63.095" timestamp="2026-05-13T05:28:26" hostname="localhost">
+  <properties>
+    <property name="device" value="yole-test(AVD) - 14" />
+    <property name="flavor" value="" />
+    <property name="project" value=":androidApp" />
+  </properties>
+  <testcase name="firebaseUtilLogsEventsWithoutCrash" classname="digital.vasic.yole.android.FirebaseIntegrationTests" time="0.011" />
+  <testcase name="firebaseUtilRecordsNonFatalWithoutCrash" classname="digital.vasic.yole.android.FirebaseIntegrationTests" time="0.0" />
+  <testcase name="firebaseUtilInitializesWithoutCrash" classname="digital.vasic.yole.android.FirebaseIntegrationTests" time="0.001" />
+  <testcase name="firebaseAnalyticsIsAvailable" classname="digital.vasic.yole.android.FirebaseIntegrationTests" time="0.0" />
+  <testcase name="firebaseCrashlyticsIsAvailable" classname="digital.vasic.yole.android.FirebaseIntegrationTests" time="0.0" />
+  <testcase name="writeAndExists" classname="digital.vasic.yole.android.SaveTests" time="0.0" />
+  <testcase name="writeAndReadRoundtrip" classname="digital.vasic.yole.android.SaveTests" time="0.0" />
+  <testcase name="readNonExistentReturnsNull" classname="digital.vasic.yole.android.SaveTests" time="0.0" />
+  <testcase name="saveToCacheAndReadBack" classname="digital.vasic.yole.android.SaveTests" time="0.0" />
+  <testcase name="writeEmptyContent" classname="digital.vasic.yole.android.SaveTests" time="0.001" />
+  <testcase name="testCompleteUserJourney" classname="digital.vasic.yole.android.ui.EndToEndTest" time="0.0">
+    <skipped />
+  </testcase>
+  <testcase name="testErrorRecoveryWorkflow" classname="digital.vasic.yole.android.ui.EndToEndTest" time="0.0">
+    <skipped />
+  </testcase>
+  <testcase name="testCompleteFileEditingWorkflow" classname="digital.vasic.yole.android.ui.EndToEndTest" time="0.001">
+    <skipped />
+  </testcase>
+  <testcase name="testPerformanceUnderLoad" classname="digital.vasic.yole.android.ui.EndToEndTest" time="0.0">
+    <skipped />
+  </testcase>
+  <testcase name="testCompleteQuickNoteWorkflow" classname="digital.vasic.yole.android.ui.EndToEndTest" time="1.212" />
+  <testcase name="testBackupAndRestoreWorkflow" classname="digital.vasic.yole.android.ui.EndToEndTest" time="1.281" />
+  <testcase name="testFormatSpecificWorkflows" classname="digital.vasic.yole.android.ui.EndToEndTest" time="0.001">
+    <skipped />
+  </testcase>
+  <testcase name="testSettingsConfigurationWorkflow" classname="digital.vasic.yole.android.ui.EndToEndTest" time="1.401" />
+  <testcase name="testSearchAndFilterWorkflow" classname="digital.vasic.yole.android.ui.EndToEndTest" time="1.479" />
+  <testcase name="testDataPersistenceAcrossSessions" classname="digital.vasic.yole.android.ui.EndToEndTest" time="0.002">
+    <skipped />
+  </testcase>
+  <testcase name="testCompleteTodoWorkflow" classname="digital.vasic.yole.android.ui.EndToEndTest" time="1.595" />
+  <testcase name="testAccessibilityWorkflow" classname="digital.vasic.yole.android.ui.EndToEndTest" time="0.781" />
+  <testcase name="testCrossFeatureWorkflow" classname="digital.vasic.yole.android.ui.EndToEndTest" time="1.494" />
+  <testcase name="testCsvParserIntegration" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.449" />
+  <testcase name="testFormatDetectionIntegration" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.792" />
+  <testcase name="testMemoryManagement" classname="digital.vasic.yole.android.ui.IntegrationTest" time="1.884" />
+  <testcase name="testValidationIntegration" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.42" />
+  <testcase name="testSettingsPersistence" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.956" />
+  <testcase name="testPlaintextParserIntegration" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.801" />
+  <testcase name="testFormatCompatibility" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.769" />
+  <testcase name="testFormatRegistryIntegrationWithUI" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.455" />
+  <testcase name="testParserIntegrationWithContent" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.419" />
+  <testcase name="testQuickNoteContentPersistence" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.859" />
+  <testcase name="testTodoDataPersistence" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.938" />
+  <testcase name="testFormatRegistryCompleteness" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.78" />
+  <testcase name="testHtmlGenerationIntegration" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.41" />
+  <testcase name="testUiStateManagement" classname="digital.vasic.yole.android.ui.IntegrationTest" time="1.199" />
+  <testcase name="testTodoTxtParserIntegration" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.43" />
+  <testcase name="testFileOperationsIntegration" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.459" />
+  <testcase name="testParserRegistryIntegration" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.861" />
+  <testcase name="testParserRegistryCompleteness" classname="digital.vasic.yole.android.ui.IntegrationTest" time="0.449" />
+  <testcase name="testCrossScreenDataFlow" classname="digital.vasic.yole.android.ui.IntegrationTest" time="1.28" />
+  <testcase name="testFileBrowserBasicFunctionality" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.001">
+    <skipped />
+  </testcase>
+  <testcase name="testBottomNavigationSwitching" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.966" />
+  <testcase name="testSortFunctionality" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.505" />
+  <testcase name="testAppLaunchesSuccessfully" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.48" />
+  <testcase name="testMarkdownActionButtons" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.898" />
+  <testcase name="testThemeSwitching" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.826" />
+  <testcase name="testTodoShowCompletedToggle" classname="digital.vasic.yole.android.ui.YoleAppTest" time="1.065" />
+  <testcase name="testBackNavigation" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.846" />
+  <testcase name="testQuickNoteFunctionality" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.879" />
+  <testcase name="testSettingsPersistence" classname="digital.vasic.yole.android.ui.YoleAppTest" time="1.599" />
+  <testcase name="testSearchFunctionality" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.564" />
+  <testcase name="testFormatInformationDisplay" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.001">
+    <skipped />
+  </testcase>
+  <testcase name="testEditorScreenNavigation" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.001">
+    <skipped />
+  </testcase>
+  <testcase name="testFloatingActionButtonFunctionality" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.0">
+    <skipped />
+  </testcase>
+  <testcase name="testUiElementAccessibility" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.449" />
+  <testcase name="testQuickNoteSaveFunctionality" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.7" />
+  <testcase name="testAboutInformation" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.503" />
+  <testcase name="testEditorSettings" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.613" />
+  <testcase name="testTodoItemDeletion" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.775" />
+  <testcase name="testMoreScreenOptions" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.553" />
+  <testcase name="testPreviewScreenNavigation" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.811" />
+  <testcase name="testTodoScreenFunctionality" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.555" />
+  <testcase name="testTodoItemOperations" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.728" />
+  <testcase name="testFilterFunctionality" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.512" />
+  <testcase name="testPerformanceBasic" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.679" />
+  <testcase name="testErrorHandling" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.475" />
+  <testcase name="testAnimationTransitions" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.657" />
+  <testcase name="testSettingsScreenNavigation" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.614" />
+  <testcase name="testNavigationConsistency" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.748" />
+  <testcase name="testFormatRegistryIntegration" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.001">
+    <skipped />
+  </testcase>
+  <testcase name="testScreenNavigationWithAnimations" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.0">
+    <skipped />
+  </testcase>
+  <testcase name="testSettingsOptions" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.625" />
+  <testcase name="testScreenNavigationAnimations" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.581" />
+  <testcase name="testAnimationSettingsPersistence" classname="digital.vasic.yole.android.ui.YoleAppTest" time="0.654" />
+</testsuite>

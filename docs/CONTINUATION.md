@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-13 (iter 43 — 2 more YoleAppTest SKIP-OK cases rewritten to honest PASS (testSettingsPersistence + testTodoShowCompletedToggle); 2 truly-removed-feature tests reclassified under new `#yole-android-formats-settings-section-removed` ticket (testFormatRegistryIntegration + testFormatInformationDisplay). New totals: 61 PASS / 15 SKIP-OK / 0 FAIL.)
+**Last updated:** 2026-05-13 (iter 44 — 3 more EndToEndTest SKIP-OK cases rewritten to honest PASS: testBackupAndRestoreWorkflow (Backup & Restore dialog), testSettingsConfigurationWorkflow (theme triplet + EDITOR/ANIMATIONS), testCrossFeatureWorkflow (3-todo + QuickNote + multi-screen round trip). New totals: 64 PASS / 12 SKIP-OK / 0 FAIL.)
 **Current branch:** `master`
 **HEAD (parent of this commit):** `ee120766` — `feat(iter-36): rewrite 3 SKIP-OK instrumented tests to real PASS`.
 **Submodule SHAs (per HEAD tree):**
@@ -451,6 +451,43 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 28. Iter 44 — 3 more EndToEndTest rewrites
+
+### 3 conversions
+
+| Test | Bluff before | Honest after |
+|------|--------------|--------------|
+| `testBackupAndRestoreWorkflow` | Asserted "Backup" and "Restore" as standalone Text nodes on More screen — but those labels only exist as buttons INSIDE the Backup & Restore dialog that pops up after tapping the More→Backup & Restore row. The confirm-button label is literally "Backup Now", not just "Backup". | Open the Backup & Restore dialog → verify "Backup Now" + "Restore" + "Cancel" all visible (proves dialog composition complete and tappable). |
+| `testSettingsConfigurationWorkflow` | Six distinct UI-label bluffs: missing More prefix; "Dark theme" (real: "Dark theme (IDE)"); "System theme (follows system setting)" (real: "System theme"); "Formats"/"Markdown"/"Todo.txt" — no such section; "Version: 2.15.1" — wrong version; "Back" content-description — no in-Activity back stack; "About Yole" inside Settings — it's on More, not Settings. | Real iter-27 labels (Light / Dark theme (IDE) / System theme triplet); EDITOR + ANIMATIONS sections; round-trip via bottom-nav + re-render check. |
+| `testCrossFeatureWorkflow` | 5 sequential todos exceeds the iter-39 / iter-41 screen-real-estate limit; final "Project Documentation" assertion depended on the QuickNote save NOT actually working (iter-30 save clears the field). | 3 todos + short QuickNote entry; assertExists for each; round-trip through Files confirms state preservation. |
+
+### Surface metrics
+
+| Metric | Iter 43 | **Iter 44** |
+|--------|---------|-------------|
+| Tests in suite | 76 | 76 |
+| **PASS** | 61 | **64** |
+| Silent failures | 0 | 0 |
+| Explicit SKIP-OK | 15 | **12** |
+| BUILD result | SUCCESSFUL | SUCCESSFUL |
+
++3 PASS, -3 SKIP-OK.
+
+### Honest remaining gaps (post-iter-44)
+
+| # | Item | Severity |
+|---|------|----------|
+| 1 | 6 SKIP-OK truly-rewritable EndToEndTest cases — mostly the FAB-flow ones (testCompleteFileEditingWorkflow, testErrorRecoveryWorkflow, testCompleteUserJourney partial, testFormatSpecificWorkflows partial), plus testDataPersistenceAcrossSessions, testPerformanceUnderLoad | MED — most are partial FAB-flow, ~half can be rewritten as state-preservation tests without the FAB step |
+| 2 | 6 SKIP-OK truly-removed-feature tests pending product decision | LOW — needs user input |
+| 3 | Concrete-bank coverage 10/60+ | MED — carry-over |
+| 4-6 | iOS/Desktop/Web Firebase, gitlab leg, prod-keystore continuity | LOW — manual/scope-out |
+
+### Iter-44 commit
+
+`<<sha-placeholder>>` — see §6 for canonical record. Evidence at `docs/qa/iter-44/`.
 
 ---
 

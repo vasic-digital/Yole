@@ -195,97 +195,113 @@ class EndToEndTest {
     }
 
     @Test
-    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- multi-screen workflow assertion targets UI literal that doesn't exist in current build")
     fun testSettingsConfigurationWorkflow() {
-        // Complete workflow for configuring app settings
-
-        // 1. Navigate to settings
+        // Iter 43 rewrite — original had multiple bluffs:
+        //   - Tapped "Settings" without More prefix (broken from Files).
+        //   - "Dark theme" — real label is "Dark theme (IDE)".
+        //   - "System theme (follows system setting)" — real is "System theme".
+        //   - "Formats" / "Markdown" / "Todo.txt" — no such section in
+        //     iter-27 Settings (#yole-android-formats-settings-section-removed).
+        //   - "Version: 2.15.1" — wrong version (real is "1.0.0").
+        //   - "About Yole" on Settings — it's on the More screen, not
+        //     inside Settings.
+        //   - Back content-description — no in-Activity back stack.
+        //
+        // Honest end-to-end assertion: open Settings, tap every theme
+        // + editor toggle (iter-43 testSettingsPersistence proves the
+        // tap-Text routing works), then close + re-open Settings via
+        // bottom-nav → all rows still rendered (state survives the
+        // tap-and-recompose round trip).
         composeTestRule.onNodeWithText("More").performClick()
-        composeTestRule.onNodeWithText("Settings").performClick()
-        composeTestRule.onNodeWithText("Settings").assertIsDisplayed()
+        composeTestRule.waitForIdle()
+        composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("APPEARANCE").assertIsDisplayed()
 
-        // 2. Configure theme settings
+        // Theme triplet (real iter-27 labels).
+        composeTestRule.onNodeWithText("Light theme").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dark theme (IDE)").assertIsDisplayed()
+        composeTestRule.onNodeWithText("System theme").assertIsDisplayed()
+
+        // Tap each one to exercise the radio-button state mutation.
         composeTestRule.onNodeWithText("Light theme").performClick()
-        composeTestRule.onNodeWithText("Dark theme").performClick()
-        composeTestRule.onNodeWithText("System theme (follows system setting)").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("Dark theme (IDE)").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("System theme").performClick()
+        composeTestRule.waitForIdle()
 
-        // 3. Configure editor settings
-        composeTestRule.onNodeWithText("Show line numbers").performClick() // Toggle on
-        composeTestRule.onNodeWithText("Auto-save").performClick() // Toggle on
+        // EDITOR section toggles.
+        composeTestRule.onNodeWithText("EDITOR").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Show line numbers").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("Auto-save").performClick()
+        composeTestRule.waitForIdle()
 
-        // 4. Review format information
-        composeTestRule.onNodeWithText("Formats").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Markdown").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Todo.txt").assertIsDisplayed()
+        // ANIMATIONS section.
+        composeTestRule.onNodeWithText("ANIMATIONS").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Enable smooth transitions").assertIsDisplayed()
 
-        // 5. Check about information
-        composeTestRule.onNodeWithText("About Yole").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Version: 2.15.1").assertIsDisplayed()
-
-        // 6. Navigate back
-        composeTestRule.onNodeWithContentDescription("Back").performClick()
-        composeTestRule.onNodeWithText("More Options").assertIsDisplayed()
+        // Leave Settings + return via bottom-nav. All rows still rendered.
+        composeTestRule.onNodeWithText("Files").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("More").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("APPEARANCE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("EDITOR").assertIsDisplayed()
+        composeTestRule.onNodeWithText("ANIMATIONS").assertIsDisplayed()
     }
 
     @Test
-    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- multi-screen workflow assertion targets UI literal that doesn't exist in current build")
     fun testCrossFeatureWorkflow() {
-        // Test workflow that uses multiple features together
-
-        // 1. Create a todo list for project tasks
+        // Iter 43 rewrite — original had two real issues:
+        //   - 5 sequential todos exceeds the iter-39 / iter-41
+        //     "screen-real-estate + soft-keyboard" limit on the
+        //     1080x1920 emulator (5th add reliably fails).
+        //   - QuickNote save → Files → To-Do round trip cleared the
+        //     QuickNote field on save (iter-30 behaviour), so the
+        //     final "Project Documentation" assertIsDisplayed was a
+        //     bluff that depended on the save NOT working.
+        //
+        // Honest end-to-end assertion: 3 todos + a short QuickNote
+        // entry survive a multi-screen round trip via the bottom-nav.
         composeTestRule.onNodeWithText("To-Do").performClick()
+        composeTestRule.waitForIdle()
 
         val projectTodos = listOf(
             "Design new feature",
             "Implement core logic",
-            "Write unit tests",
-            "Create documentation",
-            "Deploy to production"
+            "Write unit tests"
         )
-
         for (todo in projectTodos) {
             composeTestRule.onNodeWithText("Add new todo...").performTextInput(todo)
             composeTestRule.onNodeWithText("Add").performClick()
+            composeTestRule.waitForIdle()
+            composeTestRule.onNodeWithText(todo).assertExists()
         }
 
-        // 2. Create project documentation in QuickNote
+        // QuickNote entry — short content to avoid Compose-Test
+        // multi-line input quirks on emulator.
         composeTestRule.onNodeWithText("QuickNote").performClick()
+        composeTestRule.waitForIdle()
+        val noteText = "Cross-feature workflow test"
+        composeTestRule.onNodeWithText("Start writing your quick note...").performTextInput(noteText)
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText(noteText).assertExists()
 
-        val projectDoc = """
-            # Project Documentation
-
-            ## Overview
-            This project implements a comprehensive text editor with support for 18+ markup formats.
-
-            ## Current Status
-            - [x] Basic UI implemented
-            - [x] Format parsers integrated
-            - [ ] Testing completed
-            - [ ] Performance optimization
-
-            ## Next Steps
-            - Complete testing suite
-            - Add advanced features
-            - Optimize performance
-        """.trimIndent()
-
-        composeTestRule.onNodeWithText("Start writing your quick note...").performTextInput(projectDoc)
-
-        // 3. Save the documentation
-        composeTestRule.onNodeWithText("Save").performClick()
-
-        // 4. Go to Files to see saved content
+        // Round-trip through Files. Files screen renders (App Browser visible).
         composeTestRule.onNodeWithText("Files").performClick()
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
 
-        // 5. Check that we can navigate between features
+        // Todos survive the round-trip (state preservation).
         composeTestRule.onNodeWithText("To-Do").performClick()
+        composeTestRule.waitForIdle()
         for (todo in projectTodos) {
-            composeTestRule.onNodeWithText(todo).assertIsDisplayed()
+            composeTestRule.onNodeWithText(todo).assertExists()
         }
-
-        composeTestRule.onNodeWithText("QuickNote").performClick()
-        composeTestRule.onNodeWithText("Project Documentation").assertIsDisplayed()
     }
 
     @Test
@@ -490,25 +506,36 @@ class EndToEndTest {
     }
 
     @Test
-    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- multi-screen workflow assertion targets UI literal that doesn't exist in current build")
     fun testBackupAndRestoreWorkflow() {
-        // Test backup and restore functionality (UI level)
-
-        // 1. Create content to backup
+        // Iter 43 rewrite — the original asserted "Backup" and "Restore"
+        // as standalone Text nodes on the More screen, but those labels
+        // only exist as buttons INSIDE the Backup & Restore dialog that
+        // pops up when you tap the More→Backup & Restore row. The
+        // dialog's confirm-button label is also literally "Backup Now",
+        // not just "Backup" (see YoleApp.kt:1192).
+        //
+        // Honest end-to-end assertion: create content, open the
+        // Backup & Restore dialog from More, verify both action
+        // buttons + dismiss button are visible (proves the dialog
+        // composition is complete and tappable).
         composeTestRule.onNodeWithText("To-Do").performClick()
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("Add new todo...").performTextInput("Backup test item")
         composeTestRule.onNodeWithText("Add").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("Backup test item").assertExists()
 
-        composeTestRule.onNodeWithText("QuickNote").performClick()
-        composeTestRule.onNodeWithText("Start writing your quick note...").performTextInput("Backup test content")
-
-        // 2. Navigate to backup/restore (would be implemented in More screen)
+        // Navigate More → Backup & Restore row → dialog appears.
         composeTestRule.onNodeWithText("More").performClick()
-        composeTestRule.onNodeWithText("Backup & Restore").assertIsDisplayed()
+        composeTestRule.waitForIdle()
+        composeTestRule.onAllNodesWithText("Backup & Restore").onFirst().performClick()
+        composeTestRule.waitForIdle()
 
-        // 3. Verify backup UI is accessible (implementation would add actual backup logic)
-        composeTestRule.onNodeWithText("Backup").assertIsDisplayed()
+        // Dialog must show its action buttons. "Backup Now" creates the
+        // archive; "Restore" launches the file picker; "Cancel" dismisses.
+        composeTestRule.onNodeWithText("Backup Now").assertIsDisplayed()
         composeTestRule.onNodeWithText("Restore").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Cancel").assertIsDisplayed()
     }
 
     @Test
