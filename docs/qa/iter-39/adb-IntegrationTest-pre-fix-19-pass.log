@@ -1,0 +1,29 @@
+
+digital.vasic.yole.android.ui.IntegrationTest:..
+Error in testMemoryManagement(digital.vasic.yole.android.ui.IntegrationTest):
+java.lang.AssertionError: Failed: assertExists.
+Reason: Expected exactly '1' node but could not find any node that satisfies: (Text + EditableText contains 'Memory test 5' (ignoreCase: false))
+
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchOneOrThrow(SemanticsNodeInteraction.kt:178)
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchOneOrThrow$default(SemanticsNodeInteraction.kt:150)
+	at androidx.compose.ui.test.SemanticsNodeInteraction.assertExists(SemanticsNodeInteraction.kt:125)
+	at androidx.compose.ui.test.SemanticsNodeInteraction.assertExists$default(SemanticsNodeInteraction.kt:124)
+	at digital.vasic.yole.android.ui.IntegrationTest.testMemoryManagement(IntegrationTest.kt:519)
+................
+
+Time: 22.103
+There was 1 failure:
+1) testMemoryManagement(digital.vasic.yole.android.ui.IntegrationTest)
+java.lang.AssertionError: Failed: assertExists.
+Reason: Expected exactly '1' node but could not find any node that satisfies: (Text + EditableText contains 'Memory test 5' (ignoreCase: false))
+
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchOneOrThrow(SemanticsNodeInteraction.kt:178)
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchOneOrThrow$default(SemanticsNodeInteraction.kt:150)
+	at androidx.compose.ui.test.SemanticsNodeInteraction.assertExists(SemanticsNodeInteraction.kt:125)
+	at androidx.compose.ui.test.SemanticsNodeInteraction.assertExists$default(SemanticsNodeInteraction.kt:124)
+	at digital.vasic.yole.android.ui.IntegrationTest.testMemoryManagement(IntegrationTest.kt:519)
+
+FAILURES!!!
+Tests run: 19,  Failures: 1
+
+

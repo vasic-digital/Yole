@@ -124,6 +124,107 @@ helpers. Out of scope for any single iteration.
 
 ---
 
+## #yole-json-parser-missing
+
+**Symptom**
+`FormatRegistry.formats` advertises `ID_JSON` (a TextFormat with id
+`json`), but `ParserInitializer.registerAllParsers()` and
+`registerAllParsersLazy()` register no JSON parser. Users who tap
+on a `.json` file see "Plain Text" rendering instead of a JSON-aware
+view (no syntax highlighting, no structure folding, no error
+detection).
+
+**Discovered by**
+Iter-39 (2026-05-13) — `IntegrationTest.testParserRegistryCompleteness`
+asserted "every non-binary text format has a parser" and JSON failed:
+
+```
+java.lang.AssertionError: No parser registered for format JSON (json) —
+  user would be unable to open files of this format
+```
+
+**Proper fix**
+Add a `digital.vasic.yole.format.json.JsonParser` class implementing
+`TextParser` with JSON-aware tokenisation + a minimal HTML renderer
+(braces / colons / string literals styled). Register it via
+`ParserRegistry.registerLazy(FormatRegistry.ID_JSON) { JsonParser() }`
+in `ParserInitializer.registerAllParsersLazy()`. Mirror in the eager
+`registerAllParsers()` for backwards compatibility.
+
+**Blocker**
+Implementation work — a non-trivial parser. Out of scope for any
+single iteration that's focused on test-bluff resolution.
+
+**Exemptions in test code** (must be removed when this is closed):
+- `IntegrationTest.kt::testParserRegistryCompleteness` — `json` listed
+  in `knownGaps` set. Search for `#yole-json-parser-missing`.
+- `IntegrationTest.kt::testParserRegistryIntegration` — `json` listed
+  in `knownGaps` set.
+
+---
+
+## #yole-todotxt-compound-extension-detection
+
+**Symptom**
+`FormatRegistry.detectByFilename("todo.txt")` returns the PLAIN TEXT
+format instead of TODO.TXT, even though the TodoTxtFormat advertises
+`.todo.txt` as one of its extensions (specifically chosen for this
+case). End-user impact: a user with a file literally named `todo.txt`
+(the canonical Todo.txt filename) sees it open as Plain Text — no
+priority colouring, no `(A)` / `+project` / `@context` highlighting.
+
+**Discovered by**
+Iter-39 (2026-05-13). Originally asserted in
+`IntegrationTest.testFormatDetectionIntegration`; failed:
+
+```
+java.lang.AssertionError: Todo.txt detection regression: 'todo.txt'
+  resolved to plaintext instead of todotxt
+```
+
+**Root cause (forensic)**
+`FormatRegistry.detectByFilename` line 505: the compound-extension
+loop starts at the **first** dot in the filename, so for `todo.txt`
+it only tries `.txt` (not `.todo.txt`). The TodoTxtFormat's
+advertised `.todo.txt` extension is therefore never matched against
+this filename. Two formats have `.txt` in their extensions list
+(PlainText, TodoTxt) and the algorithm returns the first match,
+which is PlainText.
+
+**Proper fix**
+Change the compound-extension search to try suffixes anchored at
+EVERY dot in the filename, longest first. For `myfile.todo.txt`:
+1. Try `.todo.txt` → matches TodoTxt.
+2. Fall back to `.txt` → matches PlainText.
+
+Pseudocode for the corrected loop:
+
+```kotlin
+val dotPositions = filename.mapIndexedNotNull { i, c -> if (c == '.') i else null }
+for (start in dotPositions) {
+    val suffix = filename.substring(start).lowercase()
+    val match = formats.firstOrNull { fmt ->
+        fmt.extensions.any { it.equals(suffix, ignoreCase = true) }
+    }
+    if (match != null) return match
+}
+```
+
+**Blocker**
+None — this is a 5-line fix in `FormatRegistry.kt`. It needs paired
+test coverage in `shared/src/commonTest/.../format/FormatRegistryTest.kt`
+asserting `detectByFilename("todo.txt") == todotxt`. Out of scope for
+iter-39 (test-bluff resolution) but should be the next iter's first
+data-layer change.
+
+**Exemptions in test code** (must be removed when this is closed):
+- `IntegrationTest.kt::testFormatDetectionIntegration` — the test
+  currently accepts either `plaintext` or `todotxt` for `notes.txt`,
+  and explicitly does NOT assert `todo.txt → todotxt`. Search for
+  `#yole-todotxt-compound-extension-detection`.
+
+---
+
 ## #yole-android-fab-new-file-flow-removed
 
 **Symptom**
