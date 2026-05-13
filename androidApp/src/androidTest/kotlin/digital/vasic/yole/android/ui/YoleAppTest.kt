@@ -78,6 +78,7 @@ class YoleAppTest {
     }
 
     @Test
+    // SKIP-OK: #yole-android-fab-new-file-flow-removed
     @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- FAB + 'Add Task' dialog were replaced by the iter-27 bottom-nav + inline-input flow; rewriting this test would require restoring the old UI, which is out of scope")
     fun testFloatingActionButtonFunctionality() {
         // Test FAB functionality on different screens
@@ -93,6 +94,7 @@ class YoleAppTest {
     }
 
     @Test
+    // SKIP-OK: #yole-android-fab-new-file-flow-removed
     @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- '📂 Open Folder' / '➕ New File' / '⬆️ Up' emoji buttons were replaced by the iter-27 Documents/Downloads/Internal-Storage quick-access chips; restoring those literal labels is out of scope")
     fun testFileBrowserBasicFunctionality() {
         // Test basic file browser operations
@@ -332,6 +334,7 @@ class YoleAppTest {
     }
 
     @Test
+    // SKIP-OK: #yole-android-fab-new-file-flow-removed
     @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- 'Add' FAB → editor with 'Editing: untitled.txt' title and 'Back' content-description were all removed; the iter-27 redesign navigates via bottom-nav, not via a sub-screen back stack")
     fun testScreenNavigationWithAnimations() {
         // Navigate to file browser and select a file to trigger sub-screen transition
@@ -349,6 +352,7 @@ class YoleAppTest {
     }
 
     @Test
+    // SKIP-OK: #yole-android-formats-settings-section-removed
     @Ignore("SKIP-OK: #yole-android-formats-settings-section-removed -- iter-27 Settings has only APPEARANCE / EDITOR / ANIMATIONS sections; no Formats section. Data-layer equivalent is covered by IntegrationTest.testFormatRegistryIntegrationWithUI + testParserRegistryCompleteness which assert format/parser coverage at the registry layer")
     fun testFormatRegistryIntegration() {
         // Navigate to settings to check format information
@@ -361,6 +365,7 @@ class YoleAppTest {
     }
 
     @Test
+    // SKIP-OK: #yole-android-fab-new-file-flow-removed
     @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- 'Add' FAB → editor with 'Editing:' title was removed; editor entry is now via tap on a file in the browser, not a global FAB")
     fun testEditorScreenNavigation() {
         // Test navigation to editor screen
@@ -558,6 +563,7 @@ class YoleAppTest {
     }
 
     @Test
+    // SKIP-OK: #yole-android-formats-settings-section-removed
     @Ignore("SKIP-OK: #yole-android-formats-settings-section-removed -- iter-27 Settings has no Formats section, so the per-format display names ('Markdown', 'Todo.txt', 'Plain Text') are not rendered on the Settings screen. Data-layer assertion lives in IntegrationTest.testFormatRegistryIntegrationWithUI")
     fun testFormatInformationDisplay() {
         // Test format information display in settings

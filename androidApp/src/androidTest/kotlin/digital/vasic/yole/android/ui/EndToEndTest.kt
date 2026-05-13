@@ -102,6 +102,7 @@ class EndToEndTest {
     }
 
     @Test
+    // SKIP-OK: #yole-android-fab-new-file-flow-removed
     @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- entire workflow targets the removed FAB → editor sub-screen flow (Add FAB content-description, 'Editing: untitled.txt' header, 'Preview: untitled.txt' header, 'Start typing...' placeholder, content-descriptions Preview/Edit/Save/Back). Iter-27 redesign removed the FAB entry path entirely")
     fun testCompleteFileEditingWorkflow() {
         // Complete end-to-end workflow for file editing
@@ -349,6 +350,7 @@ class EndToEndTest {
     }
 
     @Test
+    // SKIP-OK: #yole-android-fab-new-file-flow-removed
     @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- 'Add' FAB → editor sub-screen with 'Editing: untitled.txt' title + 'Save' / 'Back' content-descriptions all relate to the removed FAB → editor sub-screen flow. The error-recovery scenario this exercises (file save failure, recover via Back) targets a UI path that no longer exists in the iter-27 build")
     fun testErrorRecoveryWorkflow() {
         // Test that app recovers gracefully from errors

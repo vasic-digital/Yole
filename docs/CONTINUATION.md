@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-13 (iter 46 — last 2 rewritable EndToEndTest cases converted to honest PASS: testCompleteUserJourney drops the FAB-editor leg and keeps multi-tab + content-creation + Settings; testFormatSpecificWorkflows drops the Markdown-via-editor step and asserts the Todo.txt parser preserves verbatim text. New totals: 68 PASS / 8 SKIP-OK / 0 FAIL. **ALL remaining SKIPs are now truly-removed-feature awaiting product decision** — zero rewritable SKIPs remain in the entire instrumented suite.)
+**Last updated:** 2026-05-13 (iter 47 — CONST-035 anti-bluff scanner self-audit. Discovered 8 BLUFF-K-003 hits from the iter-35→46 `@Ignore("SKIP-OK: ...")` inline pattern: the scanner expects `// SKIP-OK: #ticket` as a comment line BEFORE the `@Ignore`, not inside its string literal. Added the comment line above each of the 8 remaining `@Ignore` lines (YoleAppTest x6 + EndToEndTest x2). Scanner now clean. All 3 CONST-035 verifications pass: bluff-scanner, anchor-manifest, mutation-ratchet. Suite totals unchanged: 68 PASS / 8 SKIP-OK / 0 FAIL.)
 **Current branch:** `master`
 **HEAD (parent of this commit):** `ee120766` — `feat(iter-36): rewrite 3 SKIP-OK instrumented tests to real PASS`.
 **Submodule SHAs (per HEAD tree):**
@@ -451,6 +451,95 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 31. Iter 47 — CONST-035 anti-bluff scanner self-audit + clean fix
+
+After iter-46 closed the rewritable-SKIP floor, a self-audit per
+CONST-035 §11.4 covenant was the next no-bluff-policy enforcement
+step. Result: the anti-bluff scanner had been **passively failing**
+the iter-35→46 `@Ignore` annotations all along — but no pre-commit
+hook was installed, so the scanner only complains when manually
+invoked.
+
+### Forensic
+
+`scripts/anti-bluff/lib/kotlin.sh:73-79` defines BLUFF-K-003:
+
+> `@Ignore` without exempt comment on prev line.
+> Exempt-comment patterns: `SKIP-OK | ANTI-BLUFF-EXEMPT | bluff-scan:`
+> on the line PRECEDING the annotation.
+
+Iter 35→46 used `@Ignore("SKIP-OK: #ticket -- reason")` — SKIP-OK is
+inline INSIDE the annotation's string literal, NOT on the previous
+comment line. The awk pattern that drives the scanner does
+`strip_kt($0)` which removes `//`-style comments before matching, so
+the inline SKIP-OK was visible during the match-search, but the awk
+records exemptions via `exempt[NR+1] = 1` — meaning a SKIP-OK on
+line N marks line N+1 as exempt. Inline-SKIP-OK on the same line as
+the @Ignore (N) doesn't propagate to N (still flagged).
+
+`scripts/anti-bluff/install-hooks.sh` would install the scanner as
+a pre-commit hook. It was NOT run on this host (no `.git/hooks/pre-commit`
+file exists), so the scanner's failure-mode was silent.
+
+### Fix
+
+Added a single `// SKIP-OK: #ticket` line ABOVE each of the 8
+existing `@Ignore` annotations:
+
+| File | Line | Ticket |
+|------|------|--------|
+| `YoleAppTest.kt` | testFloatingActionButtonFunctionality | `#yole-android-fab-new-file-flow-removed` |
+| `YoleAppTest.kt` | testFileBrowserBasicFunctionality | `#yole-android-fab-new-file-flow-removed` |
+| `YoleAppTest.kt` | testScreenNavigationWithAnimations | `#yole-android-fab-new-file-flow-removed` |
+| `YoleAppTest.kt` | testFormatRegistryIntegration | `#yole-android-formats-settings-section-removed` |
+| `YoleAppTest.kt` | testEditorScreenNavigation | `#yole-android-fab-new-file-flow-removed` |
+| `YoleAppTest.kt` | testFormatInformationDisplay | `#yole-android-formats-settings-section-removed` |
+| `EndToEndTest.kt` | testCompleteFileEditingWorkflow | `#yole-android-fab-new-file-flow-removed` |
+| `EndToEndTest.kt` | testErrorRecoveryWorkflow | `#yole-android-fab-new-file-flow-removed` |
+
+The in-string `SKIP-OK: #ticket -- reason` is kept too (useful as
+the IDE / IntelliJ "Ignored test reason" tooltip when a test is
+shown skipped in the runner output).
+
+### Verification
+
+All 3 CONST-035 verifications pass cleanly:
+- `scripts/anti-bluff/bluff-scanner.sh --mode all` → `OK: scanner clean (mode=all).`
+- `yole-challenges/scripts/anchor_manifest_challenge.sh` → `OK: anchor manifest valid.`
+- `yole-challenges/scripts/mutation_ratchet_challenge.sh` → `OK: mutation ratchet stub (Section 2 deferred to sub-project 4).`
+
+Evidence at `docs/qa/iter-47/`.
+
+### Surface metrics
+
+| Metric | Iter 46 | **Iter 47** |
+|--------|---------|-------------|
+| Tests in suite | 76 | 76 |
+| **PASS** | 68 | **68** |
+| Silent failures | 0 | 0 |
+| Explicit SKIP-OK | 8 | 8 |
+| Scanner-clean BLUFF-K-003 hits | 8 NEW | **0** |
+| BUILD result | SUCCESSFUL | SUCCESSFUL |
+
+Test-surface unchanged but the META layer (CONST-035 scanner) is
+now clean — the scanner can be installed as a pre-commit hook
+without spurious failure.
+
+### Honest remaining gaps (post-iter-47)
+
+| # | Item | Severity |
+|---|------|----------|
+| 1 | 8 SKIP-OK truly-removed-feature tests pending product decision | LOW |
+| 2 | Pre-commit hook not installed (scanner is run manually, no CI to enforce). `scripts/anti-bluff/install-hooks.sh` is the install path; not run automatically here because it would affect every future commit on this host. | LOW — operator decision |
+| 3 | Concrete-bank coverage 10/60+ | MED |
+| 4-6 | iOS/Desktop/Web Firebase, gitlab leg, prod-keystore continuity | LOW |
+
+### Iter-47 commit
+
+`<<sha-placeholder>>` — see §6 for canonical record. Evidence at `docs/qa/iter-47/`.
 
 ---
 
