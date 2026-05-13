@@ -1,0 +1,444 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Configuration on demand is an incubating feature.
+Calculating task graph as no cached configuration is available for tasks: :shared:desktopTest --tests digital.vasic.yole.format.FormatRegistryStressTest --tests digital.vasic.yole.format.FormatRegistryEdgeCaseTest --tests digital.vasic.yole.format.FormatRegistryUnitTest --tests digital.vasic.yole.format.stress.FormatRegistryLazyInitStressTest
+Type-safe project accessors is an incubating feature.
+
+> Configure project :RateLimiter-KMP
+w: Kotlin Multiplatform <-> Android Gradle Plugin compatibility issue:
+The applied Android Gradle Plugin version (8.9.0) is higher 
+than the maximum known to the Kotlin Gradle Plugin.
+Tooling stability in such configuration isn't tested, please report encountered issues to https://kotl.in/issue
+
+Minimum supported Android Gradle Plugin version: 7.1
+Maximum tested Android Gradle Plugin version: 8.5
+
+To suppress this message add 'kotlin.mpp.androidGradlePluginCompatibility.nowarn=true' to your gradle.properties
+
+
+> Configure project :Concurrency-KMP
+w: Kotlin Multiplatform <-> Android Gradle Plugin compatibility issue:
+The applied Android Gradle Plugin version (8.9.0) is higher 
+than the maximum known to the Kotlin Gradle Plugin.
+Tooling stability in such configuration isn't tested, please report encountered issues to https://kotl.in/issue
+
+Minimum supported Android Gradle Plugin version: 7.1
+Maximum tested Android Gradle Plugin version: 8.5
+
+To suppress this message add 'kotlin.mpp.androidGradlePluginCompatibility.nowarn=true' to your gradle.properties
+
+
+> Configure project :Formatters-KMP
+w: Kotlin Multiplatform <-> Android Gradle Plugin compatibility issue:
+The applied Android Gradle Plugin version (8.9.0) is higher 
+than the maximum known to the Kotlin Gradle Plugin.
+Tooling stability in such configuration isn't tested, please report encountered issues to https://kotl.in/issue
+
+Minimum supported Android Gradle Plugin version: 7.1
+Maximum tested Android Gradle Plugin version: 8.5
+
+To suppress this message add 'kotlin.mpp.androidGradlePluginCompatibility.nowarn=true' to your gradle.properties
+
+
+> Configure project :shared
+warning: Dokka Gradle plugin V1 is deprecated
+    
+    Dokka Gradle plugin V1 is deprecated, and will be removed in Dokka version 2.1.0
+    Please migrate to Dokka Gradle plugin V2. This will require updating your project.
+    To learn about migrating read the migration guide https://kotl.in/dokka-gradle-migration
+    
+    To start migrating to Dokka Gradle plugin V2 add
+        org.jetbrains.dokka.experimental.gradle.pluginMode=V2EnabledWithHelpers
+    into your project's `gradle.properties` file.
+    
+    We would appreciate your feedback!
+     - Please report any feedback or problems https://kotl.in/dokka-issues
+     - Chat with the community visit #dokka in https://kotlinlang.slack.com/ (To sign up visit https://kotl.in/slack)
+    
+
+> Task :Config-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Security-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Database-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :RateLimiter-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Concurrency-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Formatters-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Auth-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Document-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :UI-Components-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Storage-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Security-KMP:desktopProcessResources NO-SOURCE
+> Task :shared:convertXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :UI-Components-KMP:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :UI-Components-KMP:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :UI-Components-KMP:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :UI-Components-KMP:generateResourceAccessorsForCommonMain SKIPPED
+> Task :shared:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :UI-Components-KMP:convertXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForDesktopMain NO-SOURCE
+> Task :shared:generateResourceAccessorsForCommonMain SKIPPED
+> Task :UI-Components-KMP:copyNonXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:generateResourceAccessorsForDesktopMain SKIPPED
+> Task :shared:generateComposeResClass SKIPPED
+> Task :shared:generateActualResourceCollectorsForDesktopMain SKIPPED
+> Task :shared:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :UI-Components-KMP:prepareComposeResourcesTaskForDesktopMain NO-SOURCE
+> Task :UI-Components-KMP:generateResourceAccessorsForDesktopMain SKIPPED
+> Task :shared:convertXmlValueResourcesForCommonTest NO-SOURCE
+> Task :UI-Components-KMP:generateActualResourceCollectorsForDesktopMain SKIPPED
+> Task :UI-Components-KMP:generateComposeResClass SKIPPED
+> Task :shared:copyNonXmlValueResourcesForCommonTest NO-SOURCE
+> Task :UI-Components-KMP:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :shared:prepareComposeResourcesTaskForCommonTest NO-SOURCE
+> Task :shared:generateResourceAccessorsForCommonTest SKIPPED
+> Task :shared:convertXmlValueResourcesForDesktopTest NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForDesktopTest NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForDesktopTest NO-SOURCE
+> Task :shared:generateResourceAccessorsForDesktopTest SKIPPED
+> Task :shared:assembleDesktopTestResources UP-TO-DATE
+> Task :Concurrency-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :shared:assembleDesktopMainResources UP-TO-DATE
+> Task :RateLimiter-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Storage-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Security-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Formatters-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Security-KMP:desktopMainClasses UP-TO-DATE
+> Task :Storage-KMP:desktopProcessResources NO-SOURCE
+> Task :Concurrency-KMP:desktopProcessResources NO-SOURCE
+> Task :RateLimiter-KMP:desktopProcessResources NO-SOURCE
+> Task :RateLimiter-KMP:desktopMainClasses UP-TO-DATE
+> Task :Storage-KMP:desktopMainClasses UP-TO-DATE
+> Task :Formatters-KMP:desktopProcessResources NO-SOURCE
+> Task :shared:desktopProcessResources UP-TO-DATE
+> Task :shared:desktopTestProcessResources UP-TO-DATE
+> Task :Concurrency-KMP:desktopMainClasses UP-TO-DATE
+> Task :shared:koverFindJar UP-TO-DATE
+> Task :Formatters-KMP:desktopMainClasses UP-TO-DATE
+> Task :Concurrency-KMP:desktopJar UP-TO-DATE
+> Task :Security-KMP:desktopJar UP-TO-DATE
+> Task :Storage-KMP:desktopJar UP-TO-DATE
+> Task :UI-Components-KMP:assembleDesktopMainResources UP-TO-DATE
+> Task :RateLimiter-KMP:desktopJar UP-TO-DATE
+> Task :Formatters-KMP:desktopJar UP-TO-DATE
+> Task :Document-KMP:desktopProcessResources NO-SOURCE
+> Task :UI-Components-KMP:desktopProcessResources UP-TO-DATE
+> Task :Config-KMP:desktopProcessResources NO-SOURCE
+> Task :Database-KMP:desktopProcessResources NO-SOURCE
+> Task :Auth-KMP:desktopProcessResources NO-SOURCE
+> Task :Database-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Database-KMP:desktopMainClasses UP-TO-DATE
+> Task :Config-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Config-KMP:desktopMainClasses UP-TO-DATE
+> Task :Database-KMP:desktopJar UP-TO-DATE
+> Task :Config-KMP:desktopJar UP-TO-DATE
+> Task :Document-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Document-KMP:desktopMainClasses UP-TO-DATE
+> Task :Document-KMP:desktopJar UP-TO-DATE
+> Task :Auth-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :UI-Components-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Auth-KMP:desktopMainClasses UP-TO-DATE
+> Task :UI-Components-KMP:desktopMainClasses UP-TO-DATE
+> Task :Auth-KMP:desktopJar UP-TO-DATE
+> Task :UI-Components-KMP:desktopJar UP-TO-DATE
+> Task :shared:compileKotlinDesktop UP-TO-DATE
+> Task :shared:desktopMainClasses UP-TO-DATE
+> Task :shared:desktopJar UP-TO-DATE
+> Task :shared:compileTestKotlinDesktop UP-TO-DATE
+> Task :shared:desktopTestClasses UP-TO-DATE
+
+> Task :shared:desktopTest
+
+FormatRegistryEdgeCaseTest[desktop] > testGetFormatsByExtensionTxtReturnsMultiple[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentJupyterCellType[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentRMarkdown[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testIsExtensionSupportedForAllKnownExtensions[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentWikiHeading[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentKeyValue[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testTotalFormatCount[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByFilenameHiddenFileWithExtension[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByFilenameDotsOnly[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetByExtensionWithDoubleDot[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByExtensionSpecialCharsExtension[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentLatexDocumentClass[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentLatexBeginDocument[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByExtensionFallsBackToPlaintext[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentSingleLine[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testBinaryFormatHasNoExtensions[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testBinaryFormatHasNoDetectionPatterns[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetFormatNamesMatchesFormatsSize[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentMaxLinesOne[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetByIdReturnsNullForWhitespace[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testIsSupportedForAllFormats[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentOrgModeHeading[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testIsSupportedFalseForNonexistent[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testRMarkdownComesBeforeMarkdown[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetByExtensionAllMarkdownExtensions[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentTiddlyWikiTitle[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetAllExtensionsNoDuplicates[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetByIdReturnsNullForEmptyString[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentMaxLinesLimit[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetByIdNetworkFormats[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentJupyterNotebook[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testNetworkFormatsHaveEmptyExtensions[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentCsv[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentWikiLink[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetFormatsByExtensionCsvReturnsSingle[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetFormatsByExtensionUnknownReturnsEmpty[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByExtensionEmptyFallsBackToPlaintext[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByFilenameComplex[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testIsExtensionSupportedFalseForBinary[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetByExtensionMultipleFormatsShareTxt[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentOrgModeDirective[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByFilenameNoExtension[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetByExtensionWithLeadingSpaces[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testFormatsListIsNotEmpty[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetByIdIsCaseSensitive[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetFormatNamesContainsAllNames[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testFormatIdConstantsMatchRegistryIds[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetByExtensionRmarkdownExtensions[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetByExtensionReturnsNullForEmpty[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testDetectByContentKeyValueIni[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetAllExtensionsContainsExpectedExtensions[desktop] PASSED
+
+FormatRegistryEdgeCaseTest[desktop] > testGetByIdAllRegisteredIds[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > concurrent format lookups by extension[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > concurrent format detection by content[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > isSupported correctly identifies supported formats[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > extension lookup handles dot prefix consistently[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > concurrent format lookups by id[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > TextFormat equality is based on id[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > content detection handles very long content[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > detectByFilename handles multiple dots[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > all formats have non-empty names[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > getAllExtensions returns all unique extensions[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > detectByFilename handles various filename patterns[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > concurrent mixed registry operations[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > TextFormat has consistent hashCode[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > content detection respects maxLines parameter[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > all formats have unique IDs[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > all formats have default extension[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > detectByFilename resolves todo dot txt to todotxt not plaintext[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > extension lookup is case insensitive[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > detectByExtension always returns a format[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > content detection handles binary-like content[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > detectByFilename handles hidden files[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > detectByFilename resolves prefixed todo dot txt to todotxt[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > all format patterns are valid regex[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > detectByFilename handles files without extension[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > isExtensionSupported correctly identifies extensions[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > content detection handles whitespace only[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > getFormatsByExtension returns all matching formats[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > content detection handles empty content[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > format patterns match expected content[desktop] PASSED
+
+FormatRegistryStressTest[desktop] > getFormatNames returns all format names[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByFilenameOrg[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByExtensionReturnsMarkdownForMarkdown[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > getFormatsByExtensionTxtReturnsBothPlaintextAndTodotxt[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > configureParseConcurrencyRejectsValueAbove16[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > getByIdReturnsMarkdown[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByContentRespectsMaxLinesParameter[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > getFormatNamesReturnsNonEmptyList[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > configureParseConcurrencyAcceptsValidValues[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByContentReturnsNullForEmptyString[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > isSupportedReturnsTrueForMarkdown[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByContentReturnsOrgModeForOrgHeading[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByExtensionFallsBackToPlaintextForUnknownExtension[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByExtensionIsCaseInsensitive[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > formatsListContainsAllExpectedTextFormats[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByExtensionReturnsLatexForDotTex[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > configureParseConcurrencyRejectsZero[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > formatsCountIsAtLeastSeventeen[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > concurrentGetByIdIsSafe[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > isFormatsInitializedReturnsTrueAfterFormatsAccess[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByExtensionReturnsMarkdownForMdWithoutDot[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > getByIdReturnsNullForUnknownId[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByContentReturnsNullForGenericPlainText[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByExtensionReturnsOrgModeForDotOrg[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > getByIdReturnsBinary[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByExtensionReturnsCsvForDotCsv[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > idConstantsHaveExpectedValues[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > networkStorageIdConstantsExist[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByContentReturnsLatexForDocumentClass[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > concurrentDetectByExtensionIsSafe[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > getByIdReturnsPlaintext[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > getByIdReturnsCsv[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > formatsListIsNotEmpty[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > getAllExtensionsAreDistinct[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByContentReturnsCsvForCommaSeparatedData[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > idConstantsExistForAllCoreFormats[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > getFormatsByExtensionUnknownReturnsEmpty[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > getByIdIsCaseSensitive[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > getByIdReturnsNullForEmptyString[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByExtensionNeverReturnsNull[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByContentReturnsMarkdownForHashHeading[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByFilenameMarkdown[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > getFormatsByExtensionMdReturnsOnlyMarkdown[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByContentReturnsTodotxtForPriorityLine[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > isSupportedReturnsFalseForUnknown[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > getAllExtensionsContainsCommonExtensions[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByFilenameNoExtensionFallsToPlaintext[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > detectByExtensionReturnsMarkdownForDotMd[desktop] PASSED
+
+FormatRegistryUnitTest[desktop] > allIdConstantsAreDistinct[desktop] PASSED
+
+FormatRegistryLazyInitStressTest[desktop] > concurrent getByExtension calls for various extensions[desktop] PASSED
+
+FormatRegistryLazyInitStressTest[desktop] > concurrent detectByExtension never returns different results for same input[desktop] PASSED
+
+FormatRegistryLazyInitStressTest[desktop] > concurrent getById calls return consistent results[desktop] PASSED
+
+FormatRegistryLazyInitStressTest[desktop] > concurrent detectByContent from 50 coroutines[desktop] PASSED
+
+FormatRegistryLazyInitStressTest[desktop] > concurrent first-access from 50 coroutines returns same formats list[desktop] PASSED
+
+FormatRegistryLazyInitStressTest[desktop] > concurrent getAllExtensions returns consistent results[desktop] PASSED
+
+FormatRegistryLazyInitStressTest[desktop] > concurrent getFormatsByExtension for shared extension txt[desktop] PASSED
+
+FormatRegistryLazyInitStressTest[desktop] > formats list has expected count of 23 entries[desktop] PASSED
+
+FormatRegistryLazyInitStressTest[desktop] > isFormatsInitialized is true after first access[desktop] PASSED
+
+FormatRegistryLazyInitStressTest[desktop] > concurrent isSupported checks[desktop] PASSED
+Kotlin build report is written to file:///Users/milosvasic/Projects/Yole/build/reports/kotlin-build/Yole-build-2026-05-13-09-34-09-0.txt
+[Incubating] Problems report is available at: file:///Users/milosvasic/Projects/Yole/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 18s
+31 actionable tasks: 1 executed, 30 up-to-date
+Configuration cache entry stored.

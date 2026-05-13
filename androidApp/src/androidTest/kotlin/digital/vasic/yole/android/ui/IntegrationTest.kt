@@ -277,15 +277,27 @@ class IntegrationTest {
             "LaTeX detection regression: 'paper.tex' resolved to ${latexFormat.id} instead of latex"
         }
 
-        // The .txt family is intentionally NOT asserted as a specific id —
-        // both plaintext and todotxt advertise .txt extension, and the
-        // detection algorithm returns the first match (currently plaintext).
-        // Either outcome lets a user view the file. The "todo.txt should
-        // resolve to todotxt by filename" case is a separate compound-
-        // extension detection defect tracked in KNOWN_DEFECTS.md.
-        val anyTxtFormat = FormatRegistry.detectByFilename("notes.txt")
-        assert(anyTxtFormat.id == "plaintext" || anyTxtFormat.id == "todotxt") {
-            "Plain-text family detection regression: 'notes.txt' resolved to ${anyTxtFormat.id} (expected plaintext or todotxt)"
+        // Iter 40 — #yole-todotxt-compound-extension-detection FIXED.
+        // The detectByFilename algorithm now tries whole-filename-as-
+        // extension before falling back to the bare suffix, so the
+        // canonical Todo.txt filename resolves correctly. Non-Todo
+        // .txt files (notes.txt, scratch.txt) still resolve to the
+        // first format claiming .txt (currently PlainText).
+        val canonicalTodo = FormatRegistry.detectByFilename("todo.txt")
+        assert(canonicalTodo.id == "todotxt") {
+            "Canonical 'todo.txt' must resolve to TODOTXT after iter-40 fix, not ${canonicalTodo.id}"
+        }
+        val prefixedTodo = FormatRegistry.detectByFilename("work.todo.txt")
+        assert(prefixedTodo.id == "todotxt") {
+            "Prefixed 'work.todo.txt' must resolve to TODOTXT, not ${prefixedTodo.id}"
+        }
+
+        // Generic .txt filenames still resolve to plaintext (no special
+        // pattern match in the filename → first format claiming .txt
+        // wins by registration order, which is PlainText).
+        val genericTxt = FormatRegistry.detectByFilename("notes.txt")
+        assert(genericTxt.id == "plaintext") {
+            "Generic 'notes.txt' must resolve to PLAINTEXT (first .txt format by registration), not ${genericTxt.id}"
         }
     }
 

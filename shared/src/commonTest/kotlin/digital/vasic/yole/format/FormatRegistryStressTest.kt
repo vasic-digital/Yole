@@ -298,6 +298,47 @@ class FormatRegistryStressTest {
         assertEquals(FormatRegistry.ID_MARKDOWN, format.id)
     }
 
+    @Test
+    fun `detectByFilename resolves todo dot txt to todotxt not plaintext`() {
+        // Iter 40 fix (#yole-todotxt-compound-extension-detection):
+        // before the fix, 'todo.txt' resolved to plaintext because the
+        // compound-extension loop only tried the suffix at the FIRST
+        // dot ('.txt') — never '.todo.txt'. Both plaintext and todotxt
+        // advertise '.txt'; plaintext won by registration order. The
+        // fix iterates dot-positions and tries suffixes longest-first
+        // so '.todo.txt' (a TodoTxt extension) matches before '.txt'.
+        //
+        // End-user impact: a file literally named 'todo.txt' — THE
+        // canonical Todo.txt filename — now opens with Todo.txt
+        // highlighting instead of as Plain Text.
+        val format = FormatRegistry.detectByFilename("todo.txt")
+        assertEquals(
+            FormatRegistry.ID_TODOTXT,
+            format.id,
+            "todo.txt must resolve to TODOTXT (compound-extension match), not ${format.id}"
+        )
+    }
+
+    @Test
+    fun `detectByFilename resolves prefixed todo dot txt to todotxt`() {
+        // Compound-extension matching must work for any prefix:
+        // 'work.todo.txt', 'shopping.todo.txt', etc. all canonical
+        // Todo.txt-derived filenames.
+        val variants = listOf(
+            "work.todo.txt",
+            "shopping.todo.txt",
+            "project-x.todo.txt"
+        )
+        variants.forEach { filename ->
+            val format = FormatRegistry.detectByFilename(filename)
+            assertEquals(
+                FormatRegistry.ID_TODOTXT,
+                format.id,
+                "'$filename' must resolve to TODOTXT (compound-extension match), not ${format.id}"
+            )
+        }
+    }
+
     // ==================== FORMAT PATTERNS STRESS ====================
 
     @Test

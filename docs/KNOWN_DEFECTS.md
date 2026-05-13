@@ -163,19 +163,17 @@ single iteration that's focused on test-bluff resolution.
 
 ---
 
-## #yole-todotxt-compound-extension-detection
+## #yole-todotxt-compound-extension-detection — FIXED iter 40 (2026-05-13)
 
-**Symptom**
-`FormatRegistry.detectByFilename("todo.txt")` returns the PLAIN TEXT
-format instead of TODO.TXT, even though the TodoTxtFormat advertises
-`.todo.txt` as one of its extensions (specifically chosen for this
-case). End-user impact: a user with a file literally named `todo.txt`
-(the canonical Todo.txt filename) sees it open as Plain Text — no
-priority colouring, no `(A)` / `+project` / `@context` highlighting.
+**Symptom (historical)**
+`FormatRegistry.detectByFilename("todo.txt")` returned PLAIN TEXT
+instead of TODO.TXT even though TodoTxt advertises `.todo.txt` as an
+extension. End-user impact: a file named `todo.txt` (the canonical
+Todo.txt filename) opened without Todo.txt highlighting.
 
 **Discovered by**
-Iter-39 (2026-05-13). Originally asserted in
-`IntegrationTest.testFormatDetectionIntegration`; failed:
+Iter-39 — `IntegrationTest.testFormatDetectionIntegration` initially
+asserted `detectByFilename("todo.txt") == todotxt` and failed:
 
 ```
 java.lang.AssertionError: Todo.txt detection regression: 'todo.txt'
@@ -183,45 +181,36 @@ java.lang.AssertionError: Todo.txt detection regression: 'todo.txt'
 ```
 
 **Root cause (forensic)**
-`FormatRegistry.detectByFilename` line 505: the compound-extension
-loop starts at the **first** dot in the filename, so for `todo.txt`
-it only tries `.txt` (not `.todo.txt`). The TodoTxtFormat's
-advertised `.todo.txt` extension is therefore never matched against
-this filename. Two formats have `.txt` in their extensions list
-(PlainText, TodoTxt) and the algorithm returns the first match,
-which is PlainText.
+`FormatRegistry.detectByFilename` only tried suffixes anchored at the
+FIRST `.` in the filename, so for `todo.txt` it never tested whether
+the WHOLE filename (preceded by a `.`, i.e. `.todo.txt`) matched any
+advertised extension. Two formats claimed `.txt` (PlainText + TodoTxt);
+PlainText won by registration order.
 
-**Proper fix**
-Change the compound-extension search to try suffixes anchored at
-EVERY dot in the filename, longest first. For `myfile.todo.txt`:
-1. Try `.todo.txt` → matches TodoTxt.
-2. Fall back to `.txt` → matches PlainText.
+**Fix applied (iter 40, commit see CONTINUATION.md §24)**
+Three-pass algorithm in `detectByFilename`:
+1. **Whole-filename match** — try `"." + filename` against every format's
+   extensions list. For `todo.txt`, this checks `.todo.txt` directly →
+   matches TodoTxt.
+2. **Compound-extension longest-first** — iterate dot-positions
+   left-to-right (earlier positions yield longer suffixes) and try
+   each. Closes `<prefix>.todo.txt → todotxt`.
+3. **Bare-extension fallback** — preserves the prior contract via
+   `detectByExtension`.
 
-Pseudocode for the corrected loop:
+Generic `.txt` filenames (`notes.txt`, `scratch.txt`) still resolve to
+PlainText because there is no whole-filename or compound match — the
+fallback takes over and PlainText is first.
 
-```kotlin
-val dotPositions = filename.mapIndexedNotNull { i, c -> if (c == '.') i else null }
-for (start in dotPositions) {
-    val suffix = filename.substring(start).lowercase()
-    val match = formats.firstOrNull { fmt ->
-        fmt.extensions.any { it.equals(suffix, ignoreCase = true) }
-    }
-    if (match != null) return match
-}
-```
-
-**Blocker**
-None — this is a 5-line fix in `FormatRegistry.kt`. It needs paired
-test coverage in `shared/src/commonTest/.../format/FormatRegistryTest.kt`
-asserting `detectByFilename("todo.txt") == todotxt`. Out of scope for
-iter-39 (test-bluff resolution) but should be the next iter's first
-data-layer change.
-
-**Exemptions in test code** (must be removed when this is closed):
-- `IntegrationTest.kt::testFormatDetectionIntegration` — the test
-  currently accepts either `plaintext` or `todotxt` for `notes.txt`,
-  and explicitly does NOT assert `todo.txt → todotxt`. Search for
-  `#yole-todotxt-compound-extension-detection`.
+**Verification**
+- New paired tests in `shared/src/commonTest/.../FormatRegistryStressTest.kt`:
+  `detectByFilename resolves todo dot txt to todotxt not plaintext`
+  + `detectByFilename resolves prefixed todo dot txt to todotxt`. Both PASS.
+- All 140 FormatRegistry tests across StressTest / EdgeCaseTest /
+  UnitTest / LazyInitStressTest pass without regression.
+- `IntegrationTest.testFormatDetectionIntegration` strengthened to
+  assert `todo.txt → todotxt` AND `work.todo.txt → todotxt` AND
+  `notes.txt → plaintext` (the expected behaviors after the fix).
 
 ---
 

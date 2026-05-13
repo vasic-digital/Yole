@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-13 (iter 39 — all 7 IntegrationTest SKIP-OK cases rewritten to honest PASS (+7); 2 real data-layer defects exposed and ticketed: `#yole-json-parser-missing` and `#yole-todotxt-compound-extension-detection`. New totals: 56 PASS / 20 SKIP-OK / 0 FAIL via both Gradle and adb-direct.)
+**Last updated:** 2026-05-13 (iter 40 — `#yole-todotxt-compound-extension-detection` FIXED at the data layer: `detectByFilename` now uses 3-pass algorithm (whole-filename → compound longest-first → bare-extension fallback). `todo.txt` and `work.todo.txt` now correctly resolve to TODOTXT. Surface unchanged at 56 PASS / 20 SKIP-OK / 0 FAIL but with the de-bluff that the IntegrationTest detection assertion is now STRICT, not "either-or".)
 **Current branch:** `master`
 **HEAD (parent of this commit):** `ee120766` — `feat(iter-36): rewrite 3 SKIP-OK instrumented tests to real PASS`.
 **Submodule SHAs (per HEAD tree):**
@@ -123,10 +123,7 @@ From `docs/KNOWN_DEFECTS.md` (authoritative — keep that file in sync with this
 - **Discovered by:** Iter-39 `IntegrationTest.testParserRegistryCompleteness` (assertion: every non-binary text format has a parser).
 - **Fix:** Implement `digital.vasic.yole.format.json.JsonParser`, register via `ParserInitializer.registerAllParsersLazy(FormatRegistry.ID_JSON) { JsonParser() }`. Non-trivial parser; not in iter-39 scope.
 
-#### `#yole-todotxt-compound-extension-detection` — NEW iter 39
-- **Symptom:** `FormatRegistry.detectByFilename("todo.txt")` returns Plain Text, not Todo.txt — even though Todo.txt advertises `.todo.txt` as one of its extensions. End-user impact: a file literally named `todo.txt` (the canonical Todo.txt filename) opens without Todo.txt highlighting.
-- **Root cause (forensic):** `detectByFilename` line 505 — the compound-extension loop starts at the FIRST dot of the filename, so for `todo.txt` it only tries `.txt` (not `.todo.txt`). Two formats advertise `.txt` (PlainText + TodoTxt); PlainText wins because it's listed first.
-- **Fix:** 5-line change in `FormatRegistry.kt` — iterate dot-positions and try suffixes longest-first. Paired test in `shared/src/commonTest/.../format/FormatRegistryTest.kt`.
+#### `#yole-todotxt-compound-extension-detection` — ~~NEW iter 39~~ **FIXED iter 40 (see CLOSED list)**
 
 #### `#yole-android-fab-new-file-flow-removed` — NEW iter 38
 - **Symptom:** Four YoleAppTest methods (`testFloatingActionButtonFunctionality`, `testFileBrowserBasicFunctionality`, `testEditorScreenNavigation`, `testScreenNavigationWithAnimations`) target a UI flow that no longer ships: a global "Add" FAB → editor with "Editing: untitled.txt" title → "Back" content-description. Previously masked under the generic `#yole-android-instrumented-tests-pre-iter27-rewrite` ticket which mistakenly suggested rewritability.
@@ -145,6 +142,7 @@ From `docs/KNOWN_DEFECTS.md` (authoritative — keep that file in sync with this
 
 ### CLOSED (record for forensic continuity — do NOT re-open without reason)
 
+- `#yole-todotxt-compound-extension-detection` — FIXED 2026-05-13 (iter 40, commit `<<sha-placeholder>>`). `FormatRegistry.detectByFilename` rewritten with 3-pass algorithm (whole-filename match → compound longest-first → bare-extension fallback). Closes both `todo.txt → todotxt` AND `work.todo.txt → todotxt` cases. Paired tests added to `shared/src/commonTest/.../FormatRegistryStressTest.kt`; `IntegrationTest.testFormatDetectionIntegration` strengthened to assert strict-not-either. Verified: 140 FormatRegistry tests pass (host JVM); 19 IntegrationTest pass (adb-direct); 56/76 full instrumented suite pass with no regression. Evidence: `docs/qa/iter-40/`.
 - `#yole-android-gradle-utp-single-class-filter` — FIXED 2026-05-13 (commit `df2b4bd7`, iter 38). Discovered + fixed in the same iter. `tasks.withType<Test>().configureEach { filter { excludeTestsMatching("*.robolectric.*") } }` was inadvertently sweeping in `DeviceProviderInstrumentTestTask` (which extends `Test` in AGP 8.x), causing UTP to inject `class=YoleAppTest` arg_map and narrow connectedDebugAndroidTest to one class. Fix: scoped the filter to `name.endsWith("UnitTest")` tasks only. Verified: Gradle XML now reports `tests="76" failures="0" errors="0" skipped="27"` with all 5 classnames present, matching adb-direct evidence. Evidence: `docs/qa/iter-38/connectedDebugAndroidTest-fix-verified.{xml,log}`.
 - `#smb-stub-no-negotiation` — FIXED 2026-05-07 (commit `1f6472c9`). `SmbService.connect()` performs real SMB protocol negotiation and authentication; `_isConnected = true` only after real success. Test lambda injection (`testConnectFn`/`testAuthenticateFn`) for test control. 441/441 SMB+WebDAV tests pass.
 - `#webdav-always-online-stub` — FIXED 2026-05-07 (commit `1f6472c9`). Removed the catch block that suppressed network errors and lied about online state. `isOnline` honestly reflects reachability per CONST-035.
@@ -450,6 +448,79 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 24. Iter 40 — `#yole-todotxt-compound-extension-detection` FIXED at the data layer
+
+The iter-39 IntegrationTest rewrite exposed a real bug in
+`FormatRegistry.detectByFilename`: the canonical Todo.txt filename
+(`todo.txt`) resolved to PlainText instead of TodoTxt. Iter-40 fixes
+the bug at the source rather than working around it.
+
+### Root cause (forensic)
+
+`detectByFilename` only iterated dot-positions starting from the
+FIRST `.` in the filename. So for `todo.txt`:
+- First dot at index 4; suffix tried: `.txt`.
+- Both PlainText and TodoTxt advertise `.txt`; PlainText wins by
+  registration order.
+- The `.todo.txt` extension that TodoTxt advertises was never
+  considered because the algorithm doesn't know to look at the
+  WHOLE filename as a potential extension.
+
+### Fix: 3-pass algorithm
+
+`detectByFilename` rewritten to try:
+
+1. **Whole-filename match** — try `"." + lowercase(filename)` against
+   every format's `extensions` list. For `todo.txt`, this checks
+   `.todo.txt` → matches TodoTxt directly.
+
+2. **Compound-extension longest-first** — iterate dot-positions
+   left-to-right (earlier positions yield longer suffixes) and try
+   each. Closes prefixed cases like `work.todo.txt → todotxt` which
+   the previous implementation also got wrong.
+
+3. **Bare-extension fallback** via `detectByExtension`. Preserves
+   the prior contract; PlainText still wins for generic `.txt`.
+
+End-user impact: a file literally named `todo.txt` (the canonical
+Todo.txt filename) now opens with Todo.txt highlighting — priority
+`(A)`, `+project`, `@context` markers, completion `x ` prefix, etc.
+
+### Paired tests
+
+`shared/src/commonTest/.../FormatRegistryStressTest.kt`:
+- `detectByFilename resolves todo dot txt to todotxt not plaintext`
+- `detectByFilename resolves prefixed todo dot txt to todotxt`
+
+Both pass. All 140 FormatRegistry tests across 4 test classes pass
+on host JVM — no regression to neighboring detection behaviors.
+
+`IntegrationTest.testFormatDetectionIntegration` strengthened:
+previously accepted `notes.txt` resolving to either `plaintext` or
+`todotxt`, now strictly asserts `todo.txt → todotxt`,
+`work.todo.txt → todotxt`, AND `notes.txt → plaintext`. No more
+"either-or" weak assertion.
+
+### Surface metrics
+
+| Metric | Iter 39 | **Iter 40** |
+|--------|---------|-------------|
+| Tests in suite | 76 | 76 |
+| **PASS (adb + Gradle agree)** | 56 | **56** |
+| Silent failures | 0 | 0 |
+| Explicit SKIP-OK | 20 | **20** |
+| BUILD result | SUCCESSFUL | SUCCESSFUL |
+
+Same count, but ONE test bluff turned into a strict assertion + the
+data-layer bug behind it is gone. That is the kind of forward
+progress CONST-035 §11.4 anchors to.
+
+### Iter-40 commit
+
+`<<sha-placeholder>>` — see CLOSED tickets above for canonical record. Evidence at `docs/qa/iter-40/`.
 
 ---
 

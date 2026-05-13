@@ -503,25 +503,46 @@ object FormatRegistry {
      * ```
      */
      fun detectByFilename(filename: String): TextFormat {
-         // Try compound extensions first (e.g., ".todo.txt") for more specific matching,
-         // then fall back to simple extension (e.g., ".txt")
-         val dotIndex = filename.indexOf('.')
-         if (dotIndex >= 0) {
-             val compoundExt = filename.substring(dotIndex).lowercase()
-             // Try progressively shorter compound extensions
-             var idx = dotIndex
-             while (idx < filename.length) {
-                 val ext = filename.substring(idx).lowercase()
-                 val format = formats.firstOrNull { fmt ->
-                     fmt.extensions.any { it.equals(ext, ignoreCase = true) }
-                 }
-                 if (format != null) return format
-                 // Move to next dot
-                 val nextDot = filename.indexOf('.', idx + 1)
-                 if (nextDot < 0) break
-                 idx = nextDot
-             }
+         // Iter 40 fix (#yole-todotxt-compound-extension-detection).
+         //
+         // Algorithm — three passes, ordered most-specific to least:
+         //
+         //   1. WHOLE-FILENAME match. Check if "." + entire-filename
+         //      matches any advertised extension. Closes the bare
+         //      "todo.txt" case — TodoTxt advertises ".todo.txt" which
+         //      matches "." + "todo.txt" → TodoTxt (not PlainText).
+         //      This is the iter-40 net-new pass.
+         //
+         //   2. COMPOUND-EXTENSION match longest-first. Iterate every
+         //      "."-position in the filename left-to-right (earlier
+         //      positions give longer suffixes) and try the suffix at
+         //      each position. Closes the prefixed "work.todo.txt"
+         //      case which the previous implementation also got wrong.
+         //
+         //   3. BARE-EXTENSION fallback via detectByExtension.
+         //      Preserves the prior contract (first format claiming
+         //      this extension wins by registration order).
+         val lower = filename.lowercase()
+
+         // Pass 1: whole-filename-as-extension match.
+         val fullAsExt = ".$lower"
+         val wholeMatch = formats.firstOrNull { fmt ->
+             fmt.extensions.any { it.equals(fullAsExt, ignoreCase = true) }
          }
+         if (wholeMatch != null) return wholeMatch
+
+         // Pass 2: compound-extension longest-first.
+         var dotPos = lower.indexOf('.')
+         while (dotPos >= 0) {
+             val suffix = lower.substring(dotPos)
+             val match = formats.firstOrNull { fmt ->
+                 fmt.extensions.any { it.equals(suffix, ignoreCase = true) }
+             }
+             if (match != null) return match
+             dotPos = lower.indexOf('.', dotPos + 1)
+         }
+
+         // Pass 3: bare-extension fallback.
          val extension = filename.substringAfterLast('.', "")
          return if (extension.isNotEmpty()) {
              detectByExtension(extension)
