@@ -560,7 +560,7 @@ satisfied at every layer audited this session.)
 
 ### Iter-49 commit
 
-`<<sha-placeholder>>` — see §6 for canonical record. Evidence at `docs/qa/iter-49/`.
+`cd98de72` — see §6 for canonical record. Evidence at `docs/qa/iter-49/`.
 
 ---
 
