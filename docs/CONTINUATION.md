@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-13 (iter 54 closeout — operator supplied a non-interactive `FIREBASE_TOKEN` (now persisted in gitignored `~/.zshrc` + Yole `.env` with 0600 perms — token NEVER appears in tracked code, commit messages, or logs) AND access to `nezha.local` (Linux x86_64 build host, user `milosvasic`, SSH-key-only login wired via initial-password one-shot ssh-copy-id, password not persisted anywhere). Both Android APKs (Release `0kj067hci3iv8` + Debug `31gcgkn25gppo` for app `1:578988389676:android:d61715a0a84a42c65d2889`) distributed to all 3 mandated testers (owner + developer + tester). Containers submodule new `pkg/crossbuild/` package landed at commit `5059c75` — generic decoupled Selector → Backend orchestration with HostDirect (operational) + WineContainer (skeleton + tests + Containerfile + provisioning doc) backends — addressing the operator's "Containers + QEMU MUST be handled in Containers submodule on generic reusable decoupled level" mandate. Honest carry-over: nezha JDK lacks jmods + nezha network can't reach github release assets, blocking the Linux .deb build (`#nezha-jdk-jmods-bootstrap`); operator must `podman build` the crossbuild-wine image on a Linux host to unblock Windows .msi (`#crossbuild-windows-image-provisioning`); webApp BrowserDistribution still owed. Full forensic in §38 below.
+**Last updated:** 2026-05-13 (iter 54 closeout — operator supplied a non-interactive `FIREBASE_TOKEN` (now persisted in gitignored `~/.zshrc` + Yole `.env` with 0600 perms — token NEVER appears in tracked code, commit messages, or logs) AND access to the dedicated Linux x86_64 build host (hostname + user pinned in `.env` under `LINUX_BUILD_HOST` / `LINUX_BUILD_USER`, both gitignored — never hardcoded in tracked code or docs). SSH-key-only login wired via initial-password one-shot ssh-copy-id; password not persisted anywhere. Both Android APKs (Release `0kj067hci3iv8` + Debug `31gcgkn25gppo` for app `1:578988389676:android:d61715a0a84a42c65d2889`) distributed to all 3 mandated testers (owner + developer + tester). Containers submodule new `pkg/crossbuild/` package landed at commit `5059c75` — generic decoupled Selector → Backend orchestration with HostDirect (operational) + WineContainer (skeleton + tests + Containerfile + provisioning doc) backends — addressing the operator's "Containers + QEMU MUST be handled in Containers submodule on generic reusable decoupled level" mandate. Honest carry-over: the configured Linux build host's system JDK lacks jmods + its network can't reach github release assets, blocking the Linux .deb build (`#linux-build-host-jdk-jmods-bootstrap`); operator must `podman build` the crossbuild-wine image on a Linux host to unblock Windows .msi (`#crossbuild-windows-image-provisioning`); webApp BrowserDistribution still owed. Full forensic in §38 below.
 
 iter 53 — LLMProvider bluff strip + apikeys central authority + live HuggingFace Challenge per operator's "use LLMsVerifier as model authority + api_keys.sh credential source" mandate. Two LLMProvider commits (c3bccd7 + 2e465c4): Ollama/Venice drift bluffs fixed via httptest fixtures (49/0 PASS); Models sibling-replace gap eliminated; new pkg/apikeys reads ApiKey_<Provider> env vars from ~/api_keys.sh; new live HuggingFace Challenge captured 5 real models on operator's host; Tier 3 (FallbackModels) marked DEPRECATED in pkg/discovery/discovery.go per CONST-036 with the per-provider httptest sweep tracked as `#fallback-tier-removed-needs-httptest-fixture` (75 latent bluffs counted via raw-strip evidence at `docs/qa/iter-52/submodule-llmprovider-tier3-strip.log` — multi-iter carry-over). Full sweep details in §37 below. Iter-52 governance closeout (§36) remains intact.
 
@@ -571,17 +571,20 @@ Verified-tester list (via `firebase appdistribution:testers:list`):
 
 ### Honest-carry-over for iter-55+
 
-1. **Linux x86_64 .deb on nezha.local** — JDK 21 system package on
-   nezha (ALT Linux `openjdk-21-alt1`) does NOT ship a jmods/
+1. **Linux x86_64 .deb on the configured Linux build host** —
+   hostname pinned in `.env` (`LINUX_BUILD_HOST`); the host's system
+   JDK 21 (ALT Linux `openjdk-21-alt1`) does NOT ship a jmods/
    directory, so Compose Desktop's `createRuntimeImage` (jlink)
    fails with "module-path is not specified and this runtime image
    does not contain jmods directory." Temurin 17 user-install
-   attempt failed because nezha's network cannot resolve
+   attempt failed because the host's network cannot resolve
    `release-assets.githubusercontent.com` (DNS / firewall). Owed:
-   either (a) copy a Temurin tarball from the macOS host to nezha
-   via scp, or (b) provision an apt mirror reachable from nezha
-   that ships `openjdk-21-jdk` with jmods. Tracked as
-   `#nezha-jdk-jmods-bootstrap` in KNOWN_DEFECTS.
+   either (a) copy a Temurin tarball from the macOS host via scp,
+   (b) provision an apt mirror that ships `openjdk-21-jdk` with
+   jmods, or (c) use `crossbuild-linux` Container backend (now
+   shipping in Containers commit-bump `<this iter>` — see
+   §38.B below). Tracked as `#linux-build-host-jdk-jmods-bootstrap`
+   in KNOWN_DEFECTS.
 2. **Windows x86_64 .msi via Containers QEMU/Wine** — Backend
    skeleton + tests + Containerfile + provisioning doc all landed
    in Containers commit `5059c75`. Operator must `podman build`

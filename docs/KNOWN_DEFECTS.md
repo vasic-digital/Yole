@@ -29,39 +29,51 @@ See `CONTINUATION.md` §4 CLOSED list for canonical record.
 
 ---
 
-## #nezha-jdk-jmods-bootstrap — NEW iter 54
+## #linux-build-host-jdk-jmods-bootstrap — NEW iter 54
 
 **Symptom**
-`nezha.local` (Linux x86_64 build host) carries ALT Linux's
-`openjdk-21-alt1` package which does not ship a `jmods/` directory.
-Compose Desktop's `createRuntimeImage` (jlink) fails with
+The dedicated Linux x86_64 build host (hostname pinned in `.env`
+under `LINUX_BUILD_HOST` — gitignored, NEVER hardcoded in tracked
+code or docs) carries an ALT Linux `openjdk-21-alt1` package that
+does NOT ship a `jmods/` directory. Compose Desktop's
+`createRuntimeImage` (jlink) fails with
 `Error: --module-path is not specified and this runtime image does
 not contain jmods directory.` Build cannot produce the Linux .deb
 artifact until the host has a JDK distribution with jmods.
 
 **Discovered by**
-Iter-54 attempt to produce `Yole-Desktop-linux-x64-1.0.1-Release-0.0.0.1.1.deb`
-on nezha.local. Logs in
+Iter-54 attempt to produce
+`Yole-Desktop-linux-x64-1.0.1-Release-0.0.0.1.1.deb` on the
+configured build host. Logs in
 `~/Yole/desktopApp/build/compose/logs/createRuntimeImage/jlink-*.err.txt`
-on nezha.
+on the host.
 
 **Proper fix (choose ONE)**
-(a) Copy a Temurin 17 tarball from the macOS audit host to nezha
-    via scp, extract under `~/jdk17/`, set `JAVA_HOME` to point
-    at it before invoking gradlew. (Recommended — user-level, no
-    sudo, no nezha network access needed.)
-(b) Mirror a Debian/Ubuntu apt repo onto nezha's filesystem that
-    ships `openjdk-21-jdk` (full distribution incl. jmods). More
-    invasive.
-(c) Install JDK via ALT Linux's `apt-get install java-21-openjdk-devel`
-    (or equivalent) if such a package exists. Requires sudo →
-    forbidden by CONST.
+(a) Copy a Temurin 17 tarball from the macOS audit host via scp,
+    extract under `~/jdk17/`, set `JAVA_HOME` to point at it
+    before invoking gradlew. (Recommended — user-level, no sudo,
+    no host network access to github.com needed.)
+(b) Mirror a Debian/Ubuntu apt repo onto the host's filesystem
+    that ships `openjdk-21-jdk` (full distribution incl. jmods).
+    More invasive.
+(c) Install JDK via the host's package manager
+    (`apt-get install java-21-openjdk-devel` or equivalent) if such
+    a package exists. Requires sudo → forbidden by CONST.
+(d) **Now also available**: use the Containers submodule's
+    `LinuxContainerBackend` (commits `5059c75` + iter-54
+    follow-up) — runs the build inside a JDK-17 + Gradle Linux
+    container on any host with rootless podman/docker. Removes the
+    dependency on the build-host's system JDK entirely. See
+    `Submodules/Containers/docs/crossbuild/linux-image-provisioning.md`.
 
 **Blocker**
-nezha cannot currently resolve `release-assets.githubusercontent.com`
-(DNS/firewall), so a direct curl-the-Temurin-tarball approach
-failed. The scp-from-mac path needs the operator to either grant
-that DNS resolution or sit through one scp copy.
+The build host cannot currently resolve
+`release-assets.githubusercontent.com` (DNS/firewall), so a direct
+curl-the-Temurin-tarball approach failed. The scp-from-mac path
+needs the operator to either grant that DNS resolution or sit
+through one scp copy. The container path (option d) sidesteps the
+issue entirely once the operator provisions the
+`crossbuild-linux:jdk17-amd64` image once.
 
 ---
 
@@ -95,10 +107,12 @@ Then re-run the crossbuild_windows_msi_challenge.sh; it should
 produce a real .msi.
 
 **Blocker**
-Operator must perform the provisioning. nezha.local has rootless
-podman + 362G free, so it can host the image once
-`#nezha-jdk-jmods-bootstrap` unblocks (jmods needed for the
-crossbuild-wine image's JDK 17 install step inside the container).
+Operator must perform the provisioning. The configured Linux build
+host (`.env` `LINUX_BUILD_HOST`) has rootless podman + sufficient
+disk to host the image, so it can serve as the provisioning host
+once `#linux-build-host-jdk-jmods-bootstrap` unblocks (or earlier
+via option (d) above — running the provisioning steps inside the
+already-functional `crossbuild-linux` image, bootstrap-style).
 
 ---
 
