@@ -29,6 +29,57 @@ See `CONTINUATION.md` §4 CLOSED list for canonical record.
 
 ---
 
+## #fallback-tier-removed-needs-httptest-fixture — NEW iter 53
+
+**Symptom**
+~75 `TestGetCapabilities` / `Test*Provider_GetCapabilities` tests across
+LLMProvider's 30+ provider packages assert that `caps.SupportedModels`
+contains specific hardcoded model names (e.g. "llama-3.3-70b",
+"glm-4.6"). The values come from each provider's `FallbackModels` list,
+which was the Tier 3 discovery fallback. Plus 4 internal discovery tests
+that exercised Tier 3 directly.
+
+**Bluff classification**
+Structural — assertions test a hardcoded list, not the discovery wiring.
+Drift when the upstream catalogue evolves silently breaks the test
+without anything in our codebase changing (e.g. Venice retired
+"venice-uncensored" → `TestGetCapabilities` went red in iter-52 raw
+sweep without a single line of our code having changed).
+
+**Discovered by**
+Iter-53 CONST-036 enforcement attempt: stripping the Tier 3 runtime path
+in `pkg/discovery/discovery.go` immediately exposed 75 latent failures.
+That count is itself the auditable evidence that the hardcoded lists
+were structural bluffs.
+
+**Proper fix**
+For each affected `TestGetCapabilities`: replace
+`NewProvider("k", "", "")` with an `httptest.NewServer` returning a known
+catalogue, then assert against THAT catalogue. The pattern is already
+shipped for `pkg/providers/ollama/ollama_test.go::TestOllamaProvider_GetCapabilities`
+and `pkg/providers/venice/venice_test.go::TestGetCapabilities` — iter-53
+commit `2e465c4` and the preceding LLMProvider commit `c3bccd7`. Each
+remaining provider follows the same pattern.
+
+**Blocker**
+~75 individual provider tests + 4 discovery-internal tests
+(`TestDiscoverModels_Tier1_APIFails_FallsToTier3`,
+`TestDiscoverModels_Tier1_EmptyResponse_FallsToTier3`,
+`TestDiscoverModels_NoAPIKey_SkipsTier1`, `TestGetCachedModels_Empty`).
+Multi-iteration scope.
+
+**Exit criteria**
+Every `TestGetCapabilities` uses an httptest server (or honest
+`SKIP-OK: #fallback-tier-removed-needs-httptest-fixture` if the
+provider's discovery is intentionally unmocked). Then the Tier 3 runtime
+path in `pkg/discovery/discovery.go` can be removed and the
+`FallbackModels` field can be deleted from `ProviderConfig`. The raw
+strip log at
+`docs/qa/iter-52/submodule-llmprovider-tier3-strip.log` shows the
+expected pre-fix test output.
+
+---
+
 ## #robolectric-compose-ui-tests-brittle
 
 **Symptom**

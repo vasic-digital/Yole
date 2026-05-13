@@ -6,7 +6,9 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-13 (iter 52 — comprehensive honesty closeout. 18-task / 4-phase plan executed end-to-end per the operator's "do everything until last item done" mandate: (1) Governance cascade — extracted the canonical 39-line CONST-035 §11.4 covenant block from `Yole/CLAUDE.md` and idempotently propagated it to 34 governance files across the LLMProvider submodule + all 10 KMP-sibling repos' CONSTITUTION/CLAUDE/AGENTS triples + the Yole top-level CONSTITUTION.md; coverage went 14 → 48. (2) Stale-doc cleanup — `#smb-stub-no-negotiation` + `#webdav-always-online-stub` migrated OPEN→CLOSED in `docs/KNOWN_DEFECTS.md` referencing commit `1f6472c9`. (3) Cross-submodule test verification on macOS host — Challenges 17/0 (1 portability fix: shebang trailing-newline), Containers 36/0 (4 portability fixes: symlink resolution + 3 Linux-only skip guards), HelixQA 135/0, LLMProvider 46/8 (pre-existing env-drift in Ollama+Venice capability assertions + Models sibling-replace bootstrap gap, documented honestly), Security 14/0, all 10 KMP siblings `:desktopTest` BUILD SUCCESSFUL. (4) Yole verification chain — `bluff-scanner --mode all` clean, `anchor_manifest_challenge.sh` PASS, `mutation_ratchet_challenge.sh` PASS (stub). All logs persisted under `docs/qa/iter-52/`. See §36 for full breakdown.)
+**Last updated:** 2026-05-13 (iter 53 — LLMProvider bluff strip + apikeys central authority + live HuggingFace Challenge per operator's "use LLMsVerifier as model authority + api_keys.sh credential source" mandate. Two LLMProvider commits (c3bccd7 + 2e465c4): Ollama/Venice drift bluffs fixed via httptest fixtures (49/0 PASS); Models sibling-replace gap eliminated; new pkg/apikeys reads ApiKey_<Provider> env vars from ~/api_keys.sh; new live HuggingFace Challenge captured 5 real models on operator's host; Tier 3 (FallbackModels) marked DEPRECATED in pkg/discovery/discovery.go per CONST-036 with the per-provider httptest sweep tracked as `#fallback-tier-removed-needs-httptest-fixture` (75 latent bluffs counted via raw-strip evidence at `docs/qa/iter-52/submodule-llmprovider-tier3-strip.log` — multi-iter carry-over). Full sweep details in §37 below. Iter-52 governance closeout (§36) remains intact.
+
+iter 52 — comprehensive honesty closeout. 18-task / 4-phase plan executed end-to-end per the operator's "do everything until last item done" mandate: (1) Governance cascade — extracted the canonical 39-line CONST-035 §11.4 covenant block from `Yole/CLAUDE.md` and idempotently propagated it to 34 governance files across the LLMProvider submodule + all 10 KMP-sibling repos' CONSTITUTION/CLAUDE/AGENTS triples + the Yole top-level CONSTITUTION.md; coverage went 14 → 48. (2) Stale-doc cleanup — `#smb-stub-no-negotiation` + `#webdav-always-online-stub` migrated OPEN→CLOSED in `docs/KNOWN_DEFECTS.md` referencing commit `1f6472c9`. (3) Cross-submodule test verification on macOS host — Challenges 17/0 (1 portability fix: shebang trailing-newline), Containers 36/0 (4 portability fixes: symlink resolution + 3 Linux-only skip guards), HelixQA 135/0, LLMProvider 46/8 (pre-existing env-drift in Ollama+Venice capability assertions + Models sibling-replace bootstrap gap, documented honestly), Security 14/0, all 10 KMP siblings `:desktopTest` BUILD SUCCESSFUL. (4) Yole verification chain — `bluff-scanner --mode all` clean, `anchor_manifest_challenge.sh` PASS, `mutation_ratchet_challenge.sh` PASS (stub). All logs persisted under `docs/qa/iter-52/`. See §36 for full breakdown.)
 **Current branch:** `master`
 **HEAD (parent of this commit):** `ee120766` — `feat(iter-36): rewrite 3 SKIP-OK instrumented tests to real PASS`.
 **Submodule SHAs (per HEAD tree):**
@@ -451,6 +453,107 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 37. Iter 53 — LLMProvider bluff strip + apikeys central authority + live HuggingFace Challenge
+
+Direct operator mandate after iter-52 closeout (verbatim):
+> "For all models needs use LLMsVerifier Submodule from vasic-digital and
+> HelixDevelopment organization with all its mandatory dependency
+> Submodules. Make sure LLMsVerifier once fully incorporated and wired
+> uses all exported API keys for model providers from api_keys.sh from
+> our host's home directory (it is fully supported by the LLMsVerifier
+> now). Extend tests coverage and add proper Challenges so all work you
+> do is fully in compliance with no-bluff policy!"
+
+### Decisions (operator-chosen via AskUserQuestion)
+
+- **Integration scope:** LLMProvider only (Yole proper is a text editor,
+  the LLM surface lives in the submodule).
+- **FallbackModels:** strip entirely per CONST-036 strict reading.
+- **Invocation model:** Go library import (in-process).
+
+### Stage 1 (this iter) — what landed
+
+In **LLMProvider** (commits `c3bccd7` + `2e465c4`):
+
+1. **Ollama+Venice GetCapabilities drift-bluff fixes** (commit `c3bccd7`)
+   — replaced hardcoded `Contains("llama2"/"mistral"/"venice-uncensored")`
+   assertions with `httptest.NewServer` fixtures returning a known
+   catalogue. Also exposed + fixed a real Venice production bug: the
+   per-baseURL `modelsURL` derivation was dead code from the discoverer's
+   perspective (`ModelsEndpoint` was hardwired to `VeniceModelsURL`).
+   Now honours the derived URL so a custom baseURL — test server or
+   corporate proxy — actually reaches the discoverer.
+
+2. **`Models` sibling-replace bootstrap gap eliminated** (commit `c3bccd7`)
+   — dropped the broken `replace digital.vasic.models => ../Models`
+   from go.mod (the sibling repo was not present on the operator's
+   host). Root-package files (`circuit_breaker.go`, `provider.go`,
+   plus tests + docs code blocks) switched to import the internal
+   `digital.vasic.llmprovider/pkg/models`. Eliminates the
+   `[setup failed]` that caused on every fresh clone.
+
+3. **New `pkg/apikeys`** (commit `2e465c4`) — the SOLE place inside
+   LLMProvider that reads provider-credential env vars. Matches the
+   `ApiKey_<Provider>` convention used by `~/api_keys.sh` AND by
+   LLMsVerifier's `challenges/scripts/run_comprehensive_challenge.sh`,
+   so all three surfaces share one source of credential truth. 4 unit
+   tests use `t.Setenv` (real `os.Environ()` path, no SUT mocking per
+   CONST-035). Locks the canonical prefix constant `ApiKey_` so future
+   drift is mechanically caught.
+
+4. **New Challenge `challenges/scripts/apikeys_live_discovery_challenge.sh`**
+   (commit `2e465c4`) — sources the operator's `~/api_keys.sh`, picks
+   a provider with a credential set (default HuggingFace), and invokes
+   the live `/api/models` endpoint via the same Go path real code
+   would use. PASS requires non-empty model list with non-empty first
+   ID (real-stack positive evidence per CONST-035 §11.4). Operator
+   run log:
+   `docs/qa/iter-53/apikeys_live_discovery_challenge.log` shows
+   `OK: discovered 5 models from HuggingFace, first="SulphurAI/Sulphur-2-base"`
+   captured 2026-05-13 with the operator's live credential.
+
+5. **Tier 3 (FallbackModels) marked DEPRECATED in `pkg/discovery/discovery.go`**
+   (commit `2e465c4`) per CONST-036 — no hardcoded model lists. Runtime
+   path retained as a compatibility shim until the per-provider
+   httptest-fixture sweep completes. The bluff-exposure raw count
+   is logged at
+   `docs/qa/iter-52/submodule-llmprovider-tier3-strip.log` — 75
+   latent failures across 30+ providers + 4 discovery-internal tests.
+   Tracked as `#fallback-tier-removed-needs-httptest-fixture` in
+   `docs/KNOWN_DEFECTS.md`. Multi-iteration carry-over.
+
+Suite after this iter: 50 packages OK / 0 FAIL on macOS host JVM (up
+from 46/8 in iter-52 raw run).
+
+### Stage 2 (owed) — iter-54+
+
+- Each of the 75 `TestGetCapabilities` failures gets its own httptest
+  fixture matching the Ollama/Venice pattern.
+- Once that sweep lands, the Tier 3 runtime path in
+  `pkg/discovery/discovery.go` is removed and `FallbackModels` is
+  deleted from `ProviderConfig`.
+- Operator's `ApiKey_*` env vars flow from `~/api_keys.sh` →
+  LLMsVerifier's verification cycle → cached manifest → consumed by
+  LLMProvider at discovery time.
+
+### Surface metrics (iter-53 stage 1)
+
+| Metric | Iter 52 | **Iter 53** |
+|--------|---------|-------------|
+| LLMProvider full-suite PASS/FAIL on macOS | 46 / 8 (drift + env gap) | **50 / 0** |
+| LLMProvider live-API Challenge | absent | **PASS — 5 real models from HuggingFace** |
+| LLMProvider `~/api_keys.sh` integration | none | **`pkg/apikeys` is the central authority** |
+| Hardcoded model lists (CONST-036 surface area) | 40 providers × FallbackModels | runtime path marked DEPRECATED + KNOWN_DEFECTS ticket opened (sweep owed) |
+| Latent bluffs uncovered | 0 (silent) | **75 + 4 (loud — `#fallback-tier-removed-needs-httptest-fixture`)** |
+
+### Iter-53 commits (per-repo SHAs)
+
+- LLMProvider:  `c3bccd7` — fix(iter-53): eliminate Ollama+Venice GetCapabilities drift bluff + drop dead Models replace
+- LLMProvider:  `2e465c4` — feat(iter-53): apikeys central authority + live HuggingFace Challenge + Tier-3 CONST-036 deprecation
+- Yole main:    `<pending Task 18 of iter-52 plan extension>` — submodule pointer bump + KNOWN_DEFECTS + this CONTINUATION entry
 
 ---
 

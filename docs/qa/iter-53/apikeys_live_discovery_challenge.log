@@ -1,0 +1,2 @@
+OK: discovered 5 models from HuggingFace, first="SulphurAI/Sulphur-2-base"
+PASS: apikeys_live_discovery_challenge
