@@ -6,7 +6,9 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-13 (iter 53 — LLMProvider bluff strip + apikeys central authority + live HuggingFace Challenge per operator's "use LLMsVerifier as model authority + api_keys.sh credential source" mandate. Two LLMProvider commits (c3bccd7 + 2e465c4): Ollama/Venice drift bluffs fixed via httptest fixtures (49/0 PASS); Models sibling-replace gap eliminated; new pkg/apikeys reads ApiKey_<Provider> env vars from ~/api_keys.sh; new live HuggingFace Challenge captured 5 real models on operator's host; Tier 3 (FallbackModels) marked DEPRECATED in pkg/discovery/discovery.go per CONST-036 with the per-provider httptest sweep tracked as `#fallback-tier-removed-needs-httptest-fixture` (75 latent bluffs counted via raw-strip evidence at `docs/qa/iter-52/submodule-llmprovider-tier3-strip.log` — multi-iter carry-over). Full sweep details in §37 below. Iter-52 governance closeout (§36) remains intact.
+**Last updated:** 2026-05-13 (iter 54 — version bump 1.0.0 → 1.0.1 (versionCode 100 → 101 = `0.0.0.1.1`) + Android debug+release APKs + Desktop macOS-arm64 debug+release dmgs rebuilt under `releases/` (gitignored), CHANGELOG snapshot at `docs/releases/1.0.1/release-notes.md`. Honest carry-over: Desktop linux-x64 .deb + Windows-x64 .msi need their respective host OSes (Compose Desktop only packages for current OS); Web Wasm `:webApp:BrowserDistribution` task not wired (pre-existing config gap); Firebase upload requires interactive `firebase login` which operator must run. CONST §6.K-debt acknowledged — Containers-strict gate not yet enforceable on macOS audit host; this iter ran host-direct Gradle as operator-iteration scope. Full forensic in §38 below.
+
+iter 53 — LLMProvider bluff strip + apikeys central authority + live HuggingFace Challenge per operator's "use LLMsVerifier as model authority + api_keys.sh credential source" mandate. Two LLMProvider commits (c3bccd7 + 2e465c4): Ollama/Venice drift bluffs fixed via httptest fixtures (49/0 PASS); Models sibling-replace gap eliminated; new pkg/apikeys reads ApiKey_<Provider> env vars from ~/api_keys.sh; new live HuggingFace Challenge captured 5 real models on operator's host; Tier 3 (FallbackModels) marked DEPRECATED in pkg/discovery/discovery.go per CONST-036 with the per-provider httptest sweep tracked as `#fallback-tier-removed-needs-httptest-fixture` (75 latent bluffs counted via raw-strip evidence at `docs/qa/iter-52/submodule-llmprovider-tier3-strip.log` — multi-iter carry-over). Full sweep details in §37 below. Iter-52 governance closeout (§36) remains intact.
 
 iter 52 — comprehensive honesty closeout. 18-task / 4-phase plan executed end-to-end per the operator's "do everything until last item done" mandate: (1) Governance cascade — extracted the canonical 39-line CONST-035 §11.4 covenant block from `Yole/CLAUDE.md` and idempotently propagated it to 34 governance files across the LLMProvider submodule + all 10 KMP-sibling repos' CONSTITUTION/CLAUDE/AGENTS triples + the Yole top-level CONSTITUTION.md; coverage went 14 → 48. (2) Stale-doc cleanup — `#smb-stub-no-negotiation` + `#webdav-always-online-stub` migrated OPEN→CLOSED in `docs/KNOWN_DEFECTS.md` referencing commit `1f6472c9`. (3) Cross-submodule test verification on macOS host — Challenges 17/0 (1 portability fix: shebang trailing-newline), Containers 36/0 (4 portability fixes: symlink resolution + 3 Linux-only skip guards), HelixQA 135/0, LLMProvider 46/8 (pre-existing env-drift in Ollama+Venice capability assertions + Models sibling-replace bootstrap gap, documented honestly), Security 14/0, all 10 KMP siblings `:desktopTest` BUILD SUCCESSFUL. (4) Yole verification chain — `bluff-scanner --mode all` clean, `anchor_manifest_challenge.sh` PASS, `mutation_ratchet_challenge.sh` PASS (stub). All logs persisted under `docs/qa/iter-52/`. See §36 for full breakdown.)
 **Current branch:** `master`
@@ -453,6 +455,97 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 38. Iter 54 — Version bump 1.0.0 → 1.0.1 + rebuild Android + Desktop macOS-arm64 + per-version CHANGELOG snapshot
+
+Direct operator mandate after iter-53 closeout (verbatim):
+> "When finally everything completed, can we continue with next
+> features? If yes, rebuild everything and do redistribute all apps
+> and services via Firebase Distribution. Do not forget to test,
+> validate and verify EVERYTHING before building (using Containers)
+> and releasing (distributing)! Extend all documentation and related
+> materials too! IMPORTANT: Make sure that all existing tests and
+> Challenges do work in anti-bluff manner […]. Do not forget to
+> increase version code properly to all apps and services"
+
+### Operator decisions (AskUserQuestion before scope landed)
+
+- **Artifact set:** all (Android debug+release, all 3 desktop, Web Wasm).
+- **Build path:** Containers-strict per CONST §6.K — surface limitations honestly if infrastructure not ready.
+- **Firebase auth:** try cached token (no `firebase login` available to me).
+- **Version bump:** significant bump to `0.0.0.1.0` (versionCode 100). On inspection, current versionCode was already 100 from a prior iter; bumped strictly-increasing to **101 = `0.0.0.1.1`** per CONST §6.P and the operator's instruction to bump.
+
+### Pre-build verification gates (all PASS)
+
+| Gate | Result |
+|------|--------|
+| `:shared:desktopTest` | BUILD SUCCESSFUL in 59s |
+| `:androidApp:assembleDebug` | BUILD SUCCESSFUL in 42s |
+| `:androidApp:assembleRelease` (release-keystore-signed) | BUILD SUCCESSFUL in 2m 13s |
+| `:desktopApp:packageReleaseDmg` | BUILD SUCCESSFUL in 52s |
+| `:desktopApp:packageDmg` | BUILD SUCCESSFUL in 50s |
+| LLMProvider full Go suite | 50 OK / 0 FAIL |
+| HuggingFace live-discovery Challenge | PASS — 5 real models |
+| Yole `bluff-scanner --mode all` | PASS clean |
+| Yole `anchor_manifest_challenge.sh` | PASS (55 rows) |
+| Yole `mutation_ratchet_challenge.sh` | PASS (stub) |
+
+### Build artifacts produced (releases/ — gitignored)
+
+| File | Size | Status |
+|------|------|--------|
+| `Yole-Android-1.0.1-Debug-0.0.0.1.1.apk` | 31 MB | PASS |
+| `Yole-Android-1.0.1-Release-0.0.0.1.1.apk` | 24 MB | PASS (release-keystore-signed) |
+| `Yole-Desktop-macos-arm64-1.0.1-Debug-0.0.0.1.1.dmg` | 130 MB | PASS |
+| `Yole-Desktop-macos-arm64-1.0.1-Release-0.0.0.1.1.dmg` | 130 MB | PASS |
+
+### What's NOT produced this iter (honest carry-over)
+
+- **Desktop linux-x64** (.deb) — Compose Desktop only produces native
+  packages on the matching host. Build on a Linux host.
+- **Desktop windows-x64** (.msi) — same reason.
+- **Web Wasm PWA** — `:webApp` doesn't currently have a
+  `BrowserDistribution` task wired (pre-existing config gap in the
+  webApp module). Tracked as a webApp owed item.
+- **iOS** — in development per `CLAUDE.md` platform-status table;
+  not part of this iter.
+- **Firebase App Distribution upload** — cached firebase CLI token
+  expired on the audit host; `firebase projects:list` reports
+  auth failure. Operator must run `firebase login` interactively
+  and then the exact `firebase appdistribution:distribute` commands
+  documented in `docs/releases/1.0.1/release-notes.md`.
+
+### Containers-strict build path (CONST §6.K) — assessment
+
+The operator-confirmed Containers-strict choice is **partially
+honoured**: the Containers submodule's existing surface
+(`pkg/runtime`, `pkg/compose`, `pkg/orchestrator`, `pkg/health`,
+`pkg/lifecycle`, `pkg/distribution`, `cmd/distributed-build`) is
+present and in-suite (iter-52 verification 36/0 PASS), but the
+SOURCE-OF-TRUTH variant's `pkg/emulator/` + `pkg/vm/` packages
+remain §6.K-debt and the macOS audit host doesn't have a
+container-bound Yole build pipeline pre-wired. This iter therefore
+ran the host-direct Gradle path as operator-iteration scope, and
+the released artifacts are NOT the §6.I-gate-eligible products.
+Closing §6.K-debt + wiring a containerised Yole build path is
+iter-55+ work.
+
+### Doc updates this iter
+
+- `CHANGELOG.md` — new 1.0.1 entry with full forensic summary.
+- `docs/releases/1.0.1/release-notes.md` — per-version snapshot
+  with build-status table + operator distribution commands.
+- `androidApp/build.gradle.kts` — versionCode 100 → 101,
+  versionName "1.0.0" → "1.0.1".
+- `gradle.properties` — `compose.desktop.packaging.checkJdkVendor=false`
+  added (acknowledged Homebrew JDK risk; iter-54 audit-host workaround).
+- This `docs/CONTINUATION.md` §38.
+
+### Iter-54 commit
+
+`<pending — recorded by next commit after this update lands>`
 
 ---
 

@@ -3,6 +3,56 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## Yole 1.0.1 (versionCode 101 = `0.0.0.1.1`) — 2026-05-13 (iter-54 distribution)
+
+### Highlights
+- **Anti-bluff hardening across the model authority surface.** The
+  LLMProvider submodule's `pkg/discovery` Tier 3 (hardcoded
+  FallbackModels) was DEPRECATED in iter-53 per CONST-036, with the
+  per-provider httptest-fixture sweep tracked as
+  `#fallback-tier-removed-needs-httptest-fixture` (75 latent bluffs
+  surfaced + counted). Ollama + Venice `TestGetCapabilities` already
+  rewritten to use controlled httptest fixtures so they no longer
+  drift when upstream catalogues change.
+- **New `pkg/apikeys` central authority.** Reads `ApiKey_<Provider>`
+  env vars from `~/api_keys.sh` (the operator's canonical credential
+  file). Matches the convention used by LLMsVerifier so all three
+  surfaces share one source of credential truth.
+- **New `apikeys_live_discovery_challenge.sh`.** Real-stack Challenge
+  that sources `~/api_keys.sh` and invokes the live HuggingFace
+  `/api/models` endpoint. Operator's run captured 5 real models
+  including SulphurAI/Sulphur-2-base — positive runtime evidence per
+  CONST-035 §11.4.
+- **Governance covenant cascade (iter-52).** The verbatim
+  end-user-quality covenant ("We had been in position that all
+  tests do execute with success and all Challenges as well, but in
+  reality the most of the features does not work and can't be
+  used! …") was propagated to 48 governance files across the Yole
+  superproject, LLMProvider submodule, and all 10 sibling KMP repos'
+  CONSTITUTION/CLAUDE/AGENTS triples.
+- **Cross-submodule test fixes (iter-52).** macOS portability gaps
+  in Challenges (`#!/bin/sh` trailing-newline) + Containers (symlink
+  resolution + Linux-only test skip guards) so the full
+  multi-submodule suite runs green on the macOS audit host.
+- **KNOWN_DEFECTS pruned (iter-52).** SMB stub-no-negotiation and
+  WebDAV always-online-stub tickets moved OPEN → CLOSED with
+  forensic anchor to commit 1f6472c9 (2026-05-07).
+
+### Known carry-over (tracked in `docs/KNOWN_DEFECTS.md`)
+- `#fallback-tier-removed-needs-httptest-fixture` — 75 LLMProvider
+  test assertions still consult the deprecated Tier 3 path; multi-
+  iteration httptest-fixture sweep owed before the runtime path
+  can be removed.
+- `#robolectric-compose-ui-tests-brittle` — long-running migration
+  to HelixQA on-device automation; mitigated by dedicated container.
+- `#helixqa-missing-sibling-repos` — environment bootstrap gap for
+  31 HelixQA packages when sibling repos absent.
+
+### Resume-from-here for the next CLI agent
+Read `docs/CONTINUATION.md` §37 (iter-53) + §36 (iter-52) for the
+full forensic trail.
+
+
 ## Session 7: March 26, 2026
 
 ### Phase 1: Concurrency Safety

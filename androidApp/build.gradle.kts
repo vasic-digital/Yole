@@ -25,8 +25,8 @@ android {
         applicationId = "digital.vasic.yole.android"
         minSdk = 24
         targetSdk = 35
-        versionCode = 100
-        versionName = "1.0.0"
+        versionCode = 101
+        versionName = "1.0.1"
 
         // Custom runner grants MANAGE_EXTERNAL_STORAGE before any test
         // launches MainActivity. Resolves Bucket A of the iter-34 finding
