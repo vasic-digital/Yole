@@ -497,7 +497,7 @@ YoleAppTest is now FULLY de-bluffed for rewritable cases — every remaining SKI
 
 ### Iter-43 commit
 
-`<<sha-placeholder>>` — see §6 for canonical record. Evidence at `docs/qa/iter-43/`.
+`fa47fcea` — see §6 for canonical record. Evidence at `docs/qa/iter-43/`.
 
 ---
 
