@@ -1,0 +1,40 @@
+ok  	digital.vasic.containers/challenges	2.148s
+?   	digital.vasic.containers/cmd/boot	[no test files]
+?   	digital.vasic.containers/cmd/ctop	[no test files]
+?   	digital.vasic.containers/cmd/distributed-build	[no test files]
+?   	digital.vasic.containers/cmd/distributed-test	[no test files]
+?   	digital.vasic.containers/cmd/emulator-cleanup	[no test files]
+?   	digital.vasic.containers/cmd/emulator-matrix	[no test files]
+?   	digital.vasic.containers/cmd/vm-matrix	[no test files]
+ok  	digital.vasic.containers/internal/buildpkg	2.647s
+ok  	digital.vasic.containers/internal/exec	3.513s
+ok  	digital.vasic.containers/internal/platform	3.665s
+ok  	digital.vasic.containers/pkg/boot	3.544s
+ok  	digital.vasic.containers/pkg/cache	4.057s
+ok  	digital.vasic.containers/pkg/compose	25.289s
+ok  	digital.vasic.containers/pkg/ctop	5.051s
+ok  	digital.vasic.containers/pkg/discovery	5.618s
+ok  	digital.vasic.containers/pkg/distribution	35.985s
+ok  	digital.vasic.containers/pkg/emulator	27.841s
+ok  	digital.vasic.containers/pkg/endpoint	5.637s
+ok  	digital.vasic.containers/pkg/envconfig	5.650s
+ok  	digital.vasic.containers/pkg/event	5.643s
+ok  	digital.vasic.containers/pkg/health	6.854s
+?   	digital.vasic.containers/pkg/lazyservice	[no test files]
+ok  	digital.vasic.containers/pkg/lifecycle	7.786s
+ok  	digital.vasic.containers/pkg/logging	5.637s
+ok  	digital.vasic.containers/pkg/metrics	5.634s
+ok  	digital.vasic.containers/pkg/monitor	5.956s
+ok  	digital.vasic.containers/pkg/network	4.597s
+ok  	digital.vasic.containers/pkg/orchestrator	4.582s
+ok  	digital.vasic.containers/pkg/policy	4.211s
+ok  	digital.vasic.containers/pkg/remote	17.007s
+ok  	digital.vasic.containers/pkg/remote/connection	4.154s
+ok  	digital.vasic.containers/pkg/runtime	3.908s
+ok  	digital.vasic.containers/pkg/scheduler	3.744s
+ok  	digital.vasic.containers/pkg/serviceregistry	4.204s
+ok  	digital.vasic.containers/pkg/vm	7.658s
+ok  	digital.vasic.containers/pkg/volume	4.882s
+ok  	digital.vasic.containers/scripts/anti-bluff/tests/fixtures	4.759s
+ok  	digital.vasic.containers/tests/benchmark	4.108s [no tests to run]
+ok  	digital.vasic.containers/tests/integration	3.864s

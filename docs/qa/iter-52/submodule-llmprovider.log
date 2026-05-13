@@ -1,0 +1,78 @@
+go: downloading github.com/sirupsen/logrus v1.9.3
+go: downloading github.com/pmezard/go-difflib v1.0.0
+go: downloading github.com/davecgh/go-spew v1.1.1
+go: downloading golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8
+# digital.vasic.llmprovider
+circuit_breaker.go:12:2: digital.vasic.models@v0.0.0: replacement directory ../Models does not exist
+FAIL	digital.vasic.llmprovider [setup failed]
+ok  	digital.vasic.llmprovider/pkg/circuit	2.148s
+ok  	digital.vasic.llmprovider/pkg/discovery	1.930s
+ok  	digital.vasic.llmprovider/pkg/health	3.072s
+?   	digital.vasic.llmprovider/pkg/http	[no test files]
+ok  	digital.vasic.llmprovider/pkg/models	3.066s
+?   	digital.vasic.llmprovider/pkg/provider	[no test files]
+ok  	digital.vasic.llmprovider/pkg/providers/ai21	9.980s
+ok  	digital.vasic.llmprovider/pkg/providers/anthropic	10.265s
+ok  	digital.vasic.llmprovider/pkg/providers/cerebras	14.890s
+ok  	digital.vasic.llmprovider/pkg/providers/chutes	12.905s
+ok  	digital.vasic.llmprovider/pkg/providers/claude	15.091s
+ok  	digital.vasic.llmprovider/pkg/providers/cloudflare	7.694s
+ok  	digital.vasic.llmprovider/pkg/providers/codestral	8.066s
+ok  	digital.vasic.llmprovider/pkg/providers/cohere	12.347s
+ok  	digital.vasic.llmprovider/pkg/providers/deepseek	8.547s
+ok  	digital.vasic.llmprovider/pkg/providers/fireworks	11.660s
+ok  	digital.vasic.llmprovider/pkg/providers/gemini	15.798s
+ok  	digital.vasic.llmprovider/pkg/providers/generic	2.164s
+ok  	digital.vasic.llmprovider/pkg/providers/githubmodels	8.327s
+ok  	digital.vasic.llmprovider/pkg/providers/groq	7.149s
+ok  	digital.vasic.llmprovider/pkg/providers/huggingface	6.843s
+ok  	digital.vasic.llmprovider/pkg/providers/hyperbolic	3.926s
+ok  	digital.vasic.llmprovider/pkg/providers/junie	2.669s
+ok  	digital.vasic.llmprovider/pkg/providers/kilo	2.227s
+ok  	digital.vasic.llmprovider/pkg/providers/kimi	2.993s
+ok  	digital.vasic.llmprovider/pkg/providers/mistral	19.464s
+ok  	digital.vasic.llmprovider/pkg/providers/modal	2.695s
+ok  	digital.vasic.llmprovider/pkg/providers/nia	2.075s
+ok  	digital.vasic.llmprovider/pkg/providers/nlpcloud	3.113s
+ok  	digital.vasic.llmprovider/pkg/providers/novita	3.482s
+ok  	digital.vasic.llmprovider/pkg/providers/nvidia	4.748s
+time="2026-05-13T15:04:30+05:00" level=info msg="Discovered models from provider API" count=1 provider=ollama source=provider_api tier=1
+--- FAIL: TestOllamaProvider_GetCapabilities (0.02s)
+    ollama_test.go:284: 
+        	Error Trace:	/Users/milosvasic/Projects/Yole/LLMProvider/pkg/providers/ollama/ollama_test.go:284
+        	Error:      	[]string{"tinyllama:latest"} does not contain "llama2"
+        	Test:       	TestOllamaProvider_GetCapabilities
+    ollama_test.go:285: 
+        	Error Trace:	/Users/milosvasic/Projects/Yole/LLMProvider/pkg/providers/ollama/ollama_test.go:285
+        	Error:      	[]string{"tinyllama:latest"} does not contain "mistral"
+        	Test:       	TestOllamaProvider_GetCapabilities
+FAIL
+FAIL	digital.vasic.llmprovider/pkg/providers/ollama	23.575s
+ok  	digital.vasic.llmprovider/pkg/providers/openai	8.221s
+ok  	digital.vasic.llmprovider/pkg/providers/openrouter	4.463s
+ok  	digital.vasic.llmprovider/pkg/providers/perplexity	8.192s
+ok  	digital.vasic.llmprovider/pkg/providers/publicai	6.036s
+ok  	digital.vasic.llmprovider/pkg/providers/qwen	14.537s
+ok  	digital.vasic.llmprovider/pkg/providers/replicate	13.268s
+ok  	digital.vasic.llmprovider/pkg/providers/sambanova	8.360s
+ok  	digital.vasic.llmprovider/pkg/providers/sarvam	5.266s
+ok  	digital.vasic.llmprovider/pkg/providers/siliconflow	5.775s
+ok  	digital.vasic.llmprovider/pkg/providers/together	9.075s
+ok  	digital.vasic.llmprovider/pkg/providers/upstage	2.940s
+time="2026-05-13T15:04:31+05:00" level=info msg="Discovered models from provider API" count=75 provider=venice source=provider_api tier=1
+--- FAIL: TestGetCapabilities (0.67s)
+    venice_test.go:444: 
+        	Error Trace:	/Users/milosvasic/Projects/Yole/LLMProvider/pkg/providers/venice/venice_test.go:444
+        	Error:      	[]string{"zai-org-glm-5-1", "zai-org-glm-5", "z-ai-glm-5-turbo", "z-ai-glm-5v-turbo", "olafangensan-glm-4.7-flash-heretic", "zai-org-glm-4.7-flash", "zai-org-glm-4.6", "zai-org-glm-4.7", "venice-uncensored-1-2", "venice-uncensored-role-play", "qwen-3-6-plus", "qwen3-6-27b", "qwen3-5-9b", "qwen3-5-397b-a17b", "qwen3-5-35b-a3b", "qwen3-235b-a22b-thinking-2507", "qwen3-235b-a22b-instruct-2507", "qwen3-next-80b", "qwen3-vl-235b-a22b", "qwen3-coder-480b-a35b-instruct-turbo", "google-gemma-4-26b-a4b-it", "google-gemma-4-31b-it", "gemma-4-uncensored", "google-gemma-3-27b-it", "arcee-trinity-large-thinking", "grok-41-fast", "grok-4-3", "grok-4-20", "grok-4-20-multi-agent", "mistral-small-3-2-24b-instruct", "mistral-small-2603", "hermes-3-llama-3.1-405b", "gemini-3-1-pro-preview", "gemini-3-flash-preview", "claude-opus-4-7", "claude-opus-4-6", "claude-opus-4-6-fast", "claude-opus-4-5", "claude-sonnet-4-6", "claude-sonnet-4-5", "openai-gpt-oss-120b", "kimi-k2-6", "kimi-k2-5", "deepseek-v4-pro", "deepseek-v4-flash", "deepseek-v3.2", "aion-labs-aion-2-0", "llama-3.2-3b", "llama-3.3-70b", "openai-gpt-52", "openai-gpt-52-codex", "openai-gpt-53-codex", "openai-gpt-54", "openai-gpt-54-pro", "openai-gpt-54-mini", "openai-gpt-55", "openai-gpt-55-pro", "openai-gpt-4o-2024-11-20", "openai-gpt-4o-mini-2024-07-18", "minimax-m25", "minimax-m27", "mercury-2", "nvidia-nemotron-3-nano-30b-a3b", "nvidia-nemotron-cascade-2-30b-a3b", "e2ee-venice-uncensored-24b-p", "e2ee-gemma-3-27b-p", "e2ee-glm-4-7-p", "e2ee-glm-4-7-flash-p", "e2ee-gpt-oss-20b-p", "e2ee-gpt-oss-120b-p", "e2ee-qwen-2-5-7b-p", "e2ee-qwen3-30b-a3b-p", "e2ee-qwen3-vl-30b-a3b-p", "e2ee-glm-5-1", "e2ee-qwen3-5-122b-a10b"} does not contain "venice-uncensored"
+        	Test:       	TestGetCapabilities
+time="2026-05-13T15:04:36+05:00" level=info msg="Discovered models from provider API" count=75 provider=venice source=provider_api tier=1
+time="2026-05-13T15:04:37+05:00" level=info msg="Discovered models from provider API" count=75 provider=venice source=provider_api tier=1
+FAIL
+FAIL	digital.vasic.llmprovider/pkg/providers/venice	7.129s
+ok  	digital.vasic.llmprovider/pkg/providers/vulavula	1.685s
+ok  	digital.vasic.llmprovider/pkg/providers/xai	7.389s
+ok  	digital.vasic.llmprovider/pkg/providers/zai	9.275s
+ok  	digital.vasic.llmprovider/pkg/providers/zen	2.913s
+ok  	digital.vasic.llmprovider/pkg/providers/zhipu	4.037s
+ok  	digital.vasic.llmprovider/pkg/retry	3.131s
+FAIL

@@ -1,0 +1,14 @@
+ok  	digital.vasic.security/pkg/content	3.049s
+ok  	digital.vasic.security/pkg/guardrails	4.590s
+ok  	digital.vasic.security/pkg/headers	1.532s
+ok  	digital.vasic.security/pkg/pii	2.547s
+ok  	digital.vasic.security/pkg/policy	4.096s
+ok  	digital.vasic.security/pkg/scanner	3.591s
+ok  	digital.vasic.security/pkg/securestorage	2.069s
+ok  	digital.vasic.security/pkg/security	5.142s
+ok  	digital.vasic.security/pkg/ssrf	5.578s
+ok  	digital.vasic.security/tests/benchmark	6.066s [no tests to run]
+ok  	digital.vasic.security/tests/e2e	6.511s
+ok  	digital.vasic.security/tests/integration	5.547s
+ok  	digital.vasic.security/tests/security	5.502s
+ok  	digital.vasic.security/tests/stress	5.543s

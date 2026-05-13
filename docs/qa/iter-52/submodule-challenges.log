@@ -1,0 +1,18 @@
+ok  	digital.vasic.challenges/cmd/userflow-runner	1.536s
+ok  	digital.vasic.challenges/pkg/assertion	1.987s
+ok  	digital.vasic.challenges/pkg/bank	2.418s
+ok  	digital.vasic.challenges/pkg/challenge	7.640s
+ok  	digital.vasic.challenges/pkg/container	3.407s
+ok  	digital.vasic.challenges/pkg/env	3.836s
+ok  	digital.vasic.challenges/pkg/httpclient	4.238s
+ok  	digital.vasic.challenges/pkg/infra	4.688s
+ok  	digital.vasic.challenges/pkg/logging	5.167s
+ok  	digital.vasic.challenges/pkg/metrics	5.609s
+ok  	digital.vasic.challenges/pkg/monitor	7.248s
+ok  	digital.vasic.challenges/pkg/panoptic	5.383s
+ok  	digital.vasic.challenges/pkg/plugin	5.348s
+ok  	digital.vasic.challenges/pkg/registry	5.375s
+ok  	digital.vasic.challenges/pkg/report	4.870s
+ok  	digital.vasic.challenges/pkg/runner	7.767s
+ok  	digital.vasic.challenges/pkg/userflow	13.787s
+?   	digital.vasic.challenges/scripts/anti-bluff/tests/fixtures	[no test files]

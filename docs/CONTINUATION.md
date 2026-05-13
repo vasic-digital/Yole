@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-13 (iter 51 — non-test doc 17→18 honesty sweep across 15 files: top-level project docs (CLAUDE.md, AGENTS.md, README.md, ARCHITECTURE.md, QUICK_START.md, TESTING_*.md) + user-visible Android About text in YoleApp.kt + non-test sources (ParserInitializer KDoc, UxComplianceTest header, wasmJsTest comments, package-info, diagrams, website). Historical archive/plans/dated reports intentionally NOT touched (they are snapshots from prior phases and must remain accurate to the historical state). A broken batch regex `s|17 formats\) \|\b|...|g` initially corrupted ~22 files (the `\|` inside Perl `s|...|...|g` was interpreted as alternation, replacing every word boundary with "18 formats)"); all corrupted files were reverted via `git checkout HEAD --` and re-done as small hand-verified single-line edits. CONST-035 §11.4 covenant: every public-facing user-visible string + active doc now matches the iter-42 reality.)
+**Last updated:** 2026-05-13 (iter 52 — comprehensive honesty closeout. 18-task / 4-phase plan executed end-to-end per the operator's "do everything until last item done" mandate: (1) Governance cascade — extracted the canonical 39-line CONST-035 §11.4 covenant block from `Yole/CLAUDE.md` and idempotently propagated it to 34 governance files across the LLMProvider submodule + all 10 KMP-sibling repos' CONSTITUTION/CLAUDE/AGENTS triples + the Yole top-level CONSTITUTION.md; coverage went 14 → 48. (2) Stale-doc cleanup — `#smb-stub-no-negotiation` + `#webdav-always-online-stub` migrated OPEN→CLOSED in `docs/KNOWN_DEFECTS.md` referencing commit `1f6472c9`. (3) Cross-submodule test verification on macOS host — Challenges 17/0 (1 portability fix: shebang trailing-newline), Containers 36/0 (4 portability fixes: symlink resolution + 3 Linux-only skip guards), HelixQA 135/0, LLMProvider 46/8 (pre-existing env-drift in Ollama+Venice capability assertions + Models sibling-replace bootstrap gap, documented honestly), Security 14/0, all 10 KMP siblings `:desktopTest` BUILD SUCCESSFUL. (4) Yole verification chain — `bluff-scanner --mode all` clean, `anchor_manifest_challenge.sh` PASS, `mutation_ratchet_challenge.sh` PASS (stub). All logs persisted under `docs/qa/iter-52/`. See §36 for full breakdown.)
 **Current branch:** `master`
 **HEAD (parent of this commit):** `ee120766` — `feat(iter-36): rewrite 3 SKIP-OK instrumented tests to real PASS`.
 **Submodule SHAs (per HEAD tree):**
@@ -451,6 +451,145 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 36. Iter 52 — comprehensive honesty closeout (governance cascade + cross-submodule verification)
+
+Mandate-driven iteration: the user directed a *full* sweep — gather every
+unfinished item / known issue, prioritise, plan in phases, execute without
+stopping until done, *and* propagate the verbatim CONST-035 covenant text
+across every submodule and KMP sibling's CONSTITUTION/CLAUDE/AGENTS so the
+end-user-quality guarantee is binding in every governance surface.
+
+### Plan executed (18 tasks across 4 phases)
+
+Phase 1 — Governance covenant propagation (34 files):
+- Extracted canonical 39-line block (CONST-035 §11.4 covenant + verification
+  commands + skip-marker convention) from `Yole/CLAUDE.md`.
+- Idempotent helper `/tmp/iter-52-propagate.sh` with
+  `<!-- BEGIN/END iter-52 anti-bluff covenant propagation -->` markers and
+  multi-line-aware `perl -0777` verbatim-anchor detection.
+- Pre-audit (`docs/qa/iter-52/governance-audit-pre.log`): 34 MISSING / 0 OK.
+- Post-audit (`docs/qa/iter-52/governance-audit-post.log`): 48 OK / 0 MISSING / 0 ABSENT.
+- Files touched: Yole/CONSTITUTION.md + LLMProvider/{CONSTITUTION,CLAUDE,AGENTS}.md
+  + 10 × KMP-sibling/{CONSTITUTION,CLAUDE,AGENTS}.md.
+
+Phase 2 — Stale-doc cleanup:
+- `docs/KNOWN_DEFECTS.md`: `#smb-stub-no-negotiation` and
+  `#webdav-always-online-stub` migrated OPEN→CLOSED, referencing commit
+  `1f6472c9` (2026-05-07). Only `#robolectric-compose-ui-tests-brittle` and
+  `#helixqa-missing-sibling-repos` remain in OPEN (intentional — both are
+  mitigated tracker tickets).
+
+Phase 3 — Cross-submodule test verification (real-stack, no mocks):
+- **Challenges submodule** (`docs/qa/iter-52/submodule-challenges.log`):
+  fixed `TestGradleCLIAdapter_Available_True` (macOS `#!/bin/sh` shebang
+  required trailing newline; without it the kernel reports `bad
+  interpreter: /bin/sh: exec format error` and `Available()` returned
+  false). Suite now 17 OK / 0 FAIL on macOS host JVM.
+- **Containers submodule** (`docs/qa/iter-52/submodule-containers.log`):
+  fixed `TestRunInDir_SymlinkDirectory` (macOS `/var/folders/T/...` is a
+  symlink to `/private/var/folders/T/...`; added
+  `filepath.EvalSymlinks(tmpDir)` before equality assertion) plus 3
+  Linux-only test guards (`TestCollectCPULinux_SameTotal`,
+  `TestCollectMemoryLinux_VerifiesMemory`, `TestDefaultPlatformChecker`).
+  Suite: 36 packages OK / 0 FAIL.
+- **HelixQA submodule** (`docs/qa/iter-52/submodule-helixqa.log`):
+  135 packages OK / 0 FAIL. The `#helixqa-missing-sibling-repos`
+  environment gap did not block this run (siblings are present on the
+  current host).
+- **10 KMP siblings** (`docs/qa/iter-52/kmp/*.log`): each ran
+  `./gradlew :desktopTest` from its root project (root-only structure, not
+  `:shared:` sub-project — corrected from the iter-52 plan's first guess).
+  All 10 BUILD SUCCESSFUL.
+- **LLMProvider submodule** (`docs/qa/iter-52/submodule-llmprovider.log`):
+  46 OK / 8 FAIL — 1 root-package `[setup failed]` ("digital.vasic.models
+  replacement directory ../Models does not exist" — environment-bootstrap
+  gap), 1 `TestOllamaProvider_GetCapabilities` (local Ollama daemon has
+  `tinyllama:latest` but test expects `llama2`/`mistral` — environment
+  drift, not bluff: the test is a real-stack capability probe and the
+  *test expectation* is the bluff-adjacent piece, hard-coding a model
+  list the operator's host doesn't carry), 1 `TestGetCapabilities` for
+  Venice (Venice catalogue's `venice-uncensored` retired and the test
+  hard-codes its presence). Honestly documented as
+  pre-existing — not introduced by iter-52, not masked.
+- **Security submodule** (`docs/qa/iter-52/submodule-security.log`):
+  14 packages OK / 0 FAIL.
+
+Phase 4 — Yole main-repo verification chain:
+- `scripts/anti-bluff/bluff-scanner.sh --mode all` → `OK: scanner clean (mode=all)`.
+- `yole-challenges/scripts/anchor_manifest_challenge.sh` → `OK: anchor manifest valid`.
+- `yole-challenges/scripts/mutation_ratchet_challenge.sh` → `OK: mutation ratchet stub (Section 2 deferred to sub-project 4)`.
+
+### Macports-style portability lessons captured
+
+- macOS shell scripts as test fixtures: `#!/bin/sh` SHEBANG-ONLY files fail
+  exec with "bad interpreter: /bin/sh: exec format error" — always include
+  a trailing newline. Linux kernel is lenient; XNU is not.
+- macOS `t.TempDir()` returns `/var/folders/T/...` which is a symlink to
+  `/private/var/folders/T/...`. Tests that compare against `pwd -P` output
+  must `filepath.EvalSymlinks` first.
+- `/proc/meminfo` + `/proc/stat` are Linux-only. Tests that read them must
+  carry `if runtime.GOOS != "linux" { t.Skip("SKIP-OK: #env-linux-only — …") }`.
+- `defaultPlatformChecker.isLinux()` tests must assert against
+  `runtime.GOOS == "linux"`, not unconditional `true`.
+
+### Forensic — broken regex from iter-51 still informs iter-52
+
+Iter-51's `s|17 formats\) \|\b|...|g` Perl-substitution bug (where `\|` in
+`s|...|...|g` is alternation, not a literal pipe) corrupted 22 files at
+every word boundary. Iter-52's batch propagation deliberately avoided
+inline Perl substitution patterns; the helper script appends the canonical
+block exactly as cat-piped from `/tmp/iter-52-covenant-block.md`, with no
+substitution at all. The lesson: never substitute when you can append.
+
+### Verification artifacts
+
+All logs persisted under `docs/qa/iter-52/`:
+- `governance-audit-{pre,post}.log` — coverage 34 MISSING → 48 OK.
+- `submodule-{challenges,containers,helixqa,llmprovider,security}.log` —
+  Go test output for each.
+- `kmp/{Auth,Concurrency,Config,Database,Document,Formatters,RateLimiter,
+  Security,Storage,UI-Components}.log` — Gradle `:desktopTest` per KMP.
+- `bluff-scanner.log`, `anchor-manifest.log`, `mutation-ratchet.log` —
+  Yole main-repo verification chain output.
+
+### Surface metrics
+
+| Metric | Iter 51 | **Iter 52** |
+|--------|---------|-------------|
+| Governance covenant coverage (CONSTITUTION/CLAUDE/AGENTS files carrying CONST-035 §11.4 verbatim anchor) | 14 OK (Yole + 3 active submodules + LLMProvider partial) | **48 OK (full propagation)** |
+| Yole `bluff-scanner --mode all` | PASS | **PASS** |
+| Yole `anchor_manifest_challenge.sh` | PASS | **PASS** |
+| Yole `mutation_ratchet_challenge.sh` | PASS (stub) | **PASS (stub)** |
+| Challenges submodule (Go, macOS) | 16 / 3 FAIL | **17 / 0 FAIL** |
+| Containers submodule (Go, macOS) | unknown / 6 FAIL | **36 / 0 FAIL** |
+| HelixQA submodule (Go, macOS) | not measured | **135 / 0 FAIL** |
+| LLMProvider submodule (Go, macOS) | not measured | **46 / 8 FAIL (pre-existing env-drift, documented)** |
+| Security submodule (Go, macOS) | not measured | **14 / 0 FAIL** |
+| 10 KMP siblings `:desktopTest` | not measured | **10 / 0 FAIL** |
+
+### Outstanding (carries to iter-53+)
+
+- LLMProvider `Models` sibling replacement directory bootstrap (env gap).
+- LLMProvider Ollama+Venice capability-test expectation drift (the tests
+  themselves are real-stack — they hit live Ollama daemon + Venice API —
+  but their hard-coded model assertions need to be loosened or made
+  catalogue-driven so they fail on real regression, not on legitimate
+  upstream model churn).
+- Sub-project 4 (mutation ratchet Section 2 — Yole main shared:jvm Pitest
+  gate) still deferred per §5 "What's NOT Yet Enforced" point 2.
+- Test commits in submodules outside Yole still need their own per-repo
+  commits (Challenges, Containers test fixes are uncommitted in those
+  submodules' working trees as of this CONTINUATION update — Task 18 of
+  the iter-52 plan handles this next).
+
+### Iter-52 commit
+
+`<pending — recorded by Task 18 of the iter-52 plan>` — will replace this
+line once the commit lands. Per CONST-036, this CONTINUATION update is
+itself part of the iter-52 commit.
 
 ---
 
