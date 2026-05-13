@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-13 (iter 37 — 3 more SKIP-OK rewrites: testMoreScreenOptions, testAboutInformation, testAnimationSettingsPersistence)
+**Last updated:** 2026-05-13 (iter 38 — testScreenNavigationAnimations rewritten to PASS; 4 truly-removed-feature tests reclassified under dedicated `#yole-android-fab-new-file-flow-removed` ticket; Gradle's UTP single-class XML emission **DEFECT FIXED** via scoped `withType<Test>` filter — connectedDebugAndroidTest now emits the full 76-test report 49 PASS / 27 SKIP-OK matching adb-direct evidence)
 **Current branch:** `master`
 **HEAD (parent of this commit):** `ee120766` — `feat(iter-36): rewrite 3 SKIP-OK instrumented tests to real PASS`.
 **Submodule SHAs (per HEAD tree):**
@@ -118,6 +118,10 @@ From `docs/KNOWN_DEFECTS.md` (authoritative — keep that file in sync with this
 
 ### OPEN
 
+#### `#yole-android-fab-new-file-flow-removed` — NEW iter 38
+- **Symptom:** Four YoleAppTest methods (`testFloatingActionButtonFunctionality`, `testFileBrowserBasicFunctionality`, `testEditorScreenNavigation`, `testScreenNavigationWithAnimations`) target a UI flow that no longer ships: a global "Add" FAB → editor with "Editing: untitled.txt" title → "Back" content-description. Previously masked under the generic `#yole-android-instrumented-tests-pre-iter27-rewrite` ticket which mistakenly suggested rewritability.
+- **Status:** Awaiting product decision — delete the four tests (preferred, since the feature is gone) or write new tests for a future replacement flow. Honest SKIP-OK in the interim.
+
 #### `#robolectric-compose-ui-tests-brittle` — MITIGATED (dedicated container)
 - **Symptom:** ~25 Robolectric UI tests historically matched against runtime-evolving UI strings (now `contentDescription`-based after iter 27).
 - **Mitigation (iter 27):** Tests run in dedicated `robolectric-test` container via `make container-robolectric-test` — isolated from main build, won't gate release pipeline. All 49 tests now pass green.
@@ -131,6 +135,7 @@ From `docs/KNOWN_DEFECTS.md` (authoritative — keep that file in sync with this
 
 ### CLOSED (record for forensic continuity — do NOT re-open without reason)
 
+- `#yole-android-gradle-utp-single-class-filter` — FIXED 2026-05-13 (iter 38). Discovered + fixed in the same iter. `tasks.withType<Test>().configureEach { filter { excludeTestsMatching("*.robolectric.*") } }` was inadvertently sweeping in `DeviceProviderInstrumentTestTask` (which extends `Test` in AGP 8.x), causing UTP to inject `class=YoleAppTest` arg_map and narrow connectedDebugAndroidTest to one class. Fix: scoped the filter to `name.endsWith("UnitTest")` tasks only. Verified: Gradle XML now reports `tests="76" failures="0" errors="0" skipped="27"` with all 5 classnames present, matching adb-direct evidence. Evidence: `docs/qa/iter-38/connectedDebugAndroidTest-fix-verified.{xml,log}`.
 - `#smb-stub-no-negotiation` — FIXED 2026-05-07 (commit `1f6472c9`). `SmbService.connect()` performs real SMB protocol negotiation and authentication; `_isConnected = true` only after real success. Test lambda injection (`testConnectFn`/`testAuthenticateFn`) for test control. 441/441 SMB+WebDAV tests pass.
 - `#webdav-always-online-stub` — FIXED 2026-05-07 (commit `1f6472c9`). Removed the catch block that suppressed network errors and lied about online state. `isOnline` honestly reflects reachability per CONST-035.
 - `#webdav-stackoverflow` — FIXED 2026-05-07 (commit `15f5d10f`). Replaced recursive XML namespace stripping with iterative approach. WebDavMockHttpTest 28 failures → 0.
@@ -435,6 +440,68 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 22. Iter 38 — testScreenNavigationAnimations → PASS; 4 removed-feature tests properly classified; Gradle UTP XML gap documented
+
+### testScreenNavigationAnimations rewritten
+
+Previous body called `onAllNodesWithText("Settings").onFirst().performClick()` from the Files tab, where there is no "Settings" text — relied on the "broken-anyway, marked SKIP" pattern that iter-37 left as honest skip. New body navigates Files → More → Settings and asserts the destination (More Options title; APPEARANCE section header) along the way. Back-navigation assertion intentionally dropped because Yole's Settings sub-screen exits the Activity on system Back (no intra-Activity back stack), so the original `pressBack() → Files visible` chain was never going to be honest in this UI. Verified via direct adb run: 26 PASS in YoleAppTest (was 25 at iter-37 close).
+
+### 4 truly-removed-feature tests reclassified
+
+`testFloatingActionButtonFunctionality`, `testFileBrowserBasicFunctionality`, `testEditorScreenNavigation`, `testScreenNavigationWithAnimations` were previously SKIP-OK'd under the generic `#yole-android-instrumented-tests-pre-iter27-rewrite` ticket which incorrectly grouped them with "needs UI-literal refresh" cases. They actually target a removed feature (the global "Add" FAB → editor sub-screen with "Editing: untitled.txt" title and a "Back" content-description), not a rename. Reclassified under dedicated `#yole-android-fab-new-file-flow-removed` ticket in `docs/KNOWN_DEFECTS.md`. The remaining `#yole-android-instrumented-tests-pre-iter27-rewrite` bucket is now an honest "could-be-rewritten-given-UI-label-refresh" set, no longer polluted by removed-feature noise.
+
+### Gradle UTP single-class XML emission defect — DISCOVERED + FIXED in same iter
+
+While running `:androidApp:connectedDebugAndroidTest` for the iter-38 cross-check, discovered that Gradle's reporting layer emitted XML / HTML reports for only ONE test class (YoleAppTest) even though the test APK contains 5 (YoleAppTest, IntegrationTest, EndToEndTest, SaveTests, FirebaseIntegrationTests). All 5 run + PASS when invoked directly via `adb shell am instrument` — verified per-class with persisted evidence at `docs/qa/iter-38/adb-{YoleAppTest,IntegrationTest,EndToEndTest,SaveTests,FirebaseIntegrationTests}.log`.
+
+**Root cause** (proven by control run): `tasks.withType<Test>().configureEach { filter { excludeTestsMatching("*.robolectric.*") } }` in `androidApp/build.gradle.kts`. AGP 8.x makes `DeviceProviderInstrumentTestTask` (the type backing `connectedDebugAndroidTest`) extend `Test`, so `withType<Test>` swept in the connected variant; AGP/UTP then over-translated the filter into UTP's `class` arg_map narrowing, restricting the run to one class. Confirmed by re-running with `-PincludeRobolectric=true` (which bypassed the filter via the existing escape clause) — same APK, same emulator, full 76-test XML emerged.
+
+**Fix applied (iter 38, same commit)**: scoped the filter to JVM unit-test tasks only via `val isJvmUnitTest = name.endsWith("UnitTest")`. Robolectric tests live in `androidApp/src/test/`, so their tasks are named `testDebugUnitTest` / `testReleaseUnitTest` — unaffected. Connected tasks (`connectedDebugAndroidTest`, `connectedReleaseAndroidTest`) no longer match the predicate, so no filter is applied and all 5 test classes dispatch normally.
+
+**Verification (positive runtime evidence per CONST-035 §11.4.2)**: persisted at `docs/qa/iter-38/connectedDebugAndroidTest-fix-verified.xml` — Gradle XML after fix reports `tests="76" failures="0" errors="0" skipped="27"` with all 5 classname values present (5 + 5 + 13 + 19 + 34 testcase entries summing to 76). Full Gradle stdout at `docs/qa/iter-38/connectedDebugAndroidTest-fix-verified.log`, BUILD SUCCESSFUL in 2m 21s.
+
+**Real net iter-38 numbers via adb (honest):**
+
+| Class | RUN | SKIP-OK |
+|-------|-----|---------|
+| `YoleAppTest` | 26 | 8 |
+| `IntegrationTest` | 12 | 7 |
+| `EndToEndTest` | 1 | 12 |
+| `SaveTests` | 5 | 0 |
+| `FirebaseIntegrationTests` | 5 | 0 |
+| **TOTAL** | **49** | **27** |
+
+### Instrumented-test verification surface trajectory
+
+| Metric | Iter 34 | Iter 35 | Iter 36 | Iter 37 | **Iter 38** |
+|--------|---------|---------|---------|---------|-------------|
+| Tests in suite | 76 | 76 | 76 | 76 | 76 |
+| **PASS (adb-verified)** | 35 (+41 silent fail BLUFF) | 42 | 45 | 48 | **49** |
+| Silent failures | 41 | 0 | 0 | 0 | 0 |
+| Explicit SKIP-OK | 0 (the bluff!) | 34 | 31 | 28 | **27** |
+| BUILD result | FAILED | SUCCESSFUL | SUCCESSFUL | SUCCESSFUL | SUCCESSFUL |
+
++1 PASS, -1 SKIP-OK vs iter-37. Continues the +N trajectory established in iter 35. (The iter-38 delta is smaller than iter-35/36/37's +3 because the iter-38 mandate also included documenting two newly discovered bluffs — the FAB-flow reclassification and the Gradle UTP single-class gap — and persisting their forensic evidence to `docs/qa/iter-38/`.)
+
+### Honest remaining gaps (post-iter-38)
+
+| # | Item | Severity |
+|---|------|----------|
+| 1 | 23 SKIP-OK truly-rewritable tests (was 28; 4 reclassified under new ticket, 1 rewritten) | MED — incremental progress |
+| 2 | 4 SKIP-OK truly-removed-feature tests pending product-decision delete-vs-replace | LOW — needs user input |
+| 3 | ~~Gradle UTP single-class XML emission gap~~ — **FIXED in this iter** | n/a |
+| 4 | Concrete-bank coverage 10/60+ | MED — carry-over |
+| 5-7 | iOS/Desktop/Web Firebase, gitlab leg, prod-keystore continuity | LOW — manual/scope-out |
+
+Of the 23 remaining truly-rewritable SKIP-OK:
+- 4 in YoleAppTest (some need scrolling; some need formatRegistry text match)
+- 12 in EndToEndTest — multi-screen workflows; rewriting one is ~30 min each
+- 7 in IntegrationTest — mixed data+UI; some can become pure JVM tests against shared module
+
+Iter 38 closes here. Next iteration can target EndToEndTest workflows (highest-density SKIP cluster) or convert IntegrationTest data-layer tests to JVM-only.
 
 ---
 

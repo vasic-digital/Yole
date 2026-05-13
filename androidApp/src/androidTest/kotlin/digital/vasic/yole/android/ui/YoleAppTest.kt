@@ -78,7 +78,7 @@ class YoleAppTest {
     }
 
     @Test
-    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- assertion targets UI literal that doesn't exist in current build")
+    @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- FAB + 'Add Task' dialog were replaced by the iter-27 bottom-nav + inline-input flow; rewriting this test would require restoring the old UI, which is out of scope")
     fun testFloatingActionButtonFunctionality() {
         // Test FAB functionality on different screens
 
@@ -93,7 +93,7 @@ class YoleAppTest {
     }
 
     @Test
-    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- assertion targets UI literal that doesn't exist in current build")
+    @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- '📂 Open Folder' / '➕ New File' / '⬆️ Up' emoji buttons were replaced by the iter-27 Documents/Downloads/Internal-Storage quick-access chips; restoring those literal labels is out of scope")
     fun testFileBrowserBasicFunctionality() {
         // Test basic file browser operations
 
@@ -250,18 +250,29 @@ class YoleAppTest {
     }
 
     @Test
-    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- assertion targets UI literal that doesn't exist in current build")
     fun testScreenNavigationAnimations() {
-        // Test navigation to sub-screens triggers animations
+        // Iter 38 rewrite — the previous code tried to tap "Settings"
+        // directly from the Files tab, which has no "Settings" text.
+        // Correct path: Files → More → Settings → (assert reached).
+        //
+        // The original test ALSO asserted system-Back returns to More;
+        // verified empirically that Yole's Settings sub-screen exits
+        // the Activity on system Back (no intra-Activity back stack),
+        // so we don't assert back-navigation here. The animation under
+        // test is the Files→More + More→Settings transitions, both
+        // verified via assertions on the destination screens.
         composeTestRule.onNodeWithText("Files").assertIsDisplayed()
 
-        // Navigate to settings (should trigger sub-screen animation)
+        composeTestRule.onNodeWithText("More").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("More Options").assertIsDisplayed()
+
         composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
-        composeTestRule.onAllNodesWithText("Settings").onFirst().assertIsDisplayed()
-
-        // Go back (should animate back)
-        composeTestRule.onNodeWithContentDescription("Back").performClick()
-        composeTestRule.onNodeWithText("Files").assertIsDisplayed()
+        composeTestRule.waitForIdle()
+        // Settings sub-screen reached — APPEARANCE section header is the
+        // most stable indicator (the title "Settings" is ambiguous since
+        // the More-screen ALSO has a "Settings" entry).
+        composeTestRule.onNodeWithText("APPEARANCE").assertIsDisplayed()
     }
 
     @Test
@@ -293,7 +304,7 @@ class YoleAppTest {
     }
 
     @Test
-    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- assertion targets UI literal that doesn't exist in current build")
+    @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- 'Add' FAB → editor with 'Editing: untitled.txt' title and 'Back' content-description were all removed; the iter-27 redesign navigates via bottom-nav, not via a sub-screen back stack")
     fun testScreenNavigationWithAnimations() {
         // Navigate to file browser and select a file to trigger sub-screen transition
         composeTestRule.onNodeWithText("Files").assertIsDisplayed()
@@ -322,7 +333,7 @@ class YoleAppTest {
     }
 
     @Test
-    @Ignore("SKIP-OK: #yole-android-instrumented-tests-pre-iter27-rewrite -- assertion targets UI literal that doesn't exist in current build")
+    @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- 'Add' FAB → editor with 'Editing:' title was removed; editor entry is now via tap on a file in the browser, not a global FAB")
     fun testEditorScreenNavigation() {
         // Test navigation to editor screen
         composeTestRule.onNodeWithText("Files").performClick()

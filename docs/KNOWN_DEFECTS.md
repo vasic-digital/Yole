@@ -124,6 +124,122 @@ helpers. Out of scope for any single iteration.
 
 ---
 
+## #yole-android-fab-new-file-flow-removed
+
+**Symptom**
+Four instrumented tests in
+`androidApp/src/androidTest/kotlin/digital/vasic/yole/android/ui/YoleAppTest.kt`
+target a UI flow that no longer exists in the shipped build:
+a global FAB (`onNodeWithContentDescription("Add")`) that, when tapped
+from the Files screen, opened an editor sub-screen titled
+`"Editing: untitled.txt"` with a `"Back"` content-description in the
+top app bar. The iter-27 redesign removed this entry path entirely
+(editor is now reached by tapping a real file in the browser, not by
+spawning an untitled buffer via a FAB).
+
+Affected tests:
+- `testFloatingActionButtonFunctionality`
+- `testFileBrowserBasicFunctionality`
+- `testEditorScreenNavigation`
+- `testScreenNavigationWithAnimations`
+
+**Discovered by**
+Iter-38 SKIP-marker audit (2026-05-13). These four were previously
+marked with the generic `#yole-android-instrumented-tests-pre-iter27-rewrite`
+ticket, which incorrectly suggested they could be rewritten by
+updating UI literals. They cannot: the feature is gone. Reclassified
+under this dedicated ticket so the bluff scanner does not include
+them in the "needs UI-literal refresh" bucket.
+
+**Proper fix**
+None at the test layer — these are honest skips because the feature
+they were written against does not exist. The forward-looking work
+is:
+1. Decide whether the iter-27 "no global new-file FAB" decision is
+   permanent. If yes, **delete** these four tests entirely (no value
+   in keeping skipped tests for removed features).
+2. If a new "create empty file" entry point is added later (e.g. a
+   menu item under More, or a long-press on a folder chip), write
+   fresh tests for the **new** flow under a fresh test method name;
+   do not resurrect these four.
+
+**Blocker**
+Product decision (option 1 vs option 2). Iter-38 does not delete the
+tests because the iter-27 design intent is undocumented and the user
+has not been asked. SKIP-OK with this dedicated ticket marker is the
+honest interim state.
+
+**Exemptions in test code** (must be removed when this is closed):
+- `YoleAppTest.kt::testFloatingActionButtonFunctionality`
+- `YoleAppTest.kt::testFileBrowserBasicFunctionality`
+- `YoleAppTest.kt::testEditorScreenNavigation`
+- `YoleAppTest.kt::testScreenNavigationWithAnimations`
+
+All four search-match `SKIP-OK: #yole-android-fab-new-file-flow-removed`.
+
+---
+
+## #yole-android-gradle-utp-single-class-filter — FIXED iter 38 (2026-05-13)
+
+**Symptom (historical)**
+`./gradlew :androidApp:connectedDebugAndroidTest` emitted XML / HTML
+results for **only one** test class (`YoleAppTest`) even though the
+APK contained five (`YoleAppTest`, `IntegrationTest`, `EndToEndTest`,
+`SaveTests`, `FirebaseIntegrationTests`). Gradle exited 0 + reported
+BUILD SUCCESSFUL, so a casual observer would conclude that 26 PASS /
+8 SKIP-OK across one class was the entire suite. It was not: the
+other four classes' 23 PASS + 19 SKIP-OK were silently dropped from
+the Gradle report.
+
+**Discovered by**
+Iter-38 (2026-05-13). Direct adb invocation (`adb shell am instrument
+-w -e class digital.vasic.yole.android.ui.IntegrationTest …`)
+verified that `IntegrationTest` ran 12 tests, `EndToEndTest` 1 test,
+`SaveTests` 5 tests, `FirebaseIntegrationTests` 5 tests — all
+returning `OK` exit codes with full per-test PASS output. Persisted
+evidence: `docs/qa/iter-38/adb-*.log`. Root cause visible in
+`androidApp/build/outputs/androidTest-results/connected/debug/yole-test(AVD) - 14/utp.0.log`
+where the AGP-generated UTP test plan contained:
+
+```
+args_map { key: "class" value: "digital.vasic.yole.android.ui.YoleAppTest" }
+```
+
+i.e. AGP was dispatching only one class even though no `--tests` flag
+or `testFilter` selector was specified on the command line.
+
+**Root cause (forensic)**
+`tasks.withType<Test>().configureEach { filter { excludeTestsMatching("*.robolectric.*") } }`
+in `androidApp/build.gradle.kts`. AGP 8.x makes
+`DeviceProviderInstrumentTestTask` (the type of `connectedDebugAndroidTest`)
+extend `Test`, so the `withType<Test>` matcher swept in the connected-
+test variant and its filter logic over-translated into UTP's `class`
+arg_map narrowing, restricting the run to one class. Verified by
+running with `-PincludeRobolectric=true` (which bypassed the filter
+via the existing escape clause) — the very same APK + emulator
+produced a full 76-test report with all 5 classes in the XML.
+
+**Fix applied (commit see CONTINUATION.md §22)**
+Scoped the filter to JVM unit-test tasks only via
+`val isJvmUnitTest = name.endsWith("UnitTest")`. Robolectric tests
+live in `androidApp/src/test/`, so their tasks are named
+`testDebugUnitTest` / `testReleaseUnitTest` — unaffected by the
+narrowing. Connected tasks (`connectedDebugAndroidTest`,
+`connectedReleaseAndroidTest`) no longer match the predicate, so no
+filter is applied to them and all 5 test classes dispatch normally.
+
+**Verification (positive runtime evidence captured per CONST-035 §11.4.2)**
+- `docs/qa/iter-38/adb-*.log` — direct adb instrumentation runs per
+  class, all `OK (N tests)`.
+- `docs/qa/iter-38/connectedDebugAndroidTest-fix-verified.xml` —
+  Gradle XML after fix: `tests="76" failures="0" errors="0" skipped="27"`
+  with all 5 classname values present (5 + 5 + 13 + 19 + 34 testcase
+  entries).
+- `docs/qa/iter-38/connectedDebugAndroidTest-fix-verified.log` — full
+  Gradle stdout, BUILD SUCCESSFUL in 2m 21s.
+
+---
+
 ## How CONST-035 catches stubs like these
 
 This document exists because of the very pattern CONST-035 forbids:

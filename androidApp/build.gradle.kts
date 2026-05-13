@@ -126,8 +126,19 @@ android {
 // dedicated container before any release ships. Skipping them is not the
 // same as exempting them — a SKIP-OK exemption only suppresses scanner
 // detection, never substitutes for actually running the test.
+//
+// Iter 38 fix (#yole-android-gradle-utp-single-class-filter): scope the
+// filter to JVM unit-test tasks only. `DeviceProviderInstrumentTestTask`
+// (the type of `connectedDebugAndroidTest`) extends `Test` in AGP 8.x, so
+// withType<Test>().configureEach { filter {...} } previously narrowed the
+// connected-test execution to a single class via UTP's `class` arg_map,
+// producing 26 PASS / 8 SKIP-OK reports instead of the true 49 PASS /
+// 27 SKIP-OK. Limiting application to *UnitTest tasks (which is where
+// Robolectric tests live anyway) avoids the collateral damage while
+// preserving the original intent.
 tasks.withType<Test>().configureEach {
-    if (!project.hasProperty("includeRobolectric")) {
+    val isJvmUnitTest = name.endsWith("UnitTest")
+    if (isJvmUnitTest && !project.hasProperty("includeRobolectric")) {
         filter {
             excludeTestsMatching("*.robolectric.*")
             isFailOnNoMatchingTests = false
