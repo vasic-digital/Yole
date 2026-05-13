@@ -274,6 +274,52 @@ RC fetch path only handled the happy path. The fix is in
 
 ---
 
+## #yole-android-formats-settings-section-removed
+
+**Symptom**
+Two YoleAppTest methods (`testFormatRegistryIntegration`,
+`testFormatInformationDisplay`) target a Settings-screen surface
+that lists every supported text format — "Formats" section header,
+"Supported formats: N" count line, and per-format display names
+("Markdown" / "Todo.txt" / "Plain Text" / etc.). The iter-27
+Settings layout has no such section — Settings is structured as
+ALL-CAPS section headers `APPEARANCE`, `EDITOR`, `ANIMATIONS`
+only. There is no UI surface in the shipped build that lists the
+supported formats by name.
+
+Affected tests:
+- `YoleAppTest.testFormatRegistryIntegration`
+- `YoleAppTest.testFormatInformationDisplay`
+
+**Discovered by**
+Iter-43 SKIP-marker audit (2026-05-13). Previously marked under the
+generic `#yole-android-instrumented-tests-pre-iter27-rewrite` ticket
+which incorrectly grouped them with "needs UI-literal refresh"
+cases. They actually target a removed UI surface — same class as
+`#yole-android-fab-new-file-flow-removed`.
+
+**Status**
+Data-layer equivalent IS covered honestly:
+- `IntegrationTest.testFormatRegistryIntegrationWithUI` asserts
+  FormatRegistry has the 4 high-traffic format IDs + every format
+  has a non-blank display name.
+- `IntegrationTest.testParserRegistryCompleteness` asserts every
+  non-binary text format has a parser.
+
+The UI side ("user can see the list of supported formats in the
+Settings screen") is a separate concern that would require ADDING
+the Formats section to the Settings layout first. Awaiting product
+decision: either delete the two tests (preferred, since the data
+layer is already covered) or restore the Formats section to the UI.
+
+**Exemptions in test code** (must be removed when this is closed):
+- `YoleAppTest.kt::testFormatRegistryIntegration`
+- `YoleAppTest.kt::testFormatInformationDisplay`
+
+Both search-match `SKIP-OK: #yole-android-formats-settings-section-removed`.
+
+---
+
 ## #yole-android-fab-new-file-flow-removed
 
 **Symptom**
