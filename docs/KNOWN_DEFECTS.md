@@ -29,6 +29,79 @@ See `CONTINUATION.md` §4 CLOSED list for canonical record.
 
 ---
 
+## #nezha-jdk-jmods-bootstrap — NEW iter 54
+
+**Symptom**
+`nezha.local` (Linux x86_64 build host) carries ALT Linux's
+`openjdk-21-alt1` package which does not ship a `jmods/` directory.
+Compose Desktop's `createRuntimeImage` (jlink) fails with
+`Error: --module-path is not specified and this runtime image does
+not contain jmods directory.` Build cannot produce the Linux .deb
+artifact until the host has a JDK distribution with jmods.
+
+**Discovered by**
+Iter-54 attempt to produce `Yole-Desktop-linux-x64-1.0.1-Release-0.0.0.1.1.deb`
+on nezha.local. Logs in
+`~/Yole/desktopApp/build/compose/logs/createRuntimeImage/jlink-*.err.txt`
+on nezha.
+
+**Proper fix (choose ONE)**
+(a) Copy a Temurin 17 tarball from the macOS audit host to nezha
+    via scp, extract under `~/jdk17/`, set `JAVA_HOME` to point
+    at it before invoking gradlew. (Recommended — user-level, no
+    sudo, no nezha network access needed.)
+(b) Mirror a Debian/Ubuntu apt repo onto nezha's filesystem that
+    ships `openjdk-21-jdk` (full distribution incl. jmods). More
+    invasive.
+(c) Install JDK via ALT Linux's `apt-get install java-21-openjdk-devel`
+    (or equivalent) if such a package exists. Requires sudo →
+    forbidden by CONST.
+
+**Blocker**
+nezha cannot currently resolve `release-assets.githubusercontent.com`
+(DNS/firewall), so a direct curl-the-Temurin-tarball approach
+failed. The scp-from-mac path needs the operator to either grant
+that DNS resolution or sit through one scp copy.
+
+---
+
+## #crossbuild-windows-image-provisioning — NEW iter 54
+
+**Symptom**
+`pkg/crossbuild/WineContainerBackend.Build()` (in Containers
+submodule, commit `5059c75`) returns an actionable error pointing
+at this ticket when the `ghcr.io/vasic-digital/crossbuild-wine:latest`
+image is not present on the host. The orchestration code + tests
+are complete; the image itself is operator-provisioned per
+`Submodules/Containers/docs/crossbuild/windows-image-provisioning.md`.
+
+**Bluff classification**
+None — Backend honestly fails with a clear pointer to the
+provisioning steps rather than silently returning a stub artifact.
+This ticket is the documented SKIP-OK marker for the real-stack
+Windows-build Challenge until provisioning completes.
+
+**Proper fix**
+On a Linux x86_64 host with rootless podman:
+
+```
+cd Submodules/Containers/pkg/crossbuild
+podman build -t ghcr.io/vasic-digital/crossbuild-wine:latest \
+    -f windows_wine.Containerfile .
+podman run --rm ghcr.io/vasic-digital/crossbuild-wine:latest gradle --version
+```
+
+Then re-run the crossbuild_windows_msi_challenge.sh; it should
+produce a real .msi.
+
+**Blocker**
+Operator must perform the provisioning. nezha.local has rootless
+podman + 362G free, so it can host the image once
+`#nezha-jdk-jmods-bootstrap` unblocks (jmods needed for the
+crossbuild-wine image's JDK 17 install step inside the container).
+
+---
+
 ## #fallback-tier-removed-needs-httptest-fixture — NEW iter 53
 
 **Symptom**

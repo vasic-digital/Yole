@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-13 (iter 54 — version bump 1.0.0 → 1.0.1 (versionCode 100 → 101 = `0.0.0.1.1`) + Android debug+release APKs + Desktop macOS-arm64 debug+release dmgs rebuilt under `releases/` (gitignored), CHANGELOG snapshot at `docs/releases/1.0.1/release-notes.md`. Honest carry-over: Desktop linux-x64 .deb + Windows-x64 .msi need their respective host OSes (Compose Desktop only packages for current OS); Web Wasm `:webApp:BrowserDistribution` task not wired (pre-existing config gap); Firebase upload requires interactive `firebase login` which operator must run. CONST §6.K-debt acknowledged — Containers-strict gate not yet enforceable on macOS audit host; this iter ran host-direct Gradle as operator-iteration scope. Full forensic in §38 below.
+**Last updated:** 2026-05-13 (iter 54 closeout — operator supplied a non-interactive `FIREBASE_TOKEN` (now persisted in gitignored `~/.zshrc` + Yole `.env` with 0600 perms — token NEVER appears in tracked code, commit messages, or logs) AND access to `nezha.local` (Linux x86_64 build host, user `milosvasic`, SSH-key-only login wired via initial-password one-shot ssh-copy-id, password not persisted anywhere). Both Android APKs (Release `0kj067hci3iv8` + Debug `31gcgkn25gppo` for app `1:578988389676:android:d61715a0a84a42c65d2889`) distributed to all 3 mandated testers (owner + developer + tester). Containers submodule new `pkg/crossbuild/` package landed at commit `5059c75` — generic decoupled Selector → Backend orchestration with HostDirect (operational) + WineContainer (skeleton + tests + Containerfile + provisioning doc) backends — addressing the operator's "Containers + QEMU MUST be handled in Containers submodule on generic reusable decoupled level" mandate. Honest carry-over: nezha JDK lacks jmods + nezha network can't reach github release assets, blocking the Linux .deb build (`#nezha-jdk-jmods-bootstrap`); operator must `podman build` the crossbuild-wine image on a Linux host to unblock Windows .msi (`#crossbuild-windows-image-provisioning`); webApp BrowserDistribution still owed. Full forensic in §38 below.
 
 iter 53 — LLMProvider bluff strip + apikeys central authority + live HuggingFace Challenge per operator's "use LLMsVerifier as model authority + api_keys.sh credential source" mandate. Two LLMProvider commits (c3bccd7 + 2e465c4): Ollama/Venice drift bluffs fixed via httptest fixtures (49/0 PASS); Models sibling-replace gap eliminated; new pkg/apikeys reads ApiKey_<Provider> env vars from ~/api_keys.sh; new live HuggingFace Challenge captured 5 real models on operator's host; Tier 3 (FallbackModels) marked DEPRECATED in pkg/discovery/discovery.go per CONST-036 with the per-provider httptest sweep tracked as `#fallback-tier-removed-needs-httptest-fixture` (75 latent bluffs counted via raw-strip evidence at `docs/qa/iter-52/submodule-llmprovider-tier3-strip.log` — multi-iter carry-over). Full sweep details in §37 below. Iter-52 governance closeout (§36) remains intact.
 
@@ -543,9 +543,62 @@ iter-55+ work.
   added (acknowledged Homebrew JDK risk; iter-54 audit-host workaround).
 - This `docs/CONTINUATION.md` §38.
 
-### Iter-54 commit
+### Iter-54 commits (per-repo SHAs)
 
-`<pending — recorded by next commit after this update lands>`
+- Containers:  `5059c75` — feat(crossbuild): generic decoupled cross-platform build orchestration
+- Yole main:   `0548af07` — feat(iter-54): bump 1.0.0 → 1.0.1 + Android + Desktop macOS-arm64 rebuild
+- Yole main:   `<this commit>` — feat(iter-54): closeout — Firebase distribution evidence + Containers pointer bump
+
+### Firebase App Distribution evidence (real-stack, runtime-verified)
+
+Token-based distribution worked end-to-end with the operator-supplied
+`FIREBASE_TOKEN` (stored in `~/.zshrc` + `.env` — both gitignored).
+
+| Variant | Release ID | App | Testers reached |
+|---------|-----------|-----|-----------------|
+| Yole-Android-1.0.1-Release-0.0.0.1.1.apk | `0kj067hci3iv8` | `1:578988389676:android:d61715a0a84a42c65d2889` | 3/3 (owner + developer + tester) |
+| Yole-Android-1.0.1-Debug-0.0.0.1.1.apk | `31gcgkn25gppo` | (same app) | 3/3 |
+
+Console links (operator-visible):
+- Release: https://console.firebase.google.com/project/yole-app/appdistribution/app/android:digital.vasic.yole.android/releases/0kj067hci3iv8
+- Debug:   https://console.firebase.google.com/project/yole-app/appdistribution/app/android:digital.vasic.yole.android/releases/31gcgkn25gppo
+
+Verified-tester list (via `firebase appdistribution:testers:list`):
+- milos85vasic@gmail.com (owner) — last activity Wed 2026-05-13 06:59:51 GMT+0500
+- milos85vasic.2nd@gmail.com (developer) — same window
+- milos85vasic.3rd@gmail.com (tester) — last activity Tue 2026-05-12 16:10:40 GMT+0500
+- (smtnkv@gmail.com also present from prior iter-31 setup — not part of this iter's mandate but kept for forensic record)
+
+### Honest-carry-over for iter-55+
+
+1. **Linux x86_64 .deb on nezha.local** — JDK 21 system package on
+   nezha (ALT Linux `openjdk-21-alt1`) does NOT ship a jmods/
+   directory, so Compose Desktop's `createRuntimeImage` (jlink)
+   fails with "module-path is not specified and this runtime image
+   does not contain jmods directory." Temurin 17 user-install
+   attempt failed because nezha's network cannot resolve
+   `release-assets.githubusercontent.com` (DNS / firewall). Owed:
+   either (a) copy a Temurin tarball from the macOS host to nezha
+   via scp, or (b) provision an apt mirror reachable from nezha
+   that ships `openjdk-21-jdk` with jmods. Tracked as
+   `#nezha-jdk-jmods-bootstrap` in KNOWN_DEFECTS.
+2. **Windows x86_64 .msi via Containers QEMU/Wine** — Backend
+   skeleton + tests + Containerfile + provisioning doc all landed
+   in Containers commit `5059c75`. Operator must `podman build`
+   the `crossbuild-wine` image on a Linux host (instructions in
+   `Submodules/Containers/docs/crossbuild/windows-image-provisioning.md`)
+   to unblock the real-stack build. Tracked as
+   `#crossbuild-windows-image-provisioning`.
+3. **Web Wasm PWA** — webApp module does not currently have a
+   `BrowserDistribution` task wired (pre-existing config gap).
+   Owed.
+4. **iOS** — in development per platform-status table; not part
+   of any current iter.
+5. **CONST §6.K-debt** — Containers' `pkg/emulator/` is OPERATIONAL
+   (iter-52); `pkg/crossbuild/` lands this iter; `pkg/vm/`
+   QEMU-Windows backend still SKELETON. Closing 6.K-debt requires
+   the QEMU-Windows backend + at least one PASSING real-container-
+   emulator-boot test.
 
 ---
 
