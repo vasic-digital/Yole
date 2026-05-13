@@ -539,7 +539,7 @@ without spurious failure.
 
 ### Iter-47 commit
 
-`<<sha-placeholder>>` — see §6 for canonical record. Evidence at `docs/qa/iter-47/`.
+`4510520e` — see §6 for canonical record. Evidence at `docs/qa/iter-47/`.
 
 ---
 
