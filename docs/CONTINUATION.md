@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-13 (iter 44 — 3 more EndToEndTest SKIP-OK cases rewritten to honest PASS: testBackupAndRestoreWorkflow (Backup & Restore dialog), testSettingsConfigurationWorkflow (theme triplet + EDITOR/ANIMATIONS), testCrossFeatureWorkflow (3-todo + QuickNote + multi-screen round trip). New totals: 64 PASS / 12 SKIP-OK / 0 FAIL.)
+**Last updated:** 2026-05-13 (iter 45 — 2 more EndToEndTest SKIP-OK cases rewritten to honest PASS (testDataPersistenceAcrossSessions with Activity recreate + persistence-regression-guard, testPerformanceUnderLoad with bottom-nav responsiveness check); 2 truly-removed-feature EndToEndTest cases reclassified under `#yole-android-fab-new-file-flow-removed` (testCompleteFileEditingWorkflow, testErrorRecoveryWorkflow). New totals: 66 PASS / 10 SKIP-OK / 0 FAIL.)
 **Current branch:** `master`
 **HEAD (parent of this commit):** `ee120766` — `feat(iter-36): rewrite 3 SKIP-OK instrumented tests to real PASS`.
 **Submodule SHAs (per HEAD tree):**
@@ -451,6 +451,49 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 29. Iter 45 — 2 EndToEndTest rewrites + 2 reclassifications under fab-new-file-flow-removed
+
+### 2 conversions
+
+| Test | Bluff before | Honest after |
+|------|--------------|--------------|
+| `testDataPersistenceAcrossSessions` | Final `composeTestRule.onNodeWithText("QuickNote").assertIsDisplayed()` is a tautology (QuickNote tab always in bottom nav regardless of content). The comment even acknowledged "in current implementation, it won't [persist] due to no persistence layer", but the test still passed PASS-by-tautology. | After `scenario.recreate()`, asserts bottom-nav reachable + To-Do List screen renders. PLUS: explicit `assertDoesNotExist` for the pre-recreate todo — proves persistence is NOT present today, and acts as a regression guard: when persistence IS added later, this assertion will FAIL and the iter that adds it must strengthen to `assertExists`. |
+| `testPerformanceUnderLoad` | Three bluffs: 20 sequential adds exceeded the iter-39/41 screen-real-estate limit (5+ adds fail reliably); `assertIsDisplayed` on items 1-20 would fail for items scrolled off the viewport; final "Performance test todo 1" was at the bottom after 20 adds, scrolled off. | 3 sequential adds with per-iter `assertExists`; 3 round-trips through every bottom-nav tab (proves nav still responsive under load); final `assertExists` (semantic-tree presence, not viewport visibility — the load-bearing invariant for a perf test is "data layer survived + Compose tree healthy + nav responsive"). |
+
+### 2 reclassifications
+
+| Test | Previous marker | New marker | Why |
+|------|----------------|------------|-----|
+| `testCompleteFileEditingWorkflow` | `#yole-android-instrumented-tests-pre-iter27-rewrite` | `#yole-android-fab-new-file-flow-removed` | Entire workflow targets the removed FAB → editor sub-screen flow (Add FAB, "Editing: untitled.txt", "Preview: untitled.txt", "Start typing...", content-descriptions Preview/Edit/Save/Back). |
+| `testErrorRecoveryWorkflow` | `#yole-android-instrumented-tests-pre-iter27-rewrite` | `#yole-android-fab-new-file-flow-removed` | Same FAB → editor flow; the error-recovery scenario it claims to exercise targets a UI path that no longer exists. |
+
+### Surface metrics
+
+| Metric | Iter 44 | **Iter 45** |
+|--------|---------|-------------|
+| Tests in suite | 76 | 76 |
+| **PASS** | 64 | **66** |
+| Silent failures | 0 | 0 |
+| Explicit SKIP-OK | 12 | **10** |
+| BUILD result | SUCCESSFUL | SUCCESSFUL |
+
++2 PASS, -2 SKIP-OK.
+
+### Honest remaining gaps (post-iter-45)
+
+| # | Item | Severity |
+|---|------|----------|
+| 1 | 2 SKIP-OK truly-rewritable EndToEndTest — testCompleteUserJourney (drops at FAB → editor step 3) + testFormatSpecificWorkflows (drops at FAB → editor step 1). Both are partial removed-feature; can be rewritten as bottom-nav-only workflows. | MED |
+| 2 | 8 SKIP-OK truly-removed-feature tests pending product decision | LOW |
+| 3 | Concrete-bank coverage 10/60+ | MED |
+| 4-6 | iOS/Desktop/Web Firebase, gitlab leg, prod-keystore continuity | LOW |
+
+### Iter-45 commit
+
+`<<sha-placeholder>>` — see §6 for canonical record. Evidence at `docs/qa/iter-45/`.
 
 ---
 
