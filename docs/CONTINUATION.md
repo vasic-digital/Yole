@@ -585,11 +585,27 @@ All logs persisted under `docs/qa/iter-52/`:
   submodules' working trees as of this CONTINUATION update — Task 18 of
   the iter-52 plan handles this next).
 
-### Iter-52 commit
+### Iter-52 commits (per-repo SHAs)
 
-`<pending — recorded by Task 18 of the iter-52 plan>` — will replace this
-line once the commit lands. Per CONST-036, this CONTINUATION update is
-itself part of the iter-52 commit.
+- Yole main:    `4dc56c26` — feat(iter-52): comprehensive honesty closeout
+- Challenges:   `12bc8af`  — fix(test): macOS shebang trailing newline
+- Containers:   `4d3c63b`  — fix(test): macOS portability (symlink + Linux-only guards)
+- LLMProvider:  `102be14`  — chore(governance): covenant propagation
+- Auth-KMP:           `7ae7c72`
+- Concurrency-KMP:    `b3647f3`
+- Config-KMP:         `f39b764`
+- Database-KMP:       `a0dbab2`
+- Document-KMP:       `e6ee4d6`
+- Formatters-KMP:     `eb3195d`
+- RateLimiter-KMP:    `742737d`
+- Security-KMP:       `4c6d8d1`
+- Storage-KMP:        `7c13085`
+- UI-Components-KMP:  `848b391`
+
+The Yole main commit's pre-commit hook ran `bluff-scanner --mode changed`
++ `anchor_manifest_challenge.sh` and both reported OK before the commit
+was accepted — so the iter-52 release of governance work itself passes
+its own honesty gate, by construction.
 
 ---
 
