@@ -537,7 +537,7 @@ network-degraded emulator finally exposed it).
 
 ### Iter-41 commit
 
-`<<sha-placeholder>>` — see CLOSED tickets above + §6 for canonical record. Evidence at `docs/qa/iter-41/`.
+`c978b30c` — see CLOSED tickets above + §6 for canonical record. Evidence at `docs/qa/iter-41/`.
 
 ---
 
