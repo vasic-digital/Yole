@@ -96,10 +96,12 @@ class IntegrationTest {
                 "users would have no openable text formats"
         }
 
-        // Every text format (except binary + JSON until #yole-json-parser-missing
-        // is closed) must have a registered parser. Network formats are
-        // already excluded by getTextFormats().
-        val knownGaps = setOf("json", "binary") // tracked in KNOWN_DEFECTS.md
+        // Every text format (except binary which has no parser by design)
+        // must have a registered parser. Network formats are already
+        // excluded by getTextFormats(). #yole-json-parser-missing was
+        // closed iter 42 (JsonParser added), so json is no longer in
+        // knownGaps.
+        val knownGaps = setOf("binary")
         val unsupported = textFormats.filter { fmt ->
             fmt.id !in knownGaps && !ParserRegistry.hasParser(fmt)
         }
@@ -445,9 +447,10 @@ class IntegrationTest {
         }
 
         // Known gaps (each tracked in docs/KNOWN_DEFECTS.md):
-        //   - binary: by design (#yole-android-binary-format-no-parser, docs design)
-        //   - json: real gap (#yole-json-parser-missing)
-        val knownGaps = setOf("binary", "json")
+        //   - binary: by design (BinaryParser exists but treats content
+        //     as opaque; no UI-rendering claim is made)
+        // #yole-json-parser-missing closed iter 42 — json no longer here.
+        val knownGaps = setOf("binary")
 
         var checkedCount = 0
         val unsupported = mutableListOf<String>()

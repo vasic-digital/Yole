@@ -27,6 +27,7 @@ import digital.vasic.yole.format.textile.TextileParser
 import digital.vasic.yole.format.jupyter.JupyterParser
 import digital.vasic.yole.format.rmarkdown.RMarkdownParser
 import digital.vasic.yole.format.binary.BinaryParser
+import digital.vasic.yole.format.json.JsonParser
 
 /**
  * Initializes and registers all format parsers.
@@ -92,6 +93,9 @@ object ParserInitializer {
         ParserRegistry.register(JupyterParser())
         ParserRegistry.register(RMarkdownParser())
 
+        // Structured-data formats (iter 42 — closes #yole-json-parser-missing)
+        ParserRegistry.register(JsonParser())
+
         // Binary format
         ParserRegistry.register(BinaryParser())
     }
@@ -146,6 +150,9 @@ object ParserInitializer {
         // Data science formats
         ParserRegistry.registerLazy(FormatRegistry.ID_JUPYTER) { JupyterParser() }
         ParserRegistry.registerLazy(FormatRegistry.ID_RMARKDOWN) { RMarkdownParser() }
+
+        // Structured-data formats (iter 42 — closes #yole-json-parser-missing)
+        ParserRegistry.registerLazy(FormatRegistry.ID_JSON) { JsonParser() }
 
         // Binary format
         ParserRegistry.registerLazy(FormatRegistry.ID_BINARY) { BinaryParser() }

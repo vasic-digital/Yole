@@ -26,7 +26,7 @@ import kotlin.test.*
 class ParserInitializerTest {
 
     /**
-     * All 17 format IDs that ParserInitializer registers.
+     * All 18 format IDs that ParserInitializer registers.
      */
     private val allFormatIds = listOf(
         FormatRegistry.ID_PLAINTEXT,
@@ -45,6 +45,7 @@ class ParserInitializerTest {
         FormatRegistry.ID_TEXTILE,
         FormatRegistry.ID_JUPYTER,
         FormatRegistry.ID_RMARKDOWN,
+        FormatRegistry.ID_JSON,
         FormatRegistry.ID_BINARY
     )
 
@@ -56,11 +57,11 @@ class ParserInitializerTest {
     // ==================== registerAllParsers() Tests ====================
 
     @Test
-    fun `registerAllParsers registers all 17 format parsers`() {
+    fun `registerAllParsers registers all 18 format parsers`() {
         ParserInitializer.registerAllParsers()
 
         val registeredParsers = ParserRegistry.getAllParsers()
-        assertEquals(17, registeredParsers.size, "Should register exactly 17 parsers")
+        assertEquals(18, registeredParsers.size, "Should register exactly 18 parsers")
     }
 
     @Test
@@ -82,8 +83,8 @@ class ParserInitializerTest {
         ParserInitializer.registerAllParsers()
 
         // Eager registration means all parsers are instantiated, none pending
-        assertEquals(17, ParserRegistry.getInstantiatedParserCount(),
-            "All 17 parsers should be instantiated immediately")
+        assertEquals(18, ParserRegistry.getInstantiatedParserCount(),
+            "All 18 parsers should be instantiated immediately")
         assertEquals(0, ParserRegistry.getPendingParserCount(),
             "No parsers should be pending (lazy) after eager registration")
     }
@@ -117,7 +118,7 @@ class ParserInitializerTest {
     // ==================== registerAllParsersLazy() Tests ====================
 
     @Test
-    fun `registerAllParsersLazy registers all 17 formats`() {
+    fun `registerAllParsersLazy registers all 18 formats`() {
         ParserInitializer.registerAllParsersLazy()
 
         for (formatId in allFormatIds) {
@@ -136,8 +137,8 @@ class ParserInitializerTest {
 
         assertEquals(0, ParserRegistry.getInstantiatedParserCount(),
             "No parsers should be instantiated immediately after lazy registration")
-        assertEquals(17, ParserRegistry.getPendingParserCount(),
-            "All 17 parsers should be pending (lazy)")
+        assertEquals(18, ParserRegistry.getPendingParserCount(),
+            "All 18 parsers should be pending (lazy)")
     }
 
     @Test
@@ -179,8 +180,8 @@ class ParserInitializerTest {
 
         assertEquals(2, ParserRegistry.getInstantiatedParserCount(),
             "Only 2 parsers should be instantiated")
-        assertEquals(15, ParserRegistry.getPendingParserCount(),
-            "15 parsers should still be pending")
+        assertEquals(16, ParserRegistry.getPendingParserCount(),
+            "16 parsers should still be pending (18 total - 2 accessed)")
     }
 
     @Test
@@ -223,8 +224,8 @@ class ParserInitializerTest {
             assertNotNull(parser, "Parser for '$formatId' should be retrievable")
         }
 
-        assertEquals(17, ParserRegistry.getInstantiatedParserCount(),
-            "All 17 parsers should be instantiated after accessing each one")
+        assertEquals(18, ParserRegistry.getInstantiatedParserCount(),
+            "All 18 parsers should be instantiated after accessing each one")
         assertEquals(0, ParserRegistry.getPendingParserCount(),
             "No parsers should be pending after accessing all")
     }
@@ -250,7 +251,7 @@ class ParserInitializerTest {
 
         val status = ParserInitializer.getInitializationStatus()
 
-        // All 17 parser format names should be true
+        // All 18 parser format names should be true
         val expectedNames = listOf(
             "Plain Text", "Markdown", "Todo.txt", "CSV",
             "WikiText", "Creole", "TiddlyWiki",
@@ -329,13 +330,13 @@ class ParserInitializerTest {
     }
 
     @Test
-    fun `getParserStatistics after eager registration shows 17 parsers`() {
+    fun `getParserStatistics after eager registration shows 18 parsers`() {
         ParserInitializer.registerAllParsers()
 
         val stats = ParserInitializer.getParserStatistics()
 
-        assertEquals(17, stats["total_parsers"],
-            "Total parsers should be 17 after eager registration")
+        assertEquals(18, stats["total_parsers"],
+            "Total parsers should be 18 after eager registration")
     }
 
     @Test
@@ -351,7 +352,7 @@ class ParserInitializerTest {
         assertTrue(supportedFormats.contains("Plain Text"), "Should list Plain Text")
         assertTrue(supportedFormats.contains("LaTeX"), "Should list LaTeX")
         assertTrue(supportedFormats.contains("Binary"), "Should list Binary")
-        assertEquals(17, supportedFormats.size, "Should list exactly 17 supported formats")
+        assertEquals(18, supportedFormats.size, "Should list exactly 18 supported formats")
     }
 
     @Test
@@ -403,27 +404,27 @@ class ParserInitializerTest {
     @Test
     fun `eager re-registration after clear succeeds`() {
         ParserInitializer.registerAllParsers()
-        assertEquals(17, ParserRegistry.getInstantiatedParserCount())
+        assertEquals(18, ParserRegistry.getInstantiatedParserCount())
 
         ParserRegistry.clear()
         assertEquals(0, ParserRegistry.getInstantiatedParserCount())
 
         // Re-register should work without error
         ParserInitializer.registerAllParsers()
-        assertEquals(17, ParserRegistry.getInstantiatedParserCount())
+        assertEquals(18, ParserRegistry.getInstantiatedParserCount())
     }
 
     @Test
     fun `lazy re-registration after clear succeeds`() {
         ParserInitializer.registerAllParsersLazy()
-        assertEquals(17, ParserRegistry.getPendingParserCount())
+        assertEquals(18, ParserRegistry.getPendingParserCount())
 
         ParserRegistry.clear()
         assertEquals(0, ParserRegistry.getPendingParserCount())
 
         // Re-register should work without error
         ParserInitializer.registerAllParsersLazy()
-        assertEquals(17, ParserRegistry.getPendingParserCount())
+        assertEquals(18, ParserRegistry.getPendingParserCount())
     }
 
     @Test
@@ -494,8 +495,8 @@ class ParserInitializerTest {
         ParserInitializer.registerAllParsers()
 
         val allParsers = ParserRegistry.getAllParsers()
-        assertEquals(17, allParsers.size)
-        assertEquals(17, ParserRegistry.getInstantiatedParserCount())
+        assertEquals(18, allParsers.size)
+        assertEquals(18, ParserRegistry.getInstantiatedParserCount())
         assertEquals(0, ParserRegistry.getPendingParserCount())
     }
 
@@ -506,7 +507,7 @@ class ParserInitializerTest {
         val allParsers = ParserRegistry.getAllParsers()
         assertEquals(0, allParsers.size, "getAllParsers should return empty for lazy-only parsers")
         assertEquals(0, ParserRegistry.getInstantiatedParserCount())
-        assertEquals(17, ParserRegistry.getPendingParserCount())
+        assertEquals(18, ParserRegistry.getPendingParserCount())
     }
 
     @Test

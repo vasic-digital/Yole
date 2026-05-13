@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-13 (iter 41 — 3 more EndToEndTest SKIP-OK cases rewritten to honest PASS (+3) AND `#yole-firebase-remote-config-fetch-crash` discovered + FIXED. The Firebase crash was a real product defect: `FirebaseUtil.fetchRemoteConfig` unconditionally read `task.result`, which throws on any RC fetch failure (Firebase Installations Service unreachable due to poor network / corporate firewall / offline use), crashing the entire app on launch. Now correctly checks `task.isSuccessful` first. New totals: 59 PASS / 17 SKIP-OK / 0 FAIL.)
+**Last updated:** 2026-05-13 (iter 42 — `#yole-json-parser-missing` FIXED. New `JsonParser` provides JSON pretty-printing + token-class HTML rendering + balanced-delimiter validation. Wired into `ParserInitializer` (eager + lazy paths). `IntegrationTest.knownGaps` tightened to just `binary` — json is no longer an allowed gap. Surface metrics unchanged at 59 PASS / 17 SKIP-OK / 0 FAIL but with one more open product gap closed.)
 **Current branch:** `master`
 **HEAD (parent of this commit):** `ee120766` — `feat(iter-36): rewrite 3 SKIP-OK instrumented tests to real PASS`.
 **Submodule SHAs (per HEAD tree):**
@@ -118,10 +118,7 @@ From `docs/KNOWN_DEFECTS.md` (authoritative — keep that file in sync with this
 
 ### OPEN
 
-#### `#yole-json-parser-missing` — NEW iter 39
-- **Symptom:** `FormatRegistry.formats` advertises JSON as a TextFormat, but no `JsonParser` is registered. End-user impact: `.json` files open as Plain Text (no syntax highlighting, no structure folding, no error detection).
-- **Discovered by:** Iter-39 `IntegrationTest.testParserRegistryCompleteness` (assertion: every non-binary text format has a parser).
-- **Fix:** Implement `digital.vasic.yole.format.json.JsonParser`, register via `ParserInitializer.registerAllParsersLazy(FormatRegistry.ID_JSON) { JsonParser() }`. Non-trivial parser; not in iter-39 scope.
+#### `#yole-json-parser-missing` — ~~NEW iter 39~~ **FIXED iter 42 (see CLOSED list)**
 
 #### `#yole-todotxt-compound-extension-detection` — ~~NEW iter 39~~ **FIXED iter 40 (see CLOSED list)**
 
@@ -142,6 +139,7 @@ From `docs/KNOWN_DEFECTS.md` (authoritative — keep that file in sync with this
 
 ### CLOSED (record for forensic continuity — do NOT re-open without reason)
 
+- `#yole-json-parser-missing` — FIXED 2026-05-13 (iter 42). Closes the iter-39 finding via a new `digital.vasic.yole.format.json.JsonParser` that provides JSON pretty-printing (2-space indent), token-class HTML rendering (`json-key` / `json-string` / `json-number` / `json-bool` / `json-null` / `json-bracket` spans for stylesheet-driven highlighting), HTML-injection-safe escaping, and balanced-delimiter validation. Wired into `ParserInitializer` (eager + lazy). 10 paired commonTest assertions + 41 ParserInitializerTest pass on host JVM. `IntegrationTest.knownGaps` tightened to just `binary` (was `binary` + `json`). Evidence: `docs/qa/iter-42/`.
 - `#yole-firebase-remote-config-fetch-crash` — FIXED 2026-05-13 (iter 41). Discovered + fixed in the same iter. `FirebaseUtil.fetchRemoteConfig` unconditionally read `task.result` in the completion listener; `task.result` throws `RuntimeExecutionException` when the underlying task fails (e.g. Firebase Installations Service unreachable). The uncaught exception crashed the entire app process on every RC fetch failure — visible to end users on any degraded-network condition. Fix in `FirebaseUtil.kt:169-198`: check `task.isSuccessful` before reading; log `task.exception` (the proper failure channel) on failure. Evidence: `docs/qa/iter-41/adb-IntegrationTest-pre-fix-CRASH.log` shows crash; `gradle-fullsuite.log` shows BUILD SUCCESSFUL with 59 PASS / 17 SKIP-OK / 0 FAIL post-fix.
 - `#yole-todotxt-compound-extension-detection` — FIXED 2026-05-13 (iter 40, commit `1231d639`). `FormatRegistry.detectByFilename` rewritten with 3-pass algorithm (whole-filename match → compound longest-first → bare-extension fallback). Closes both `todo.txt → todotxt` AND `work.todo.txt → todotxt` cases. Paired tests added to `shared/src/commonTest/.../FormatRegistryStressTest.kt`; `IntegrationTest.testFormatDetectionIntegration` strengthened to assert strict-not-either. Verified: 140 FormatRegistry tests pass (host JVM); 19 IntegrationTest pass (adb-direct); 56/76 full instrumented suite pass with no regression. Evidence: `docs/qa/iter-40/`.
 - `#yole-android-gradle-utp-single-class-filter` — FIXED 2026-05-13 (commit `df2b4bd7`, iter 38). Discovered + fixed in the same iter. `tasks.withType<Test>().configureEach { filter { excludeTestsMatching("*.robolectric.*") } }` was inadvertently sweeping in `DeviceProviderInstrumentTestTask` (which extends `Test` in AGP 8.x), causing UTP to inject `class=YoleAppTest` arg_map and narrow connectedDebugAndroidTest to one class. Fix: scoped the filter to `name.endsWith("UnitTest")` tasks only. Verified: Gradle XML now reports `tests="76" failures="0" errors="0" skipped="27"` with all 5 classnames present, matching adb-direct evidence. Evidence: `docs/qa/iter-38/connectedDebugAndroidTest-fix-verified.{xml,log}`.
@@ -449,6 +447,107 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 26. Iter 42 — `#yole-json-parser-missing` FIXED via new JsonParser
+
+### What changed
+
+The iter-39 IntegrationTest rewrite exposed a real product gap:
+`FormatRegistry.formats` advertised JSON as a TextFormat but no
+`JsonParser` was registered, so users tapping a `.json` file got
+Plain-Text rendering. Iter-42 closes that gap with a dedicated
+parser.
+
+### `JsonParser` implementation
+
+`shared/src/commonMain/kotlin/digital/vasic/yole/format/json/JsonParser.kt`:
+
+- **`parse(content)`** — pretty-prints with 2-space indent (handles
+  string escapes, ignores whitespace outside strings, never throws),
+  then walks the result building HTML with `<span class='...'>`
+  tokens for each JSON element class:
+  - `json-key` — quoted strings followed by `:`
+  - `json-string` — other quoted strings
+  - `json-number` — numeric literals (including negatives + scientific)
+  - `json-bool` — `true` / `false`
+  - `json-null` — `null`
+  - `json-bracket` — `{ } [ ]`
+- **`toHtml()`** — returns the pre-generated HTML from `parsedContent`.
+- **`validate(content)`** — cheap structural check (balanced braces /
+  brackets / no unterminated strings). Returns empty list on valid
+  input.
+- HTML-sensitive characters in string contents (`<`, `>`, `&`, `"`)
+  go through `escapeHtml()` so a JSON value `"a<script>"` renders as
+  `&quot;a&lt;script&gt;&quot;` inside its span — never as live HTML.
+- Parser tolerates malformed input: pretty-printing wraps in
+  try/catch and falls back to the raw string with an entry in
+  `errors`. No exception escapes.
+
+### Registration
+
+`ParserInitializer.registerAllParsers()` + `registerAllParsersLazy()`
+both updated to include the new parser. `allFormatIds` list in
+`ParserInitializerTest` extended with `ID_JSON`; count assertions
+17 → 18.
+
+### IntegrationTest knownGaps tightened
+
+The `IntegrationTest.testParserRegistryCompleteness` and
+`testParserRegistryIntegration` `knownGaps` set was `{binary, json}`;
+now it's just `{binary}`. The assertion that "every non-binary text
+format has a parser" is now STRICT for JSON — a regression that
+removed the `JsonParser` registration would fail the test loudly.
+
+### Paired tests
+
+`shared/src/commonTest/kotlin/digital/vasic/yole/format/json/JsonParserTest.kt`
+— 10 dedicated cases:
+- `supportedFormat is JSON`
+- `parse simple object pretty-prints with 2-space indent`
+- `parse array of mixed values classifies each token`
+- `parse escapes HTML-sensitive characters inside strings`
+- `validate balanced JSON returns no errors`
+- `validate reports unbalanced braces`
+- `validate reports unexpected closing bracket`
+- `parse tolerates invalid JSON without throwing`
+- `parse empty string produces non-null document`
+- `metadata reports lines and characters`
+
+All 10 PASS on host JVM (Kotest 5.9.1 + kotlin.test JUnit support).
+
+### Surface metrics
+
+| Metric | Iter 41 | **Iter 42** |
+|--------|---------|-------------|
+| Tests in suite | 76 | 76 |
+| **PASS** | 59 | **59** |
+| Silent failures | 0 | 0 |
+| Explicit SKIP-OK | 17 | **17** |
+| BUILD result | SUCCESSFUL | SUCCESSFUL |
+
+Surface unchanged at 59/17 — but ONE open product-gap ticket closed
+and the IntegrationTest assertion is strictly stronger (no allowed
+gap for JSON). That's a real CONST-035 net positive: same passing
+count, less bluff allowance.
+
+### Honest remaining gaps (post-iter-42)
+
+| # | Item | Severity |
+|---|------|----------|
+| 1 | 13 SKIP-OK truly-rewritable (9 EndToEndTest + 4 YoleAppTest) | MED |
+| 2 | 4 SKIP-OK truly-removed-feature pending product decision | LOW |
+| 3 | Concrete-bank coverage 10/60+ | MED |
+| 4-6 | iOS/Desktop/Web Firebase, gitlab leg, prod-keystore continuity | LOW |
+
+(No open data-layer tickets — `#yole-json-parser-missing`
+was the last one. All 4 defects discovered this session are now
+either FIXED or honestly tracked.)
+
+### Iter-42 commit
+
+`<<sha-placeholder>>` — see CLOSED tickets above + §6 for canonical record. Evidence at `docs/qa/iter-42/`.
 
 ---
 

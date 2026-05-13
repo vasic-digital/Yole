@@ -1,0 +1,218 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Configuration on demand is an incubating feature.
+Reusing configuration cache.
+> Task :Concurrency-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Security-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Document-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Database-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :RateLimiter-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Auth-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Formatters-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Config-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :RateLimiter-KMP:desktopProcessResources NO-SOURCE
+> Task :Document-KMP:desktopProcessResources NO-SOURCE
+> Task :Concurrency-KMP:desktopProcessResources NO-SOURCE
+> Task :Auth-KMP:desktopProcessResources NO-SOURCE
+> Task :Security-KMP:desktopProcessResources NO-SOURCE
+> Task :Config-KMP:desktopProcessResources NO-SOURCE
+> Task :Database-KMP:desktopProcessResources NO-SOURCE
+> Task :Formatters-KMP:desktopProcessResources NO-SOURCE
+> Task :Storage-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:generateComposeResClass SKIPPED
+> Task :shared:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :shared:copyNonXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:convertXmlValueResourcesForCommonTest NO-SOURCE
+> Task :shared:convertXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:convertXmlValueResourcesForDesktopTest NO-SOURCE
+> Task :shared:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForCommonTest NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForDesktopTest NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForCommonTest NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForDesktopMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForDesktopTest NO-SOURCE
+> Task :shared:generateResourceAccessorsForCommonMain SKIPPED
+> Task :shared:generateResourceAccessorsForDesktopMain SKIPPED
+> Task :shared:generateResourceAccessorsForCommonTest SKIPPED
+> Task :shared:generateResourceAccessorsForDesktopTest SKIPPED
+> Task :shared:generateActualResourceCollectorsForDesktopMain SKIPPED
+> Task :Storage-KMP:desktopProcessResources NO-SOURCE
+> Task :shared:koverFindJar UP-TO-DATE
+> Task :shared:assembleDesktopMainResources UP-TO-DATE
+> Task :shared:assembleDesktopTestResources UP-TO-DATE
+> Task :Formatters-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Document-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Config-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Auth-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Formatters-KMP:desktopMainClasses UP-TO-DATE
+> Task :Document-KMP:desktopMainClasses UP-TO-DATE
+> Task :Auth-KMP:desktopMainClasses UP-TO-DATE
+> Task :Config-KMP:desktopMainClasses UP-TO-DATE
+> Task :shared:desktopProcessResources UP-TO-DATE
+> Task :shared:desktopTestProcessResources UP-TO-DATE
+> Task :Database-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Storage-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Storage-KMP:desktopMainClasses UP-TO-DATE
+> Task :RateLimiter-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Database-KMP:desktopMainClasses UP-TO-DATE
+> Task :RateLimiter-KMP:desktopMainClasses UP-TO-DATE
+> Task :UI-Components-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Formatters-KMP:desktopJar UP-TO-DATE
+> Task :Config-KMP:desktopJar UP-TO-DATE
+> Task :Document-KMP:desktopJar UP-TO-DATE
+> Task :Auth-KMP:desktopJar UP-TO-DATE
+> Task :Storage-KMP:desktopJar UP-TO-DATE
+> Task :RateLimiter-KMP:desktopJar UP-TO-DATE
+> Task :Database-KMP:desktopJar UP-TO-DATE
+> Task :UI-Components-KMP:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :UI-Components-KMP:generateComposeResClass SKIPPED
+> Task :UI-Components-KMP:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :UI-Components-KMP:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :UI-Components-KMP:copyNonXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :Security-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Security-KMP:desktopMainClasses UP-TO-DATE
+> Task :UI-Components-KMP:convertXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :UI-Components-KMP:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :UI-Components-KMP:prepareComposeResourcesTaskForDesktopMain NO-SOURCE
+> Task :Concurrency-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :UI-Components-KMP:generateResourceAccessorsForCommonMain SKIPPED
+> Task :UI-Components-KMP:generateResourceAccessorsForDesktopMain SKIPPED
+> Task :Concurrency-KMP:desktopMainClasses UP-TO-DATE
+> Task :UI-Components-KMP:generateActualResourceCollectorsForDesktopMain SKIPPED
+> Task :Security-KMP:desktopJar UP-TO-DATE
+> Task :UI-Components-KMP:assembleDesktopMainResources UP-TO-DATE
+> Task :Concurrency-KMP:desktopJar UP-TO-DATE
+> Task :UI-Components-KMP:desktopProcessResources UP-TO-DATE
+> Task :UI-Components-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :UI-Components-KMP:desktopMainClasses UP-TO-DATE
+> Task :UI-Components-KMP:desktopJar UP-TO-DATE
+> Task :shared:compileKotlinDesktop UP-TO-DATE
+> Task :shared:desktopMainClasses UP-TO-DATE
+> Task :shared:desktopJar UP-TO-DATE
+
+> Task :shared:compileTestKotlinDesktop
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/concurrency/CancellationSafetyTests.kt:78:20 Check for instance is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/concurrency/CancellationSafetyTests.kt:88:20 Check for instance is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/concurrency/CancellationSafetyTests.kt:98:20 Check for instance is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/format/platform/PlatformParsingTests.kt:366:40 Condition is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/format/stress/EdgeCaseStressTest.kt:476:34 Condition is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/format/stress/EdgeCaseStressTest.kt:491:34 Condition is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/format/supremacy/UltimateSupremacyTest.kt:153:9 Name contains character(s) that can cause problems on Windows: %
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/network/platform/SecureStorageFactoryIntegrationTest.kt:42:20 Check for instance is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/network/platform/SecureStorageIntegrationTest.kt:52:57 Unchecked cast of 'java.io.Serializable' to 'kotlin.Pair<kotlin.String, kotlin.String>'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/network/platform/SecureStorageIntegrationTest.kt:202:20 Check for instance is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/network/protocols/webdav/WebDavServiceEnhancedTest.kt:215:20 Condition is always 'true'.
+
+> Task :shared:desktopTestClasses
+
+> Task :shared:desktopTest
+
+ParserInitializerTest[desktop] > getInitializationStatus returns true for all formats after eager registration[desktop] PASSED
+
+ParserInitializerTest[desktop] > registerAllParsersLazy does not instantiate parsers immediately[desktop] PASSED
+
+ParserInitializerTest[desktop] > registerAllParsersLazy accessing all parsers transitions all from pending to instantiated[desktop] PASSED
+
+ParserInitializerTest[desktop] > registerAllParsersLazy hasParser does not trigger instantiation[desktop] PASSED
+
+ParserInitializerTest[desktop] > clear removes all parsers and factories[desktop] PASSED
+
+ParserInitializerTest[desktop] > getParserStatistics supported_formats lists all registered format names[desktop] PASSED
+
+ParserInitializerTest[desktop] > registerAllParsers registers parsers for every expected format ID[desktop] PASSED
+
+ParserInitializerTest[desktop] > getParserStatistics after eager registration shows 18 parsers[desktop] PASSED
+
+ParserInitializerTest[desktop] > getParser returns null for unregistered format[desktop] PASSED
+
+ParserInitializerTest[desktop] > eager then lazy registration silently skips[desktop] PASSED
+
+ParserInitializerTest[desktop] > getInitializationStatus covers all FormatRegistry formats[desktop] PASSED
+
+ParserInitializerTest[desktop] > getParser returns null for unknown format ID[desktop] PASSED
+
+ParserInitializerTest[desktop] > registerAllParsers registers all 18 format parsers[desktop] PASSED
+
+ParserInitializerTest[desktop] > getParserStatistics after lazy registration only counts instantiated parsers[desktop] PASSED
+
+ParserInitializerTest[desktop] > registry state after eager initialization is fully populated[desktop] PASSED
+
+ParserInitializerTest[desktop] > lazy then eager registration silently skips[desktop] PASSED
+
+ParserInitializerTest[desktop] > clear and re-register preserves parser functionality[desktop] PASSED
+
+ParserInitializerTest[desktop] > duplicate eager registration silently skips[desktop] PASSED
+
+ParserInitializerTest[desktop] > lazy registration followed by full access matches eager registration parser count[desktop] PASSED
+
+ParserInitializerTest[desktop] > getInitializationStatus network formats are false without network parser registration[desktop] PASSED
+
+ParserInitializerTest[desktop] > registerAllParsersLazy instantiates only accessed parsers[desktop] PASSED
+
+ParserInitializerTest[desktop] > getParserStatistics contains all required keys[desktop] PASSED
+
+ParserInitializerTest[desktop] > registry is empty before any initialization[desktop] PASSED
+
+ParserInitializerTest[desktop] > getParserStatistics returns zero when no parsers registered[desktop] PASSED
+
+ParserInitializerTest[desktop] > each registered parser has unique format ID[desktop] PASSED
+
+ParserInitializerTest[desktop] > registerAllParsersLazy instantiates parser on first access[desktop] PASSED
+
+ParserInitializerTest[desktop] > registry state after lazy initialization has only pending parsers[desktop] PASSED
+
+ParserInitializerTest[desktop] > getParserStatistics missing_formats lists network formats[desktop] PASSED
+
+ParserInitializerTest[desktop] > eager re-registration after clear succeeds[desktop] PASSED
+
+ParserInitializerTest[desktop] > all registered parsers can parse empty content without error[desktop] PASSED
+
+ParserInitializerTest[desktop] > eager and lazy registration produce equivalent parser coverage[desktop] PASSED
+
+ParserInitializerTest[desktop] > registerAllParsersLazy lazily created parsers can parse content[desktop] PASSED
+
+ParserInitializerTest[desktop] > duplicate lazy registration silently skips[desktop] PASSED
+
+ParserInitializerTest[desktop] > getInitializationStatus returns all false when no parsers registered[desktop] PASSED
+
+ParserInitializerTest[desktop] > getInitializationStatus returns true for all formats after lazy registration[desktop] PASSED
+
+ParserInitializerTest[desktop] > lazy re-registration after clear succeeds[desktop] PASSED
+
+ParserInitializerTest[desktop] > registerAllParsers parsers can parse content[desktop] PASSED
+
+ParserInitializerTest[desktop] > registerAllParsersLazy registers all 18 formats[desktop] PASSED
+
+ParserInitializerTest[desktop] > registerAllParsersLazy subsequent access returns same instance[desktop] PASSED
+
+ParserInitializerTest[desktop] > registerAllParsers creates immediately instantiated parsers[desktop] PASSED
+
+ParserInitializerTest[desktop] > registerAllParsers each parser reports correct supported format[desktop] PASSED
+
+JsonParserTest[desktop] > parse array of mixed values classifies each token[desktop] PASSED
+
+JsonParserTest[desktop] > validate reports unexpected closing bracket[desktop] PASSED
+
+JsonParserTest[desktop] > parse simple object pretty-prints with 2-space indent[desktop] PASSED
+
+JsonParserTest[desktop] > validate balanced JSON returns no errors[desktop] PASSED
+
+JsonParserTest[desktop] > parse escapes HTML-sensitive characters inside strings[desktop] PASSED
+
+JsonParserTest[desktop] > parse empty string produces non-null document[desktop] PASSED
+
+JsonParserTest[desktop] > supportedFormat is JSON[desktop] PASSED
+
+JsonParserTest[desktop] > metadata reports lines and characters[desktop] PASSED
+
+JsonParserTest[desktop] > parse tolerates invalid JSON without throwing[desktop] PASSED
+
+JsonParserTest[desktop] > validate reports unbalanced braces[desktop] PASSED
+Kotlin build report is written to file:///Users/milosvasic/Projects/Yole/build/reports/kotlin-build/Yole-build-2026-05-13-10-08-37-0.txt
+
+BUILD SUCCESSFUL in 34s
+31 actionable tasks: 2 executed, 29 up-to-date
+Configuration cache entry reused.

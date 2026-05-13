@@ -124,42 +124,50 @@ helpers. Out of scope for any single iteration.
 
 ---
 
-## #yole-json-parser-missing
+## #yole-json-parser-missing — FIXED iter 42 (2026-05-13)
 
-**Symptom**
-`FormatRegistry.formats` advertises `ID_JSON` (a TextFormat with id
-`json`), but `ParserInitializer.registerAllParsers()` and
-`registerAllParsersLazy()` register no JSON parser. Users who tap
-on a `.json` file see "Plain Text" rendering instead of a JSON-aware
-view (no syntax highlighting, no structure folding, no error
-detection).
+**Symptom (historical)**
+`FormatRegistry.formats` advertised `ID_JSON` (a TextFormat with id
+`json`) but `ParserInitializer.registerAllParsers()` /
+`registerAllParsersLazy()` registered no JSON parser. Users tapping
+on a `.json` file saw Plain-Text rendering instead of a JSON-aware
+view.
 
 **Discovered by**
-Iter-39 (2026-05-13) — `IntegrationTest.testParserRegistryCompleteness`
-asserted "every non-binary text format has a parser" and JSON failed:
+Iter-39 — `IntegrationTest.testParserRegistryCompleteness`:
 
 ```
-java.lang.AssertionError: No parser registered for format JSON (json) —
-  user would be unable to open files of this format
+java.lang.AssertionError: No parser registered for format JSON (json)
 ```
 
-**Proper fix**
-Add a `digital.vasic.yole.format.json.JsonParser` class implementing
-`TextParser` with JSON-aware tokenisation + a minimal HTML renderer
-(braces / colons / string literals styled). Register it via
-`ParserRegistry.registerLazy(FormatRegistry.ID_JSON) { JsonParser() }`
-in `ParserInitializer.registerAllParsersLazy()`. Mirror in the eager
-`registerAllParsers()` for backwards compatibility.
+**Fix applied (iter 42, commit see CONTINUATION.md §26)**
+Created `shared/src/commonMain/kotlin/digital/vasic/yole/format/json/JsonParser.kt`:
+- Implements `TextParser`.
+- `parse(content)` pretty-prints with 2-space indent, builds HTML with
+  `<span class='json-{key|string|number|bool|null|bracket}'>` tokens
+  for stylesheet-driven syntax highlighting.
+- HTML-sensitive characters (`<`, `>`, `&`, `"`) are escaped via
+  `escapeHtml()` so a JSON string `"a<b>"` renders as `&quot;a&lt;b&gt;&quot;`
+  inside its span, never as live HTML.
+- `validate(content)` reports unbalanced braces / brackets /
+  unterminated strings without throwing.
+- Parser tolerates malformed input: pretty-printing returns the raw
+  string on failure with an entry in `errors`. No exception escapes.
 
-**Blocker**
-Implementation work — a non-trivial parser. Out of scope for any
-single iteration that's focused on test-bluff resolution.
+Wired into `ParserInitializer` (both eager + lazy paths). The
+`registerAllParsers registers all N format parsers` test counts
+updated 17 → 18.
 
-**Exemptions in test code** (must be removed when this is closed):
-- `IntegrationTest.kt::testParserRegistryCompleteness` — `json` listed
-  in `knownGaps` set. Search for `#yole-json-parser-missing`.
-- `IntegrationTest.kt::testParserRegistryIntegration` — `json` listed
-  in `knownGaps` set.
+**Verification (positive runtime evidence per CONST-035 §11.4.2)**
+- `docs/qa/iter-42/desktopTest-JsonParser-51-pass.log` — 10 dedicated
+  JsonParserTest cases + 41 ParserInitializerTest cases all pass on
+  host JVM (51 PASS / 0 FAIL).
+- `docs/qa/iter-42/adb-IntegrationTest-19-pass.log` — 19/19
+  IntegrationTest pass on device with json REMOVED from the
+  `knownGaps` allowlist (the test now strictly asserts JSON has a
+  parser; previously it allowed the gap).
+- `docs/qa/iter-42/connectedDebugAndroidTest-iter42.xml` — full
+  76-test Gradle run, `tests="76" failures="0" errors="0" skipped="17"`.
 
 ---
 
