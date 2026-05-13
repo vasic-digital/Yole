@@ -547,7 +547,7 @@ either FIXED or honestly tracked.)
 
 ### Iter-42 commit
 
-`<<sha-placeholder>>` — see CLOSED tickets above + §6 for canonical record. Evidence at `docs/qa/iter-42/`.
+`17618da7` — see CLOSED tickets above + §6 for canonical record. Evidence at `docs/qa/iter-42/`.
 
 ---
 
