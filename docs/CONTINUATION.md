@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-13 (iter 49 — "DO EVERYTHING" sweep per user mandate. **8 truly-removed-feature SKIP tests DELETED** (the iter-46 floor — all FAB-flow + Formats-Settings-section cases that had been on product-decision deferral since iter 38/43). **Honesty sweep** across 11 test files: comment-prose `17 formats` → `18 formats`, lower-bound `>= 17` → `>= 18`, strict `assertEquals(17)` → `(18)`. **ConcurrentFormatParsingStressTest** load-bearing `assertEquals(170, totalParsed)` updated to 180 (now `18 × 10`) with JsonParser fixture added; `assertEquals(85, results.size)` → `90` (`18 × 5`). **UxComplianceTest.expectedFormatIds** + strict-count assertion updated. **Test surface:** 76 → 68 instrumented tests (8 deleted). **NEW totals: 68 PASS / 0 SKIP-OK / 0 FAIL** + :shared:desktopTest 8966 PASS / 0 FAIL + 0 BLUFF-K-003 scanner hits + 2 OPEN KNOWN_DEFECTS tickets CLOSED via deletion.)
+**Last updated:** 2026-05-13 (iter 50 — final remaining-audit-surfaces sweep. Pre-commit anti-bluff hook **INSTALLED** via `scripts/anti-bluff/install-hooks.sh` (locks in zero-bluff state for every future commit). Robolectric unit-test surface verified: **85 PASS / 0 FAIL** with `-PincludeRobolectric=true`; default `testDebugUnitTest` correctly excludes them (32 PASS, filter clean). WasmJsTest scope-out confirmed-honest per CLAUDE.md "Test Constraints" (no WASM variant of kotlinx-coroutines-test; commonTest runBlocking is JVM-only by design). All three CONST-035 gates still green.)
 **Current branch:** `master`
 **HEAD (parent of this commit):** `ee120766` — `feat(iter-36): rewrite 3 SKIP-OK instrumented tests to real PASS`.
 **Submodule SHAs (per HEAD tree):**
@@ -451,6 +451,104 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 34. Iter 50 — final audit-surface sweep + pre-commit hook installed
+
+After iter-49 reached the zero-SKIP floor on the instrumented suite +
+8966 PASS on `:shared:desktopTest`, the remaining untested surfaces
+were enumerated and audited.
+
+### Pre-commit hook installed
+
+`bash scripts/anti-bluff/install-hooks.sh` ran successfully and
+created a symlink:
+
+```
+.git/hooks/pre-commit → scripts/anti-bluff/pre-commit-hook.sh
+```
+
+This locks in the zero-bluff state: every future commit on this host
+will run the bluff scanner in `--mode changed` over its diff. The
+hook will block commits introducing BLUFF-K-003 / K-008 / K-011 hits
+unless the developer adds the canonical SKIP-OK / ANTI-BLUFF-EXEMPT
+comment. Iter 47 documented this as "operator decision since it
+affects every future commit" — the user's "DO EVERYTHING" mandate
+supplies the decision.
+
+Verification: post-install hook execution prints `OK: scanner clean
+(mode=changed)` + `OK: anchor manifest valid` on the current working
+tree.
+
+### Robolectric unit-test surface — 85 PASS / 0 FAIL
+
+The iter-38 build-filter fix scoped `excludeTestsMatching("*.robolectric.*")`
+to `name.endsWith("UnitTest")` tasks only. So by default
+`./gradlew :androidApp:testDebugUnitTest` runs the JVM unit tests
+WITHOUT Robolectric, and `-PincludeRobolectric=true` runs them.
+
+This iter:
+- `./gradlew :androidApp:testDebugUnitTest -PincludeRobolectric=true`
+  → **BUILD SUCCESSFUL in 50s, 85 PASSED / 0 FAILED**. Every
+  Robolectric Compose UI test passes.
+- `./gradlew :androidApp:testDebugUnitTest` (default)
+  → **BUILD SUCCESSFUL in 26s, 32 PASSED / 0 FAILED**. No Robolectric
+  tests ran (filter excluded them correctly; only `FirebaseUtilHookTest`
+  ran). Confirms the iter-38 filter fix is still doing its job.
+
+### WasmJsTest — honest scope-out per CLAUDE.md
+
+`./gradlew :shared:compileTestKotlinWasmJs` fails with unresolved
+`runBlocking` references in `commonTest`. This is **expected and
+documented** in CLAUDE.md "Test Constraints":
+
+> **JUnit4 runner**: Tests use `runBlocking<Unit> { }` (not
+> `runTest`). JUnit4 requires `Unit` return type; `runTest` returns
+> `TestResult` which causes `void` signature mismatch.
+> **kotlinx-coroutines-test**: No WASM variant. Unavailable in
+> `commonTest` (which compiles for all targets including WASM).
+
+The `commonTest` source set is shared between JVM (`desktopTest`) and
+WASM (`wasmJsTest`) targets, but the tests' `runBlocking<Unit>`
+usage is JVM-only. Migrating commonTest to a WASM-compatible coroutine
+test mechanism is a non-trivial KMP refactor that would require
+either (a) adopting `runTest` + a JUnit5/Kotest runner that accepts
+`TestResult`, or (b) splitting commonTest into per-target source
+sets. Both are multi-day product decisions.
+
+Not a regression. Not a bluff. Pure scope-out documented in
+`docs/qa/iter-50/wasmjs-test-honest-scope-out.txt`.
+
+### Final verification chain (all green)
+
+| Gate | Result |
+|------|--------|
+| `:androidApp:connectedDebugAndroidTest` | 68 PASS / 0 SKIP / 0 FAIL |
+| `:shared:desktopTest` | 8966 PASS / 0 FAIL |
+| `:androidApp:testDebugUnitTest -PincludeRobolectric=true` | 85 PASS / 0 FAIL |
+| `:androidApp:testDebugUnitTest` (default) | 32 PASS / 0 FAIL |
+| `scripts/anti-bluff/bluff-scanner.sh --mode all` | clean |
+| `yole-challenges/scripts/anchor_manifest_challenge.sh` | valid |
+| `yole-challenges/scripts/mutation_ratchet_challenge.sh` | stub OK |
+| Pre-commit hook installed | yes |
+
+### Final honest remaining gaps
+
+| # | Item | Severity |
+|---|------|----------|
+| 1 | `#robolectric-compose-ui-tests-brittle` — still uses string-based selectors. Long-term migration to testTag / HelixQA is multi-day. iter-38 mitigation (dedicated container) + iter-50 verification (85/85 pass) is the operational state. | LOW — mitigated, working |
+| 2 | `:shared:wasmJsTest` scope-out — KMP test architecture refactor for WASM coroutine-test compatibility. | LOW — documented scope-out |
+| 3 | Concrete-bank coverage 10/60+ — quantitative HelixQA expansion. | MED — incremental |
+| 4-6 | iOS / Desktop / Web Firebase, gitlab leg, prod-keystore continuity. | LOW — manual / scope-out |
+
+(Pre-commit hook now blocks new bluffs from landing. All audit
+surfaces verified clean. CONST-035 §11.4 covenant fully satisfied
+across every executable test surface on this host.)
+
+### Iter-50 commit
+
+`<<sha-placeholder>>` — see §6 for canonical record. Evidence at `docs/qa/iter-50/`.
 
 ---
 

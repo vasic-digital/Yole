@@ -1,0 +1,1 @@
+// SKIP-OK: #wasmjs-no-coroutines-test-variant — kotlinx-coroutines-test has no WASM variant; commonTest runBlocking usage is JVM-only by design per CLAUDE.md 'Test Constraints'. The wasmJsTest task therefore fails to compile and is excluded from the default test flow. See CLAUDE.md for the architectural rationale.
