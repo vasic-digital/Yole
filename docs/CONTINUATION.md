@@ -503,7 +503,7 @@ silent failures. The suite is now CONST-035 §11.4-compliant at the
 
 ### Iter-46 commit
 
-`<<sha-placeholder>>` — see §6 for canonical record. Evidence at `docs/qa/iter-46/`.
+`7559fbf0` — see §6 for canonical record. Evidence at `docs/qa/iter-46/`.
 
 ---
 
