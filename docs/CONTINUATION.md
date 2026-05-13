@@ -548,7 +548,7 @@ across every executable test surface on this host.)
 
 ### Iter-50 commit
 
-`<<sha-placeholder>>` — see §6 for canonical record. Evidence at `docs/qa/iter-50/`.
+`c01a3326` — see §6 for canonical record. Evidence at `docs/qa/iter-50/`.
 
 ---
 
