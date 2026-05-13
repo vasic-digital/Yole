@@ -214,6 +214,58 @@ fallback takes over and PlainText is first.
 
 ---
 
+## #yole-firebase-remote-config-fetch-crash — FIXED iter 41 (2026-05-13)
+
+**Symptom (historical)**
+`FirebaseUtil.fetchRemoteConfig` unconditionally accessed `task.result`
+in the `addOnCompleteListener` callback. When the Firebase fetch
+failed (e.g. Firebase Installations Service unreachable due to
+network issues, blocked DNS, or unauthorised emulator AVD),
+`task.result` threw a `RuntimeExecutionException`. The exception
+propagated to the main Looper and **crashed the entire process** on
+every RC fetch failure.
+
+End-user impact: any user on poor / intermittent / restricted
+network — corporate firewall blocking Firebase, offline-mode usage,
+travel — would experience a hard crash on app launch within seconds
+of `MainActivity.onCreate`. **Severe defect.**
+
+**Discovered by**
+Iter-41 (2026-05-13) — `IntegrationTest.testCsvParserIntegration` ran
+on the emulator with Firebase Installations Service unreachable. The
+test runner reported:
+
+```
+Process crashed while executing testCsvParserIntegration:
+com.google.android.gms.tasks.RuntimeExecutionException:
+com.google.firebase.remoteconfig.FirebaseRemoteConfigClientException:
+  Firebase Installations failed to get installation auth token for fetch.
+    at digital.vasic.yole.android.util.FirebaseUtil.fetchRemoteConfig$lambda$5(FirebaseUtil.kt:171)
+Caused by: com.google.firebase.installations.FirebaseInstallationsException:
+  Firebase Installations Service is unavailable. Please try again later.
+```
+
+This was a latent bug — the iter-30 instrumentation that wrote the
+RC fetch path only handled the happy path. The fix is in
+`FirebaseUtil.kt:169-198`:
+
+- Always check `task.isSuccessful` BEFORE accessing `task.result`.
+- If the task failed, log `task.exception` (the proper failure
+  channel) and treat `activated` as `false`.
+- Wrap `task.result` in a `try/catch` even on success-path because
+  `RuntimeExecutionException` can theoretically still be thrown.
+
+**Verification (positive runtime evidence per CONST-035 §11.4.2)**
+- `docs/qa/iter-41/adb-IntegrationTest-pre-fix-CRASH.log` — pre-fix
+  crash trace showing `RuntimeExecutionException` and `Process crashed`.
+- `docs/qa/iter-41/adb-IntegrationTest-19-pass.log` — post-fix, all
+  19 IntegrationTest cases pass without crash.
+- `docs/qa/iter-41/gradle-fullsuite.log` — `BUILD SUCCESSFUL in 2m 1s`
+  with 59 PASS / 17 SKIP-OK / 0 FAIL across all 76 instrumented tests
+  (was 26 with process crash interrupting the run pre-fix).
+
+---
+
 ## #yole-android-fab-new-file-flow-removed
 
 **Symptom**

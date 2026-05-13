@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-13 (iter 40 — `#yole-todotxt-compound-extension-detection` FIXED at the data layer: `detectByFilename` now uses 3-pass algorithm (whole-filename → compound longest-first → bare-extension fallback). `todo.txt` and `work.todo.txt` now correctly resolve to TODOTXT. Surface unchanged at 56 PASS / 20 SKIP-OK / 0 FAIL but with the de-bluff that the IntegrationTest detection assertion is now STRICT, not "either-or".)
+**Last updated:** 2026-05-13 (iter 41 — 3 more EndToEndTest SKIP-OK cases rewritten to honest PASS (+3) AND `#yole-firebase-remote-config-fetch-crash` discovered + FIXED. The Firebase crash was a real product defect: `FirebaseUtil.fetchRemoteConfig` unconditionally read `task.result`, which throws on any RC fetch failure (Firebase Installations Service unreachable due to poor network / corporate firewall / offline use), crashing the entire app on launch. Now correctly checks `task.isSuccessful` first. New totals: 59 PASS / 17 SKIP-OK / 0 FAIL.)
 **Current branch:** `master`
 **HEAD (parent of this commit):** `ee120766` — `feat(iter-36): rewrite 3 SKIP-OK instrumented tests to real PASS`.
 **Submodule SHAs (per HEAD tree):**
@@ -142,6 +142,7 @@ From `docs/KNOWN_DEFECTS.md` (authoritative — keep that file in sync with this
 
 ### CLOSED (record for forensic continuity — do NOT re-open without reason)
 
+- `#yole-firebase-remote-config-fetch-crash` — FIXED 2026-05-13 (iter 41). Discovered + fixed in the same iter. `FirebaseUtil.fetchRemoteConfig` unconditionally read `task.result` in the completion listener; `task.result` throws `RuntimeExecutionException` when the underlying task fails (e.g. Firebase Installations Service unreachable). The uncaught exception crashed the entire app process on every RC fetch failure — visible to end users on any degraded-network condition. Fix in `FirebaseUtil.kt:169-198`: check `task.isSuccessful` before reading; log `task.exception` (the proper failure channel) on failure. Evidence: `docs/qa/iter-41/adb-IntegrationTest-pre-fix-CRASH.log` shows crash; `gradle-fullsuite.log` shows BUILD SUCCESSFUL with 59 PASS / 17 SKIP-OK / 0 FAIL post-fix.
 - `#yole-todotxt-compound-extension-detection` — FIXED 2026-05-13 (iter 40, commit `1231d639`). `FormatRegistry.detectByFilename` rewritten with 3-pass algorithm (whole-filename match → compound longest-first → bare-extension fallback). Closes both `todo.txt → todotxt` AND `work.todo.txt → todotxt` cases. Paired tests added to `shared/src/commonTest/.../FormatRegistryStressTest.kt`; `IntegrationTest.testFormatDetectionIntegration` strengthened to assert strict-not-either. Verified: 140 FormatRegistry tests pass (host JVM); 19 IntegrationTest pass (adb-direct); 56/76 full instrumented suite pass with no regression. Evidence: `docs/qa/iter-40/`.
 - `#yole-android-gradle-utp-single-class-filter` — FIXED 2026-05-13 (commit `df2b4bd7`, iter 38). Discovered + fixed in the same iter. `tasks.withType<Test>().configureEach { filter { excludeTestsMatching("*.robolectric.*") } }` was inadvertently sweeping in `DeviceProviderInstrumentTestTask` (which extends `Test` in AGP 8.x), causing UTP to inject `class=YoleAppTest` arg_map and narrow connectedDebugAndroidTest to one class. Fix: scoped the filter to `name.endsWith("UnitTest")` tasks only. Verified: Gradle XML now reports `tests="76" failures="0" errors="0" skipped="27"` with all 5 classnames present, matching adb-direct evidence. Evidence: `docs/qa/iter-38/connectedDebugAndroidTest-fix-verified.{xml,log}`.
 - `#smb-stub-no-negotiation` — FIXED 2026-05-07 (commit `1f6472c9`). `SmbService.connect()` performs real SMB protocol negotiation and authentication; `_isConnected = true` only after real success. Test lambda injection (`testConnectFn`/`testAuthenticateFn`) for test control. 441/441 SMB+WebDAV tests pass.
@@ -448,6 +449,95 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 25. Iter 41 — 3 EndToEndTest rewrites + Firebase RC fetch crash bug DISCOVERED + FIXED
+
+### What changed
+
+Three more `@Ignore` cases in `EndToEndTest.kt` rewritten to honest
+PASSes — but the real win this iter is a **production-impacting
+crash bug** discovered when the full Gradle suite tried to run on an
+emulator with Firebase Installations Service unreachable.
+
+### 3 EndToEndTest conversions
+
+| Test | Bluff before | Honest after |
+|------|--------------|--------------|
+| `testCompleteTodoWorkflow` | Used "Hide Done"/"Show Done" (don't exist; iter-27 uses "Show Active"/"Show Completed"/"Show All" cycle). Tapped todo text expecting completion toggle (only Checkbox toggles; text-tap is a silent no-op). | Cycles filter button through all 3 states; delete via content-description; assertExists for items that scroll off-viewport. |
+| `testSearchAndFilterWorkflow` | Same "Hide Done"/"Show Done" issue. Added 5 todos sequentially (the 5th fails — same screen-real-estate / keyboard issue as testMemoryManagement). | 3-todo set; filter-cycle smoke check; cross-tab navigation preserves items. |
+| `testCompleteQuickNoteWorkflow` | Final `composeTestRule.onNodeWithText("QuickNote").assertIsDisplayed()` was a tautology (QuickNote tab always in bottom nav). | Type → assertExists(content) → Save → post-save Compose tree still queryable (no crash invariant). |
+
+### `#yole-firebase-remote-config-fetch-crash` — discovered + fixed in same iter
+
+While running the iter-41 full Gradle suite, the test runner
+reported `Process crashed.` on `IntegrationTest.testCsvParserIntegration`,
+and the suite aborted with 26 of 76 testcases reported.
+
+Forensic trace (`docs/qa/iter-41/adb-IntegrationTest-pre-fix-CRASH.log`):
+
+```
+Process crashed while executing testCsvParserIntegration:
+com.google.android.gms.tasks.RuntimeExecutionException:
+com.google.firebase.remoteconfig.FirebaseRemoteConfigClientException:
+  Firebase Installations failed to get installation auth token for fetch.
+    at digital.vasic.yole.android.util.FirebaseUtil.fetchRemoteConfig$lambda$5(FirebaseUtil.kt:171)
+Caused by: com.google.firebase.installations.FirebaseInstallationsException:
+  Firebase Installations Service is unavailable. Please try again later.
+```
+
+The bug: `FirebaseUtil.fetchRemoteConfig` unconditionally accessed
+`task.result` in the completion listener. The Firebase Task API
+**throws `RuntimeExecutionException` from `task.result` when the
+task failed**. The exception propagated to the main Looper and
+crashed the process. End-user impact: **app crashes on launch for
+any user on poor network, corporate firewall blocking Firebase, or
+offline-mode use.** Severe defect that had been latent since iter-30
+when the RC instrumentation was added.
+
+Fix (`FirebaseUtil.kt:169-198`): check `task.isSuccessful` BEFORE
+reading `task.result`; on failure, log `task.exception` (the proper
+failure channel) and treat `activated` as `false`; even on success
+path wrap `task.result` in `try/catch` for paranoid resilience.
+
+Verification (positive runtime evidence per CONST-035 §11.4.2):
+- `docs/qa/iter-41/adb-IntegrationTest-pre-fix-CRASH.log` — pre-fix
+  crash trace.
+- `docs/qa/iter-41/adb-IntegrationTest-19-pass.log` — all 19
+  IntegrationTest cases pass post-fix.
+- `docs/qa/iter-41/gradle-fullsuite.log` — `BUILD SUCCESSFUL in 2m 1s`,
+  all 76 testcases reported, 59 PASS / 17 SKIP-OK / 0 FAIL.
+
+### Surface metrics
+
+| Metric | Iter 40 | **Iter 41** |
+|--------|---------|-------------|
+| Tests in suite | 76 | 76 |
+| **PASS (adb + Gradle agree)** | 56 | **59** |
+| Silent failures | 0 | 0 |
+| Explicit SKIP-OK | 20 | **17** |
+| Process crashes | 0 | 0 |
+| BUILD result | SUCCESSFUL | SUCCESSFUL |
+
++3 PASS, -3 SKIP-OK; AND one CONST-035 §11.4 critical defect
+closed (a real "passes-test-but-app-crashes-for-end-user" bluff that
+had been latent for 11 iters until the iter-41 cross-class run on a
+network-degraded emulator finally exposed it).
+
+### Honest remaining gaps (post-iter-41)
+
+| # | Item | Severity |
+|---|------|----------|
+| 1 | 13 SKIP-OK truly-rewritable tests (was 16; 3 rewritten this iter) — entirely in EndToEndTest (9) + YoleAppTest (4) | MED — incremental |
+| 2 | 4 SKIP-OK truly-removed-feature tests pending product-decision delete-vs-replace | LOW — needs user input |
+| 3 | `#yole-json-parser-missing` — real product gap | LOW — implement when JSON support is prioritised |
+| 4 | Concrete-bank coverage 10/60+ | MED — carry-over |
+| 5-7 | iOS/Desktop/Web Firebase, gitlab leg, prod-keystore continuity | LOW — manual/scope-out |
+
+### Iter-41 commit
+
+`<<sha-placeholder>>` — see CLOSED tickets above + §6 for canonical record. Evidence at `docs/qa/iter-41/`.
 
 ---
 

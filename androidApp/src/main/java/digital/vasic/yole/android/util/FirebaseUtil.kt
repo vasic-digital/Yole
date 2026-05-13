@@ -168,11 +168,39 @@ object FirebaseUtil {
         android.util.Log.i("FirebaseUtil", "Remote Config fetchAndActivate: requested")
         rc.fetchAndActivate().addOnCompleteListener { task ->
             val ok = task.isSuccessful
-            val activated = task.result
-            android.util.Log.i(
-                "FirebaseUtil",
-                "Remote Config fetchAndActivate: success=$ok activated=$activated"
-            )
+            // Iter 41 fix: `task.result` THROWS a RuntimeExecutionException
+            // when the task failed (e.g. Firebase Installations Service
+            // unreachable → no auth token). The previous unconditional
+            // read crashed the entire process on every RC fetch failure
+            // — visible to end users on poor / no network. Always check
+            // isSuccessful FIRST; if failed, log task.exception (which
+            // contains the cause) instead of force-reading the result.
+            val activated = if (ok) {
+                try {
+                    task.result
+                } catch (t: Throwable) {
+                    android.util.Log.w(
+                        "FirebaseUtil",
+                        "Remote Config fetchAndActivate: result read failed despite isSuccessful=true",
+                        t
+                    )
+                    false
+                }
+            } else {
+                false
+            }
+            if (!ok) {
+                android.util.Log.w(
+                    "FirebaseUtil",
+                    "Remote Config fetchAndActivate: FAILED",
+                    task.exception
+                )
+            } else {
+                android.util.Log.i(
+                    "FirebaseUtil",
+                    "Remote Config fetchAndActivate: success=$ok activated=$activated"
+                )
+            }
             testRemoteConfigFetchCapture?.invoke(ok)
             onComplete(ok)
         }

@@ -1,0 +1,38 @@
+
+digital.vasic.yole.android.ui.IntegrationTest:
+Process crashed while executing testCsvParserIntegration(digital.vasic.yole.android.ui.IntegrationTest):
+com.google.android.gms.tasks.RuntimeExecutionException: com.google.firebase.remoteconfig.FirebaseRemoteConfigClientException: Firebase Installations failed to get installation auth token for fetch.
+	at com.google.android.gms.tasks.zzw.getResult(com.google.android.gms:play-services-tasks@@18.1.0:3)
+	at digital.vasic.yole.android.util.FirebaseUtil.fetchRemoteConfig$lambda$5(FirebaseUtil.kt:171)
+	at digital.vasic.yole.android.util.FirebaseUtil.$r8$lambda$QfIby4wT3p37KD6Zl_YiUDL_Znc(Unknown Source:0)
+	at digital.vasic.yole.android.util.FirebaseUtil$$ExternalSyntheticLambda1.onComplete(D8$$SyntheticClass:0)
+	at com.google.android.gms.tasks.zzi.run(com.google.android.gms:play-services-tasks@@18.1.0:1)
+	at android.os.Handler.handleCallback(Handler.java:958)
+	at android.os.Handler.dispatchMessage(Handler.java:99)
+	at android.os.Looper.loopOnce(Looper.java:205)
+	at android.os.Looper.loop(Looper.java:294)
+	at android.app.ActivityThread.main(ActivityThread.java:8177)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:552)
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:971)
+Caused by: com.google.firebase.remoteconfig.FirebaseRemoteConfigClientException: Firebase Installations failed to get installation auth token for fetch.
+	at com.google.firebase.remoteconfig.internal.ConfigFetchHandler.lambda$fetchIfCacheExpiredAndNotThrottled$2$com-google-firebase-remoteconfig-internal-ConfigFetchHandler(ConfigFetchHandler.java:275)
+	at com.google.firebase.remoteconfig.internal.ConfigFetchHandler$$ExternalSyntheticLambda1.then(D8$$SyntheticClass:0)
+	at com.google.android.gms.tasks.zze.run(com.google.android.gms:play-services-tasks@@18.1.0:1)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+	at com.google.firebase.concurrent.CustomThreadFactory.lambda$newThread$0$com-google-firebase-concurrent-CustomThreadFactory(CustomThreadFactory.java:47)
+	at com.google.firebase.concurrent.CustomThreadFactory$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+	at java.lang.Thread.run(Thread.java:1012)
+Caused by: com.google.firebase.installations.FirebaseInstallationsException: Firebase Installations Service is unavailable. Please try again later.
+	at com.google.firebase.installations.remote.FirebaseInstallationServiceClient.createFirebaseInstallation(FirebaseInstallationServiceClient.java:209)
+	at com.google.firebase.installations.FirebaseInstallations.registerFidWithServer(FirebaseInstallations.java:533)
+	at com.google.firebase.installations.FirebaseInstallations.doNetworkCallIfNecessary(FirebaseInstallations.java:387)
+	at com.google.firebase.installations.FirebaseInstallations.lambda$doRegistrationOrRefresh$3$com-google-firebase-installations-FirebaseInstallations(FirebaseInstallations.java:372)
+	at com.google.firebase.installations.FirebaseInstallations$$ExternalSyntheticLambda1.run(D8$$SyntheticClass:0)
+	at com.google.firebase.concurrent.SequentialExecutor$1.run(SequentialExecutor.java:117)
+	at com.google.firebase.concurrent.SequentialExecutor$QueueWorker.workOnQueue(SequentialExecutor.java:229)
+	at com.google.firebase.concurrent.SequentialExecutor$QueueWorker.run(SequentialExecutor.java:174)
+	... 5 more
+INSTRUMENTATION_RESULT: shortMsg=Process crashed.
+INSTRUMENTATION_CODE: 0
