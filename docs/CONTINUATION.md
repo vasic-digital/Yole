@@ -142,7 +142,7 @@ From `docs/KNOWN_DEFECTS.md` (authoritative — keep that file in sync with this
 
 ### CLOSED (record for forensic continuity — do NOT re-open without reason)
 
-- `#yole-todotxt-compound-extension-detection` — FIXED 2026-05-13 (iter 40, commit `<<sha-placeholder>>`). `FormatRegistry.detectByFilename` rewritten with 3-pass algorithm (whole-filename match → compound longest-first → bare-extension fallback). Closes both `todo.txt → todotxt` AND `work.todo.txt → todotxt` cases. Paired tests added to `shared/src/commonTest/.../FormatRegistryStressTest.kt`; `IntegrationTest.testFormatDetectionIntegration` strengthened to assert strict-not-either. Verified: 140 FormatRegistry tests pass (host JVM); 19 IntegrationTest pass (adb-direct); 56/76 full instrumented suite pass with no regression. Evidence: `docs/qa/iter-40/`.
+- `#yole-todotxt-compound-extension-detection` — FIXED 2026-05-13 (iter 40, commit `1231d639`). `FormatRegistry.detectByFilename` rewritten with 3-pass algorithm (whole-filename match → compound longest-first → bare-extension fallback). Closes both `todo.txt → todotxt` AND `work.todo.txt → todotxt` cases. Paired tests added to `shared/src/commonTest/.../FormatRegistryStressTest.kt`; `IntegrationTest.testFormatDetectionIntegration` strengthened to assert strict-not-either. Verified: 140 FormatRegistry tests pass (host JVM); 19 IntegrationTest pass (adb-direct); 56/76 full instrumented suite pass with no regression. Evidence: `docs/qa/iter-40/`.
 - `#yole-android-gradle-utp-single-class-filter` — FIXED 2026-05-13 (commit `df2b4bd7`, iter 38). Discovered + fixed in the same iter. `tasks.withType<Test>().configureEach { filter { excludeTestsMatching("*.robolectric.*") } }` was inadvertently sweeping in `DeviceProviderInstrumentTestTask` (which extends `Test` in AGP 8.x), causing UTP to inject `class=YoleAppTest` arg_map and narrow connectedDebugAndroidTest to one class. Fix: scoped the filter to `name.endsWith("UnitTest")` tasks only. Verified: Gradle XML now reports `tests="76" failures="0" errors="0" skipped="27"` with all 5 classnames present, matching adb-direct evidence. Evidence: `docs/qa/iter-38/connectedDebugAndroidTest-fix-verified.{xml,log}`.
 - `#smb-stub-no-negotiation` — FIXED 2026-05-07 (commit `1f6472c9`). `SmbService.connect()` performs real SMB protocol negotiation and authentication; `_isConnected = true` only after real success. Test lambda injection (`testConnectFn`/`testAuthenticateFn`) for test control. 441/441 SMB+WebDAV tests pass.
 - `#webdav-always-online-stub` — FIXED 2026-05-07 (commit `1f6472c9`). Removed the catch block that suppressed network errors and lied about online state. `isOnline` honestly reflects reachability per CONST-035.
@@ -520,7 +520,7 @@ progress CONST-035 §11.4 anchors to.
 
 ### Iter-40 commit
 
-`<<sha-placeholder>>` — see CLOSED tickets above for canonical record. Evidence at `docs/qa/iter-40/`.
+`1231d639` — see CLOSED tickets above for canonical record. Evidence at `docs/qa/iter-40/`.
 
 ---
 
