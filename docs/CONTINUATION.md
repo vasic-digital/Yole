@@ -508,7 +508,7 @@ EndToEndTest's 12 SKIPs are the next high-density cluster but each is a multi-sc
 
 ### Iter-39 commit
 
-`<<sha placeholder; updated post-commit>>` — see §6 "Repo State" for the canonical record. Evidence at `docs/qa/iter-39/`.
+`c643ecec` (2026-05-13) — IntegrationTest fully de-bluffed: 7 SKIP-OK → 7 PASS + 2 real defects exposed and ticketed. Evidence at `docs/qa/iter-39/`.
 
 ---
 
