@@ -7,7 +7,7 @@ Core format system for Yole text editor.
 This package contains the complete text format parsing system for Yole, including:
 - Format registry and detection
 - Parser interface and registry
-- 17+ format-specific parsers
+- 18+ format-specific parsers
 - Parsing utilities and configuration
 
 ## Key Components

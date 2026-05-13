@@ -11,7 +11,7 @@
 
 This document provides comprehensive guidelines for testing Yole parsers and the broader codebase, covering all 16 test types used in the project.
 
-**Key Principle**: Targeted, coverage-driven testing achieves the best ROI. All 17 format parsers and 8 network protocol services are thoroughly tested.
+**Key Principle**: Targeted, coverage-driven testing achieves the best ROI. All 18 format parsers and 8 network protocol services are thoroughly tested.
 
 ---
 
@@ -75,7 +75,7 @@ Verify that all 8 protocol services implement `NetworkStorageService` consistent
 ### 8. Security Tests
 Test for path traversal, injection, and access control issues.
 
-**Pattern**: Path traversal with `..`, `normalizePath()` validation, OWASP Top 10 patterns, input sanitization for all 17 parsers.
+**Pattern**: Path traversal with `..`, `normalizePath()` validation, OWASP Top 10 patterns, input sanitization for all 18 parsers.
 
 ### 9. Performance Tests
 Establish timing baselines and detect regressions.
@@ -109,7 +109,7 @@ Measure throughput and resource usage under sustained load.
 Test the complete pipeline from raw input to rendered HTML.
 
 **Location**: `shared/src/commonTest/kotlin/digital/vasic/yole/format/e2e/`
-**Pattern**: Format detection -> parsing -> HTML generation -> CSS styling, for all 17 formats.
+**Pattern**: Format detection -> parsing -> HTML generation -> CSS styling, for all 18 formats.
 
 ### 15. Accessibility Tests
 Verify theme contrast ratios and WCAG compliance.

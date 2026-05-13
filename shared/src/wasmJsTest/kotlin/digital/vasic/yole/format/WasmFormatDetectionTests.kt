@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Wasm-specific tests for format detection and parsing.
- * Validates that all 17 text formats work correctly on the
+ * Validates that all 18 text formats work correctly on the
  * Wasm/JS platform.
  *
  *########################################################*/
@@ -245,10 +245,10 @@ class WasmFormatDetectionTests {
     }
 
     @Test
-    fun `registry has at least 17 text formats`() {
-        // 17 text formats + network storage formats
+    fun `registry has at least 18 text formats`() {
+        // 18 text formats (incl. JSON, iter 42) + network storage formats
         assertTrue(FormatRegistry.formats.size >= 17,
-            "Registry should have at least 17 formats, has ${FormatRegistry.formats.size}")
+            "Registry should have at least 18 formats, has ${FormatRegistry.formats.size}")
     }
 
     @Test

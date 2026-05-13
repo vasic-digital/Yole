@@ -3158,7 +3158,7 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Yole is a cross-platform text editor supporting 17 text formats including Markdown, Todo.txt, CSV, LaTeX, AsciiDoc, and more.",
+            text = "Yole is a cross-platform text editor supporting 18 text formats including Markdown, Todo.txt, CSV, JSON, LaTeX, AsciiDoc, and more.",
             style = MaterialTheme.typography.bodyMedium
         )
 

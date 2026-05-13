@@ -19,7 +19,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
- * Comprehensive UX compliance tests ensuring all 17 text
+ * Comprehensive UX compliance tests ensuring all 18 text
  * formats are fully integrated and accessible to users.
  */
 class UxComplianceTest {

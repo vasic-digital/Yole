@@ -3,7 +3,7 @@
 **Version**: 2.0
 **Date**: 2026-03-17
 
-Yole is a **cross-platform text editor** supporting Android, Desktop (Windows/macOS/Linux), iOS, and Web with **17 text formats** and **8 storage protocols**.
+Yole is a **cross-platform text editor** supporting Android, Desktop (Windows/macOS/Linux), iOS, and Web with **18 text formats** and **8 storage protocols**.
 
 ---
 
@@ -239,7 +239,7 @@ make help           # Show all available targets
 | `AGENTS.md` | Development guide for AI agents |
 | `TESTING_GUIDELINES.md` | Testing patterns and conventions |
 | `TESTING_STRATEGY.md` | Overall testing strategy |
-| `FORMAT_DOCUMENTATION.md` | All 17 format parser documentation |
+| `FORMAT_DOCUMENTATION.md` | All 18 format parser documentation |
 | `docs/user-guide/` | User manuals (Android, Desktop, Web) |
 | `docs/CONCURRENCY_SAFETY.md` | Concurrency patterns |
 | `docs/LOCK_ORDERING.md` | Mutex lock ordering convention |

@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 
 ## Overview
 
-Yole is a **Kotlin Multiplatform (KMP)** text editor supporting Android, Desktop, iOS, and Web platforms with 17 text formats. This document describes the architecture, module structure, and implementation details.
+Yole is a **Kotlin Multiplatform (KMP)** text editor supporting Android, Desktop, iOS, and Web platforms with 18 text formats. This document describes the architecture, module structure, and implementation details.
 
 **Architecture Philosophy**: Share as much code as possible through Kotlin Multiplatform, with platform-specific implementations only where necessary for optimal user experience.
 

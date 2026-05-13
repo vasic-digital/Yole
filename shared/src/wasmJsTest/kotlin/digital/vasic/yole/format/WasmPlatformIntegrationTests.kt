@@ -18,7 +18,7 @@ import kotlin.test.*
  *
  * Tests cover:
  * - FormatRegistry availability on Wasm
- * - All 17 text formats detectable by extension
+ * - All 18 text formats detectable by extension
  * - Format metadata correctness
  * - StyleSheets generation for light and dark themes
  * - ParsedDocument creation and caching
@@ -42,10 +42,10 @@ class WasmPlatformIntegrationTests {
     }
 
     @Test
-    fun `FormatRegistry contains at least 17 text formats`() {
+    fun `FormatRegistry contains at least 18 text formats`() {
         assertTrue(
             FormatRegistry.formats.size >= 17,
-            "Registry should have at least 17 formats, found ${FormatRegistry.formats.size}"
+            "Registry should have at least 18 formats, found ${FormatRegistry.formats.size}"
         )
     }
 

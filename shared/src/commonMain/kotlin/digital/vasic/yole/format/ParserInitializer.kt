@@ -55,7 +55,7 @@ object ParserInitializer {
     /**
      * Register all available parsers with the ParserRegistry (eager instantiation).
      *
-     * This method immediately instantiates all 17 parser instances. For better
+     * This method immediately instantiates all 18 parser instances. For better
      * startup performance, use registerAllParsersLazy() instead.
      *
      * This method is kept for backwards compatibility and testing purposes.

@@ -84,7 +84,7 @@ Yole is a modern fork of the popular Markor Android text editor, with significan
 | Feature | Markor | Yole |
 |---------|--------|------|
 | **Platforms** | Android only | Android (production), Desktop (beta), iOS (dev), Web (dev) |
-| **Formats** | 8 formats | **17 formats** with comprehensive documentation |
+| **Formats** | 8 formats | **18 formats** with comprehensive documentation |
 | **Architecture** | Legacy Android | **Kotlin Multiplatform** for maximum code sharing |
 | **Documentation** | Basic | **Complete user & developer guides** (13,200+ lines) |
 | **New Formats** | - | AsciiDoc, CSV, Org-mode, LaTeX, reStructuredText, TaskPaper, Textile, Creole, TiddlyWiki, Jupyter, R Markdown, Key-Value |
@@ -93,7 +93,7 @@ Yole is a modern fork of the popular Markor Android text editor, with significan
 
 **Key Improvements in Yole:**
 - **Cross-Platform Support**: Native apps for all major platforms (Android, Desktop, iOS, Web)
-- **Expanded Format Support**: 17 formats with complete 400-1000+ line guides for each
+- **Expanded Format Support**: 18 formats with complete 400-1000+ line guides for each
 - **Modern Architecture**: Kotlin Multiplatform (KMP) for maximum code sharing
 - **Comprehensive Documentation**: 13,200+ lines covering user guides, API docs, and developer guides
 - **Enhanced Testing**: 9,400+ tests across 195 test files, 100% pass rate

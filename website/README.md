@@ -28,7 +28,7 @@ website/
     layout.tsx          Root layout with header and footer
     page.tsx            Homepage (hero, formats, platforms, features)
     globals.css         Tailwind directives and custom styles
-    docs/page.tsx       Documentation (17 format guides)
+    docs/page.tsx       Documentation (18 format guides)
     download/page.tsx   Download page with platform cards
     about/page.tsx      About page with history and license
   public/               Static assets

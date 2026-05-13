@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document outlines a phased approach to complete, test, and document the Yole project. The project is a Kotlin Multiplatform text editor with ~93% test coverage, supporting 17 text formats across Android, Desktop, iOS, and Web platforms.
+This document outlines a phased approach to complete, test, and document the Yole project. The project is a Kotlin Multiplatform text editor with ~93% test coverage, supporting 18 text formats across Android, Desktop, iOS, and Web platforms.
 
 ---
 
@@ -109,7 +109,7 @@ This document outlines a phased approach to complete, test, and document the Yol
 - [ ] Platform-specific behavior documented
 
 ### 4.2 User Documentation
-- [ ] Format guide for all 17 formats
+- [ ] Format guide for all 18 formats
 - [ ] Platform-specific guides
 - [ ] Getting started tutorials
 - [ ] FAQ and troubleshooting

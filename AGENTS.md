@@ -68,7 +68,7 @@ make qa-all         # Full QA pipeline
 
 ```
 shared/src/commonMain/kotlin/digital/vasic/yole/
-├── format/          # 17 parsers + FormatRegistry + DocumentCache + StyleSheets
+├── format/          # 18 parsers + FormatRegistry + DocumentCache + StyleSheets
 ├── network/         # 8 protocols (Dropbox, GDrive, OneDrive, WebDAV, FTP, SFTP, SMB, Git)
 ├── model/           # Document representation
 ├── ui/              # Shared Compose components

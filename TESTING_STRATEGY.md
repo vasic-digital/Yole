@@ -49,7 +49,7 @@ Yole maintains a comprehensive test suite with **9,400+ test methods across ~215
 ```
 shared/src/commonTest/kotlin/digital/vasic/yole/
 ├── format/
-│   ├── [17 format directories]/   # Per-format unit tests
+│   ├── [18 format directories]/   # Per-format unit tests
 │   ├── integration/                # Cross-format integration tests
 │   ├── stress/                     # Stress and performance tests
 │   │   ├── ComprehensiveStressTests.kt
@@ -103,7 +103,7 @@ Lock ordering is enforced via code review and verified by `ConcurrencySafetyTest
 
 ### OWASP Top 10 Coverage
 - Path traversal prevention (`normalizePath()` in all 8 protocol services)
-- Input sanitization for all 17 format parsers
+- Input sanitization for all 18 format parsers
 - Credential management via platform-specific `SecureStorage`
 - Circuit breaker for denial-of-service protection
 
@@ -118,7 +118,7 @@ Lock ordering is enforced via code review and verified by `ConcurrencySafetyTest
 ## Monitoring and Metrics Testing
 
 The `MonitoringMetricsTests` suite measures 6 categories with 42+ test methods:
-1. Parse time monitoring (all 17 formats)
+1. Parse time monitoring (all 18 formats)
 2. HTML generation monitoring (first call vs. cached)
 3. Detection monitoring (extension vs. content)
 4. Memory monitoring (allocation patterns)

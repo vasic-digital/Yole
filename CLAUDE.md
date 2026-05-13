@@ -26,7 +26,7 @@ A change is done only when **all** of the following hold:
 
 ## Project Overview
 
-**Yole** is a cross-platform text editor supporting 17 text formats plus cloud/network storage protocols, built with Kotlin Multiplatform (KMP). Offline-first with optional cloud storage.
+**Yole** is a cross-platform text editor supporting 18 text formats plus cloud/network storage protocols, built with Kotlin Multiplatform (KMP). Offline-first with optional cloud storage.
 
 **Package namespace:** `digital.vasic.yole.*` (legacy: `net.gsantner.opoc.*`)
 
@@ -126,7 +126,7 @@ format/                  # Format system — the core of the app
 ├── TextParser.kt        # ParsedDocument class with lazy HTML caching
 ├── DocumentCache.kt     # LRU cache for ParsedDocument with hit/miss tracking
 ├── StyleSheets.kt       # CSS generation with styleSheetCache
-├── [17 format dirs]/    # One parser per format (markdown/, todotxt/, csv/, etc.)
+├── [18 format dirs]/    # One parser per format (markdown/, todotxt/, csv/, etc.)
 ├── dropbox/ googledrive/ onedrive/  # Cloud storage protocols
 └── ftp/ sftp/           # Network protocols
 model/                   # Document model (Document.kt)
