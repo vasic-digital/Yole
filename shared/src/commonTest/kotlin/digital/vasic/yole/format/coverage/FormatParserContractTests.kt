@@ -6,7 +6,7 @@
  * Format Parser Contract Tests
  *
  * Validates the TextParser interface contract for ALL
- * 17 format parsers: correct format ID, empty/null
+ * 18 format parsers: correct format ID, empty/null
  * input safety, valid metadata, toHtml idempotency,
  * and error-free valid input parsing.
  *
@@ -34,7 +34,7 @@ import digital.vasic.yole.format.wikitext.WikitextParser
 import kotlin.test.*
 
 /**
- * Interface contract tests for all 17 format parsers.
+ * Interface contract tests for all 18 format parsers.
  *
  * Contracts verified:
  * 1. Each parser produces ParsedDocument with correct formatId
@@ -43,7 +43,7 @@ import kotlin.test.*
  * 4. toHtml() is idempotent (call twice, same result)
  * 5. ParsedDocument.errors is empty for valid input
  *
- * ~85 tests (5 per format x 17 formats)
+ * ~85 tests (5 per format x 18 formats)
  */
 class FormatParserContractTests {
 

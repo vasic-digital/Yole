@@ -339,7 +339,7 @@ class TextFormatComprehensiveTest {
     fun getFormatNamesReturnsNonEmptyList() {
         val names = FormatRegistry.getFormatNames()
         assertTrue(names.isNotEmpty())
-        assertTrue(names.size >= 17, "Should have at least 17 format names")
+        assertTrue(names.size >= 18, "Should have at least 18 format names")
     }
 
     @Test

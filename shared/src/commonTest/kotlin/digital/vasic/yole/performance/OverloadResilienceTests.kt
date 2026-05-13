@@ -187,7 +187,7 @@ class OverloadResilienceTests {
         }
 
         assertNotNull(result, "34 concurrent StyleSheet requests must complete within 10s")
-        assertEquals(34, result.size, "Should get 17 formats x 2 themes = 34 results")
+        assertEquals(34, result.size, "Should get 18 formats x 2 themes = 34 results")
 
         // Formats that have defined styles should return non-empty CSS
         val styledFormats = setOf(

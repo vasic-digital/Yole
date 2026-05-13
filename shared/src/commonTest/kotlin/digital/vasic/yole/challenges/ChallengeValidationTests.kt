@@ -130,7 +130,7 @@ class ChallengeValidationTests {
       "metadata": {
         "project": "yole",
         "domain": "format-parsing",
-        "description": "Challenges validating all 17 text format parsers in the Yole editor"
+        "description": "Challenges validating all 18 text format parsers in the Yole editor"
       },
       "challenges": [
         {
@@ -701,7 +701,7 @@ class ChallengeValidationTests {
 
     @Test
     fun testFormatParsingBankCoversAllFormats() {
-        // The format-parsing bank should have challenges for the core 17 formats
+        // The format-parsing bank should have challenges for the core 18 formats
         // (excluding unknown and binary which are special cases)
         val bank = parseBank(sampleFormatParsingBank)
         val challengeIds = getChallenges(bank).map { it["id"]!!.jsonPrimitive.content }

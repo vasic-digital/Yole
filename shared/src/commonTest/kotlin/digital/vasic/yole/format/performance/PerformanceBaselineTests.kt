@@ -6,7 +6,7 @@
  * Performance Baseline Tests
  *
  * Establishes measurable performance baselines for:
- * - Parse time for each of 17 formats at 1KB, 10KB, 100KB
+ * - Parse time for each of 18 formats at 1KB, 10KB, 100KB
  * - HTML generation time for each format
  * - FormatRegistry detection latency
  * - DocumentCache hit vs miss latency
@@ -46,7 +46,7 @@ import kotlinx.coroutines.runBlocking
  * parsing, HTML generation, format detection, caching, and
  * resilience component overhead.
  *
- * 60+ test methods covering all 17 formats and system components.
+ * 60+ test methods covering all 18 formats and system components.
  */
 class PerformanceBaselineTests {
 
@@ -259,7 +259,7 @@ class PerformanceBaselineTests {
         else -> throw IllegalArgumentException("Unknown format: $formatId")
     }
 
-    // The 17 text format IDs
+    // The 18 text format IDs
     private val textFormatIds = listOf(
         FormatRegistry.ID_MARKDOWN,
         FormatRegistry.ID_PLAINTEXT,
@@ -826,14 +826,14 @@ class PerformanceBaselineTests {
     // ====================================================================
 
     @Test
-    fun `all 17 formats parse 1KB total under 500ms`() {
+    fun `all 18 formats parse 1KB total under 500ms`() {
         val elapsed = measureTime {
             for (formatId in textFormatIds) {
                 getParser(formatId).parse(generateContent(formatId, 1))
             }
         }
         assertTrue(elapsed.inWholeMilliseconds < 2000,
-            "All 17 formats 1KB parse total took ${elapsed.inWholeMilliseconds}ms")
+            "All 18 formats 1KB parse total took ${elapsed.inWholeMilliseconds}ms")
     }
 
     @Test

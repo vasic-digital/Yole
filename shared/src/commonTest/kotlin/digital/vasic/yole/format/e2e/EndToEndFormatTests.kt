@@ -5,7 +5,7 @@
  *
  * End-to-End Format Pipeline Tests
  *
- * Tests the complete format pipeline for all 17 formats:
+ * Tests the complete format pipeline for all 18 formats:
  * content detection, parser selection, parsing, HTML generation,
  * stylesheet generation, error recovery, empty/large/unicode handling.
  *
@@ -181,7 +181,7 @@ class EndToEndFormatTests {
     private val parsableFormats = allFormats
 
     // ====================================================================
-    // FULL ROUND-TRIP PIPELINE TESTS (17 formats)
+    // FULL ROUND-TRIP PIPELINE TESTS (18 formats)
     // Content -> Parse -> ParsedDocument -> HTML -> verify
     // ====================================================================
 
@@ -475,11 +475,11 @@ class EndToEndFormatTests {
     }
 
     // ====================================================================
-    // EMPTY CONTENT HANDLING (17 formats)
+    // EMPTY CONTENT HANDLING (18 formats)
     // ====================================================================
 
     @Test
-    fun `E2E empty content all 17 parsers handle gracefully`() {
+    fun `E2E empty content all 18 parsers handle gracefully`() {
         parsableFormats.forEach { sample ->
             val doc = sample.parser.parse("")
             assertNotNull(doc, "Parser for ${sample.formatId} should handle empty input")

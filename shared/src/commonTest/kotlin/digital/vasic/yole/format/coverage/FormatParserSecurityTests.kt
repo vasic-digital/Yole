@@ -7,7 +7,7 @@
  *
  * Validates XSS prevention, HTML injection protection,
  * SQL injection resilience, path traversal in content,
- * and null byte handling across ALL 17 format parsers.
+ * and null byte handling across ALL 18 format parsers.
  *
  *########################################################*/
 package digital.vasic.yole.format.coverage
@@ -33,7 +33,7 @@ import digital.vasic.yole.format.wikitext.WikitextParser
 import kotlin.test.*
 
 /**
- * Security-focused tests for all 17 format parsers.
+ * Security-focused tests for all 18 format parsers.
  *
  * Covers:
  * 1. XSS prevention: script tags in content must not produce executable HTML
@@ -42,7 +42,7 @@ import kotlin.test.*
  * 4. Path traversal in content: directory traversal sequences in links are safe
  * 5. Null byte in content: embedded null characters handled gracefully
  *
- * ~85 tests (5 per format x 17 formats)
+ * ~85 tests (5 per format x 18 formats)
  */
 class FormatParserSecurityTests {
 
@@ -57,7 +57,7 @@ class FormatParserSecurityTests {
         ParserRegistry.clear()
     }
 
-    // All 17 parsers paired with a representative content snippet
+    // All 18 parsers paired with a representative content snippet
     private data class ParserEntry(
         val name: String,
         val parser: TextParser,

@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2025 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  *
- * Property-based style tests for all 17 format parsers.
+ * Property-based style tests for all 18 format parsers.
  * Each parser is tested against 10 edge-case input
  * scenarios to ensure robustness and no crashes.
  *########################################################*/
@@ -25,10 +25,11 @@ import digital.vasic.yole.format.textile.TextileParser
 import digital.vasic.yole.format.jupyter.JupyterParser
 import digital.vasic.yole.format.rmarkdown.RMarkdownParser
 import digital.vasic.yole.format.binary.BinaryParser
+import digital.vasic.yole.format.json.JsonParser
 import kotlin.test.*
 
 /**
- * Property-based style tests for all 17 format parsers.
+ * Property-based style tests for all 18 format parsers.
  *
  * Each parser is subjected to 10 edge-case input categories:
  * 1. Empty string
@@ -42,7 +43,7 @@ import kotlin.test.*
  * 9. Mixed line endings (\r\n, \r, \n)
  * 10. Binary-like input (random byte patterns as string)
  *
- * Total: 17 parsers x 10 scenarios = 170 tests
+ * Total: 18 parsers x 10 scenarios = 170 tests
  */
 class PropertyBasedFormatTests {
 

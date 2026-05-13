@@ -274,104 +274,57 @@ RC fetch path only handled the happy path. The fix is in
 
 ---
 
-## #yole-android-formats-settings-section-removed
+## #yole-android-formats-settings-section-removed — CLOSED iter 49 (2026-05-13, tests deleted)
 
-**Symptom**
+**Historical symptom**
 Two YoleAppTest methods (`testFormatRegistryIntegration`,
-`testFormatInformationDisplay`) target a Settings-screen surface
-that lists every supported text format — "Formats" section header,
-"Supported formats: N" count line, and per-format display names
-("Markdown" / "Todo.txt" / "Plain Text" / etc.). The iter-27
-Settings layout has no such section — Settings is structured as
-ALL-CAPS section headers `APPEARANCE`, `EDITOR`, `ANIMATIONS`
-only. There is no UI surface in the shipped build that lists the
-supported formats by name.
+`testFormatInformationDisplay`) targeted a Settings-screen surface
+that listed every supported text format — "Formats" section header,
+"Supported formats: N" count line, and per-format display names. The
+iter-27 Settings layout has no such section.
 
-Affected tests:
-- `YoleAppTest.testFormatRegistryIntegration`
-- `YoleAppTest.testFormatInformationDisplay`
-
-**Discovered by**
-Iter-43 SKIP-marker audit (2026-05-13). Previously marked under the
-generic `#yole-android-instrumented-tests-pre-iter27-rewrite` ticket
-which incorrectly grouped them with "needs UI-literal refresh"
-cases. They actually target a removed UI surface — same class as
-`#yole-android-fab-new-file-flow-removed`.
-
-**Status**
-Data-layer equivalent IS covered honestly:
-- `IntegrationTest.testFormatRegistryIntegrationWithUI` asserts
-  FormatRegistry has the 4 high-traffic format IDs + every format
-  has a non-blank display name.
-- `IntegrationTest.testParserRegistryCompleteness` asserts every
-  non-binary text format has a parser.
-
-The UI side ("user can see the list of supported formats in the
-Settings screen") is a separate concern that would require ADDING
-the Formats section to the Settings layout first. Awaiting product
-decision: either delete the two tests (preferred, since the data
-layer is already covered) or restore the Formats section to the UI.
-
-**Exemptions in test code** (must be removed when this is closed):
-- `YoleAppTest.kt::testFormatRegistryIntegration`
-- `YoleAppTest.kt::testFormatInformationDisplay`
-
-Both search-match `SKIP-OK: #yole-android-formats-settings-section-removed`.
+**Resolution (iter 49)**
+Both YoleAppTest cases DELETED. Data-layer equivalent is preserved
+by `IntegrationTest.testFormatRegistryIntegrationWithUI` +
+`testParserRegistryCompleteness`. If the Formats UI surface is
+restored to Settings in a future product iteration, write FRESH
+UI-layer tests for the new surface — do not resurrect the deleted
+methods (which targeted specific removed labels). git history at
+SHAs prior to iter 49 has the original bodies.
 
 ---
 
-## #yole-android-fab-new-file-flow-removed
+## #yole-android-fab-new-file-flow-removed — CLOSED iter 49 (2026-05-13, tests deleted)
 
-**Symptom**
-Four instrumented tests in
-`androidApp/src/androidTest/kotlin/digital/vasic/yole/android/ui/YoleAppTest.kt`
-target a UI flow that no longer exists in the shipped build:
-a global FAB (`onNodeWithContentDescription("Add")`) that, when tapped
-from the Files screen, opened an editor sub-screen titled
-`"Editing: untitled.txt"` with a `"Back"` content-description in the
-top app bar. The iter-27 redesign removed this entry path entirely
-(editor is now reached by tapping a real file in the browser, not by
-spawning an untitled buffer via a FAB).
+**Historical symptom**
+Six instrumented tests (4 in YoleAppTest, 2 in EndToEndTest)
+targeted a UI flow that no longer exists in the shipped build:
+a global FAB (`onNodeWithContentDescription("Add")`) that, when
+tapped from the Files screen, opened an editor sub-screen titled
+`"Editing: untitled.txt"` with a `"Back"` content-description in
+the top app bar. The iter-27 redesign removed this entry path
+entirely.
 
-Affected tests:
-- `testFloatingActionButtonFunctionality`
-- `testFileBrowserBasicFunctionality`
-- `testEditorScreenNavigation`
-- `testScreenNavigationWithAnimations`
+Affected tests (all deleted iter 49):
+- `YoleAppTest.testFloatingActionButtonFunctionality`
+- `YoleAppTest.testFileBrowserBasicFunctionality`
+- `YoleAppTest.testEditorScreenNavigation`
+- `YoleAppTest.testScreenNavigationWithAnimations`
+- `EndToEndTest.testCompleteFileEditingWorkflow`
+- `EndToEndTest.testErrorRecoveryWorkflow`
 
-**Discovered by**
-Iter-38 SKIP-marker audit (2026-05-13). These four were previously
-marked with the generic `#yole-android-instrumented-tests-pre-iter27-rewrite`
-ticket, which incorrectly suggested they could be rewritten by
-updating UI literals. They cannot: the feature is gone. Reclassified
-under this dedicated ticket so the bluff scanner does not include
-them in the "needs UI-literal refresh" bucket.
-
-**Proper fix**
-None at the test layer — these are honest skips because the feature
-they were written against does not exist. The forward-looking work
-is:
-1. Decide whether the iter-27 "no global new-file FAB" decision is
-   permanent. If yes, **delete** these four tests entirely (no value
-   in keeping skipped tests for removed features).
-2. If a new "create empty file" entry point is added later (e.g. a
-   menu item under More, or a long-press on a folder chip), write
-   fresh tests for the **new** flow under a fresh test method name;
-   do not resurrect these four.
-
-**Blocker**
-Product decision (option 1 vs option 2). Iter-38 does not delete the
-tests because the iter-27 design intent is undocumented and the user
-has not been asked. SKIP-OK with this dedicated ticket marker is the
-honest interim state.
-
-**Exemptions in test code** (must be removed when this is closed):
-- `YoleAppTest.kt::testFloatingActionButtonFunctionality`
-- `YoleAppTest.kt::testFileBrowserBasicFunctionality`
-- `YoleAppTest.kt::testEditorScreenNavigation`
-- `YoleAppTest.kt::testScreenNavigationWithAnimations`
-
-All four search-match `SKIP-OK: #yole-android-fab-new-file-flow-removed`.
+**Resolution (iter 49)**
+All 6 cases DELETED per the "do EVERYTHING / no-bluff-policy
+everywhere" user mandate. The features are confirmed-removed by
+iter-27 redesign and the data-layer / multi-screen state-
+preservation invariants the tests claimed to verify are already
+covered by other rewritten tests (e.g. `testPerformanceUnderLoad`,
+`testCompleteUserJourney`, `testFormatRegistryIntegrationWithUI`).
+If a new file-creation entry point is added later (e.g. a menu item
+under More, or a long-press on a folder chip), write fresh tests
+for the **new** flow under a fresh test method name — do not
+resurrect these six. git history at SHAs prior to iter 49 has the
+original bodies.
 
 ---
 

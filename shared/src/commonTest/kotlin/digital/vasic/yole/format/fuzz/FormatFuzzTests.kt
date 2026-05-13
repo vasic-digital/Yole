@@ -3,7 +3,7 @@
  * SPDX-FileCopyrightText: 2025 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  *
- * Fuzz tests for all 17 format parsers.
+ * Fuzz tests for all 18 format parsers.
  *
  * Each parser is subjected to 200 iterations of random,
  * unicode, and malformed inputs to verify crash safety
@@ -38,7 +38,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
- * Fuzz tests for all 17 format parsers.
+ * Fuzz tests for all 18 format parsers.
  *
  * Validates that parsers do not crash, OOM, or produce null fields
  * when fed random ASCII, random Unicode, and deliberately malformed

@@ -30,6 +30,7 @@ import digital.vasic.yole.format.textile.TextileParser
 import digital.vasic.yole.format.jupyter.JupyterParser
 import digital.vasic.yole.format.rmarkdown.RMarkdownParser
 import digital.vasic.yole.format.binary.BinaryParser
+import digital.vasic.yole.format.json.JsonParser
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -611,7 +612,7 @@ class FormatSnapshotTests {
 
     @Test
     fun snapshotFormatIdConstants() {
-        // Verify that all 17 format ID constants resolve to existing formats
+        // Verify that all 18 format ID constants resolve to existing formats
         val ids = listOf(
             TextFormat.ID_MARKDOWN, TextFormat.ID_TODOTXT, TextFormat.ID_CSV,
             TextFormat.ID_LATEX, TextFormat.ID_PLAINTEXT, TextFormat.ID_ORGMODE,

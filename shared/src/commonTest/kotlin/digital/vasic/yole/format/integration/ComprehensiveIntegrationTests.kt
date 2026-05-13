@@ -31,6 +31,7 @@ import digital.vasic.yole.format.tiddlywiki.TiddlyWikiParser
 import digital.vasic.yole.format.todotxt.TodoTxtParser
 import digital.vasic.yole.format.wikitext.WikitextParser
 import digital.vasic.yole.format.binary.BinaryParser
+import digital.vasic.yole.format.json.JsonParser
 import kotlin.test.*
 import kotlin.time.measureTime
 
@@ -193,7 +194,7 @@ class ComprehensiveIntegrationTests {
     // ==================== FORMAT DETECTION -> PARSING -> HTML PIPELINE FOR ALL 17 ====================
 
     @Test
-    fun `full pipeline for all 17 formats via extension detection`() {
+    fun `full pipeline for all 18 formats via extension detection`() {
         val testCases = listOf(
             "md" to "# Heading\n\nParagraph." to FormatRegistry.ID_MARKDOWN,
             "txt" to "Plain text content." to FormatRegistry.ID_PLAINTEXT,
@@ -258,7 +259,7 @@ class ComprehensiveIntegrationTests {
     @Test
     fun `FormatRegistry detection order matches registration order`() {
         val formats = FormatRegistry.formats
-        assertTrue(formats.size >= 17, "At least 17 formats must be registered")
+        assertTrue(formats.size >= 18, "At least 18 formats must be registered")
 
         // R Markdown must come before Markdown (more specific first)
         val rmdIndex = formats.indexOfFirst { it.id == FormatRegistry.ID_RMARKDOWN }

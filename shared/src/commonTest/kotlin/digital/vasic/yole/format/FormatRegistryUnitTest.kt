@@ -108,8 +108,8 @@ class FormatRegistryUnitTest {
 
     @Test
     fun formatsCountIsAtLeastSeventeen() {
-        // At minimum the 17 text formats should be present
-        assertTrue(FormatRegistry.formats.size >= 17)
+        // At minimum the 18 text formats should be present
+        assertTrue(FormatRegistry.formats.size >= 18)
     }
 
     @Test

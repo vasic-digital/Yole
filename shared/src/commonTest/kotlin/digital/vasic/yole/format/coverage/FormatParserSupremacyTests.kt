@@ -5,7 +5,7 @@
  *
  * Format Parser Supremacy / Edge Case Tests
  *
- * Validates extreme edge cases across ALL 17 format
+ * Validates extreme edge cases across ALL 18 format
  * parsers: empty string, single character, newlines
  * only, Unicode-only, very long single line, and
  * binary-looking content.
@@ -34,7 +34,7 @@ import digital.vasic.yole.format.wikitext.WikitextParser
 import kotlin.test.*
 
 /**
- * Supremacy / edge case tests for all 17 format parsers.
+ * Supremacy / edge case tests for all 18 format parsers.
  *
  * Edge cases:
  * 1. Empty string input
@@ -44,7 +44,7 @@ import kotlin.test.*
  * 5. Very long single line (10KB on one line)
  * 6. Binary-looking content (random byte chars cast to string)
  *
- * ~102 tests (6 per format x 17 formats)
+ * ~102 tests (6 per format x 18 formats)
  */
 class FormatParserSupremacyTests {
 

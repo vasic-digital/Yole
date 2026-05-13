@@ -5,7 +5,7 @@
  *
  * Platform-independent Parsing Guarantees Tests
  *
- * Verifies that all 17 parsers produce deterministic,
+ * Verifies that all 18 parsers produce deterministic,
  * platform-independent results: identical input yields
  * identical ParsedDocument, extension detection is
  * case-insensitive, line endings are handled, UTF-8 BOM
@@ -17,6 +17,7 @@ package digital.vasic.yole.format.platform
 import digital.vasic.yole.format.*
 import digital.vasic.yole.format.asciidoc.AsciidocParser
 import digital.vasic.yole.format.binary.BinaryParser
+import digital.vasic.yole.format.json.JsonParser
 import digital.vasic.yole.format.creole.CreoleParser
 import digital.vasic.yole.format.csv.CsvParser
 import digital.vasic.yole.format.jupyter.JupyterParser

@@ -6,7 +6,7 @@
  *
  * Concurrent Format Parsing Stress Tests
  *
- * Validates that all 17 format parsers operate correctly
+ * Validates that all 18 format parsers operate correctly
  * under simultaneous concurrent load with no data corruption,
  * no cross-contamination, and valid ParsedDocument output.
  *
@@ -32,13 +32,14 @@ import digital.vasic.yole.format.textile.TextileParser
 import digital.vasic.yole.format.jupyter.JupyterParser
 import digital.vasic.yole.format.rmarkdown.RMarkdownParser
 import digital.vasic.yole.format.binary.BinaryParser
+import digital.vasic.yole.format.json.JsonParser
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.test.*
 
 /**
- * Stress tests for concurrent format parsing across all 17 formats.
+ * Stress tests for concurrent format parsing across all 18 formats.
  *
  * Validates that 100+ concurrent parse operations produce valid,
  * uncorrupted ParsedDocuments with no cross-contamination between
@@ -70,12 +71,13 @@ class ConcurrentFormatParsingStressTest {
             FormatTestCase(TextileParser(), "h1. Title\n\n*bold* _italic_", FormatRegistry.ID_TEXTILE),
             FormatTestCase(JupyterParser(), "{\"nbformat\":4,\"cells\":[]}", FormatRegistry.ID_JUPYTER),
             FormatTestCase(RMarkdownParser(), "---\ntitle: Test\n---\n```{r}\nplot(1)\n```", FormatRegistry.ID_RMARKDOWN),
-            FormatTestCase(BinaryParser(), "\u0000\u0001\u0002binary data", FormatRegistry.ID_BINARY)
+            FormatTestCase(BinaryParser(), "\u0000\u0001\u0002binary data", FormatRegistry.ID_BINARY),
+            FormatTestCase(JsonParser(), "{\"a\":1,\"b\":[2,3]}", FormatRegistry.ID_JSON)
         )
     }
 
     @Test
-    fun `100 concurrent parses across all 17 formats simultaneously`() = runBlocking<Unit> {
+    fun `100 concurrent parses across all 18 formats simultaneously`() = runBlocking<Unit> {
         val results = testCases.flatMap { tc ->
             (1..6).map {
                 async(Dispatchers.Default) {
@@ -84,7 +86,7 @@ class ConcurrentFormatParsingStressTest {
             }
         }.awaitAll()
 
-        // 17 formats x 6 = 102 concurrent operations
+        // 18 formats x 6 = 108 concurrent operations
         assertTrue(results.size >= 100, "Should have at least 100 results (got ${results.size})")
         results.forEach { (doc, expectedId) ->
             assertEquals(expectedId, doc.format.id, "Format mismatch: expected $expectedId got ${doc.format.id}")
@@ -153,7 +155,7 @@ class ConcurrentFormatParsingStressTest {
             mutex.withLock { totalParsed += roundResults.size }
         }
 
-        assertEquals(170, totalParsed, "Should have parsed 17 formats x 10 rounds = 170")
+        assertEquals(180, totalParsed, "Should have parsed 18 formats x 10 rounds = 180")
     }
 
     @Test
@@ -249,7 +251,7 @@ class ConcurrentFormatParsingStressTest {
             }
         }.awaitAll()
 
-        assertEquals(85, results.size, "17 formats x 5 = 85 results")
+        assertEquals(90, results.size, "18 formats x 5 = 90 results")
         results.forEach { (doc, expectedId) ->
             assertEquals(expectedId, doc.format.id, "Empty parse format mismatch")
             assertEquals("", doc.rawContent, "Raw content should be empty")

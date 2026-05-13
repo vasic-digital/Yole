@@ -16,7 +16,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import digital.vasic.yole.android.MainActivity
 import digital.vasic.yole.format.ParserInitializer
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -101,59 +100,10 @@ class EndToEndTest {
         composeTestRule.onNodeWithText("Exercise").assertExists()
     }
 
-    @Test
-    // SKIP-OK: #yole-android-fab-new-file-flow-removed
-    @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- entire workflow targets the removed FAB → editor sub-screen flow (Add FAB content-description, 'Editing: untitled.txt' header, 'Preview: untitled.txt' header, 'Start typing...' placeholder, content-descriptions Preview/Edit/Save/Back). Iter-27 redesign removed the FAB entry path entirely")
-    fun testCompleteFileEditingWorkflow() {
-        // Complete end-to-end workflow for file editing
-
-        // 1. Navigate to Files screen
-        composeTestRule.onNodeWithText("Files").performClick()
-        composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
-
-        // 2. Create new file (FAB)
-        composeTestRule.onNodeWithContentDescription("Add").performClick()
-
-        // 3. Verify editor opens
-        composeTestRule.onNodeWithText("Editing: untitled.txt").assertIsDisplayed()
-
-        // 4. Enter content
-        val testContent = """
-            # Test Document
-
-            This is a **markdown** document for testing.
-
-            ## Features
-            - File editing
-            - Format detection
-            - Preview mode
-
-            ## Todo
-            - [x] Write content
-            - [ ] Test saving
-            - [ ] Verify preview
-        """.trimIndent()
-
-        composeTestRule.onNodeWithText("Start typing...").performTextInput(testContent)
-
-        // 5. Switch to preview mode
-        composeTestRule.onNodeWithContentDescription("Preview").performClick()
-        composeTestRule.onNodeWithText("Preview: untitled.txt").assertIsDisplayed()
-
-        // 6. Verify preview content is displayed (basic check)
-        composeTestRule.onNodeWithText("Test Document").assertIsDisplayed()
-
-        // 7. Go back to edit mode
-        composeTestRule.onNodeWithContentDescription("Edit").performClick()
-        composeTestRule.onNodeWithText("Editing: untitled.txt").assertIsDisplayed()
-
-        // 8. Save file
-        composeTestRule.onNodeWithContentDescription("Save").performClick()
-
-        // 9. Go back to file browser
-        composeTestRule.onNodeWithContentDescription("Back").performClick()
-        composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
-    }
+    // Iter 49: testCompleteFileEditingWorkflow DELETED. Targeted iter-27-removed
+    // FAB → editor sub-screen flow (#yole-android-fab-new-file-flow-removed).
+    // If the editor sub-screen flow returns, write a fresh test for the NEW
+    // entry path rather than resurrecting this one (git history has the body).
 
     @Test
     fun testCompleteQuickNoteWorkflow() {
@@ -355,35 +305,10 @@ class EndToEndTest {
         composeTestRule.onNodeWithText("Persistent todo").assertDoesNotExist()
     }
 
-    @Test
-    // SKIP-OK: #yole-android-fab-new-file-flow-removed
-    @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- 'Add' FAB → editor sub-screen with 'Editing: untitled.txt' title + 'Save' / 'Back' content-descriptions all relate to the removed FAB → editor sub-screen flow. The error-recovery scenario this exercises (file save failure, recover via Back) targets a UI path that no longer exists in the iter-27 build")
-    fun testErrorRecoveryWorkflow() {
-        // Test that app recovers gracefully from errors
-
-        // 1. Perform normal operations
-        composeTestRule.onNodeWithText("To-Do").performClick()
-        composeTestRule.onNodeWithText("Add new todo...").performTextInput("Error recovery test")
-        composeTestRule.onNodeWithText("Add").performClick()
-
-        // 2. Try operations that might fail (like file operations in test environment)
-        composeTestRule.onNodeWithText("Files").performClick()
-        composeTestRule.onNodeWithContentDescription("Add").performClick()
-
-        // 3. Verify app remains functional after potential failures
-        composeTestRule.onNodeWithText("Editing: untitled.txt").assertIsDisplayed()
-
-        // 4. Try to save (may fail in test environment)
-        composeTestRule.onNodeWithContentDescription("Save").performClick()
-
-        // 5. Verify app doesn't crash and can navigate back
-        composeTestRule.onNodeWithContentDescription("Back").performClick()
-        composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
-
-        // 6. Verify other features still work
-        composeTestRule.onNodeWithText("To-Do").performClick()
-        composeTestRule.onNodeWithText("Error recovery test").assertIsDisplayed()
-    }
+    // Iter 49: testErrorRecoveryWorkflow DELETED. Targeted iter-27-removed FAB →
+    // editor sub-screen flow (#yole-android-fab-new-file-flow-removed). The
+    // app-doesn't-crash invariant is covered by testCompleteUserJourney +
+    // testPerformanceUnderLoad which exercise multi-screen workloads.
 
     @Test
     fun testPerformanceUnderLoad() {

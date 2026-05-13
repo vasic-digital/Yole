@@ -5,10 +5,10 @@
  *
  * Format Pipeline End-to-End Tests
  *
- * Tests the full pipeline for each of the 17 text formats:
+ * Tests the full pipeline for each of the 18 text formats:
  * detect format -> parse -> generate HTML -> verify HTML
  * contains expected elements. Uses FormatRegistry and
- * parseWithCache for all 17 parsers.
+ * parseWithCache for all 18 parsers.
  *
  *########################################################*/
 package digital.vasic.yole.e2e

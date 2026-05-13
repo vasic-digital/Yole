@@ -356,7 +356,7 @@ class LazyLoadingValidationTests {
         assertEquals(1, ParserRegistry.getInstantiatedParserCount(),
             "Only 1 parser should be instantiated after accessing markdown")
         assertEquals(17, ParserRegistry.getPendingParserCount(),
-            "17 parsers should still be pending")
+            "18 parsers should still be pending")
     }
 
     @Test

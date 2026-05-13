@@ -6,7 +6,7 @@
  * Format Parser Property-Based Tests
  *
  * Validates universal properties that must hold for
- * ALL 17 format parsers: non-null output, empty input
+ * ALL 18 format parsers: non-null output, empty input
  * handling, raw content preservation, HTML generation,
  * and deterministic parsing.
  *
@@ -34,7 +34,7 @@ import digital.vasic.yole.format.wikitext.WikitextParser
 import kotlin.test.*
 
 /**
- * Property-based tests for all 17 format parsers.
+ * Property-based tests for all 18 format parsers.
  *
  * Properties verified:
  * 1. Any valid input produces non-null ParsedDocument
@@ -43,7 +43,7 @@ import kotlin.test.*
  * 4. ParsedDocument.toHtml() returns non-empty string for non-empty input
  * 5. Parsing is deterministic: same input produces same output
  *
- * ~85 tests (5 per format x 17 formats)
+ * ~85 tests (5 per format x 18 formats)
  */
 class FormatParserPropertyTests {
 

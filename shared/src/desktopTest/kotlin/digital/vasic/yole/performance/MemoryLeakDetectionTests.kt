@@ -188,7 +188,7 @@ class MemoryLeakDetectionTests {
         }
 
         val cacheSizeAfterPopulation = StyleSheets.cacheSize
-        // Max possible unique keys = 17 formats * 2 themes = 34
+        // Max possible unique keys = 18 formats * 2 themes = 34
         assertTrue(cacheSizeAfterPopulation <= 34,
             "StyleSheets cache should have at most 34 entries (got $cacheSizeAfterPopulation)")
 

@@ -129,7 +129,7 @@ class FormatToggleTests {
     @Test
     fun `getTextFormats returns all text formats regardless of toggle`() {
         val all = FormatRegistry.getTextFormats()
-        assertTrue(all.size >= 17, "Should return all text editor formats")
+        assertTrue(all.size >= 18, "Should return all text editor formats (>=18 in iter 42+)")
         assertTrue(all.any { it.id == TextFormat.ID_MARKDOWN })
         assertTrue(all.any { it.id == TextFormat.ID_PLAINTEXT })
     }

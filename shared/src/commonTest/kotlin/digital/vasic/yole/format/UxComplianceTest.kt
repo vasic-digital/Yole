@@ -5,7 +5,7 @@
  *
  * UX Compliance Tests
  *
- * Verifies all 17 formats are registered, detectable,
+ * Verifies all 18 formats are registered, detectable,
  * parsable, and that the format system is complete and
  * consistent. Ensures no format is missing from any
  * user-facing feature.
@@ -41,7 +41,8 @@ class UxComplianceTest {
         TextFormat.ID_TIDDLYWIKI,
         TextFormat.ID_JUPYTER,
         TextFormat.ID_KEYVALUE,
-        TextFormat.ID_BINARY
+        TextFormat.ID_BINARY,
+        TextFormat.ID_JSON
     )
 
     // ========== Format Registry Completeness ==========
@@ -50,8 +51,8 @@ class UxComplianceTest {
     fun allSeventeenFormatsRegistered() {
         val formats = FormatRegistry.formats
         assertTrue(
-            formats.size >= 17,
-            "FormatRegistry should have at least 17 formats, got ${formats.size}"
+            formats.size >= 18,
+            "FormatRegistry should have at least 18 formats, got ${formats.size}"
         )
     }
 
@@ -185,10 +186,11 @@ class UxComplianceTest {
 
     @Test
     fun formatCountMatchesDocumentation() {
-        // CLAUDE.md says 17 text formats
+        // CLAUDE.md says 17 text formats originally; iter 42 added JSON
+        // for a current total of 18 advertised text formats (+ unknown).
         assertEquals(
-            17, expectedFormatIds.size,
-            "Expected format IDs list should have exactly 17 entries"
+            18, expectedFormatIds.size,
+            "Expected format IDs list should have exactly 18 entries (17 originals + JSON, iter 42)"
         )
     }
 

@@ -310,7 +310,7 @@ class PerformanceBaselineRegressionTest {
         val elapsed = measureTime {
             for (parser in allParsers) {
                 val content = build10kContent(parser.supportedFormat.id).take(1000)
-                repeat(6) { parser.parse(content) }  // ~100 total across 17 formats
+                repeat(6) { parser.parse(content) }  // ~100 total across 18 formats
             }
         }
         assertTrue(

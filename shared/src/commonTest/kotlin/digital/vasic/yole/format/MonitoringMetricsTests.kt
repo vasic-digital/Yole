@@ -25,6 +25,7 @@ import digital.vasic.yole.format.textile.TextileParser
 import digital.vasic.yole.format.jupyter.JupyterParser
 import digital.vasic.yole.format.rmarkdown.RMarkdownParser
 import digital.vasic.yole.format.binary.BinaryParser
+import digital.vasic.yole.format.json.JsonParser
 import kotlinx.coroutines.*
 import kotlinx.coroutines.runBlocking
 import kotlin.test.*
@@ -35,7 +36,7 @@ import kotlin.time.measureTime
  *
  * Validates parse-time budgets, HTML generation performance, format detection
  * latency, memory behavior, throughput, and lazy-loading effectiveness across
- * all 17 text formats.
+ * all 18 text formats.
  */
 class MonitoringMetricsTests {
 
@@ -52,7 +53,7 @@ class MonitoringMetricsTests {
 
     // ========================== helpers ==========================
 
-    /** All 17 parsers in a stable order. */
+    /** All 18 parsers in a stable order. */
     private val allParsers: List<TextParser> = listOf(
         MarkdownParser(),
         PlaintextParser(),
@@ -337,8 +338,8 @@ class MonitoringMetricsTests {
                 assertTrue(html.isNotEmpty(), "HTML must not be empty for ${parser.supportedFormat.name}")
             }
         }
-        // Generating HTML for all 17 formats should finish quickly
-        assertTrue(elapsed.inWholeMilliseconds < 1000, "Batch HTML for 17 formats took ${elapsed.inWholeMilliseconds}ms, expected < 1000ms")
+        // Generating HTML for all 18 formats should finish quickly
+        assertTrue(elapsed.inWholeMilliseconds < 1000, "Batch HTML for 18 formats took ${elapsed.inWholeMilliseconds}ms, expected < 1000ms")
     }
 
     // ========================== 3. Format Detection Metrics ==========================

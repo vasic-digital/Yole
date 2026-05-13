@@ -3,7 +3,7 @@
  * SPDX-FileCopyrightText: 2025-2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  *
- * Extended unit tests for TextFormat covering all 17
+ * Extended unit tests for TextFormat covering all 18
  * format IDs, extension lists, detection patterns,
  * metadata, equality, and property-based checks.
  *
@@ -19,7 +19,7 @@ import kotlin.test.assertTrue
 /**
  * Extended unit tests for [TextFormat] and its companion constants.
  *
- * Validates all 17 text format IDs exist on both [TextFormat.Companion]
+ * Validates all 18 text format IDs exist on both [TextFormat.Companion]
  * and [FormatRegistry], that every registered format has correct metadata,
  * extension detection works per format, detection patterns compile as
  * valid regexes, and data class semantics hold.
@@ -145,7 +145,7 @@ class TextFormatExtendedTest {
         assertEquals(ids.size, ids.distinct().size, "Duplicate ID found in TextFormat companion")
     }
 
-    // ==================== FormatRegistry Has All 17 Text Formats ====================
+    // ==================== FormatRegistry Has All 18 Text Formats ====================
 
     @Test
     fun registryContainsAllSeventeenTextFormats() {

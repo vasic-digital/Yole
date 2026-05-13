@@ -643,7 +643,7 @@ class FormatCoverageTest {
     fun testParserRegistryGetAllParsers() {
         val parsers = ParserRegistry.getAllParsers()
         assertTrue(parsers.isNotEmpty())
-        assertTrue(parsers.size >= 17) // At least 17 formats
+        assertTrue(parsers.size >= 18) // At least 18 formats
     }
 
     @Test

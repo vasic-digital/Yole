@@ -6,7 +6,7 @@
  * Format Parser Resilience Tests
  *
  * Validates graceful handling of hostile input across
- * ALL 17 format parsers: corrupt/random bytes, very
+ * ALL 18 format parsers: corrupt/random bytes, very
  * long input, mixed encodings, whitespace-only input,
  * and special-character-only input.
  *
@@ -16,6 +16,7 @@ package digital.vasic.yole.format.coverage
 import digital.vasic.yole.format.*
 import digital.vasic.yole.format.asciidoc.AsciidocParser
 import digital.vasic.yole.format.binary.BinaryParser
+import digital.vasic.yole.format.json.JsonParser
 import digital.vasic.yole.format.creole.CreoleParser
 import digital.vasic.yole.format.csv.CsvParser
 import digital.vasic.yole.format.jupyter.JupyterParser
@@ -35,7 +36,7 @@ import kotlin.random.Random
 import kotlin.test.*
 
 /**
- * Resilience tests for all 17 format parsers.
+ * Resilience tests for all 18 format parsers.
  *
  * Resilience scenarios:
  * 1. Corrupt/random bytes as input do not crash parser
@@ -44,7 +45,7 @@ import kotlin.test.*
  * 4. Input with only whitespace parses successfully
  * 5. Input with only special characters parses
  *
- * ~85 tests (5 per format x 17 formats)
+ * ~85 tests (5 per format x 18 formats)
  */
 class FormatParserResilienceTests {
 

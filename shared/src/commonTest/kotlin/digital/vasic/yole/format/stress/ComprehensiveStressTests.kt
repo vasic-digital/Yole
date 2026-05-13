@@ -7,7 +7,7 @@
  * Comprehensive Stress Tests
  *
  * Deep stress tests covering concurrent parsing of all
- * 17 formats, rapid format detection, document cache
+ * 18 formats, rapid format detection, document cache
  * contention, circuit breaker behavior, connection
  * limiter fairness, large document parsing, registry
  * thread safety, parse-then-toHtml cycles, and memory
@@ -80,7 +80,7 @@ class ComprehensiveStressTests {
         BinaryParser()
     )
 
-    // Representative content for each of the 17 formats
+    // Representative content for each of the 18 formats
     private val formatContents: Map<String, String> = mapOf(
         FormatRegistry.ID_MARKDOWN to "# Heading\n\nParagraph with **bold** and *italic*.\n\n- List 1\n- List 2\n\n```kotlin\nfun main() {}\n```",
         FormatRegistry.ID_PLAINTEXT to "This is plain text content.\nLine two of the plain text.\nLine three.",
@@ -104,7 +104,7 @@ class ComprehensiveStressTests {
     // ==================== CONCURRENT PARSING (ALL 17 FORMATS) ====================
 
     @Test
-    fun `concurrent parsing of all 17 formats with 100 coroutines`() = runBlocking<Unit> {
+    fun `concurrent parsing of all 18 formats with 100 coroutines`() = runBlocking<Unit> {
         val results = (1..100).map { i ->
             async {
                 val parserIndex = i % allParsers.size

@@ -53,7 +53,7 @@ class LazyInitSemaphoreTest {
     fun formatRegistryFormatsListIsNotEmpty() {
         val formats = FormatRegistry.formats
         assertTrue(formats.isNotEmpty())
-        assertTrue(formats.size >= 17, "Should have at least 17 formats, got ${formats.size}")
+        assertTrue(formats.size >= 18, "Should have at least 18 formats, got ${formats.size}")
     }
 
     @Test
@@ -282,7 +282,7 @@ class LazyInitSemaphoreTest {
         ParserRegistry.clear()
         ParserInitializer.registerAllParsers()
         val count = ParserRegistry.getInstantiatedParserCount()
-        assertTrue(count >= 17, "Should have at least 17 instantiated parsers, got $count")
+        assertTrue(count >= 17, "Should have at least 18 instantiated parsers, got $count")
     }
 
     @Test

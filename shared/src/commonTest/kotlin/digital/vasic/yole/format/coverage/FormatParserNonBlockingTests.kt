@@ -6,7 +6,7 @@
  * Format Parser Non-Blocking Tests
  *
  * Validates that parsing and HTML generation for ALL
- * 17 format parsers complete within time bounds, handle
+ * 18 format parsers complete within time bounds, handle
  * concurrent parsing, and that format detection does
  * not block.
  *
@@ -40,7 +40,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 
 /**
- * Non-blocking tests for all 17 format parsers.
+ * Non-blocking tests for all 18 format parsers.
  *
  * Scenarios:
  * 1. Parsing completes within 5 seconds
@@ -48,7 +48,7 @@ import kotlin.time.measureTime
  * 3. toHtml() generation completes within 5 seconds
  * 4. Format detection does not block for more than 1 second
  *
- * ~68 tests (4 per format x 17 formats)
+ * ~68 tests (4 per format x 18 formats)
  */
 class FormatParserNonBlockingTests {
 

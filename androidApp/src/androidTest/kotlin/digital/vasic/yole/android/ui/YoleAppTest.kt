@@ -17,7 +17,6 @@ import digital.vasic.yole.android.MainActivity
 import digital.vasic.yole.format.ParserInitializer
 import org.junit.Before
 import org.junit.Rule
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -77,40 +76,12 @@ class YoleAppTest {
         composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
     }
 
-    @Test
-    // SKIP-OK: #yole-android-fab-new-file-flow-removed
-    @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- FAB + 'Add Task' dialog were replaced by the iter-27 bottom-nav + inline-input flow; rewriting this test would require restoring the old UI, which is out of scope")
-    fun testFloatingActionButtonFunctionality() {
-        // Test FAB functionality on different screens
-
-        // Files screen - should show file creation (though may not work in test environment)
-        composeTestRule.onNodeWithContentDescription("Add").assertIsDisplayed()
-
-        // Switch to To-Do screen and test FAB
-        composeTestRule.onNodeWithText("To-Do").performClick()
-        composeTestRule.onNodeWithContentDescription("Add").performClick()
-        // Should show add todo dialog/input - verify UI elements appear
-        composeTestRule.onNodeWithText("Add Task").assertIsDisplayed()
-    }
-
-    @Test
-    // SKIP-OK: #yole-android-fab-new-file-flow-removed
-    @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- '📂 Open Folder' / '➕ New File' / '⬆️ Up' emoji buttons were replaced by the iter-27 Documents/Downloads/Internal-Storage quick-access chips; restoring those literal labels is out of scope")
-    fun testFileBrowserBasicFunctionality() {
-        // Test basic file browser operations
-
-        // Verify file browser is displayed
-        composeTestRule.onNodeWithText("File Browser").assertIsDisplayed()
-
-        // Check for "Open Folder" button
-        composeTestRule.onNodeWithText("📂 Open Folder").assertIsDisplayed()
-
-        // Check for "New File" button
-        composeTestRule.onNodeWithText("➕ New File").assertIsDisplayed()
-
-        // Check for "Up" button
-        composeTestRule.onNodeWithText("⬆️ Up").assertIsDisplayed()
-    }
+    // Iter 49: testFloatingActionButtonFunctionality + testFileBrowserBasicFunctionality
+    // DELETED. They targeted the iter-27-removed FAB → editor sub-screen + emoji
+    // browser-buttons flow (#yole-android-fab-new-file-flow-removed). If the
+    // feature comes back, write fresh tests for the NEW flow rather than
+    // resurrecting these. Data-layer equivalent already covered by
+    // IntegrationTest.testFileOperationsIntegration + testParserRegistryCompleteness.
 
     @Test
     fun testTodoScreenFunctionality() {
@@ -333,51 +304,10 @@ class YoleAppTest {
         composeTestRule.onNodeWithText("Enable smooth transitions").assertIsDisplayed()
     }
 
-    @Test
-    // SKIP-OK: #yole-android-fab-new-file-flow-removed
-    @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- 'Add' FAB → editor with 'Editing: untitled.txt' title and 'Back' content-description were all removed; the iter-27 redesign navigates via bottom-nav, not via a sub-screen back stack")
-    fun testScreenNavigationWithAnimations() {
-        // Navigate to file browser and select a file to trigger sub-screen transition
-        composeTestRule.onNodeWithText("Files").assertIsDisplayed()
-
-        // Create new file (should trigger editor screen with animation)
-        composeTestRule.onNodeWithContentDescription("Add").performClick()
-
-        // Should be in editor now
-        composeTestRule.onNodeWithText("Editing: untitled.txt").assertIsDisplayed()
-
-        // Go back (should animate back to main screen)
-        composeTestRule.onNodeWithContentDescription("Back").performClick()
-        composeTestRule.onNodeWithText("Files").assertIsDisplayed()
-    }
-
-    @Test
-    // SKIP-OK: #yole-android-formats-settings-section-removed
-    @Ignore("SKIP-OK: #yole-android-formats-settings-section-removed -- iter-27 Settings has only APPEARANCE / EDITOR / ANIMATIONS sections; no Formats section. Data-layer equivalent is covered by IntegrationTest.testFormatRegistryIntegrationWithUI + testParserRegistryCompleteness which assert format/parser coverage at the registry layer")
-    fun testFormatRegistryIntegration() {
-        // Navigate to settings to check format information
-        composeTestRule.onNodeWithText("More").performClick()
-        composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
-
-        // Check that format information is displayed
-        composeTestRule.onNodeWithText("Formats").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Supported formats:").assertIsDisplayed()
-    }
-
-    @Test
-    // SKIP-OK: #yole-android-fab-new-file-flow-removed
-    @Ignore("SKIP-OK: #yole-android-fab-new-file-flow-removed -- 'Add' FAB → editor with 'Editing:' title was removed; editor entry is now via tap on a file in the browser, not a global FAB")
-    fun testEditorScreenNavigation() {
-        // Test navigation to editor screen
-        composeTestRule.onNodeWithText("Files").performClick()
-
-        // Try to create new file (this may not work fully in test environment)
-        composeTestRule.onNodeWithContentDescription("Add").performClick()
-
-        // This should navigate to editor - check for editor elements
-        // Note: In a real test environment, we might need to mock file operations
-        composeTestRule.onNodeWithText("Editing:").assertIsDisplayed()
-    }
+    // Iter 49: testScreenNavigationWithAnimations + testFormatRegistryIntegration +
+    // testEditorScreenNavigation DELETED. They targeted iter-27-removed UI surfaces
+    // (FAB → editor sub-screen + Settings Formats section). Coverage of these
+    // concerns at the data layer is preserved by IntegrationTest equivalents.
 
     @Test
     fun testPreviewScreenNavigation() {
@@ -562,22 +492,9 @@ class YoleAppTest {
         composeTestRule.onAllNodesWithText("Settings").onFirst().assertIsDisplayed()
     }
 
-    @Test
-    // SKIP-OK: #yole-android-formats-settings-section-removed
-    @Ignore("SKIP-OK: #yole-android-formats-settings-section-removed -- iter-27 Settings has no Formats section, so the per-format display names ('Markdown', 'Todo.txt', 'Plain Text') are not rendered on the Settings screen. Data-layer assertion lives in IntegrationTest.testFormatRegistryIntegrationWithUI")
-    fun testFormatInformationDisplay() {
-        // Test format information display in settings
-        composeTestRule.onNodeWithText("More").performClick()
-        composeTestRule.onAllNodesWithText("Settings").onFirst().performClick()
-
-        // Verify format information is shown
-        composeTestRule.onNodeWithText("Formats").assertIsDisplayed()
-
-        // Check that some format names are displayed
-        composeTestRule.onNodeWithText("Markdown").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Todo.txt").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Plain Text").assertIsDisplayed()
-    }
+    // Iter 49: testFormatInformationDisplay DELETED. Targeted iter-27-removed
+    // Settings Formats section (#yole-android-formats-settings-section-removed).
+    // Data-layer assertion lives in IntegrationTest.testFormatRegistryIntegrationWithUI.
 
     @Test
     fun testAboutInformation() {
