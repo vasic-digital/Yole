@@ -549,7 +549,7 @@ side". CONST-035 §11.4 covenant exposed it during this self-audit.
 
 ### Iter-48 commit
 
-`<<sha-placeholder>>` — see §6 for canonical record. Evidence at `docs/qa/iter-48/`.
+`4dfb7a8f` — see §6 for canonical record. Evidence at `docs/qa/iter-48/`.
 
 ---
 
