@@ -64,6 +64,7 @@ class ChallengeValidationTests {
         TextFormat.ID_JUPYTER,
         TextFormat.ID_RMARKDOWN,
         TextFormat.ID_BINARY,
+        TextFormat.ID_JSON,
     )
 
     /** Protocol service names corresponding to Yole's 8 network protocol implementations */
@@ -671,10 +672,11 @@ class ChallengeValidationTests {
 
     @Test
     fun testFormatIdsInTextFormatCompanionAreComplete() {
-        // Verify we have all 18 expected format IDs (17 formats + unknown)
+        // Verify we have all 19 expected format IDs (18 formats + unknown).
+        // 18 formats = 17 original (markdown, todotxt, csv, ...) + JSON (iter 42).
         assertTrue(
-            validFormatIds.size >= 18,
-            "TextFormat.Companion must define at least 18 format IDs (17 formats + unknown + binary), found ${validFormatIds.size}"
+            validFormatIds.size >= 19,
+            "TextFormat.Companion must define at least 19 format IDs (18 formats + unknown), found ${validFormatIds.size}"
         )
         // Verify the known core format IDs exist
         assertTrue("markdown" in validFormatIds, "markdown must be a valid format ID")
@@ -694,6 +696,7 @@ class ChallengeValidationTests {
         assertTrue("rmarkdown" in validFormatIds, "rmarkdown must be a valid format ID")
         assertTrue("binary" in validFormatIds, "binary must be a valid format ID")
         assertTrue("plaintext" in validFormatIds, "plaintext must be a valid format ID")
+        assertTrue("json" in validFormatIds, "json must be a valid format ID (added iter 42)")
     }
 
     @Test

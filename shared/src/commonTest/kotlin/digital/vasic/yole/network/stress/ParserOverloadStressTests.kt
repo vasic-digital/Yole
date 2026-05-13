@@ -7,7 +7,7 @@
  *
  * Validates FormatRegistry, individual parsers, and
  * DocumentCache under concurrent and high-volume load:
- * 100 concurrent markdown parses, all 17 formats parsed
+ * 100 concurrent markdown parses, all 18 formats parsed
  * concurrently, large document (10K lines), rapid format
  * detection alternation, DocumentCache concurrent access.
  *
@@ -17,6 +17,7 @@ package digital.vasic.yole.network.stress
 import digital.vasic.yole.format.*
 import digital.vasic.yole.format.asciidoc.AsciidocParser
 import digital.vasic.yole.format.binary.BinaryParser
+import digital.vasic.yole.format.json.JsonParser
 import digital.vasic.yole.format.creole.CreoleParser
 import digital.vasic.yole.format.csv.CsvParser
 import digital.vasic.yole.format.jupyter.JupyterParser
@@ -44,7 +45,7 @@ import kotlin.time.Duration.Companion.seconds
  * Parser overload stress tests.
  *
  * Verifies no crashes, no deadlocks, and consistent results under
- * high concurrency and large input volume across all 17 parsers.
+ * high concurrency and large input volume across all 18 parsers.
  *
  * Total: ~30 tests
  */
@@ -98,10 +99,10 @@ class ParserOverloadStressTests {
         results.forEach { assertEquals(firstId, it.format.id) }
     }
 
-    // ==================== All 17 formats concurrently ====================
+    // ==================== All 18 formats concurrently ====================
 
     @Test
-    fun AllSeventeenFormatsParsedConcurrentlyNoCrash() = runBlocking<Unit> {
+    fun AllEighteenFormatsParsedConcurrentlyNoCrash() = runBlocking<Unit> {
         data class Fixture(val parser: TextParser, val content: String)
 
         val fixtures = listOf(
@@ -121,7 +122,8 @@ class ParserOverloadStressTests {
             Fixture(TextileParser(), "h1. Title\n\nParagraph with *bold*."),
             Fixture(JupyterParser(), "{\"nbformat\":4,\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"# Title\"]}]}"),
             Fixture(RMarkdownParser(), "---\ntitle: Test\n---\n\n```{r}\nplot(1:10)\n```"),
-            Fixture(BinaryParser(), "\u0000\u0001\u0002binary content\u00FF")
+            Fixture(BinaryParser(), "\u0000\u0001\u0002binary content\u00FF"),
+            Fixture(JsonParser(), "{\"a\":1,\"b\":[2,3]}")
         )
 
         val results = withTimeout(30.seconds) {
@@ -130,7 +132,7 @@ class ParserOverloadStressTests {
             }.awaitAll()
         }
 
-        assertEquals(17, results.size)
+        assertEquals(18, results.size)
         results.forEach { assertNotNull(it) }
     }
 
@@ -155,7 +157,8 @@ class ParserOverloadStressTests {
             Fixture(TextileParser(), "h1. Title\nContent"),
             Fixture(JupyterParser(), "{\"nbformat\":4,\"cells\":[]}"),
             Fixture(RMarkdownParser(), "# Title\n\nContent"),
-            Fixture(BinaryParser(), "binary")
+            Fixture(BinaryParser(), "binary"),
+            Fixture(JsonParser(), "{\"a\":1}")
         )
 
         val results = withTimeout(30.seconds) {
@@ -167,7 +170,7 @@ class ParserOverloadStressTests {
             }.awaitAll()
         }
 
-        assertEquals(17, results.size)
+        assertEquals(18, results.size)
         results.forEach { assertTrue(it.isNotEmpty()) }
     }
 

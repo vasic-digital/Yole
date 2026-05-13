@@ -7,7 +7,7 @@
  *
  * Validates the full pipeline (detection, parse, HTML,
  * cache) under load with latency assertions for all
- * 17 text formats.
+ * 18 text formats.
  *
  *########################################################*/
 
@@ -31,6 +31,7 @@ import digital.vasic.yole.format.textile.TextileParser
 import digital.vasic.yole.format.jupyter.JupyterParser
 import digital.vasic.yole.format.rmarkdown.RMarkdownParser
 import digital.vasic.yole.format.binary.BinaryParser
+import digital.vasic.yole.format.json.JsonParser
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -42,7 +43,7 @@ import kotlin.test.*
  *
  * Tests the full pipeline: format detection -> parsing -> HTML generation ->
  * cache under load, with latency assertions for standard documents
- * across all 17 formats.
+ * across all 18 formats.
  */
 class EndToEndResponsivenessTest {
 
@@ -71,7 +72,8 @@ class EndToEndResponsivenessTest {
             FormatFixture(TextileParser(), "h1. Title\n\n*bold* _italic_", ".textile", FormatRegistry.ID_TEXTILE),
             FormatFixture(JupyterParser(), "{\"nbformat\":4,\"cells\":[]}", ".ipynb", FormatRegistry.ID_JUPYTER),
             FormatFixture(RMarkdownParser(), "---\ntitle: R doc\n---\n```{r}\n1+1\n```", ".rmd", FormatRegistry.ID_RMARKDOWN),
-            FormatFixture(BinaryParser(), "\u0000\u0001\u0002binary", ".bin", FormatRegistry.ID_BINARY)
+            FormatFixture(BinaryParser(), "\u0000\u0001\u0002binary", ".bin", FormatRegistry.ID_BINARY),
+            FormatFixture(JsonParser(), "{\"a\":1,\"b\":[2,3]}", ".json", FormatRegistry.ID_JSON)
         )
     }
 
@@ -96,7 +98,7 @@ class EndToEndResponsivenessTest {
     }
 
     @Test
-    fun `full pipeline for each of 17 formats individually under 500ms`() = runBlocking<Unit> {
+    fun `full pipeline for each of 18 formats individually under 500ms`() = runBlocking<Unit> {
         fixtures.forEach { fixture ->
             val startMs = Clock.System.now().toEpochMilliseconds()
 
@@ -118,7 +120,7 @@ class EndToEndResponsivenessTest {
     }
 
     @Test
-    fun `full pipeline for all 17 formats completes within 2000ms total`() = runBlocking<Unit> {
+    fun `full pipeline for all 18 formats completes within 2000ms total`() = runBlocking<Unit> {
         val startMs = Clock.System.now().toEpochMilliseconds()
 
         fixtures.forEach { fixture ->
@@ -135,14 +137,14 @@ class EndToEndResponsivenessTest {
         val elapsedMs = Clock.System.now().toEpochMilliseconds() - startMs
         assertTrue(
             elapsedMs < 2000,
-            "All 17 format pipelines should complete within 2000ms (took ${elapsedMs}ms)"
+            "All 18 format pipelines should complete within 2000ms (took ${elapsedMs}ms)"
         )
     }
 
     // -- Concurrency --
 
     @Test
-    fun `concurrent full pipeline for all 17 formats`() = runBlocking<Unit> {
+    fun `concurrent full pipeline for all 18 formats`() = runBlocking<Unit> {
         val results = fixtures.map { fixture ->
             async(Dispatchers.Default) {
                 val detected = FormatRegistry.detectByExtension(fixture.extension)
@@ -152,7 +154,7 @@ class EndToEndResponsivenessTest {
             }
         }.awaitAll()
 
-        assertEquals(17, results.size, "Should get results for all 17 formats")
+        assertEquals(18, results.size, "Should get results for all 18 formats")
         results.forEach { (formatId, doc, html) ->
             assertEquals(formatId, doc.format.id, "Format ID mismatch for $formatId")
             assertTrue(html.isNotEmpty(), "HTML should not be empty for $formatId")
@@ -176,7 +178,7 @@ class EndToEndResponsivenessTest {
         }
         jobs.forEach { it.join() }
 
-        assertEquals(170, totalCompleted, "17 formats x 10 = 170 operations should complete")
+        assertEquals(180, totalCompleted, "18 formats x 10 = 180 operations should complete")
     }
 
     // -- Cached vs uncached --

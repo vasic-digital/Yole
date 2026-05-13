@@ -187,12 +187,18 @@ class EndToEndTest {
         // still queryable).
         composeTestRule.onNodeWithText("Save").performClick()
         composeTestRule.waitForIdle()
-        // After save, the empty-state placeholder appears again
-        // (iter-30 save flow clears the editor), OR the content is
-        // still present (no-clear variant). Either is acceptable;
-        // the load-bearing invariant is that QuickNote is still the
-        // active screen, which the bottom-nav QuickNote tab proves.
-        composeTestRule.onAllNodesWithText("QuickNote").onFirst().assertIsDisplayed()
+        // Iter 48 audit: the previous assertion was
+        // `onAllNodesWithText("QuickNote").onFirst().assertIsDisplayed()`
+        // — but the QuickNote bottom-nav tab is ALWAYS rendered
+        // regardless of active screen, so that was a tautology. The
+        // stronger assertion: the Save button (which only exists on
+        // the QuickNote screen, not as a bottom-nav element) is still
+        // visible post-save. This proves Save didn't navigate the
+        // user away or unmount the editor.
+        composeTestRule.onNodeWithText("Save").assertIsDisplayed()
+        // The "Preview" toggle is another QuickNote-screen-specific
+        // affordance that should persist post-save.
+        composeTestRule.onNodeWithText("Preview").assertIsDisplayed()
     }
 
     @Test

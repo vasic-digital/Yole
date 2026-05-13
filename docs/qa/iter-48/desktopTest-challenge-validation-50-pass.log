@@ -1,0 +1,292 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Configuration on demand is an incubating feature.
+Calculating task graph as no cached configuration is available for tasks: :shared:desktopTest --tests digital.vasic.yole.challenges.ChallengeValidationTests --tests digital.vasic.yole.format.FormatToggleTests
+Type-safe project accessors is an incubating feature.
+
+> Configure project :RateLimiter-KMP
+w: Kotlin Multiplatform <-> Android Gradle Plugin compatibility issue:
+The applied Android Gradle Plugin version (8.9.0) is higher 
+than the maximum known to the Kotlin Gradle Plugin.
+Tooling stability in such configuration isn't tested, please report encountered issues to https://kotl.in/issue
+
+Minimum supported Android Gradle Plugin version: 7.1
+Maximum tested Android Gradle Plugin version: 8.5
+
+To suppress this message add 'kotlin.mpp.androidGradlePluginCompatibility.nowarn=true' to your gradle.properties
+
+
+> Configure project :Concurrency-KMP
+w: Kotlin Multiplatform <-> Android Gradle Plugin compatibility issue:
+The applied Android Gradle Plugin version (8.9.0) is higher 
+than the maximum known to the Kotlin Gradle Plugin.
+Tooling stability in such configuration isn't tested, please report encountered issues to https://kotl.in/issue
+
+Minimum supported Android Gradle Plugin version: 7.1
+Maximum tested Android Gradle Plugin version: 8.5
+
+To suppress this message add 'kotlin.mpp.androidGradlePluginCompatibility.nowarn=true' to your gradle.properties
+
+
+> Configure project :Formatters-KMP
+w: Kotlin Multiplatform <-> Android Gradle Plugin compatibility issue:
+The applied Android Gradle Plugin version (8.9.0) is higher 
+than the maximum known to the Kotlin Gradle Plugin.
+Tooling stability in such configuration isn't tested, please report encountered issues to https://kotl.in/issue
+
+Minimum supported Android Gradle Plugin version: 7.1
+Maximum tested Android Gradle Plugin version: 8.5
+
+To suppress this message add 'kotlin.mpp.androidGradlePluginCompatibility.nowarn=true' to your gradle.properties
+
+
+> Configure project :shared
+warning: Dokka Gradle plugin V1 is deprecated
+    
+    Dokka Gradle plugin V1 is deprecated, and will be removed in Dokka version 2.1.0
+    Please migrate to Dokka Gradle plugin V2. This will require updating your project.
+    To learn about migrating read the migration guide https://kotl.in/dokka-gradle-migration
+    
+    To start migrating to Dokka Gradle plugin V2 add
+        org.jetbrains.dokka.experimental.gradle.pluginMode=V2EnabledWithHelpers
+    into your project's `gradle.properties` file.
+    
+    We would appreciate your feedback!
+     - Please report any feedback or problems https://kotl.in/dokka-issues
+     - Chat with the community visit #dokka in https://kotlinlang.slack.com/ (To sign up visit https://kotl.in/slack)
+    
+
+> Task :Formatters-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Security-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Document-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Config-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Database-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Auth-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :RateLimiter-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Concurrency-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Config-KMP:desktopProcessResources NO-SOURCE
+> Task :Concurrency-KMP:desktopProcessResources NO-SOURCE
+> Task :Database-KMP:desktopProcessResources NO-SOURCE
+> Task :Security-KMP:desktopProcessResources NO-SOURCE
+> Task :Auth-KMP:desktopProcessResources NO-SOURCE
+> Task :RateLimiter-KMP:desktopProcessResources NO-SOURCE
+> Task :Document-KMP:desktopProcessResources NO-SOURCE
+> Task :Formatters-KMP:desktopProcessResources NO-SOURCE
+> Task :UI-Components-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Storage-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :shared:generateComposeResClass SKIPPED
+> Task :shared:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:convertXmlValueResourcesForDesktopTest NO-SOURCE
+> Task :shared:convertXmlValueResourcesForCommonTest NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForCommonTest NO-SOURCE
+> Task :UI-Components-KMP:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForDesktopTest NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :UI-Components-KMP:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:convertXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForDesktopMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForDesktopTest NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForCommonTest NO-SOURCE
+> Task :shared:generateResourceAccessorsForDesktopMain SKIPPED
+> Task :shared:generateResourceAccessorsForCommonTest SKIPPED
+> Task :UI-Components-KMP:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :shared:generateResourceAccessorsForCommonMain SKIPPED
+> Task :shared:generateResourceAccessorsForDesktopTest SKIPPED
+> Task :shared:generateActualResourceCollectorsForDesktopMain SKIPPED
+> Task :UI-Components-KMP:generateResourceAccessorsForCommonMain SKIPPED
+> Task :UI-Components-KMP:convertXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :Storage-KMP:desktopProcessResources NO-SOURCE
+> Task :UI-Components-KMP:generateComposeResClass SKIPPED
+> Task :UI-Components-KMP:copyNonXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :UI-Components-KMP:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :UI-Components-KMP:prepareComposeResourcesTaskForDesktopMain NO-SOURCE
+> Task :UI-Components-KMP:generateResourceAccessorsForDesktopMain SKIPPED
+> Task :UI-Components-KMP:generateActualResourceCollectorsForDesktopMain SKIPPED
+> Task :UI-Components-KMP:assembleDesktopMainResources UP-TO-DATE
+> Task :Formatters-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :shared:assembleDesktopTestResources UP-TO-DATE
+> Task :shared:assembleDesktopMainResources UP-TO-DATE
+> Task :Concurrency-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :shared:koverFindJar UP-TO-DATE
+> Task :Storage-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Concurrency-KMP:desktopMainClasses UP-TO-DATE
+> Task :Storage-KMP:desktopMainClasses UP-TO-DATE
+> Task :Formatters-KMP:desktopMainClasses UP-TO-DATE
+> Task :shared:desktopProcessResources UP-TO-DATE
+> Task :shared:desktopTestProcessResources UP-TO-DATE
+> Task :UI-Components-KMP:desktopProcessResources UP-TO-DATE
+> Task :Storage-KMP:desktopJar UP-TO-DATE
+> Task :Concurrency-KMP:desktopJar UP-TO-DATE
+> Task :Formatters-KMP:desktopJar UP-TO-DATE
+> Task :Security-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Config-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Security-KMP:desktopMainClasses UP-TO-DATE
+> Task :Config-KMP:desktopMainClasses UP-TO-DATE
+> Task :Document-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Document-KMP:desktopMainClasses UP-TO-DATE
+> Task :Database-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Config-KMP:desktopJar UP-TO-DATE
+> Task :Database-KMP:desktopMainClasses UP-TO-DATE
+> Task :Security-KMP:desktopJar UP-TO-DATE
+> Task :RateLimiter-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Document-KMP:desktopJar UP-TO-DATE
+> Task :RateLimiter-KMP:desktopMainClasses UP-TO-DATE
+> Task :Database-KMP:desktopJar UP-TO-DATE
+> Task :Auth-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Auth-KMP:desktopMainClasses UP-TO-DATE
+> Task :RateLimiter-KMP:desktopJar UP-TO-DATE
+> Task :Auth-KMP:desktopJar UP-TO-DATE
+> Task :UI-Components-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :UI-Components-KMP:desktopMainClasses UP-TO-DATE
+> Task :UI-Components-KMP:desktopJar UP-TO-DATE
+
+> Task :shared:compileKotlinDesktop
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/network/platform/PlatformFileIOFactory.kt:13:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/network/platform/SecureStorage.kt:169:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/ftp/FtpProtocolClient.kt:26:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/sftp/SshClient.kt:20:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/sftp/SshClient.kt:46:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/smb/SmbProtocolClient.kt:20:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/util/FileStorage.kt:16:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/desktopMain/kotlin/digital/vasic/yole/network/platform/PlatformFileIOFactory.desktop.kt:10:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/desktopMain/kotlin/digital/vasic/yole/network/platform/SecureStorageFactory.desktop.kt:9:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/desktopMain/kotlin/digital/vasic/yole/network/protocols/ftp/FtpProtocolClient.kt:32:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/desktopMain/kotlin/digital/vasic/yole/network/protocols/sftp/SshClient.kt:30:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/desktopMain/kotlin/digital/vasic/yole/network/protocols/sftp/SshClient.kt:109:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/desktopMain/kotlin/digital/vasic/yole/network/protocols/smb/SmbProtocolClient.kt:33:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/desktopMain/kotlin/digital/vasic/yole/util/FileStorage.desktop.kt:13:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+
+> Task :shared:desktopMainClasses
+> Task :shared:desktopJar
+> Task :shared:compileTestKotlinDesktop
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/concurrency/CancellationSafetyTests.kt:78:20 Check for instance is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/concurrency/CancellationSafetyTests.kt:88:20 Check for instance is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/concurrency/CancellationSafetyTests.kt:98:20 Check for instance is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/format/platform/PlatformParsingTests.kt:366:40 Condition is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/format/stress/EdgeCaseStressTest.kt:476:34 Condition is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/format/stress/EdgeCaseStressTest.kt:491:34 Condition is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/format/supremacy/UltimateSupremacyTest.kt:153:9 Name contains character(s) that can cause problems on Windows: %
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/network/platform/SecureStorageFactoryIntegrationTest.kt:42:20 Check for instance is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/network/platform/SecureStorageIntegrationTest.kt:52:57 Unchecked cast of 'java.io.Serializable' to 'kotlin.Pair<kotlin.String, kotlin.String>'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/network/platform/SecureStorageIntegrationTest.kt:202:20 Check for instance is always 'true'.
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonTest/kotlin/digital/vasic/yole/network/protocols/webdav/WebDavServiceEnhancedTest.kt:215:20 Condition is always 'true'.
+
+> Task :shared:desktopTestClasses
+
+> Task :shared:desktopTest
+
+ChallengeValidationTests[desktop] > testAllChallengesHaveRequiredAssertionsField[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testAssertionTargetsReferenceOutputNames[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testBankMetadataHasRequiredFields[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testAllChallengesHaveRequiredIdField[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testAllAssertionTypesAreValid[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testInputSourcesAreValid[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testAllChallengesHaveRequiredDescriptionField[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testNetworkBankParsesAsValidJson[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testConcurrencyBankParsesAsValidJson[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testChallengeCategoryMatchesBankDomain[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testExpectedBankFileListIsComplete[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testDependencyReferencesExistInSameBank[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testOutputTypesAreValid[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testChallengeIdsUniqueAcrossAllBanks[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testFormatParsingChallengeIdsUseFormatPrefix[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testBankMetadataProjectIsYole[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testAllChallengeIdsStartWithYolePrefix[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testAllAssertionsHaveMessageField[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testAllBanksHaveNonEmptyName[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testAllBanksHaveVersionField[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testFormatIdsInTextFormatCompanionAreComplete[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testFormatParsingBankParsesAsValidJson[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testAllChallengesHaveRequiredNameField[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testChallengeIdsUniqueWithinFormatParsingBank[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testAllAssertionsHaveTargetField[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testMalformedJsonIsRejected[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testValueRequiredForCountAndContainsAssertions[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testSecurityChallengeIdsUseSecurityPrefix[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testSecurityBankParsesAsValidJson[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testProtocolNamesMatchServiceImplementations[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testResilienceBankParsesAsValidJson[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testAllChallengesHaveEstimatedDuration[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testNetworkBankReferencesValidProtocols[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testChallengeIdsUniqueWithinNetworkBank[desktop] PASSED
+
+ChallengeValidationTests[desktop] > testFormatParsingBankCoversAllFormats[desktop] PASSED
+
+FormatToggleTests[desktop] > double disable is idempotent[desktop] PASSED
+
+FormatToggleTests[desktop] > Markdown cannot be disabled[desktop] PASSED
+
+FormatToggleTests[desktop] > enableFormat adds format to enabled set[desktop] PASSED
+
+FormatToggleTests[desktop] > network formats are always enabled[desktop] PASSED
+
+FormatToggleTests[desktop] > Markdown is always enabled even after clear[desktop] PASSED
+
+FormatToggleTests[desktop] > disableFormat removes format from enabled set[desktop] PASSED
+
+FormatToggleTests[desktop] > only Markdown is enabled by default[desktop] PASSED
+
+FormatToggleTests[desktop] > isFormatEnabled returns correct values[desktop] PASSED
+
+FormatToggleTests[desktop] > getEnabledFormats includes network formats always[desktop] PASSED
+
+FormatToggleTests[desktop] > getEnabledFormatIds returns current state[desktop] PASSED
+
+FormatToggleTests[desktop] > network formats cannot be disabled[desktop] PASSED
+
+FormatToggleTests[desktop] > getTextFormats returns all text formats regardless of toggle[desktop] PASSED
+
+FormatToggleTests[desktop] > double enable is idempotent[desktop] PASSED
+
+FormatToggleTests[desktop] > setEnabledFormatIds bulk enables formats[desktop] PASSED
+
+FormatToggleTests[desktop] > getEnabledTextFormats returns only enabled text formats[desktop] PASSED
+Kotlin build report is written to file:///Users/milosvasic/Projects/Yole/build/reports/kotlin-build/Yole-build-2026-05-13-11-55-33-0.txt
+[Incubating] Problems report is available at: file:///Users/milosvasic/Projects/Yole/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 1m 20s
+31 actionable tasks: 4 executed, 27 up-to-date
+Configuration cache entry stored.

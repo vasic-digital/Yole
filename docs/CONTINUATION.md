@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-13 (iter 47 — CONST-035 anti-bluff scanner self-audit. Discovered 8 BLUFF-K-003 hits from the iter-35→46 `@Ignore("SKIP-OK: ...")` inline pattern: the scanner expects `// SKIP-OK: #ticket` as a comment line BEFORE the `@Ignore`, not inside its string literal. Added the comment line above each of the 8 remaining `@Ignore` lines (YoleAppTest x6 + EndToEndTest x2). Scanner now clean. All 3 CONST-035 verifications pass: bluff-scanner, anchor-manifest, mutation-ratchet. Suite totals unchanged: 68 PASS / 8 SKIP-OK / 0 FAIL.)
+**Last updated:** 2026-05-13 (iter 48 — `:shared:desktopTest` cross-module silent-regression audit. **6 latent regressions DISCOVERED** from iter-42 `JsonParser` addition: 5 commonTest files had hardcoded parser counts (`17`) that I never updated when wiring JsonParser. Tests pass-by-tautology when both sides of the equation are 17 (assertEquals + fixtures-list-of-17 both stayed 17), but `LazyLoadingValidationTests` + `LazyInitializationMetricsTest` had count assertions independent of any fixture list and failed once the actual count went to 18. Fixed all 5 files + added `TextFormat.ID_JSON` constant (was only in `FormatRegistry`, never propagated to `TextFormat.Companion`) + added `json` to `ChallengeValidationTests.validFormatIds` + assertion. **Test surface change:** :shared:desktopTest: 8962 PASS / 4 FAIL → **8966 PASS / 0 FAIL**. Android instrumented surface unchanged at 68 PASS / 8 SKIP-OK / 0 FAIL. Plus 1 hidden bluff in `testCompleteQuickNoteWorkflow` strengthened.)
 **Current branch:** `master`
 **HEAD (parent of this commit):** `ee120766` — `feat(iter-36): rewrite 3 SKIP-OK instrumented tests to real PASS`.
 **Submodule SHAs (per HEAD tree):**
@@ -451,6 +451,105 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 32. Iter 48 — `:shared:desktopTest` cross-module silent-regression audit (6 latent fails fixed)
+
+After iter-47 closed the scanner-clean state, the next no-bluff
+enforcement step was to verify the OTHER major test surface — the
+`:shared:desktopTest` JVM suite (9,400+ tests) — that I had NOT run
+since iter-40's `detectByFilename` change. iter-42 added `JsonParser`,
+which propagated incorrectly: the android-side instrumented suite
+went green but the JVM-side shared-module suite had silent failures
+that surfaced only now.
+
+### Forensic
+
+Initial `./gradlew :shared:desktopTest` run reported `BUILD FAILED in
+5m 33s` with `8962 PASSED` and `4 FAILED` (excluding `emits FAILED
+status` PASS-results that the `grep FAILED` matched). The 4 fails:
+
+- `LazyLoadingValidationTests > ParserInitializer registerAllParsersLazy does not instantiate parsers` — asserted `assertEquals(17, pending)`; actual was 18 after JsonParser added.
+- `LazyLoadingValidationTests > ParserInitializer eager registration instantiates all parsers immediately` — asserted `assertEquals(17, instantiated)`; actual 18.
+- `LazyLoadingValidationTests > ParserInitializer lazy parsers are instantiated on first access` — asserted `assertEquals(16, pending)` (after 1 accessed); actual 17.
+- `LazyInitializationMetricsTest > ParserRegistry lazy registration is faster than eager` — asserted `assertEquals(17, pendingAfterLazy)` + `assertEquals(17, instantiatedAfterEager)`; both actually 18.
+
+Search for `\b17\b` and `\b16\b` in other test files turned up 3
+MORE silent regressions waiting to happen:
+
+- `NonBlockingGuaranteeTest > all 17 format parsers complete within timeout` — fixture list had 17 entries, would pass; but the test method NAME claimed 17 (now misleading).
+- `EndToEndResponsivenessTest` — 5 test names + assertions with `17` formats, `170 = 17*10` operations.
+- `ParserOverloadStressTests` — 2 `assertEquals(17, results.size)` + test method name `AllSeventeenFormatsParsedConcurrentlyNoCrash`.
+
+`ChallengeValidationTests.validFormatIds` was a hardcoded `setOf` of
+TextFormat.Companion ID constants — but `TextFormat.ID_JSON` did
+NOT exist (iter-42 only added `FormatRegistry.ID_JSON`). The
+`>= 18` lower-bound assertion would have masked this discrepancy
+forever.
+
+### Fixes
+
+**Source layer:**
+- `shared/src/commonMain/kotlin/digital/vasic/yole/format/TextFormat.kt`: added `const val ID_JSON = "json"` to `TextFormat.Companion` for parity with the other 17 IDs.
+
+**Test layer (parser-count assertions updated):**
+- `LazyLoadingValidationTests`: 17→18 (3 sites) + 16→17 (1 site).
+- `LazyInitializationMetricsTest`: 17→18 (2 sites).
+- `NonBlockingGuaranteeTest`: added `JsonParser` import + fixture; test method `all 17` → `all 18`.
+- `EndToEndResponsivenessTest`: added `JsonParser` import + fixture; 5 sites (test names, assertions, comments).
+- `ParserOverloadStressTests`: added `JsonParser` to BOTH `fixtures` lists; method `AllSeventeen` → `AllEighteen`; both `assertEquals(17, ...)` → `(18, ...)`.
+- `ChallengeValidationTests`: added `TextFormat.ID_JSON` to `validFormatIds` + new assertion `"json" in validFormatIds`; updated `>= 18` lower bound → `>= 19` (now 19 = 18 formats + UNKNOWN).
+
+**Self-audit hidden-bluff fix:**
+- `EndToEndTest.testCompleteQuickNoteWorkflow`: final assertion
+  `onAllNodesWithText("QuickNote").onFirst().assertIsDisplayed()` was a
+  tautology (QuickNote bottom-nav tab is always rendered regardless of
+  active screen). Strengthened to assert QuickNote-screen-specific
+  `Save` + `Preview` affordances which only exist when QuickNote is
+  the active screen.
+
+### Verification
+
+`./gradlew :shared:desktopTest --no-daemon` → **BUILD SUCCESSFUL in
+5m 51s** with `8966 PASSED` and `0 FAILED` (excluding intentional
+`emits FAILED status` test assertions). The 4 previously-failing
+lazy tests now pass.
+
+`./gradlew :shared:desktopTest --tests "...ChallengeValidationTests"
+--tests "...FormatToggleTests"` → 50 PASSED / 0 FAILED.
+
+Evidence at `docs/qa/iter-48/`:
+- `desktopTest-final-8966-pass.log` — full :shared:desktopTest run after all fixes.
+- `desktopTest-challenge-validation-50-pass.log` — Challenge + FormatToggle re-run after `TextFormat.ID_JSON` propagation.
+
+### Surface metrics
+
+| Metric | Iter 47 | **Iter 48** |
+|--------|---------|-------------|
+| Android instrumented PASS | 68 | 68 |
+| Android instrumented SKIP-OK | 8 | 8 |
+| **`:shared:desktopTest` PASS** | 8962 (with 4 silent FAIL) | **8966** |
+| **`:shared:desktopTest` FAIL** | 4 (latent since iter 42) | **0** |
+| BLUFF-K-003 scanner hits | 0 | 0 |
+
+The android instrumented suite was always green — but the JVM
+suite had 4 silent failures hidden behind "I only ran the android
+side". CONST-035 §11.4 covenant exposed it during this self-audit.
+
+### Honest remaining gaps (post-iter-48)
+
+| # | Item | Severity |
+|---|------|----------|
+| 1 | 8 SKIP-OK truly-removed-feature tests pending product decision | LOW |
+| 2 | Pre-commit hook not installed (operator decision) | LOW |
+| 3 | Concrete-bank coverage 10/60+ | MED |
+| 4-6 | iOS/Desktop/Web Firebase, gitlab leg, prod-keystore continuity | LOW |
+| 7 | Comments in some places still say "17 formats" or "all 17 ..." — non-test prose. Will fix in iter 49 sweep if user wants the comment-level honesty too. | LOW |
+
+### Iter-48 commit
+
+`<<sha-placeholder>>` — see §6 for canonical record. Evidence at `docs/qa/iter-48/`.
 
 ---
 

@@ -339,8 +339,8 @@ class LazyLoadingValidationTests {
             "No parsers should be instantiated after lazy registration")
         assertTrue(pending > 0,
             "Should have pending parser factories after lazy registration")
-        assertEquals(17, pending,
-            "Should have 17 pending parser factories")
+        assertEquals(18, pending,
+            "Should have 18 pending parser factories")
     }
 
     @Test
@@ -355,8 +355,8 @@ class LazyLoadingValidationTests {
 
         assertEquals(1, ParserRegistry.getInstantiatedParserCount(),
             "Only 1 parser should be instantiated after accessing markdown")
-        assertEquals(16, ParserRegistry.getPendingParserCount(),
-            "16 parsers should still be pending")
+        assertEquals(17, ParserRegistry.getPendingParserCount(),
+            "17 parsers should still be pending")
     }
 
     @Test
@@ -390,8 +390,8 @@ class LazyLoadingValidationTests {
         ParserRegistry.clear()
         ParserInitializer.registerAllParsers()
 
-        assertEquals(17, ParserRegistry.getInstantiatedParserCount(),
-            "All 17 parsers should be instantiated after eager registration")
+        assertEquals(18, ParserRegistry.getInstantiatedParserCount(),
+            "All 18 parsers should be instantiated after eager registration")
         assertEquals(0, ParserRegistry.getPendingParserCount(),
             "No parsers should be pending after eager registration")
     }

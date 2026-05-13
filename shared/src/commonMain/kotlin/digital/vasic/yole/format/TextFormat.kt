@@ -84,6 +84,7 @@ data class TextFormat(
         const val ID_JUPYTER = "jupyter"
         const val ID_RMARKDOWN = "rmarkdown"
         const val ID_BINARY = "binary"
+        const val ID_JSON = "json"
     }
 }
 

@@ -193,8 +193,8 @@ class LazyInitializationMetricsTest {
         }
         val instantiatedAfterEager = ParserRegistry.getInstantiatedParserCount()
 
-        assertEquals(17, pendingAfterLazy, "Should have 17 pending parsers after lazy registration")
-        assertEquals(17, instantiatedAfterEager, "Should have 17 instantiated parsers after eager registration")
+        assertEquals(18, pendingAfterLazy, "Should have 18 pending parsers after lazy registration")
+        assertEquals(18, instantiatedAfterEager, "Should have 18 instantiated parsers after eager registration")
         assertTrue(lazyTime.inWholeMilliseconds < 100,
             "Lazy registration took ${lazyTime.inWholeMilliseconds}ms, expected < 100ms")
     }

@@ -32,6 +32,7 @@ import digital.vasic.yole.format.textile.TextileParser
 import digital.vasic.yole.format.jupyter.JupyterParser
 import digital.vasic.yole.format.rmarkdown.RMarkdownParser
 import digital.vasic.yole.format.binary.BinaryParser
+import digital.vasic.yole.format.json.JsonParser
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -62,7 +63,7 @@ class NonBlockingGuaranteeTest {
     }
 
     @Test
-    fun `all 17 format parsers complete within timeout`() = runBlocking<Unit> {
+    fun `all 18 format parsers complete within timeout`() = runBlocking<Unit> {
         data class Sample(val parser: TextParser, val content: String, val id: String)
 
         val samples = listOf(
@@ -82,7 +83,8 @@ class NonBlockingGuaranteeTest {
             Sample(TextileParser(), "h1. Title\n\n*bold*", FormatRegistry.ID_TEXTILE),
             Sample(JupyterParser(), "{\"nbformat\":4,\"cells\":[]}", FormatRegistry.ID_JUPYTER),
             Sample(RMarkdownParser(), "---\ntitle: Doc\n---\n```{r}\n1\n```", FormatRegistry.ID_RMARKDOWN),
-            Sample(BinaryParser(), "\u0000\u0001binary", FormatRegistry.ID_BINARY)
+            Sample(BinaryParser(), "\u0000\u0001binary", FormatRegistry.ID_BINARY),
+            Sample(JsonParser(), "{\"a\":1,\"b\":[2,3]}", FormatRegistry.ID_JSON)
         )
 
         samples.forEach { sample ->
