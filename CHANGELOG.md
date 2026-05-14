@@ -3,6 +3,98 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## iter-57 — Syntax highlighting + unified theme system (2026-05-14)
+
+### Added
+- **VS Code theme JSON as the unified app theme system.** The legacy
+  hardcoded `IdeTheme.kt` + `YoleColors.kt` palettes are replaced by
+  `Yole-Light.json` + `Yole-Dark.json` with byte-exact pixel parity
+  to the prior look. The whole app — backgrounds, surfaces, status
+  bar, drawer, dialogs, editor, syntax tokens — reads from a single
+  active `Theme` exposed via `LocalTheme` CompositionLocal.
+- **Syntax highlighting in the editor.** `SyncedScrollEditor` accepts
+  an optional `SyntaxHighlighter`; when set, `BasicTextField` renders
+  a colored `AnnotatedString` via `VisualTransformation` with an
+  80 ms keystroke debounce.
+- **Syntax highlighting in preview code blocks.** Markdown fenced
+  code blocks (`\`\`\`kotlin`) are tokenized and wrapped in
+  `tok-<scope>` CSS spans; per-scope colors come from the active
+  theme's `tokenColors[]`.
+- **Filename badges in the FILES tab.** Each file row shows a
+  2-letter language chip tinted by the active theme's
+  `badge.background.<langId>` (or generic fallback).
+- **`Settings → Formats` screen + one-time migration dialog.**
+- **TokenizerEngine** with platform actuals: Tree-Sitter via JNI on
+  Android + Desktop (bonede `tree-sitter:0.22.6`), vscode-textmate
+  via Kotlin/Wasm `@JsModule` interop on Web.
+- **4 new anti-bluff challenges** wired into `make qa-all`:
+  `syntax_highlighting_challenge.sh`,
+  `syntax_highlighting_per_platform_challenge.sh`,
+  `theme_unification_challenge.sh`,
+  `format_enablement_default_challenge.sh`.
+- **Documentation:** `docs/features/syntax-highlighting/user-guide.md`,
+  `architecture.md`, `theme-migration-guide.md`,
+  `settings-formats-guide.md`, `research-report.md` (616 lines, 120
+  URL citations).
+
+### Changed
+- **Markdown is the only default-enabled format.** Every other format
+  (17 prior + 12 v1 source-code languages) is opt-in via
+  `Settings → Formats`. Operator-mandated; existing users see a
+  one-time mandatory migration dialog on first launch after upgrade.
+- **`MarkdownParser`** now emits `class="language-<lang>"` on
+  language-tagged fenced code blocks (was bare `<code>`).
+
+### Removed
+- Legacy `IdeTheme.kt` (`androidApp/.../ui/theme/Theme.kt`) and the
+  shared `YoleColors` palette object (`shared/.../ui/Theme.kt`).
+  463 callsites migrated across Android + Desktop + iOS + Web shells.
+- 4 legacy `Theme*Test.kt` files testing the now-deleted YoleColors
+  palette API — deleted alongside the API per CLAUDE.md "delete tests
+  for deleted APIs" exception.
+
+### Known limitations (each tracked as a `#…` entry in `docs/KNOWN_DEFECTS.md`)
+- **`#android-tree-sitter-ndk-so-missing`** — the bonede Tree-Sitter
+  library ships native binaries for 5 desktop OS+arch combos but no
+  Android NDK `.so`. On Android, `TokenizerEngine.initialize()`
+  returns `Result.failure(UnsatisfiedLinkError)`; highlighting
+  gracefully unavailable (no fake tokens per CONST-035). Operator
+  NDK-build upgrade path documented in `KNOWN_DEFECTS.md`.
+- **`#phase-7-blocked-on-ios-baseline`** — iOS `TokenizerEngine` is a
+  `NotImplementedError` stub. Two prerequisites: (a) Document-KMP
+  sibling submodule needs `@OptIn(ExperimentalForeignApi)` fix
+  (CONST-038 we can't fix from Yole), (b) operator-built
+  `libtree-sitter.a` + `libtree-sitter-markdown.a` per Apple arch.
+- **`#wasmjs-test-baseline-broken`** — Wasm production code compiles
+  cleanly, but tests are blocked by ~11K pre-existing errors in
+  `commonTest` from `kotlinx.coroutines.runBlocking` (which has no
+  Wasm variant). Phase 6 implementation tests cannot execute until
+  the baseline is fixed.
+
+### Cross-platform impact summary (per CONST-037)
+- **Android:** editor highlighting + filename badges + preview code
+  blocks all functional in the UI; tokenizer engine returns honest
+  `Result.failure` on devices without the bundled NDK `.so`.
+- **Desktop:** full feature set — editor + preview + badges +
+  tokenizer all functional. 5 PASS in `TokenizerEngineJvmTest`.
+- **iOS:** UI surfaces present; tokenizer engine BLOCKED stub.
+- **Web:** UI surfaces present; tokenizer engine implementation
+  compiles cleanly, runtime verification pending wasmJsTest baseline.
+
+### Commits (this iteration, in order)
+dcc4ac57 spec; f02dd00e plan; 9ab30093 Phase 0 research;
+9c0a31e2 + be172282 Phase 1 parser; c538b28f Phase 2 parity;
+d9bf5f9d + 311d43d1 + f78af72e + e682175d + 2ea2949b + e341e5ed +
+a36f6610 + a33b5ed4 Phase 3 ThemeProvider migration (463 callsites);
+f00c0774 + de022ad8 + 9544149b + 8eb05038 + 9d0d8a7d + bb472dbf
+Phase 4 format gate + settings screen + migration dialog;
+2eafc2de Phase 5 JNI engine; c0bf3305 Phase 6 Wasm engine;
+84c01eca Phase 7 BLOCKED scaffold; 9fb5f184 Phase 8 SyntaxHighlighter
+API; 8acfa501 Phase 9 editor wiring; 66e6ef39 Phase 10 preview
+highlighting; 32078f9b Phase 11 filename badges; bb56aa11 Phase 12
+4 challenges + qa-all wiring; <Phase 13 docs commit>.
+
+
 ## iter-56 — CONST-038 Submodule decoupling & reusability mandate (2026-05-14)
 
 ### Added

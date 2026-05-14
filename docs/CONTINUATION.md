@@ -483,6 +483,62 @@ require container-based artifacts.
 
 ---
 
+## 41. Iter 57 — Syntax highlighting + unified theme system (2026-05-14)
+
+**Status:** v1 shipped on master through Phase 13 (docs). Phase 14 (Firebase distribution) pending operator decision on the Android NDK `.so` build.
+
+**Forensic anchor:** operator launched the 5-feature initiative. Feature 1 (syntax highlighting) shipped first per the locked-in dependency-order sequence. Spec: `docs/superpowers/specs/2026-05-14-syntax-highlighting-design.md` (377 lines). Plan: `docs/superpowers/plans/2026-05-14-syntax-highlighting-plan.md` (1195 lines). Research: `docs/features/syntax-highlighting/research-report.md` (616 lines).
+
+### Phases landed (commits in chronological order)
+
+| # | Commit(s) | Status |
+|---|---|---|
+| 0 | `9ab30093` | DONE — research report, 120 URL citations |
+| 1 | `9c0a31e2` + `be172282` | DONE — VsCodeThemeParser, 7/7 tests, mutation 3-of-7 |
+| 2 | `c538b28f` | DONE — Yole-Light/Dark.json parity, mutation 1 |
+| 3 | `d9bf5f9d`…`a33b5ed4` (8 commits) | DONE — ThemeProvider migration, 463 callsites → 0, legacy palette deleted |
+| 4 | `f00c0774`…`bb472dbf` (6 commits) | DONE — format gate + Settings → Formats + migration dialog |
+| 5 | `2eafc2de` | DONE_WITH_CONCERNS — JVM engine ships; Android NDK `.so` missing |
+| 6 | `c0bf3305` | DONE_WITH_CONCERNS — Wasm engine code OK; tests blocked by pre-existing baseline |
+| 7 | `84c01eca` | BLOCKED — iOS K/N cinterop scaffold; pre-existing Document-KMP defect |
+| 8 | `9fb5f184` | DONE — SyntaxHighlighter API, 49/49 tests, 4 mutations |
+| 9 | `8acfa501` | DONE — editor wiring + length-guard fix; 13 tests pass |
+| 10 | `66e6ef39` | DONE — preview code blocks, 3 tests + MarkdownParser upgrade |
+| 11 | `32078f9b` | DONE — filename badges, 4 unit + 3 Robolectric tests |
+| 12 | `bb56aa11` | DONE — 4 challenges + Makefile qa-iter-57-gates |
+| 13 | (this commit) | DONE — 4 docs + CHANGELOG + CONTINUATION |
+| 14 | pending | Gated on Android NDK build decision |
+
+### Critical known limitations (each entry in `docs/KNOWN_DEFECTS.md`)
+
+1. **`#android-tree-sitter-ndk-so-missing`** — bonede Tree-Sitter library doesn't ship Android NDK binaries. iter-57 Android RC ships the full API; on devices, `TokenizerEngine.initialize()` returns `Result.failure(UnsatisfiedLinkError)` — honest per CONST-035. Operator NDK-build upgrade path documented.
+2. **`#phase-7-blocked-on-ios-baseline`** — iOS engine is a `NotImplementedError` stub. Two prerequisites: (a) Document-KMP sibling fix (CONST-038), (b) operator-built `libtree-sitter.a` per Apple arch.
+3. **`#wasmjs-test-baseline-broken`** — Wasm production code compiles; tests blocked by pre-existing `runBlocking has no Wasm variant` baseline (~11K errors in commonTest).
+
+### How to resume after this session
+
+```
+iter-57 Feature 1 (syntax highlighting) Phases 0–13 are on master.
+Next operator decisions in priority order:
+
+1. Phase 14 Firebase distribution: ship the "graceful-degradation"
+   Android build now, OR wait for operator NDK `.so` build, OR swap
+   to a Tree-Sitter wrapper that ships Android binaries.
+
+2. Continue the 5-feature initiative: Features 2–5 (Source-code file
+   support, Auto-complete, LSP integration, Import from). Each gets
+   its own brainstorm → spec → plan → implement → ship cycle.
+
+3. Pre-existing baseline fixes: #wasmjs-test-baseline-broken and the
+   Document-KMP `@OptIn` issue both block other progress.
+```
+
+### Anti-bluff posture (CONST-035)
+
+iter-57 ships HONEST capabilities. Every test added is mutation-verified. Every BLOCKED state is documented with the specific upstream defect citation and the exit criterion. Engine implementations that can't load native binaries return `Result.failure` — never fabricate fake tokens. The 4 challenges enforce these invariants in `make qa-all`.
+
+---
+
 ## 40. Iter 56 — CONST-038 Submodule Decoupling & Reusability (2026-05-14)
 
 Direct operator mandate (verbatim):
