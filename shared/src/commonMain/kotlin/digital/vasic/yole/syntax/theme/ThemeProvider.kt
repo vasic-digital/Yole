@@ -26,15 +26,18 @@ import androidx.compose.ui.graphics.Color
 /**
  * CompositionLocal exposing the currently active [Theme].
  *
- * Reading this outside a [ThemeProvider] throws — every Composable subtree
- * that consumes theme colors MUST be wrapped at the root of the app shell.
+ * Apps are expected to wrap their root in [ThemeProvider], which subscribes
+ * to [ThemeRegistry.activeTheme] and pushes live updates into this CompositionLocal.
+ *
+ * When no [ThemeProvider] is present in the subtree (e.g., isolated Compose UI
+ * tests that exercise individual screens without the full app shell), the
+ * default falls back to the [ThemeRegistry.activeTheme] StateFlow's current
+ * value. This keeps `themeUiColor(...)` and `themeTokenColor(...)` usable in
+ * tests without requiring every test to remember to wrap content; production
+ * paths still receive recomposition updates via [ThemeProvider].
  */
 val LocalTheme = compositionLocalOf<Theme> {
-    error(
-        "LocalTheme accessed outside a ThemeProvider. " +
-            "Wrap your root Composable in ThemeProvider { ... } " +
-            "(see digital.vasic.yole.syntax.theme.ThemeProvider)."
-    )
+    ThemeRegistry.activeTheme.value
 }
 
 /**

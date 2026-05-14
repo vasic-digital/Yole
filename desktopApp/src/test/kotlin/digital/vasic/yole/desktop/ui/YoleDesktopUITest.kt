@@ -13,7 +13,6 @@ import digital.vasic.yole.format.StyleSheets
 import digital.vasic.yole.format.TextFormat
 import digital.vasic.yole.ui.ThemeMode
 import digital.vasic.yole.ui.ThemeUtils
-import digital.vasic.yole.ui.YoleColors
 import digital.vasic.yole.ui.YoleTypography
 import digital.vasic.yole.desktop.shortcut.DesktopKeyboardShortcuts
 import androidx.compose.ui.input.key.Key
@@ -129,51 +128,16 @@ class YoleDesktopUITest {
         assertFalse(FormatRegistry.isSupported("nonexistent_format"))
     }
 
-    // ==================== Theme Color Tests ====================
-
-    @Test
-    fun `YoleColors light theme colors should be accessible`() {
-        assertNotNull(YoleColors.BrandPrimary)
-        assertNotNull(YoleColors.BrandSecondary)
-        assertNotNull(YoleColors.BrandTertiary)
-        assertNotNull(YoleColors.Success)
-        assertNotNull(YoleColors.Warning)
-        assertNotNull(YoleColors.Error)
-        assertNotNull(YoleColors.Info)
-    }
-
-    @Test
-    fun `YoleColors dark theme colors should be accessible`() {
-        assertNotNull(YoleColors.Dark.BrandPrimary)
-        assertNotNull(YoleColors.Dark.BrandSecondary)
-        assertNotNull(YoleColors.Dark.BrandTertiary)
-        assertNotNull(YoleColors.Dark.Success)
-        assertNotNull(YoleColors.Dark.Warning)
-        assertNotNull(YoleColors.Dark.Error)
-        assertNotNull(YoleColors.Dark.Info)
-    }
-
-    @Test
-    fun `YoleColors surface colors should be accessible`() {
-        assertNotNull(YoleColors.SurfacePrimary)
-        assertNotNull(YoleColors.SurfaceSecondary)
-        assertNotNull(YoleColors.SurfaceTertiary)
-        assertNotNull(YoleColors.Dark.SurfacePrimary)
-        assertNotNull(YoleColors.Dark.SurfaceSecondary)
-        assertNotNull(YoleColors.Dark.SurfaceTertiary)
-    }
-
-    @Test
-    fun `YoleColors text colors should be accessible`() {
-        assertNotNull(YoleColors.TextPrimary)
-        assertNotNull(YoleColors.TextSecondary)
-        assertNotNull(YoleColors.TextTertiary)
-        assertNotNull(YoleColors.TextDisabled)
-        assertNotNull(YoleColors.Dark.TextPrimary)
-        assertNotNull(YoleColors.Dark.TextSecondary)
-        assertNotNull(YoleColors.Dark.TextTertiary)
-        assertNotNull(YoleColors.Dark.TextDisabled)
-    }
+    // ==================== Theme Utility Tests ====================
+    //
+    // iter-57 Phase 3b: deleted alongside the YoleColors palette they referenced:
+    //   - `YoleColors light theme colors should be accessible`
+    //   - `YoleColors dark theme colors should be accessible`
+    //   - `YoleColors surface colors should be accessible`
+    //   - `YoleColors text colors should be accessible`
+    // The ThemeMode/ThemeUtils API survives. The two tests below exercise the
+    // surviving entry points with literal Compose Color values rather than the
+    // legacy palette.
 
     @Test
     fun `ThemeUtils shouldUseDarkTheme should resolve correctly`() {
@@ -189,8 +153,8 @@ class YoleDesktopUITest {
 
     @Test
     fun `ThemeUtils getSemanticColor should select correct theme color`() {
-        val lightColor = YoleColors.BrandPrimary
-        val darkColor = YoleColors.Dark.BrandPrimary
+        val lightColor = androidx.compose.ui.graphics.Color(0xFFD32F2F)
+        val darkColor = androidx.compose.ui.graphics.Color(0xFFEF9A9A)
 
         val resultLight = ThemeUtils.getSemanticColor(isDarkTheme = false, lightColor, darkColor)
         assertEquals(lightColor, resultLight)

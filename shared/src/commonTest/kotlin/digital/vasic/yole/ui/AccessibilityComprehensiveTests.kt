@@ -275,15 +275,11 @@ class AccessibilityComprehensiveTests {
         assertEquals(ratio1, ratio2, 0.001)
     }
 
-    @Test
-    fun `light theme primary text meets WCAG AA on primary surface`() {
-        assertTrue(ThemeUtils.meetsWcagAA(YoleColors.TextPrimary, YoleColors.SurfacePrimary))
-    }
+    // iter-57 Phase 3b: deleted alongside the YoleColors/YoleColors.Dark palette
+    // they referenced (`light theme primary text meets WCAG AA on primary surface`
+    // and `dark theme primary text meets WCAG AA on primary surface`). The
+    // ThemeUtils.meetsWcagAA function itself is still exercised below.
 
-    @Test
-    fun `dark theme primary text meets WCAG AA on primary surface`() {
-        assertTrue(ThemeUtils.meetsWcagAA(YoleColors.Dark.TextPrimary, YoleColors.Dark.SurfacePrimary))
-    }
 
     @Test
     fun `WCAG AA threshold for normal text is 4_5`() {
