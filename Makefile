@@ -390,8 +390,18 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates
 	bash automation/run-qa-all.sh --skip-unit --skip-build
+	@echo "-----------------------------------------------------------------------------------"
+
+# iter-57 gates: 4 syntax-highlighting anti-bluff challenges (CONST-035 + CONST-037).
+# Order: cheapest first (static-only) → most expensive (full test suites).
+qa-iter-57-gates:
+	@echo "=== iter-57 gates: syntax-highlighting anti-bluff suite ==="
+	bash yole-challenges/scripts/syntax_highlighting_per_platform_challenge.sh
+	bash yole-challenges/scripts/theme_unification_challenge.sh
+	bash yole-challenges/scripts/format_enablement_default_challenge.sh
+	bash yole-challenges/scripts/syntax_highlighting_challenge.sh
 	@echo "-----------------------------------------------------------------------------------"
 
 # iter-55 challenges: scroll sync + cross-platform parity (CONST-037).
