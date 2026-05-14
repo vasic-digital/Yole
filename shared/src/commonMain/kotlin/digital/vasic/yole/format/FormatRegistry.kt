@@ -62,11 +62,28 @@ object FormatRegistry {
     val isFormatsInitialized: Boolean get() = lazyFormats.isInitialized()
 
     /**
+     * Returns the canonical default set of enabled format IDs for a fresh install.
+     *
+     * **Operator constraint (spec §3.7, iter-57 Phase 4):** Markdown is the ONLY
+     * default-enabled text-editor format. Every other format (the existing 17
+     * non-markdown parsers) and every source-code language MUST be explicitly
+     * opted-in by the user via Settings → Formats.
+     *
+     * Mutation-verified by `FormatEnablementDefaultTest`: changing this set to
+     * anything other than exactly `setOf("markdown")` MUST cause the test to FAIL.
+     *
+     * Note: network storage formats (Dropbox, FTP, etc.) are NOT included here —
+     * they are tracked separately in [networkFormatIds] and always permanently
+     * enabled regardless of this set.
+     */
+    fun defaultEnabledFormatIds(): Set<String> = setOf(ID_MARKDOWN)
+
+    /**
      * Set of format IDs that are currently enabled by the user.
-     * Default: only Markdown is enabled; all other formats are off.
+     * Initial value matches [defaultEnabledFormatIds] (Markdown only).
      * Network storage format IDs (dropbox, ftp, etc.) are permanently enabled.
      */
-    private val enabledFormatIds: MutableSet<String> = mutableSetOf(ID_MARKDOWN)
+    private val enabledFormatIds: MutableSet<String> = defaultEnabledFormatIds().toMutableSet()
 
     /**
      * Network storage format IDs that are always enabled and not user-togglable.
