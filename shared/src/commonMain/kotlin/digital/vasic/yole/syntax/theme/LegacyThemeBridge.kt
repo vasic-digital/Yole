@@ -88,6 +88,12 @@ object LegacyThemeBridge {
         "badge.background" to 0xFFD32F2F.toInt(),
         // Current line highlight — YoleColors.Ide.LightCurrentLine = Color(0xFFF0F0F0)
         "editor.lineHighlightBackground" to 0xFFF0F0F0.toInt(),
+        // Inactive tab background — YoleColors.Ide.LightSurfaceVariant = Color(0xFFECECEC)
+        "tab.inactiveBackground" to 0xFFECECEC.toInt(),
+        // Active tab background (mirrors editor) — YoleColors.Ide.LightBackground = Color(0xFFFFFFFF)
+        "tab.activeBackground" to 0xFFFFFFFF.toInt(),
+        // Menu hover — YoleColors.Ide.LightMenuHover = Color(0xFFE8E8E8)
+        "menu.selectionBackground" to 0xFFE8E8E8.toInt(),
     )
 
     /**
@@ -135,5 +141,11 @@ object LegacyThemeBridge {
         "badge.background" to 0xFFEF9A9A.toInt(),
         // Current line highlight — YoleColors.Ide.DarkCurrentLine = Color(0xFF2A2D2E)
         "editor.lineHighlightBackground" to 0xFF2A2D2E.toInt(),
+        // Inactive tab background — YoleColors.Ide.DarkSurfaceVariant = Color(0xFF2D2D30)
+        "tab.inactiveBackground" to 0xFF2D2D30.toInt(),
+        // Active tab background (mirrors editor) — YoleColors.Ide.DarkBackground = Color(0xFF1E1E1E)
+        "tab.activeBackground" to 0xFF1E1E1E.toInt(),
+        // Menu hover — YoleColors.Ide.DarkMenuHover = Color(0xFF2A2D2E)
+        "menu.selectionBackground" to 0xFF2A2D2E.toInt(),
     )
 }

@@ -15,7 +15,10 @@
     "editorWidget.border": "#3c3c3c",
     "focusBorder": "#ef9a9a",
     "badge.background": "#ef9a9a",
-    "editor.lineHighlightBackground": "#2a2d2e"
+    "editor.lineHighlightBackground": "#2a2d2e",
+    "tab.inactiveBackground": "#2d2d30",
+    "tab.activeBackground": "#1e1e1e",
+    "menu.selectionBackground": "#2a2d2e"
   },
   "tokenColors": [
     {
