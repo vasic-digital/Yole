@@ -76,36 +76,49 @@ historical log.
 
 ---
 
-## 2. Current State (Iter 28 — 2026-05-12)
+## 2. Current State (Iter 55 — 2026-05-14)
 
 ### What Was Just Done
 
-- **Iter 27** (commit `5446d5d4`): All 49 Robolectric tests now pass in the
-  dedicated `robolectric-test` container per the user mandate to keep
-  Robolectric isolated. Fixed via:
-  - `docker-compose.yml`: pass `-PincludeRobolectric=true` so the include-property
-    override actually fires (the default test filter was suppressing the tests
-    even when `--tests '*.robolectric.*'` selected them).
-  - `androidApp/.../ui/YoleApp.kt`: renamed bottom-nav label `"Edit"` → `"QuickNote"`
-    so user-visible label matches the screen name everywhere else.
-  - `FileEditingRobolectricTest` / `FormatDetectionRobolectricTest`: route through
-    the New Document dialog (Add → Create), target editor via semantic
-    `contentDescription = "Code editor for untitled.md"` instead of the
-    template-hidden `"Start typing..."` placeholder, use `"Edit"` icon
-    contentDescription for the preview-back toggle.
-  - `ThemeRobolectricTest`: align with current strings (`"Dark theme (IDE)"`,
-    `"System theme"`).
+- **Iter 55** (commits `d3584ffd` → `0a466425` on master, 5 commits):
+  Platform sync + cross-platform governance. See **Section 39** below
+  for full forensic anchor. Highlights:
+  - Added CONST-037 (cross-platform impact mandatory consideration) to
+    root `CONSTITUTION.md` / `CLAUDE.md` / `AGENTS.md`.
+  - Fixed Android editor gutter/text scroll desync by extracting
+    `SyncedScrollEditor` with a single shared `rememberScrollState()`.
+    4-case Robolectric test mutation-verified.
+  - Removed duplicate File Browser entry point in Android (MoreScreen
+    Card + `SubScreen.FILE_BROWSER` enum + 2 render branches). Editor
+    "open file" + Ctrl+O reroute to `Screen.FILES` tab. 5-case dedup
+    test mutation-verified.
+  - Added 2 new challenges (`scroll_sync_challenge.sh`,
+    `cross_platform_parity_challenge.sh`) and wired into `make qa-all`
+    via new `qa-iter-55-gates` target.
+  - Submodule propagation of CONST-037 deferred: shared infrastructure
+    discovery (Challenges/Containers/HelixQA carry "Atmosphere/Lava"
+    governance from another project).
 
-- **Iter 28** (commit `492ef100`): Deep-recursive submodule fetch + pull + cross-fork merge.
-  - `Challenges` (`a70c5b16`): merged origin/main (governance cascade §§6.R/6.S/6.T/6.U/6.V/6.W + Article XI §11.9), fast-forwarded `Panoptic` to `c22df66` (bluff-scan exemption annotations + 17 upstream commits including CONSTITUTION.md scaffold), then merged the fresh `android-save` 100%-decoupled gate fix. Pushed to all 4 remotes.
-  - `Containers` (`53f48c60`): fast-forwarded 4 commits (HelixCode infra config + §§6.U/6.V/6.W cascade + boot binary refresh). Pushed; gitlab caught up.
-  - `HelixQA` (`f0399a82`): cross-fork merge with `helixgithub/main` (HelixDevelopment fork — 6 ahead) into vasic-digital fork (2 ahead). Clean `ort` strategy, no conflicts. Pulled in `cmd/helixqa-bridge` (~1.7k LoC + tests), `cmd/recording-analyzer` (~1.5k LoC + tests), `banks/atmosphere.yaml`, governance additions, `rest-demo` pointer update. Pushed to all 6 remotes.
-  - Superproject commit `492ef100` pushed to github, origin, upstream.
+- **Iter 54** (commit `1c4a3b19`): de-hardcoded Linux build host, bumped
+  Containers submodule (LinuxContainerBackend), and bumped Yole 1.0.0 →
+  1.0.1 with versionCode 100 → 101 (`0.0.0.1.0` → `0.0.0.1.1`). Android
+  + Desktop macOS-arm64 release artifacts produced. Firebase
+  distribution evidence captured. See Section 38.
+
+- **Iter 53** (commit `0709e24f`): LLMProvider bluff strip; apikeys
+  central authority; live HuggingFace challenge.
 
 ### Working Tree State
 
 ```
-Clean. All submodule pointers committed. No uncommitted changes.
+Clean modulo pre-existing dirty work in 4 HelixDevelopment submodules:
+  - Dependencies/HelixDevelopment/DocProcessor:    docs/ARCHITECTURE.md
+  - Dependencies/HelixDevelopment/LLMOrchestrator: docs/ARCHITECTURE.md
+  - Dependencies/HelixDevelopment/LLMsVerifier:    Website/js/main.js
+  - Dependencies/HelixDevelopment/VisionEngine:    docs/ARCHITECTURE.md
+
+These pre-date iter-55 and were preserved by targeted-add staging in
+every iter-55 commit. Origin: prior session's WIP, not iter-55 work.
 ```
 
 ---
@@ -455,6 +468,152 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 39. Iter 55 — Platform sync & cross-platform governance (2026-05-14)
+
+Direct operator mandate (verbatim, paraphrased intent):
+
+> "Two points: vertical scrolls for line number and text content are
+> not in horizontal sync on Android. Why do we need a File Browser in
+> two places (Settings and main tab)? Just need the main one. Pay
+> attention that changes do not break some platforms. Thinking about
+> how changes affect each platform MUST be one of the main constraints
+> in Constitution, CLAUDE.md, AGENTS.md of main project and all
+> Submodules (deep recursively)! [...] Make sure all tests + Challenges
+> work in anti-bluff manner — they MUST confirm tested codebase really
+> works as expected!"
+
+### What Was Done
+
+**Phase A — Governance (CONST-037 cross-platform impact rule):**
+- `CONSTITUTION.md`: appended CONST-037 addendum (35 lines), Definition
+  of Done bumped 5 → 6 items adding CONST-037 reasoning gate.
+- `CLAUDE.md`: new MANDATORY rule #8 + dedicated section after DoD;
+  prior-session CLAUDE.md improvements (submodule table expansion, Key
+  Files split, AGENTS.md cross-reference) folded into the same commit.
+- `AGENTS.md`: new MANDATORY rule #8 + dedicated section; DoD bumped
+  to 6 items.
+- **Submodule propagation: scoped back from initial plan.** Investigation
+  revealed several submodules are SHARED INFRASTRUCTURE consumed by
+  non-Yole projects: `Challenges/` remote contains commits referencing
+  "Atmosphere/Lava 1.1.5-dev Phase 39", "MediaServiceCore/SharedModules",
+  "Lava /CLAUDE.md §6.X". A Yole-specific 4-platform list in shared
+  submodules would be incorrect. 4 already-pushed CONST-037 commits
+  (HelixQA, LLMProvider, LLMsVerifier, Containers github) were reverted
+  on their remotes; 5 local-only commits (Challenges, Security,
+  DocProcessor, LLMOrchestrator, VisionEngine) were dropped before push.
+  Submodule pointer bumps recorded the revert cycle in parent
+  (`178ab0b8`). **Project-agnostic submodule propagation is a deferred
+  follow-up** — see Section 4 below.
+
+**Phase B — Android editor scroll sync fix:**
+- New `SyncedScrollEditor.kt` (`androidApp/.../ui/editor/`): owns a
+  single `rememberScrollState()` passed to both the gutter `Column` and
+  a `BasicTextField`. `OutlinedTextField` (which doesn't expose scroll
+  state) replaced by `BasicTextField` (which does), preserving the
+  existing semantics, monospace text style, history-tracking
+  onValueChange, and "Start typing..." placeholder via parameter API.
+- `YoleApp.kt` `IdeEditorScreen`: inline gutter + OutlinedTextField
+  replaced by call to `SyncedScrollEditor`. ~75 lines removed, replaced
+  by ~25.
+- `EditorScrollSyncRobolectricTest` (4 cases):
+  - exactly-one rememberScrollState in non-comment code;
+  - both verticalScroll() calls reference the same variable;
+  - ScrollState propagation identity contract;
+  - gutter + BasicTextField testTags co-located.
+- Mutation cycle verified: revert sharedScroll → 2 of 4 tests FAIL;
+  restore → all 4 PASS.
+
+**Phase C — File Browser dedup:**
+- `SubScreen.FILE_BROWSER` enum value removed.
+- Both `SubScreen.FILE_BROWSER → FileBrowserScreen(...)` render branches
+  removed.
+- `MoreScreen` "File Browser" Card + `onFileBrowserClick` parameter
+  removed.
+- Editor's `onOpenFileBrowser` and global `Ctrl+O` keyboard shortcut
+  reroute to `Screen.FILES` (the canonical bottom-nav tab).
+- `FileBrowserDedupRobolectricTest` (5 cases): enum content, source
+  references, MoreScreen signature (paren-balanced parse — anti-bluff
+  inside the test itself, an earlier regex bug masked a false PASS),
+  caller references, FilesScreen-still-exists guard.
+- Mutation cycle verified: re-add FILE_BROWSER to enum → 1 test FAILS;
+  revert → all 5 PASS.
+- Desktop deliberately NOT touched. Desktop's `FileBrowserScreen` +
+  `IdeFileBrowser` (in `EnhancedYoleApp.kt`) may be intentional per-
+  platform UX; deferred decision per CONST-037 reasoning gate.
+
+**Phase D — Challenges:**
+- `yole-challenges/scripts/scroll_sync_challenge.sh`: 2-layer probe
+  (static source-grep for shared ScrollState + runtime Robolectric run
+  with positive evidence — PASSED case count + log path).
+- `yole-challenges/scripts/cross_platform_parity_challenge.sh`: counts
+  top-level File Browser composables per platform. Android max 1
+  (FileBrowserScreen only — FilesScreen is a thin wrapper), Desktop
+  max 2 (intentional pending design review), iOS max 0, Web max 0.
+- `Makefile`: new `qa-iter-55-gates` target wired into `qa-all`.
+
+### Commits (parent repo, master)
+
+1. `d3584ffd` — `docs(iter-55): add CONST-037 cross-platform impact mandatory rule (root)`
+2. `178ab0b8` — `chore(iter-55): bump submodule pointers — 4 submodules carry CONST-037 revert cycle`
+3. `f13dd027` — `fix(iter-55): share ScrollState between gutter and editor on Android`
+4. `d67c3ac5` — `refactor(iter-55): remove duplicate Android File Browser entry point`
+5. `0a466425` — `test(iter-55): add scroll_sync + cross_platform_parity challenges, wire into qa-all`
+
+### Submodule SHAs after revert cycle
+
+- `Containers` (github main): `6a94b8c` (revert of `4d21904`)
+- `HelixQA` (main, both remotes): `e80b68b` (revert of `f005b3d`)
+- `LLMProvider` (master): `7b3d473` (revert of `cbb069e`)
+- `Dependencies/HelixDevelopment/LLMsVerifier` (main): `4f9fe35b` (revert of `43ed6f7a`)
+
+### DoD verification
+
+- `./gradlew :shared:desktopTest` → BUILD SUCCESSFUL.
+- `./gradlew :androidApp:testDebugUnitTest -PincludeRobolectric=true` →
+  all editor/dedup/accessibility/navigation/file-edit/format-detection
+  tests PASS. **Pre-existing** failure
+  `VersionConsistencyTests.testAndroidBuildGradleVersion` confirmed
+  unrelated to iter-55 (failed on master pre-iter-55 too).
+- `bash yole-challenges/scripts/scroll_sync_challenge.sh` → PASS.
+- `bash yole-challenges/scripts/cross_platform_parity_challenge.sh` → PASS.
+- All existing challenges (anchor_manifest, bluff_scanner,
+  mutation_ratchet, no_suspend_calls) → PASS.
+
+### Cross-platform impact (CONST-037) — summary across the 5 commits
+
+- **Android:** scroll sync fix + File Browser dedup applied. 4 + 5
+  anti-bluff tests added and mutation-verified. Existing test suites
+  still GREEN (no regressions).
+- **Desktop:** unaffected by code changes. `FileBrowserScreen` +
+  `IdeFileBrowser` retained; dedup decision deferred to design review.
+  cross_platform_parity_challenge enforces current count (max 2).
+- **iOS:** N/A — editor and File Browser not ported.
+- **Web:** N/A — separate code path.
+
+### Follow-ups recorded for next session
+
+- **#desktop-file-browser-dedup (deferred)**: Desktop has two surfaces
+  (`FileBrowserScreen` + `IdeFileBrowser`). Per CONST-037, the decision
+  whether to unify behind a single surface or keep both is deferred
+  pending design review. Owner: TBD.
+- **#const-037-submodule-propagation (deferred)**: a project-agnostic
+  version of CONST-037 ("consider every consuming project's platform
+  matrix") should be propagated to the 9 submodules' governance after
+  a per-submodule audit confirms which are Yole-private vs shared.
+- **#yole-android-build-gradle-version-pre-existing**: `VersionConsistencyTests.testAndroidBuildGradleVersion` fails on master
+  (pre-iter-55). Tracker for cleanup in a future iteration.
+
+### Working Tree State (post iter-55)
+
+```
+Clean modulo pre-existing dirty work in 4 HelixDevelopment submodules
+(docs/ARCHITECTURE.md rewrites + Website/js/main.js — somebody's
+in-progress work that pre-dates this session and was deliberately
+preserved by targeted-add staging in every iter-55 commit).
+```
 
 ---
 

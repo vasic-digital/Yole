@@ -3,6 +3,79 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## iter-55 — Platform sync & cross-platform governance (2026-05-14)
+
+### Added
+- **CONST-037 cross-platform impact mandatory consideration rule.** Root
+  `CONSTITUTION.md` + `CLAUDE.md` + `AGENTS.md`. Every change MUST be
+  reasoned about across Android / Desktop / iOS / Web BEFORE coding;
+  commit bodies for multi-platform changes MUST include a
+  "Cross-platform impact" block. Definition of Done bumped 5 → 6 items.
+- **`SyncedScrollEditor` composable** (`androidApp/.../ui/editor/`):
+  reusable IDE editor surface holding a single `rememberScrollState()`
+  shared between the gutter `Column` and a `BasicTextField`.
+- **`scroll_sync_challenge.sh`** + **`cross_platform_parity_challenge.sh`**
+  in `yole-challenges/scripts/`. Wired into `make qa-all` via new
+  `qa-iter-55-gates` target. Both emit positive runtime evidence on
+  PASS per CONST-035.
+- **`EditorScrollSyncRobolectricTest`** (4 cases, mutation-verified):
+  asserts single shared ScrollState, same-variable verticalScroll on
+  both gutter + editor, ScrollState propagation identity, and file
+  co-location.
+- **`FileBrowserDedupRobolectricTest`** (5 cases, mutation-verified):
+  enforces SubScreen enum + render branch + MoreScreen signature +
+  caller-reference + FilesScreen-still-exists invariants.
+
+### Fixed
+- **Android editor: line-number gutter desynced from text on scroll.**
+  Root cause: gutter `Column.verticalScroll(rememberScrollState())`
+  held a state independent from `OutlinedTextField`'s internal scroll.
+  Fix: replaced inline editor in `IdeEditorScreen` with
+  `SyncedScrollEditor`, which uses `BasicTextField` (exposes explicit
+  scroll state) instead of `OutlinedTextField` (doesn't). Both gutter
+  and editor now share one `ScrollState` instance.
+
+### Removed
+- **Android: duplicate File Browser entry point.** Canonical entry is
+  the `Screen.FILES` bottom-nav tab; removed:
+  - `SubScreen.FILE_BROWSER` enum value.
+  - Both `SubScreen.FILE_BROWSER → FileBrowserScreen(...)` render
+    branches under the AnimatedContent + ContentSwitcher transitions.
+  - `MoreScreen` "File Browser" Card + `onFileBrowserClick` parameter.
+  - Two `onFileBrowserClick=` argument bindings to `MoreScreen`.
+
+### Changed
+- Editor's `onOpenFileBrowser` callback + global `Ctrl+O` shortcut now
+  navigate to `Screen.FILES` (the canonical FILES tab) instead of the
+  removed duplicate.
+- 4 submodule pointers bumped (Containers, HelixQA, LLMProvider,
+  Dependencies/HelixDevelopment/LLMsVerifier): these submodules carry
+  a no-op CONST-037 revert cycle on their remotes after iter-55
+  investigation determined they are shared with non-Yole projects
+  (Atmosphere/Lava governance commits present on their remotes).
+  Project-agnostic propagation deferred.
+
+### Cross-platform impact summary
+- **Android:** scroll-sync fix + File Browser dedup applied; 9 new
+  Robolectric test cases mutation-verified; all existing test suites
+  (accessibility, navigation, file editing, format detection) still
+  PASS with no regressions.
+- **Desktop:** unaffected by code changes. `FileBrowserScreen` +
+  `IdeFileBrowser` retained pending design-review decision on
+  potential Desktop dedup (deferred follow-up).
+- **iOS:** N/A — editor and File Browser not ported to iOS yet.
+- **Web:** N/A — separate Compose-Wasm code path.
+
+### Deferred follow-ups (tracked in `docs/CONTINUATION.md`)
+- `#desktop-file-browser-dedup` — design-review decision on Desktop's
+  two File Browser surfaces (`FileBrowserScreen` + `IdeFileBrowser`).
+- `#const-037-submodule-propagation` — project-agnostic version of
+  CONST-037 for shared submodules, after per-submodule audit.
+- `#yole-android-build-gradle-version-pre-existing` — pre-iter-55
+  failure of `VersionConsistencyTests.testAndroidBuildGradleVersion`
+  on master, unrelated to iter-55.
+
+
 ## Yole 1.0.1 (versionCode 101 = `0.0.0.1.1`) — 2026-05-13 (iter-54 distribution)
 
 ### Highlights
