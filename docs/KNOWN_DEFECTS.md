@@ -29,6 +29,68 @@ See `CONTINUATION.md` §4 CLOSED list for canonical record.
 
 ---
 
+## #wasmjs-test-baseline-broken — NEW iter-57 Phase 6
+
+**Symptom**
+`./gradlew :shared:compileTestKotlinWasmJs` (and therefore
+`:shared:wasmJsBrowserTest`) fails at the compile stage because ~50
+files under `shared/src/commonTest/` import `kotlinx.coroutines.runBlocking`,
+which does not exist on the `wasmJs` target (only `kotlinx-coroutines-test`
+provides a runtime, and that has no WASM variant per `gradle/libs.versions.toml`
+comments + `shared/build.gradle.kts` wasmJsTest source set). The
+target was therefore never able to execute a single test on master —
+this is a baseline state that pre-dates iter-57 Phase 6.
+
+**Discovered by**
+Iter-57 Phase 6 implementation. The new `TokenizerEngineWasmTest.kt`
+compiles cleanly in isolation (`grep TokenizerEngineWasmTest` against
+the compile error list returns zero hits); the pre-existing
+~11,000 errors are all in commonTest source files that use
+`runBlocking` directly. Verified via `git stash && :shared:compileTestKotlinWasmJs`
+on clean master tip `2eafc2de` — same compile failure, predating
+any Phase 6 changes.
+
+**End-user impact**
+None for production. The webApp ships fine via
+`:shared:compileKotlinWasmJs` (main code, no test sources) which
+DOES succeed. Only the in-browser test runner is unavailable.
+
+**Proper fix (choose ONE)**
+(a) **Migrate all commonTest `runBlocking` calls to suspend test bodies**
+    using `kotlin.test.Test` + a Promise/runTest equivalent that is
+    target-agnostic. The cleanest path is `runTest` from
+    `kotlinx-coroutines-test`, gated behind a `wasmJsTest` exclusion
+    that re-routes to a custom `GlobalScope.promise { }` adapter on
+    Wasm. Estimated 4-8 hours.
+(b) **Move all commonTest `runBlocking` files to `jvmTest`** (i.e.
+    `desktopTest` + `androidUnitTest`) where the runtime is available.
+    Cleanest split but requires moving ~50 files. Estimated 2-4 hours.
+(c) **Suppress wasmJsTest compilation entirely** via
+    `kotlin.sourceSets["wasmJsTest"].kotlin.exclude(...)`. Quickest
+    workaround; means iter-57 Phase 6's `TokenizerEngineWasmTest`
+    cannot run either. Not recommended.
+
+**Blocker**
+Pre-existing baseline, larger than Phase 6 scope. Phase 6 ships the
+real Wasm tokenizer code (compiled, verified clean) and the matching
+test source; running the test in-browser requires this ticket's fix.
+
+**Anti-bluff disposition (CONST-035)**
+Honest. The Phase 6 commit explicitly documents this constraint;
+no fake tokens or fake PASS were emitted. The Wasm actual replaces
+the Phase 5 `Result.failure` stub with a real vscode-textmate-backed
+implementation. The test source is shipped, compiles cleanly in
+isolation, and will execute as soon as this baseline ticket closes.
+
+**Exit criteria**
+`./gradlew :shared:wasmJsBrowserTest --tests "*TokenizerEngineWasmTest*"`
+runs and the test asserts `tokens.isNotEmpty()` against
+`# Heading\n\nA paragraph.\n`. Mutation step: stub the inner
+`for (i in 0 until tokenCount)` loop in
+`TokenizerEngine.wasmJs.kt::tokenize` to a no-op; the test MUST fail.
+
+---
+
 ## #android-tree-sitter-ndk-so-missing — NEW iter-57 Phase 5
 
 **Symptom**

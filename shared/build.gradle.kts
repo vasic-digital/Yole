@@ -227,6 +227,16 @@ kotlin {
                 // implementation("app.cash.sqldelight:sqljs-driver:2.0.2")
                 implementation(libs.ktor.client.js)
                 // WASM uses JS client, no CIO needed
+
+                // iter-57 Phase 6: vscode-textmate JS interop tokenizer engine.
+                // vscode-textmate 9.x ships ESM + CJS bundles; consumed via
+                // @JsModule("vscode-textmate"). vscode-oniguruma 2.x provides the
+                // WebAssembly regex engine required by vscode-textmate.
+                // Both packages are MIT-licensed (Microsoft) and compatible with
+                // Yole's SPDX policy. Versions pinned conservatively against the
+                // upstream majors documented in research-report.md §3.
+                implementation(npm("vscode-textmate", "9.2.0"))
+                implementation(npm("vscode-oniguruma", "2.0.1"))
             }
         }
 
