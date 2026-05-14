@@ -130,6 +130,7 @@ object FormatRegistry {
     fun setFormatEnabled(formatId: String) {
         if (formatId !in networkFormatIds) {
             enabledFormatIds.add(formatId)
+            digital.vasic.yole.syntax.EnabledFormatGate.setEnabled(enabledFormatIds.toSet())
         }
     }
 
@@ -142,17 +143,25 @@ object FormatRegistry {
     fun setFormatDisabled(formatId: String) {
         if (formatId != ID_MARKDOWN && formatId !in networkFormatIds) {
             enabledFormatIds.remove(formatId)
+            digital.vasic.yole.syntax.EnabledFormatGate.setEnabled(enabledFormatIds.toSet())
         }
     }
 
     /**
      * Bulk-enable a set of format IDs.
      * Used at app startup to restore saved preferences.
+     *
+     * iter-57 Phase 4.4: also mirrors the resulting enabled set into
+     * [digital.vasic.yole.syntax.EnabledFormatGate] so the runtime gate
+     * stays in sync with the registry's view. Markdown is always retained.
      */
     fun setEnabledFormatIds(ids: Set<String>) {
         enabledFormatIds.clear()
         enabledFormatIds.add(ID_MARKDOWN) // Always keep Markdown enabled
         ids.filter { it !in networkFormatIds }.forEach { enabledFormatIds.add(it) }
+        // Mirror into the runtime gate so callsites that consult
+        // EnabledFormatGate.isEnabled/requireEnabled observe the same set.
+        digital.vasic.yole.syntax.EnabledFormatGate.setEnabled(enabledFormatIds.toSet())
     }
 
     /**
