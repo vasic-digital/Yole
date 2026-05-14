@@ -13,6 +13,8 @@ package digital.vasic.yole.android.ui
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.platform.testTag
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -2693,12 +2695,42 @@ fun FileBrowserScreen(
                                         .padding(16.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
                                         Icon(
                                             if (file.isDirectory) Icons.Filled.List else Icons.Filled.Edit,
                                             contentDescription = if (file.isDirectory) "Folder" else "File",
                                             modifier = Modifier.size(20.dp)
                                         )
+                                        // iter-57 Phase 11: language badge chip — drawn only for
+                                        // non-directory files with a recognized, enabled grammar.
+                                        // BadgeTinter returns null otherwise (no chip rendered).
+                                        if (!file.isDirectory) {
+                                            val activeTheme = digital.vasic.yole.syntax.theme.LocalTheme.current
+                                            val tintArgb = digital.vasic.yole.syntax.render.BadgeTinter.tintFor(fileName, activeTheme)
+                                            val badgeLangId = digital.vasic.yole.syntax.render.BadgeTinter.langIdFor(fileName)
+                                            if (tintArgb != null && badgeLangId != null) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .testTag("fileBadge:$badgeLangId")
+                                                        .background(
+                                                            color = Color(tintArgb),
+                                                            shape = RoundedCornerShape(3.dp),
+                                                        )
+                                                        .padding(horizontal = 4.dp, vertical = 1.dp),
+                                                    contentAlignment = Alignment.Center,
+                                                ) {
+                                                    Text(
+                                                        text = badgeLangId.take(2).uppercase(),
+                                                        fontSize = 9.sp,
+                                                        color = Color.White,
+                                                        fontFamily = FontFamily.Monospace,
+                                                    )
+                                                }
+                                            }
+                                        }
                                         Text(
                                             text = fileName,
                                             style = MaterialTheme.typography.bodyLarge
