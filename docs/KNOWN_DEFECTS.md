@@ -29,6 +29,92 @@ See `CONTINUATION.md` §4 CLOSED list for canonical record.
 
 ---
 
+## #android-tree-sitter-ndk-so-missing — NEW iter-57 Phase 5
+
+**Symptom**
+`TokenizerEngine.initialize()` on Android returns `Result.failure`
+because the upstream `io.github.bonede:tree-sitter:0.22.6` JAR (and its
+0.26.6 successor) does not bundle an `aarch64-linux-android` /
+`armeabi-v7a` / `x86_64` Android NDK `.so`. The bonede tree-sitter-ng
+project documents an Android NDK build path in its README, but the
+artifact published to Maven Central ships only the 5 desktop OS+arch
+combos (x86_64-linux, aarch64-linux, x86_64-macos, aarch64-macos,
+x86_64-windows). The same applies to
+`io.github.bonede:tree-sitter-markdown:0.7.1a`.
+
+End-user impact: Android users cannot get syntax highlighting until
+this is resolved. The editor falls back to plain text per spec §4
+"Engine load failed at startup" — no fake tokens are produced
+(CONST-035 anti-bluff covenant honoured).
+
+**Discovered by**
+Iter-57 Phase 5 implementation. The Desktop actual passes all 5
+JvmTest cases against the real bundled native libs; the Android actual
+inherits the same Java API but eagerly forces the NativeUtils library
+load in `initialize()` so the failure surfaces at startup rather than
+silently at first highlight attempt.
+
+**Why not switch to AndroidIDE android-tree-sitter?**
+The Phase 0 research report originally recommended
+`com.itsaky.androidide.treesitter:android-tree-sitter` for Android.
+Closer inspection on 2026-05-14:
+- The project was archived 2024-10-18 ("THIS PROJECT IS NOT MAINTAINED
+  ANYMORE" banner on the GitHub repository).
+- Its published grammar set is C, C++, Java, JSON, Kotlin, Log, AIDL,
+  Properties, Python, XML — **tree-sitter-markdown was never
+  published**, breaking the Phase 0 §5 "markdown grammar bundled"
+  contract.
+
+**Why not switch to jtreesitter?**
+The Phase 0 research report originally recommended
+`io.github.tree-sitter:jtreesitter` for Desktop. Closer inspection on
+2026-05-14:
+- Latest version 0.26.0 requires JDK 23 (`<maven.compiler.release>23
+  </maven.compiler.release>` in its POM). Yole desktop targets
+  `jvmTarget = "11"` per CLAUDE.md.
+- FFM (Foreign Function & Memory API) the binding relies on was
+  preview in JDK 19-21, finalized in JDK 22. Cannot run on Yole's
+  Java 11 baseline without bumping the entire desktop runtime.
+
+**Proper fix (choose ONE)**
+(a) **Operator-built Android NDK lib (recommended).** Clone
+    `github.com/bonede/tree-sitter-ng`. Set `ANDROID_NDK_HOME`. Run the
+    project's Android-native build (its `build.gradle` auto-detects
+    the NDK and assembles the .so per its README). Drop the resulting
+    `libtree-sitter.so` + `libtree-sitter-markdown.so` into
+    `androidApp/src/main/jniLibs/arm64-v8a/`,
+    `androidApp/src/main/jniLibs/armeabi-v7a/`,
+    `androidApp/src/main/jniLibs/x86_64/`. Then amend
+    `TokenizerEngine.android.kt`'s `initialize()` to first call
+    `System.loadLibrary("tree-sitter")` +
+    `System.loadLibrary("tree-sitter-markdown")` so the JNI binding
+    finds them before extracting from the (host-only) JAR.
+
+(b) **Wait for bonede upstream Android variant.** File an issue on
+    `github.com/bonede/tree-sitter-ng` requesting Maven-Central
+    publication of the Android NDK shared libs as an AAR or
+    classifier-qualified JAR (`tree-sitter-android.jar` with
+    `aarch64-linux-android-tree-sitter.so` inside).
+
+(c) **Source-port to AndroidIDE android-tree-sitter for non-markdown
+    grammars** (only relevant in Phase 6+ when adding C/C++/Java/etc.).
+    Does not help with markdown specifically since AndroidIDE never
+    published a markdown grammar.
+
+**Blocker**
+Operator action (a) or upstream action (b). Estimated 1-2 hours of
+NDK-build wallclock time for path (a) on a Linux host with the NDK
+already installed.
+
+**Exit criteria**
+On a real Android device (or AVD), the new on-device anti-bluff
+challenge `tokenizer_android_real_tokens_challenge.sh` (Phase 12 will
+add it) runs `TokenizerEngine.tokenize("# Heading", "markdown")` and
+asserts the result is `tokens.size >= 5` with a non-blank first scope
+— same bar as the Desktop `TokenizerEngineJvmTest.tokenizesMarkdownSnippet`.
+
+---
+
 ## #linux-build-host-jdk-jmods-bootstrap — NEW iter 54
 
 **Symptom**

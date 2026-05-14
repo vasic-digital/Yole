@@ -54,6 +54,17 @@ ktor = "3.0.2"
 sshj = "0.38.0"
 smbj = "0.13.0"
 
+# Tree-Sitter (iter-57 Phase 5)
+# bonede tree-sitter-ng: JDK 11+ bytecode, MIT licensed, JAR bundles native
+# .so/.dylib/.dll for x86_64-linux, aarch64-linux, x86_64-macos, aarch64-macos,
+# x86_64-windows (verified by inspecting the JAR contents). NO Android NDK .so
+# is published upstream today — Android initialize() returns Result.failure.
+# Picked over io.github.tree-sitter:jtreesitter (requires JDK 23, incompatible
+# with Yole desktop jvmTarget=11) and com.itsaky.androidide.treesitter
+# (project archived 2024-10-18, no tree-sitter-markdown grammar published).
+tree-sitter = "0.22.6"
+tree-sitter-markdown = "0.7.1a"
+
 # Testing
 junit = "4.13.2"
 junit5 = "5.11.3"
@@ -171,6 +182,10 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 # Protocol Libraries
 sshj = { module = "com.hierynomus:sshj", version.ref = "sshj" }
 smbj = { module = "com.hierynomus:smbj", version.ref = "smbj" }
+
+# Tree-Sitter (iter-57 Phase 5)
+tree-sitter = { module = "io.github.bonede:tree-sitter", version.ref = "tree-sitter" }
+tree-sitter-markdown = { module = "io.github.bonede:tree-sitter-markdown", version.ref = "tree-sitter-markdown" }
 
 # UI Libraries (Android)
 gene-rate = { module = "com.github.Pixplicity:gene-rate", version.ref = "gene-rate" }

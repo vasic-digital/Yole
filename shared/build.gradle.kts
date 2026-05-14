@@ -139,6 +139,16 @@ kotlin {
                 implementation(libs.ktor.client.cio)
                 implementation(libs.sshj)   // SFTP via SSH
                 implementation(libs.smbj)   // SMB/CIFS
+
+                // Tree-Sitter (iter-57 Phase 5). The Java API loads fine on
+                // Android, but the upstream JAR ships native binaries only for
+                // x86_64/aarch64 linux/macos and x86_64-windows — no
+                // aarch64-linux-android.so. Consequence: on a real Android
+                // device, TokenizerEngine.initialize() returns Result.failure
+                // and the editor falls back to plain text. This is the honest
+                // path; producing fake tokens would violate CONST-035.
+                implementation(libs.tree.sitter)
+                implementation(libs.tree.sitter.markdown)
             }
         }
 
@@ -160,6 +170,13 @@ kotlin {
                 implementation(libs.ktor.client.cio)
                 implementation(libs.sshj)   // SFTP via SSH
                 implementation(libs.smbj)   // SMB/CIFS
+
+                // Tree-Sitter (iter-57 Phase 5). JAR bundles native binaries
+                // for x86_64-linux, aarch64-linux, x86_64-macos, aarch64-macos,
+                // x86_64-windows (verified by inspecting the JAR). JDK 11
+                // bytecode — compatible with Yole desktop jvmTarget=11.
+                implementation(libs.tree.sitter)
+                implementation(libs.tree.sitter.markdown)
             }
         }
 
