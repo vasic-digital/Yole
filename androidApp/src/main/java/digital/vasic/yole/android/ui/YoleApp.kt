@@ -295,7 +295,11 @@ enum class Screen {
 }
 
 enum class SubScreen {
-    FILE_BROWSER,
+    // FILE_BROWSER removed in iter-55: the FILES bottom-nav tab
+    // (Screen.FILES → FilesScreen → FileBrowserScreen) is the
+    // canonical file-browsing surface. The duplicate SubScreen entry
+    // confused users and was reachable from both MoreScreen and the
+    // editor's "open file" action; both now route to the FILES tab.
     EDITOR,
     PREVIEW,
     SETTINGS
@@ -499,7 +503,11 @@ fun MainScreen() {
                         Toast.makeText(context, "Deleted: ${tab.fileName}", Toast.LENGTH_SHORT).show()
                     },
                     onOpenFileBrowser = {
-                        currentSubScreen = SubScreen.FILE_BROWSER
+                        // iter-55 dedup: route editor "open file" to the
+                        // canonical FILES bottom-nav tab (the duplicate
+                        // SubScreen.FILE_BROWSER was removed).
+                        currentSubScreen = null
+                        currentScreen = Screen.FILES
                         coroutineScope.launch { drawerState.close() }
                     },
                     onSettingsClick = {
@@ -547,7 +555,9 @@ fun MainScreen() {
                             true
                         }
                         Key.O -> {
-                            currentSubScreen = SubScreen.FILE_BROWSER
+                            // iter-55 dedup: route Ctrl+O to the FILES tab.
+                            currentSubScreen = null
+                            currentScreen = Screen.FILES
                             true
                         }
                         Key.Escape -> {
@@ -844,7 +854,6 @@ fun MainScreen() {
                                         )
                                         Screen.MORE -> MoreScreen(
                                             onSettingsClick = { currentSubScreen = SubScreen.SETTINGS },
-                                            onFileBrowserClick = { currentSubScreen = SubScreen.FILE_BROWSER },
                                             onSearchClick = { showFileSearch = true },
                                             onBackupClick = { showBackupDialog = true },
                                             onAboutClick = { showAboutDialog = true }
@@ -852,18 +861,8 @@ fun MainScreen() {
                                     }
                                 }
                             }
-                            SubScreen.FILE_BROWSER -> FileBrowserScreen(
-                                searchQuery = fileSearchQuery,
-                                sortBy = fileSortBy,
-                                onSearchQueryChanged = { fileSearchQuery = it },
-                                onSortChanged = { fileSortBy = it },
-                                showSearch = showFileSearch,
-                                onShowSearchChanged = { showFileSearch = it },
-                                onFileSelected = { file, content, safUri, filePath ->
-                                    openFileInTab(file, content, safUri?.toString() ?: filePath)
-                                },
-                                onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
-                            )
+                            // iter-55 dedup: SubScreen.FILE_BROWSER render branch removed.
+                            // FILES bottom-nav tab is the canonical file browser entry.
                             else -> {}
                         }
                     }
@@ -969,7 +968,6 @@ fun MainScreen() {
                                 )
                                 Screen.MORE -> MoreScreen(
                                     onSettingsClick = { currentSubScreen = SubScreen.SETTINGS },
-                                    onFileBrowserClick = { currentSubScreen = SubScreen.FILE_BROWSER },
                                     onSearchClick = {
                                         currentScreen = Screen.FILES
                                         showFileSearch = true
@@ -979,18 +977,8 @@ fun MainScreen() {
                                 )
                             }
                         }
-                        SubScreen.FILE_BROWSER -> FileBrowserScreen(
-                            searchQuery = fileSearchQuery,
-                            sortBy = fileSortBy,
-                            onSearchQueryChanged = { fileSearchQuery = it },
-                            onSortChanged = { fileSortBy = it },
-                            showSearch = showFileSearch,
-                            onShowSearchChanged = { showFileSearch = it },
-                            onFileSelected = { file, content, safUri, filePath ->
-                                openFileInTab(file, content, safUri?.toString() ?: filePath)
-                            },
-                            onSettingsClick = { currentSubScreen = SubScreen.SETTINGS }
-                        )
+                        // iter-55 dedup: SubScreen.FILE_BROWSER render branch removed
+                        // (second occurrence). Canonical entry is the FILES tab.
                         else -> {}
                     }
                 }
@@ -4214,7 +4202,9 @@ fun QuickNoteScreen(content: String, onContentChanged: (String) -> Unit, onSaveC
 @Composable
 fun MoreScreen(
     onSettingsClick: () -> Unit = {},
-    onFileBrowserClick: () -> Unit = {},
+    // iter-55 dedup: onFileBrowserClick removed. Canonical file browser
+    // is the FILES bottom-nav tab; MoreScreen no longer offers a
+    // duplicate entry point.
     onSearchClick: () -> Unit = {},
     onBackupClick: () -> Unit = {},
     onAboutClick: () -> Unit = {}
@@ -4261,33 +4251,9 @@ fun MoreScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // File browser option
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .pressScale(scale = 0.98f),
-            onClick = onFileBrowserClick
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Filled.List, contentDescription = "File Browser")
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text("File Browser", style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        "Browse and manage your files",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
-            }
-        }
+        // iter-55 dedup: the "File Browser" Card was removed here. The
+        // FILES bottom-nav tab is the canonical file browser; offering
+        // a duplicate entry from More Options confused users.
 
         Spacer(modifier = Modifier.height(8.dp))
 
