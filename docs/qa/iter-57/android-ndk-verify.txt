@@ -1,0 +1,10 @@
+=== Android APK NDK .so verification ===
+   519144  01-01-1981 01:01   lib/arm64-v8a/libtree-sitter-markdown.so
+   246536  01-01-1981 01:01   lib/arm64-v8a/libtree-sitter.so
+   465644  01-01-1981 01:01   lib/armeabi-v7a/libtree-sitter-markdown.so
+   246312  01-01-1981 01:01   lib/armeabi-v7a/libtree-sitter.so
+   485816  01-01-1981 01:01   lib/x86_64/libtree-sitter-markdown.so
+   251360  01-01-1981 01:01   lib/x86_64/libtree-sitter.so
+
+Expected: 6 entries (libtree-sitter.so + libtree-sitter-markdown.so for arm64-v8a, armeabi-v7a, x86_64)
+Found: 6 entries

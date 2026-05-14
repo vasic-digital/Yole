@@ -1,0 +1,194 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Configuration on demand is an incubating feature.
+Calculating task graph as configuration cache cannot be reused because file 'gradle.properties' has changed.
+Type-safe project accessors is an incubating feature.
+
+> Configure project :RateLimiter-KMP
+w: Kotlin Multiplatform <-> Android Gradle Plugin compatibility issue:
+The applied Android Gradle Plugin version (8.9.0) is higher 
+than the maximum known to the Kotlin Gradle Plugin.
+Tooling stability in such configuration isn't tested, please report encountered issues to https://kotl.in/issue
+
+Minimum supported Android Gradle Plugin version: 7.1
+Maximum tested Android Gradle Plugin version: 8.5
+
+To suppress this message add 'kotlin.mpp.androidGradlePluginCompatibility.nowarn=true' to your gradle.properties
+
+
+> Configure project :Concurrency-KMP
+w: Kotlin Multiplatform <-> Android Gradle Plugin compatibility issue:
+The applied Android Gradle Plugin version (8.9.0) is higher 
+than the maximum known to the Kotlin Gradle Plugin.
+Tooling stability in such configuration isn't tested, please report encountered issues to https://kotl.in/issue
+
+Minimum supported Android Gradle Plugin version: 7.1
+Maximum tested Android Gradle Plugin version: 8.5
+
+To suppress this message add 'kotlin.mpp.androidGradlePluginCompatibility.nowarn=true' to your gradle.properties
+
+
+> Configure project :Formatters-KMP
+w: Kotlin Multiplatform <-> Android Gradle Plugin compatibility issue:
+The applied Android Gradle Plugin version (8.9.0) is higher 
+than the maximum known to the Kotlin Gradle Plugin.
+Tooling stability in such configuration isn't tested, please report encountered issues to https://kotl.in/issue
+
+Minimum supported Android Gradle Plugin version: 7.1
+Maximum tested Android Gradle Plugin version: 8.5
+
+To suppress this message add 'kotlin.mpp.androidGradlePluginCompatibility.nowarn=true' to your gradle.properties
+
+
+> Configure project :shared
+warning: Dokka Gradle plugin V1 is deprecated
+    
+    Dokka Gradle plugin V1 is deprecated, and will be removed in Dokka version 2.1.0
+    Please migrate to Dokka Gradle plugin V2. This will require updating your project.
+    To learn about migrating read the migration guide https://kotl.in/dokka-gradle-migration
+    
+    To start migrating to Dokka Gradle plugin V2 add
+        org.jetbrains.dokka.experimental.gradle.pluginMode=V2EnabledWithHelpers
+    into your project's `gradle.properties` file.
+    
+    We would appreciate your feedback!
+     - Please report any feedback or problems https://kotl.in/dokka-issues
+     - Chat with the community visit #dokka in https://kotlinlang.slack.com/ (To sign up visit https://kotl.in/slack)
+    
+
+> Task :Document-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Security-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Auth-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Config-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Database-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Formatters-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :RateLimiter-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Concurrency-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Database-KMP:desktopProcessResources NO-SOURCE
+> Task :Auth-KMP:desktopProcessResources NO-SOURCE
+> Task :UI-Components-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :UI-Components-KMP:generateComposeResClass SKIPPED
+> Task :UI-Components-KMP:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :RateLimiter-KMP:desktopProcessResources NO-SOURCE
+> Task :UI-Components-KMP:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :Formatters-KMP:desktopProcessResources NO-SOURCE
+> Task :Security-KMP:desktopProcessResources NO-SOURCE
+> Task :Concurrency-KMP:desktopProcessResources NO-SOURCE
+> Task :Config-KMP:desktopProcessResources NO-SOURCE
+> Task :UI-Components-KMP:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :UI-Components-KMP:copyNonXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :UI-Components-KMP:convertXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :Storage-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :UI-Components-KMP:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :Storage-KMP:desktopProcessResources NO-SOURCE
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :shared:generateResourceAccessorsForCommonMain SKIPPED
+> Task :shared:convertXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForDesktopMain NO-SOURCE
+> Task :shared:generateResourceAccessorsForDesktopMain SKIPPED
+> Task :shared:generateActualResourceCollectorsForDesktopMain SKIPPED
+> Task :shared:generateComposeResClass SKIPPED
+> Task :shared:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :shared:assembleDesktopMainResources UP-TO-DATE
+> Task :Security-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Concurrency-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Formatters-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Security-KMP:desktopMainClasses UP-TO-DATE
+> Task :Formatters-KMP:desktopMainClasses UP-TO-DATE
+> Task :Concurrency-KMP:desktopMainClasses UP-TO-DATE
+> Task :shared:desktopProcessResources UP-TO-DATE
+> Task :Security-KMP:desktopJar UP-TO-DATE
+> Task :Formatters-KMP:desktopJar UP-TO-DATE
+> Task :Concurrency-KMP:desktopJar UP-TO-DATE
+> Task :desktopApp:prepareAppResources NO-SOURCE
+> Task :UI-Components-KMP:generateResourceAccessorsForCommonMain SKIPPED
+> Task :UI-Components-KMP:prepareComposeResourcesTaskForDesktopMain NO-SOURCE
+> Task :UI-Components-KMP:generateResourceAccessorsForDesktopMain SKIPPED
+> Task :UI-Components-KMP:generateActualResourceCollectorsForDesktopMain SKIPPED
+> Task :Document-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Document-KMP:desktopProcessResources NO-SOURCE
+> Task :Document-KMP:desktopMainClasses UP-TO-DATE
+> Task :desktopApp:assembleMainResources
+> Task :desktopApp:processResources UP-TO-DATE
+> Task :UI-Components-KMP:assembleDesktopMainResources UP-TO-DATE
+> Task :UI-Components-KMP:desktopProcessResources UP-TO-DATE
+> Task :desktopApp:unpackDefaultComposeDesktopJvmApplicationResources
+> Task :Auth-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Auth-KMP:desktopMainClasses UP-TO-DATE
+> Task :RateLimiter-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :RateLimiter-KMP:desktopMainClasses UP-TO-DATE
+> Task :Auth-KMP:desktopJar UP-TO-DATE
+> Task :desktopApp:generateComposeResClass
+> Task :desktopApp:generateActualResourceCollectorsForMain
+> Task :Database-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Database-KMP:desktopMainClasses UP-TO-DATE
+> Task :RateLimiter-KMP:desktopJar UP-TO-DATE
+> Task :Config-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Config-KMP:desktopMainClasses UP-TO-DATE
+> Task :Database-KMP:desktopJar UP-TO-DATE
+> Task :Config-KMP:desktopJar UP-TO-DATE
+> Task :UI-Components-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :UI-Components-KMP:desktopMainClasses UP-TO-DATE
+> Task :UI-Components-KMP:desktopJar UP-TO-DATE
+> Task :Document-KMP:desktopJar UP-TO-DATE
+> Task :Storage-KMP:compileKotlinDesktop UP-TO-DATE
+> Task :Storage-KMP:desktopMainClasses UP-TO-DATE
+> Task :Storage-KMP:desktopJar UP-TO-DATE
+> Task :shared:compileKotlinDesktop UP-TO-DATE
+> Task :shared:desktopMainClasses UP-TO-DATE
+> Task :shared:desktopJar UP-TO-DATE
+> Task :desktopApp:checkRuntime
+> Task :desktopApp:createRuntimeImage
+
+> Task :desktopApp:compileKotlin
+w: Opt-in requirement marker org.jetbrains.compose.ExperimentalComposeLibrary is unresolved. Please make sure it's present in the module dependencies
+w: file:///Users/milosvasic/Projects/Yole/desktopApp/src/main/kotlin/digital/vasic/yole/desktop/Main.kt:75:13 'fun Dialog(onCloseRequest: () -> Unit, state: DialogState = ..., visible: Boolean = ..., title: String = ..., icon: Painter? = ..., undecorated: Boolean = ..., transparent: Boolean = ..., resizable: Boolean = ..., enabled: Boolean = ..., focusable: Boolean = ..., onPreviewKeyEvent: (KeyEvent) -> Boolean = ..., onKeyEvent: (KeyEvent) -> Boolean = ..., content: @Composable() ComposableFunction1<DialogWindowScope, Unit>): Unit' is deprecated. Replaced by DialogWindow.
+w: file:///Users/milosvasic/Projects/Yole/desktopApp/src/main/kotlin/digital/vasic/yole/desktop/menu/DesktopMenuBar.kt:219:5 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///Users/milosvasic/Projects/Yole/desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/DesktopAppCompletion.kt:632:17 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///Users/milosvasic/Projects/Yole/desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/DesktopAppCompletion.kt:634:17 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///Users/milosvasic/Projects/Yole/desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/DesktopAppCompletion.kt:637:17 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///Users/milosvasic/Projects/Yole/desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/DesktopAppCompletion.kt:653:17 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///Users/milosvasic/Projects/Yole/desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/DesktopAppCompletion.kt:657:17 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///Users/milosvasic/Projects/Yole/desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/DesktopAppCompletion.kt:661:17 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///Users/milosvasic/Projects/Yole/desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/DesktopAppCompletion.kt:678:17 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///Users/milosvasic/Projects/Yole/desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/Dialogs.kt:50:5 'fun Dialog(onCloseRequest: () -> Unit, state: DialogState = ..., visible: Boolean = ..., title: String = ..., icon: Painter? = ..., undecorated: Boolean = ..., transparent: Boolean = ..., resizable: Boolean = ..., enabled: Boolean = ..., focusable: Boolean = ..., onPreviewKeyEvent: (KeyEvent) -> Boolean = ..., onKeyEvent: (KeyEvent) -> Boolean = ..., content: @Composable() ComposableFunction1<DialogWindowScope, Unit>): Unit' is deprecated. Replaced by DialogWindow.
+w: file:///Users/milosvasic/Projects/Yole/desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/Dialogs.kt:168:5 'fun Dialog(onCloseRequest: () -> Unit, state: DialogState = ..., visible: Boolean = ..., title: String = ..., icon: Painter? = ..., undecorated: Boolean = ..., transparent: Boolean = ..., resizable: Boolean = ..., enabled: Boolean = ..., focusable: Boolean = ..., onPreviewKeyEvent: (KeyEvent) -> Boolean = ..., onKeyEvent: (KeyEvent) -> Boolean = ..., content: @Composable() ComposableFunction1<DialogWindowScope, Unit>): Unit' is deprecated. Replaced by DialogWindow.
+w: file:///Users/milosvasic/Projects/Yole/desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/Dialogs.kt:725:5 'fun Dialog(onCloseRequest: () -> Unit, state: DialogState = ..., visible: Boolean = ..., title: String = ..., icon: Painter? = ..., undecorated: Boolean = ..., transparent: Boolean = ..., resizable: Boolean = ..., enabled: Boolean = ..., focusable: Boolean = ..., onPreviewKeyEvent: (KeyEvent) -> Boolean = ..., onKeyEvent: (KeyEvent) -> Boolean = ..., content: @Composable() ComposableFunction1<DialogWindowScope, Unit>): Unit' is deprecated. Replaced by DialogWindow.
+w: file:///Users/milosvasic/Projects/Yole/desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/Dialogs.kt:771:17 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///Users/milosvasic/Projects/Yole/desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/Dialogs.kt:794:17 'fun ClickableText(text: AnnotatedString, modifier: Modifier = ..., style: TextStyle = ..., softWrap: Boolean = ..., overflow: TextOverflow = ..., maxLines: Int = ..., onTextLayout: (TextLayoutResult) -> Unit = ..., onClick: (Int) -> Unit): Unit' is deprecated. Use Text or BasicText and pass an AnnotatedString that contains a LinkAnnotation.
+w: file:///Users/milosvasic/Projects/Yole/desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/YoleApp.kt:652:13 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:classes UP-TO-DATE
+> Task :desktopApp:jar
+
+> Task :desktopApp:createDistributable
+The distribution is written to /Users/milosvasic/Projects/Yole/desktopApp/build/compose/binaries/main/app
+
+> Task :desktopApp:packageMsi SKIPPED
+> Task :desktopApp:packageDeb SKIPPED
+> Task :desktopApp:packageDmg
+The distribution is written to /Users/milosvasic/Projects/Yole/desktopApp/build/compose/binaries/main/dmg/Yole-1.1.0.dmg
+
+> Task :desktopApp:packageDistributionForCurrentOS
+Kotlin build report is written to file:///Users/milosvasic/Projects/Yole/build/reports/kotlin-build/Yole-build-2026-05-14-23-36-52-0.txt
+[Incubating] Problems report is available at: file:///Users/milosvasic/Projects/Yole/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 1m 16s
+37 actionable tasks: 10 executed, 27 up-to-date
+Configuration cache entry stored.

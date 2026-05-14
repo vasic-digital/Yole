@@ -90,9 +90,31 @@ historical log.
 
 ---
 
-## 2. Current State (Iter 55 — 2026-05-14)
+## 2. Current State (Iter 57 — 2026-05-14)
 
 ### What Was Just Done
+
+- **Iter 57 Phase 14** (release v1.1.0 distribution, 2026-05-14): version
+  bumped 1.0.1 → 1.1.0 (versionCode 101 → 110, dotted `0.0.0.1.10`).
+  Android Release + Debug APKs distributed via Firebase App Distribution
+  to all 4 testers (release IDs `4lv1guruqhpsg` / `4e4acl147ej3o`).
+  Desktop macOS-arm64 DMG built (SHA-256 `aa65523c…`) but Firebase App
+  Distribution does not support Desktop binaries — out-of-band channel
+  required. Desktop Linux x64 + Windows x64 BLOCKED on host OS / Containers
+  crossbuild provisioning (same gate as iter-54). Web Wasm BLOCKED on
+  pre-existing `binaries.executable()` config gap in webApp/build.gradle.kts.
+  iOS deferred (`#phase-7-blocked-on-ios-baseline`). Full evidence:
+  `docs/qa/iter-57/` (Firebase logs, artifact hashes, NDK .so verification,
+  release notes).
+
+- **Iter 57 Phases 0–13 + NDK fix** (commits `91c137fd` ← 16 commits):
+  Syntax highlighting + unified VS Code theme system. VS Code theme JSON
+  replaces legacy `IdeTheme.kt` + `YoleColors.kt`. Editor + preview
+  highlighting via Tree-Sitter JNI (Android/Desktop) + vscode-textmate
+  (Web). Filename badges in FILES tab. `Settings → Formats` opt-in gate
+  (Markdown only default). 4 new anti-bluff challenges in qa-all. NDK
+  fix (`91c137fd`) bundles 6 tree-sitter .so files into Android APK
+  (3 ABIs × 2 libs).
 
 - **Iter 55** (commits `d3584ffd` → `0a466425` on master, 5 commits):
   Platform sync + cross-platform governance. See **Section 39** below

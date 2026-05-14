@@ -1,0 +1,21 @@
+=== Yole 1.1.0 (iter-57) — Desktop Linux x64 Distribution ===
+Status: BLOCKED — pre-existing infrastructure gap
+
+Reason: Compose Desktop only packages for the current host OS. Building
+Linux x64 .deb requires a Linux host (nezha.local per .env LINUX_BUILD_HOST,
+or the Containers/ cross-build path). Same gate documented in iter-54
+closeout (commit 0548af07) — Desktop linux-x64 .deb deferred to its
+host OS or the crossbuild path.
+
+Operator action paths (one of):
+  1. Run on nezha.local Linux host:
+       ssh nezha.local 'cd /path/to/Yole && ./gradlew :desktopApp:packageDeb'
+  2. Use Containers/ pkg/crossbuild (when wine-on-linux container is
+     provisioned per #crossbuild-windows-image-provisioning).
+  3. CI host on Linux (forbidden per CLAUDE.md mandatory standard #1 — no CI/CD).
+
+Firebase App Distribution does NOT support Linux desktop binaries
+(only Android + iOS). For Linux Desktop, the channel is GitHub Releases
+or manual tarball drop, NOT Firebase.
+
+No Firebase distribution attempted for this artifact.

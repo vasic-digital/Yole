@@ -3,7 +3,12 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
-## iter-57 — Syntax highlighting + unified theme system (2026-05-14)
+## iter-57 v1.1.0 — Syntax highlighting + unified theme system (2026-05-14)
+
+**Version:** 1.1.0 (versionCode 110 → dotted `0.0.0.1.10`)
+**Firebase distribution:** Android Release (release ID `4lv1guruqhpsg`) + Debug (`4e4acl147ej3o`) to 4 testers. Desktop macOS-arm64 DMG built (SHA-256 `aa65523c…`) but out-of-band (Firebase doesn't support Desktop). Linux/Windows desktop + Web Wasm BLOCKED on pre-existing infra gaps. iOS deferred (`#phase-7-blocked-on-ios-baseline`). See `docs/qa/iter-57/` for full evidence.
+
+
 
 ### Added
 - **VS Code theme JSON as the unified app theme system.** The legacy

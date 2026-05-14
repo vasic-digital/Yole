@@ -1,0 +1,16 @@
+=== Testers in yole-app ===
+⚠  Authenticating with `--token` is deprecated and will be removed in a future major version of `firebase-tools`. Instead, use a service account key with `GOOGLE_APPLICATION_CREDENTIALS`: https://cloud.google.com/docs/authentication/getting-started
+- Preparing the list of your App Distribution testers
+✔ Preparing the list of your App Distribution testers
+[90m┌────────────────────────────[39m[90m┬──────────────[39m[90m┬─────────────────────────────────────────────────────[39m[90m┬────────┐[39m
+[90m│[39m[32m Name                       [39m[90m│[39m[32m Display Name [39m[90m│[39m[32m Last Activity Time                                  [39m[90m│[39m[32m Groups [39m[90m│[39m
+[90m├────────────────────────────[39m[90m┼──────────────[39m[90m┼─────────────────────────────────────────────────────[39m[90m┼────────┤[39m
+[90m│[39m milos85vasic.2nd@gmail.com [90m│[39m              [90m│[39m Wed May 13 2026 20:12:02 GMT+0500 (Kazakhstan Time) [90m│[39m        [90m│[39m
+[90m├────────────────────────────[39m[90m┼──────────────[39m[90m┼─────────────────────────────────────────────────────[39m[90m┼────────┤[39m
+[90m│[39m milos85vasic.3rd@gmail.com [90m│[39m              [90m│[39m Tue May 12 2026 16:10:40 GMT+0500 (Kazakhstan Time) [90m│[39m        [90m│[39m
+[90m├────────────────────────────[39m[90m┼──────────────[39m[90m┼─────────────────────────────────────────────────────[39m[90m┼────────┤[39m
+[90m│[39m milos85vasic@gmail.com     [90m│[39m              [90m│[39m Wed May 13 2026 20:12:02 GMT+0500 (Kazakhstan Time) [90m│[39m        [90m│[39m
+[90m├────────────────────────────[39m[90m┼──────────────[39m[90m┼─────────────────────────────────────────────────────[39m[90m┼────────┤[39m
+[90m│[39m smtnkv@gmail.com           [90m│[39m              [90m│[39m Fri May 08 2026 12:09:48 GMT+0500 (Kazakhstan Time) [90m│[39m        [90m│[39m
+[90m└────────────────────────────[39m[90m┴──────────────[39m[90m┴─────────────────────────────────────────────────────[39m[90m┴────────┘[39m
+✔  Testers listed successfully
