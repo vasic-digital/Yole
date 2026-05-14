@@ -90,6 +90,9 @@ import digital.vasic.yole.ui.ListAnimations
 import digital.vasic.yole.ui.LoadingStateWrapper
 import digital.vasic.yole.ui.LoadingAnimations
 import digital.vasic.yole.syntax.theme.themeUiColor
+import digital.vasic.yole.android.ui.settings.FormatsSettingsScreen
+import digital.vasic.yole.android.ui.settings.FormatsSettingsTopBar
+import digital.vasic.yole.android.ui.settings.MaybeShowFormatMigrationDialog
 import digital.vasic.yole.android.util.PdfExportUtil
 import digital.vasic.yole.android.util.BackupRestoreUtil
 import java.io.File
@@ -155,6 +158,25 @@ class YoleSettings(context: android.content.Context) : GsSharedPreferencesProper
         return raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
     }
     fun setEnabledFormatIds(ids: Set<String>) = setString("enabled_format_ids", ids.joinToString(","))
+
+    // iter-57 Phase 4.6: format-enablement migration tracking.
+    // When the user upgrades from a pre-iter-57 build (where every format
+    // was enabled by default) to an iter-57+ build (where ONLY Markdown is
+    // enabled by default, per spec §3.7), we show a one-time dialog asking
+    // whether to keep their prior set or adopt the new default. These two
+    // flags record (1) whether the choice has been made and (2) the snapshot
+    // of the prior enabled set so "Keep mine" can restore it.
+    fun getFormatEnablementMigrationChoiceMade(): Boolean =
+        getBool("format_enablement_migration_choice_made", false)
+    fun setFormatEnablementMigrationChoiceMade(made: Boolean) =
+        setBool("format_enablement_migration_choice_made", made)
+
+    fun getPriorEnabledFormatIds(): Set<String> {
+        val raw = getString("prior_enabled_format_ids", "")
+        return raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+    }
+    fun setPriorEnabledFormatIds(ids: Set<String>) =
+        setString("prior_enabled_format_ids", ids.joinToString(","))
 }
 
 /**
@@ -292,7 +314,10 @@ enum class SubScreen {
     // editor's "open file" action; both now route to the FILES tab.
     EDITOR,
     PREVIEW,
-    SETTINGS
+    SETTINGS,
+    // iter-57 Phase 4.5: Settings → Formats sub-screen (Markdown-default
+    // operator constraint UI per spec §3.7).
+    FORMATS_SETTINGS
 }
 
 @Composable
@@ -601,6 +626,9 @@ fun MainScreen() {
                         SubScreen.SETTINGS -> SettingsTopBar(
                             onBackClick = { currentSubScreen = null }
                         )
+                        SubScreen.FORMATS_SETTINGS -> FormatsSettingsTopBar(
+                            onBackClick = { currentSubScreen = SubScreen.SETTINGS }
+                        )
                         null -> {
                             IdeMainTopBar(
                                 currentScreen = currentScreen,
@@ -794,7 +822,14 @@ fun MainScreen() {
                                     settings.setEnabledFormatIds(newIds)
                                     if (enabled) FormatRegistry.setFormatEnabled(id)
                                     else FormatRegistry.setFormatDisabled(id)
+                                },
+                                onOpenFormatsClick = {
+                                    currentSubScreen = SubScreen.FORMATS_SETTINGS
                                 }
+                            )
+                            SubScreen.FORMATS_SETTINGS -> FormatsSettingsScreen(
+                                settings = settings,
+                                onBackClick = { currentSubScreen = SubScreen.SETTINGS }
                             )
                             null -> {
                                 AnimatedContent(
@@ -921,7 +956,14 @@ fun MainScreen() {
                                 settings.setEnabledFormatIds(newIds)
                                 if (enabled) FormatRegistry.setFormatEnabled(id)
                                 else FormatRegistry.setFormatDisabled(id)
+                            },
+                            onOpenFormatsClick = {
+                                currentSubScreen = SubScreen.FORMATS_SETTINGS
                             }
+                        )
+                        SubScreen.FORMATS_SETTINGS -> FormatsSettingsScreen(
+                            settings = settings,
+                            onBackClick = { currentSubScreen = SubScreen.SETTINGS }
                         )
                         null -> {
                             when (currentScreen) {
@@ -975,6 +1017,15 @@ fun MainScreen() {
             }
 
             // ===== DIALOGS =====
+
+            // iter-57 Phase 4.6: one-time format-enablement migration dialog.
+            // Surfaces on the first launch after upgrading from a pre-iter-57
+            // build (where every format was enabled by default) to iter-57+
+            // (where ONLY Markdown is enabled by default — spec §3.7). The
+            // Composable renders nothing on the steady-state path; the
+            // trigger check + LaunchedEffect inside short-circuits when
+            // the migration choice has already been recorded.
+            MaybeShowFormatMigrationDialog(settings)
 
             // New Document Dialog
             if (showNewDocDialog) {
@@ -2918,7 +2969,8 @@ fun SettingsScreen(
     animationsEnabled: Boolean,
     onAnimationsEnabledChanged: (Boolean) -> Unit,
     enabledFormatIds: Set<String>,
-    onFormatToggled: (String, Boolean) -> Unit
+    onFormatToggled: (String, Boolean) -> Unit,
+    onOpenFormatsClick: () -> Unit = {}
 ) {
     val isDarkTheme = isSystemInDarkTheme()
     val bg = ideBackground()
@@ -3037,7 +3089,12 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Format settings
+        // iter-57 Phase 4.5: FORMATS section is now a navigable entry that
+        // opens the dedicated FormatsSettingsScreen (three-section UI with
+        // Default-always-on + Text formats + Programming languages). The
+        // inline toggle list previously rendered here was a stop-gap; the
+        // sub-screen enforces spec §3.7's Markdown-default constraint and
+        // surfaces the v1 programming-language list.
         Text(
             text = "FORMATS",
             style = MaterialTheme.typography.titleSmall,
@@ -3047,40 +3104,45 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Text(
-            text = "Toggle which formats appear in the New Document dialog. Markdown is always enabled.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        FormatRegistry.getTextFormats().forEach { format ->
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .pressScale(scale = 0.98f),
+            onClick = { onOpenFormatsClick() }
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Formats",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "Markdown is always on. Toggle text formats and programming languages.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
                 Text(
-                    "${format.name} (${format.defaultExtension})",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.weight(1f)
-                )
-                Switch(
-                    checked = format.id in enabledFormatIds,
-                    onCheckedChange = { onFormatToggled(format.id, it) },
-                    enabled = format.id != TextFormat.ID_MARKDOWN
+                    text = "›",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
             }
         }
-
-        if (FormatRegistry.formats.size > 5) {
-            Text(
-                text = "  ... and ${FormatRegistry.formats.size - 5} more",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-        }
+        // Suppress unused-parameter warnings for the legacy inline-toggle
+        // callbacks; they remain in the signature for source compatibility
+        // until iter-58 (the Formats sub-screen is now the canonical path).
+        @Suppress("UNUSED_EXPRESSION")
+        enabledFormatIds
+        @Suppress("UNUSED_EXPRESSION")
+        onFormatToggled
 
         Spacer(modifier = Modifier.height(24.dp))
 
