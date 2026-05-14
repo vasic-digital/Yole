@@ -292,6 +292,90 @@ sections; `docs/ARCHITECTURE.md` for the per-platform module map.
 
 <!-- END cross-platform-impact addendum (CONST-037) -->
 
+<!-- BEGIN submodule-decoupling addendum (CONST-038) -->
+
+### CONST-038 — Submodules Must Remain Fully Decoupled and Reusable
+
+**Status:** Mandatory. Non-negotiable. Applies to every submodule
+consumed by this repository AND, recursively, to every submodule
+consumed by those submodules.
+
+**Rule:** Every submodule referenced from this repository's
+`.gitmodules` (and every submodule referenced from any of those
+submodules' `.gitmodules`, transitively) is **shared infrastructure**
+consumed by multiple independent consumer projects. Each submodule
+exists for one specialized responsibility (e.g. Challenges runs
+challenge suites; Containers manages container runtimes; HelixQA runs
+autonomous QA; LLMProvider abstracts model providers; Security holds
+shared security primitives). The value of these submodules is their
+**reusability across consumers** — and that value is destroyed the
+moment a submodule starts assuming it is only consumed by Yole, or
+only by any one consumer project.
+
+**Prohibited inside a submodule:**
+
+1. Hardcoded consumer-project names, paths, platform lists, version
+   strings, release-naming conventions, or feature names.
+2. `import` / dependency on a consumer-project namespace, package, or
+   build coordinate.
+3. Embedding consumer-project-specific governance, branding, copy,
+   or rule numbering.
+4. Assuming the submodule is consumed by a particular CLI, build
+   system, language toolchain version, or target architecture beyond
+   what its public interface explicitly documents.
+
+**Required inside a submodule:**
+
+1. All public surfaces (APIs, CLIs, configuration files, environment
+   variables, scripts) MUST be expressed in terms of the submodule's
+   own domain — not any consumer's.
+2. Submodule governance (`CONSTITUTION.md` / `CLAUDE.md` / `AGENTS.md`)
+   MUST describe responsibilities and contract from the **submodule's**
+   perspective. Consumer projects appear as illustrative examples at
+   most, never as load-bearing requirements.
+3. Cross-project rules adopted by submodules (such as the
+   cross-platform impact mandate in CONST-037) MUST be phrased
+   generically — "every consuming project's full platform matrix" —
+   and never hardcode any single consumer's matrix.
+4. Each submodule's specialized responsibility is documented in the
+   submodule's own README and Constitution; the parent project's
+   knowledge of that responsibility is **derived**, not authored, from
+   the submodule.
+
+**Why:** This project has shipped changes in the past where one
+consumer's platform list, feature names, or rule numbering leaked
+into shared-submodule governance — and then collided at merge time
+with another consumer's parallel work, leaving the submodule
+unmergeable until manual conflict resolution stripped the
+consumer-specific text back out. The cost of preventing the leak at
+authoring time is far lower than the cost of unwinding it after the
+fact. **Decoupling is the only mechanism that preserves a submodule's
+value as shared infrastructure.**
+
+**Enforcement:**
+
+1. Any submodule change that introduces consumer-coupling MUST be
+   reverted on its remote.
+2. Reviewers MUST treat consumer-project-specific text in a submodule
+   as a regression of the same severity as breaking the submodule's
+   public API.
+3. When a submodule's governance must reflect a cross-project rule,
+   the parent project carries the consumer-specific specifics; the
+   submodule carries only the project-agnostic abstraction.
+
+**Recursive scope:** this rule MUST be mirrored in every owned
+submodule's own governance (`CONSTITUTION.md` / `CLAUDE.md` /
+`AGENTS.md`). Submodules that are upstream third-party projects
+(e.g. open-source tools vendored under `tools/opensource/`) are
+explicitly out of scope — we are not their owners and have no right
+to amend their governance.
+
+**See also:** [[const-037]] cross-platform impact — the canonical
+example of a rule that MUST be expressed generically inside a
+submodule.
+
+<!-- END submodule-decoupling addendum (CONST-038) -->
+
 ## Definition of Done
 
 A change is done when:
@@ -305,6 +389,9 @@ A change is done when:
 6. The change has been reasoned about across all four user-visible
    platforms per CONST-037, and any per-platform divergence is
    documented in the commit body.
+7. Any submodule touched by the change preserves its decoupling +
+   reusability per CONST-038. Consumer-project specifics never leak
+   into shared-submodule code or governance.
 
 ## See also
 

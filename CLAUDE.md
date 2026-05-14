@@ -16,6 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 6. **SSH-only for git** (`git@…` remotes); HTTPS prohibited (CONST mandatory standard #5).
 7. **Maintain Continuation Document** — `docs/CONTINUATION.md` MUST be kept in sync with current work at all times per CONST-036. After every task completion, file creation, defect discovery, or commit, update the Continuation document so any CLI agent or LLM model can resume exactly where work left off.
 8. **Cross-Platform Impact MUST Be Reasoned About** — Per CONST-037, every change MUST be evaluated against all four user-visible platforms (Android / Desktop / iOS / Web) BEFORE coding, and commit bodies for multi-platform changes MUST contain a "Cross-platform impact" block. See the dedicated section below.
+9. **Submodules MUST Stay Decoupled & Reusable** — Per CONST-038, every submodule consumed from this repo (and recursively) is **shared infrastructure** used by multiple consumer projects. No Yole-specific platform list, feature name, version string, or path may leak into shared-submodule source or governance. Cross-project rules adopted by submodules MUST be phrased generically. See the dedicated section below.
 
 ## Definition of Done (CONSTITUTION.md)
 
@@ -27,6 +28,7 @@ A change is done only when **all** of the following hold:
 4. Governance docs (`CONSTITUTION.md`, `AGENTS.md`, `CLAUDE.md`) remain coherent with the change.
 5. `docs/CONTINUATION.md` is updated to reflect current state per CONST-036.
 6. The change has been reasoned about across all four user-visible platforms per CONST-037, and any per-platform divergence is documented in the commit body.
+7. Any submodule touched by the change preserves its decoupling + reusability per CONST-038. Consumer-project specifics never leak into shared-submodule code or governance.
 
 ## ⚠️ Cross-Platform Impact — MANDATORY Consideration (CONST-037)
 
@@ -50,6 +52,21 @@ Cross-platform impact:
 ```
 
 **Enforcement:** `yole-challenges/scripts/cross_platform_parity_challenge.sh` runs in `make qa-all` and fails when a screen / navigation entry diverges across platforms without a documented reason. See CONST-037 in `CONSTITUTION.md` for the authoritative rule.
+
+## ⚠️ Submodule Decoupling & Reusability — MANDATORY (CONST-038)
+
+Every submodule referenced from this repo's `.gitmodules` (and recursively, from any of those submodules' `.gitmodules`) is **shared infrastructure** consumed by multiple independent projects. We have ourselves been bitten when one consumer's specifics leaked into a shared submodule and collided with another consumer's parallel work.
+
+**Hard rules when editing anything inside a submodule:**
+
+- DO NOT hardcode Yole-specific platform lists, feature names, paths, version strings, or release-naming conventions.
+- DO NOT import / reference Yole packages from inside a submodule.
+- DO NOT embed Yole-specific governance, branding, or rule numbering in submodule `CONSTITUTION.md` / `CLAUDE.md` / `AGENTS.md`. If a Yole rule needs a submodule-side mirror, phrase it **generically** ("every consuming project's full platform matrix", not "Android/Desktop/iOS/Web").
+- DO assume the submodule is consumed by N ≥ 2 unrelated consumer projects, even if you only know of one today.
+
+**Recursive scope:** owned submodules MUST mirror this rule in their own governance. Third-party upstream submodules (e.g. anything under `tools/opensource/`) are explicitly out of scope — we don't own them.
+
+See CONST-038 in `CONSTITUTION.md` for the authoritative rule.
 
 ## Project Overview
 
