@@ -22,12 +22,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import kotlin.math.pow
 
-// iter-57 Phase 3b: `YoleColors` and `YoleColors.Ide` / `YoleColors.Dark` palette
-// objects have been deleted. All color values are now resolved at runtime from
-// the active VS Code [digital.vasic.yole.syntax.theme.Theme] (via ThemeProvider /
-// LocalTheme / themeUiColor). The legacy ARGB values are preserved verbatim in
-// [digital.vasic.yole.syntax.theme.LegacyThemeBridge] and are byte-equal to the
-// bundled JSON themes Yole-Light/Dark.json (proven by LegacyThemeParityTest).
+// iter-57 Phase 3b: the legacy palette objects (formerly defined here as
+// `object YoleColors` plus its `Ide` and `Dark` companions) have been
+// deleted. All color values are now resolved at runtime from the active
+// VS Code [digital.vasic.yole.syntax.theme.Theme] (via ThemeProvider /
+// LocalTheme / themeUiColor). The legacy ARGB values are preserved verbatim
+// in [digital.vasic.yole.syntax.theme.LegacyThemeBridge] and are byte-equal
+// to the bundled JSON themes Yole-Light/Dark.json (proven by
+// LegacyThemeParityTest).
 
 /**
  * Typography system with consistent text styles across platforms.
