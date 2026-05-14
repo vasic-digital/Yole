@@ -390,8 +390,16 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates
 	bash automation/run-qa-all.sh --skip-unit --skip-build
+	@echo "-----------------------------------------------------------------------------------"
+
+# iter-55 challenges: scroll sync + cross-platform parity (CONST-037).
+# Wired into qa-all so any regression is caught in the standard pipeline.
+qa-iter-55-gates:
+	@echo "=== iter-55 gates: scroll_sync + cross_platform_parity ==="
+	bash yole-challenges/scripts/scroll_sync_challenge.sh
+	bash yole-challenges/scripts/cross_platform_parity_challenge.sh
 	@echo "-----------------------------------------------------------------------------------"
 
 # Run full QA pipeline including builds
