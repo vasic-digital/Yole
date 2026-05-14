@@ -1514,80 +1514,39 @@ fun IdeEditorScreen(
             Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(borderColor))
         }
 
-        // Editor with line numbers
-        Row(modifier = Modifier.weight(1f)) {
-            // Line number gutter
-            if (showLineNumbers) {
-                val lines = text.lines()
-                val gutterBg = if (isDarkTheme) YoleColors.Ide.DarkBackground else Color(0xFFF8F8F8)
-                val gutterWidth = when {
-                    lines.size >= 1000 -> 48.dp
-                    lines.size >= 100 -> 40.dp
-                    else -> 32.dp
-                }
-
-                Column(
-                    modifier = Modifier
-                        .width(gutterWidth)
-                        .fillMaxHeight()
-                        .background(gutterBg)
-                        .verticalScroll(rememberScrollState())
-                        .padding(top = 8.dp, end = 4.dp),
-                    horizontalAlignment = Alignment.End
-                ) {
-                    lines.forEachIndexed { index, _ ->
-                        Text(
-                            text = "${index + 1}",
-                            color = lineNumColor,
-                            fontSize = 13.sp,
-                            fontFamily = FontFamily.Monospace,
-                            lineHeight = 20.sp,
-                            modifier = Modifier.semantics {
-                                contentDescription = "Line ${index + 1}"
-                            }
-                        )
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(1.dp)
-                        .background(borderColor)
-                )
-            }
-
-            // Text editor
-            OutlinedTextField(
-                value = text,
-                onValueChange = { newText ->
-                    val oldText = text
-                    text = newText
-                    onContentChanged(newText)
-                    if (newText.length - oldText.length > 5 || oldText.length - newText.length > 5 ||
-                        newText.endsWith(" ") || newText.endsWith("\n")) {
-                        addToHistory(newText)
-                    }
-                },
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .semantics { contentDescription = "Code editor for $fileName" },
-                placeholder = { Text("Start typing...") },
-                textStyle = TextStyle(
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp,
-                    color = textColor
-                ),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = bg,
-                    unfocusedContainerColor = bg,
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent
-                )
-            )
+        // Editor with line numbers — gutter + text share a single ScrollState
+        // via SyncedScrollEditor (iter-55 fix for horizontal desync on vertical
+        // scroll). See androidApp/.../ui/editor/SyncedScrollEditor.kt and
+        // EditorScrollSyncRobolectricTest for the structural invariants.
+        val textState = remember { mutableStateOf(text) }
+        // Keep textState in sync with external content changes (e.g., undo/redo
+        // that re-assign `text` from history).
+        if (textState.value != text) {
+            textState.value = text
         }
+        digital.vasic.yole.android.ui.editor.SyncedScrollEditor(
+            textState = textState,
+            showLineNumbers = showLineNumbers,
+            isDarkTheme = isDarkTheme,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            onTextChanged = { newText ->
+                val oldText = text
+                text = newText
+                onContentChanged(newText)
+                if (newText.length - oldText.length > 5 || oldText.length - newText.length > 5 ||
+                    newText.endsWith(" ") || newText.endsWith("\n")) {
+                    addToHistory(newText)
+                }
+            },
+            semanticsLabel = "Code editor for $fileName",
+            placeholder = "Start typing...",
+            textStyle = TextStyle(
+                fontFamily = FontFamily.Monospace,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                color = textColor,
+            ),
+        )
     }
 }
 
