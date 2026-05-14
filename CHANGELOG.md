@@ -3,6 +3,41 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## iter-56 — CONST-038 Submodule decoupling & reusability mandate (2026-05-14)
+
+### Added
+- **CONST-038 — Submodules Must Remain Fully Decoupled and Reusable.**
+  Root `CONSTITUTION.md` + `CLAUDE.md` + `AGENTS.md`. Every submodule
+  consumed from this repo (and recursively from any submodule's own
+  `.gitmodules`) is shared infrastructure consumed by multiple
+  independent consumer projects. No Yole-specific platform list,
+  feature name, version string, or path may leak into shared-submodule
+  source or governance. Definition of Done bumped 6 → 7 items.
+- **Project-agnostic CONST-038 mirror in 10 owned submodules.**
+  Challenges, Challenges/Panoptic (nested), Containers, HelixQA,
+  LLMProvider, Security, Dependencies/HelixDevelopment/{DocProcessor,
+  LLMOrchestrator, LLMsVerifier, VisionEngine}. Each got 3 governance
+  files updated (30 files total). All commits pushed to their
+  respective remotes before parent commit.
+
+### Excluded
+- 27 third-party upstream submodules under `HelixQA/tools/opensource/*`
+  (scrcpy, leakcanary, allure2, appium, perfetto, chroma, etc.) —
+  not our property; per the rule itself, we have no right to amend
+  their governance.
+
+### Forensic notes
+- The CONST-038 propagation closes the loop on the iter-55 discovery
+  that several Yole submodules are shared with at least one other
+  project (codenamed Atmosphere/Lava). iter-55 reverted Yole-specific
+  CONST-037 governance from those submodules; iter-56 replaces it with
+  a project-agnostic decoupling rule that fits naturally and doesn't
+  collide with any consumer's parallel work.
+
+### Cross-platform impact
+- Android / Desktop / iOS / Web: governance-only, no code change.
+
+
 ## iter-55 — Platform sync & cross-platform governance (2026-05-14)
 
 ### Added
