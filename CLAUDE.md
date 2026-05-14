@@ -3,6 +3,8 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 > **Precedence:** `CONSTITUTION.md` is the authoritative rule set. When a rule here conflicts with the Constitution, the Constitution wins.
+>
+> **Sibling guidance:** `AGENTS.md` carries cross-agent governance shared with non-Claude CLI agents (Codex, Gemini CLI, Copilot CLI). Read it for rules that apply regardless of which CLI you're driving; do not duplicate its content here.
 
 ## MANDATORY Rules
 
@@ -13,6 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 5. **Conventional Commits** for every commit (CONST mandatory standard #4).
 6. **SSH-only for git** (`git@…` remotes); HTTPS prohibited (CONST mandatory standard #5).
 7. **Maintain Continuation Document** — `docs/CONTINUATION.md` MUST be kept in sync with current work at all times per CONST-036. After every task completion, file creation, defect discovery, or commit, update the Continuation document so any CLI agent or LLM model can resume exactly where work left off.
+8. **Cross-Platform Impact MUST Be Reasoned About** — Per CONST-037, every change MUST be evaluated against all four user-visible platforms (Android / Desktop / iOS / Web) BEFORE coding, and commit bodies for multi-platform changes MUST contain a "Cross-platform impact" block. See the dedicated section below.
 
 ## Definition of Done (CONSTITUTION.md)
 
@@ -23,6 +26,30 @@ A change is done only when **all** of the following hold:
 3. All challenges in `yole-challenges/scripts/` pass on the running host.
 4. Governance docs (`CONSTITUTION.md`, `AGENTS.md`, `CLAUDE.md`) remain coherent with the change.
 5. `docs/CONTINUATION.md` is updated to reflect current state per CONST-036.
+6. The change has been reasoned about across all four user-visible platforms per CONST-037, and any per-platform divergence is documented in the commit body.
+
+## ⚠️ Cross-Platform Impact — MANDATORY Consideration (CONST-037)
+
+Yole ships to **Android, Desktop (Linux x64 / Windows x64 / macOS arm64), iOS, and Web (Wasm PWA)**. Every change MUST be reasoned about across all four targets BEFORE coding. A fix that works on one target but silently breaks another is a regression.
+
+**Pre-edit checklist** (applies to any change in `shared/`, `*App/`, or any module's UI / navigation / public API):
+
+- [ ] Which `*Main` source sets does this change touch? (`commonMain`, `androidMain`, `desktopMain`, `iosMain`, `wasmJsMain`)
+- [ ] Which `*Test` source sets cover the change? Missing coverage on any affected target = incomplete change.
+- [ ] Does the same UX make sense on every target, or is per-platform divergence required? If divergent, where is it documented?
+- [ ] Are platform manifests (`AndroidManifest.xml`, `Info.plist`, web `manifest.json`, container packaging) updated coherently?
+
+**Commit body requirement:** any change affecting more than one platform MUST include a "Cross-platform impact" block enumerating each platform's disposition. Example:
+
+```
+Cross-platform impact:
+- Android: fix applied, Robolectric test added
+- Desktop: unaffected (uses separate editor surface)
+- iOS:     N/A (component not yet ported)
+- Web:     parity update required, follow-up tracked in docs/CONTINUATION.md
+```
+
+**Enforcement:** `yole-challenges/scripts/cross_platform_parity_challenge.sh` runs in `make qa-all` and fails when a screen / navigation entry diverges across platforms without a documented reason. See CONST-037 in `CONSTITUTION.md` for the authoritative rule.
 
 ## Project Overview
 
@@ -38,6 +65,8 @@ A change is done only when **all** of the following hold:
 | Web (Wasm PWA) | In development |
 
 ## Build Commands
+
+`make help` is the canonical index — the Makefile exposes ~50+ targets (container, security, QA, submodule, device install/run, spellcheck, docs) and stays current with the build. The list below is the dev hot-path; consult `make help` for everything else.
 
 ```bash
 # Primary dev test (no Android SDK needed, runs on host JVM)
@@ -68,6 +97,7 @@ make test-shared                          # Makefile shortcut
 make container-build                      # Build container image
 make container-test                       # Run tests in container
 make container-release                    # Build release artifacts in container
+make container-robolectric-test           # Robolectric UI tests, isolated from main build (see Known Issues)
 
 # Go submodules (requires Go 1.24+)
 make challenge                            # Challenges Go tests
@@ -81,10 +111,10 @@ make qa-all                               # Full QA pipeline
 
 ## Known Issues
 
-The active list is in `docs/KNOWN_DEFECTS.md`. As of 2026-05-12:
+**Authoritative list:** `docs/KNOWN_DEFECTS.md`. Long-running issues you'll hit most often:
 
-- **`#robolectric-compose-ui-tests-brittle`** — ~25 Robolectric UI tests historically flapped on string-based matching. Mitigated since iter 27 by running them in a dedicated `robolectric-test` container (`make container-robolectric-test`) isolated from the main build. Long-term fix: migrate to HelixQA on-device automation or `testTag`-based matching. Tracker only — does not gate release.
-- **`#helixqa-missing-sibling-repos`** — 31 HelixQA packages fail to compile when their expected sibling repos (DocProcessor, LLMsVerifier/llm-verifier, LLMOrchestrator, VisionEngine) aren't present in the parent directory. Environment bootstrap gap, not a code defect.
+- **`#robolectric-compose-ui-tests-brittle`** — ~25 Robolectric UI tests historically flapped on string-based matching. Mitigated by running them in a dedicated `robolectric-test` container (`make container-robolectric-test`) isolated from the main build. Long-term fix: migrate to HelixQA on-device automation or `testTag`-based matching. Tracker only — does not gate release.
+- **`#helixqa-missing-sibling-repos`** — HelixQA packages fail to compile when their expected sibling repos (`DocProcessor`, `LLMsVerifier`, `LLMOrchestrator`, `VisionEngine`) aren't present. These are now tracked as submodules under `Dependencies/HelixDevelopment/` — run `git submodule update --init --recursive` to populate. Environment bootstrap gap, not a code defect.
 
 Resolved-and-purged historical entries (AGP mismatch, container OOM, KMP composite-build resolution, SMB/WebDAV stubs, Go flaky tests) are recorded in git history and `CHANGELOG.md`; removed from here to keep the live list short.
 
@@ -228,11 +258,24 @@ Tests in `shared/src/commonTest/kotlin/digital/vasic/yole/format/`:
 
 ## Git Submodules
 
+Eight submodules total (see `.gitmodules`). Root-level QA/infra:
+
 | Submodule | Purpose |
 |-----------|---------|
 | `Challenges/` | Go-based testing framework: UI automation banks, userflow runner, FFmpeg recorder |
 | `Containers/` | Go-based container orchestration: remote distribution, boot manager, distributed test runner |
 | `HelixQA/` | QA orchestration: crash/ANR detection, evidence collection, LLM-powered autonomous testing |
+| `LLMProvider/` | LLM provider abstraction (used by HelixQA / LLM-driven testing) |
+| `Security/` | Shared security primitives |
+
+HelixDevelopment dependencies (under `Dependencies/HelixDevelopment/`) — required to resolve the `#helixqa-missing-sibling-repos` bootstrap gap:
+
+| Submodule | Purpose |
+|-----------|---------|
+| `Dependencies/HelixDevelopment/DocProcessor` | Document processing pipeline used by HelixQA |
+| `Dependencies/HelixDevelopment/LLMOrchestrator` | Multi-LLM orchestration layer |
+| `Dependencies/HelixDevelopment/LLMsVerifier` | LLM output verification harness |
+| `Dependencies/HelixDevelopment/VisionEngine` | Vision-model integration for HelixQA evidence analysis |
 
 ```bash
 git submodule update --init --recursive
@@ -267,12 +310,24 @@ Tools configured: SonarQube (Docker), Snyk (Docker), CodeQL (manual), Gitleaks (
 
 ## Key Files
 
+Build & configuration:
+
 - `shared/build.gradle.kts` — KMP configuration with all platform targets
 - `settings.gradle.kts` — Module includes + 10 composite build `includeBuild()` directives
 - `gradle/libs.versions.toml` — Centralized dependency versions
 - `config/detekt/detekt.yml` — Static analysis rules
 - `Makefile` — Build automation (`make help` for all targets)
 - `docker-compose.yml` — Container build environment (Podman or Docker)
+
+Governance & live state (read these to understand "what's happening now"):
+
+- `CONSTITUTION.md` — authoritative rule set; overrides this file on conflict
+- `AGENTS.md` — cross-agent governance (Claude + Codex + Gemini + Copilot)
+- `docs/CONTINUATION.md` — current resumption point, kept in sync per CONST-036 (MANDATORY rule #7)
+- `docs/KNOWN_DEFECTS.md` — live defect list
+- `docs/LOCK_ORDERING.md` — canonical lock acquisition order for the 8 protocol services
+- `yole-challenges/scripts/` — Definition-of-Done challenges (must pass on the running host)
+- `yole-challenges/baselines/bluff-baseline.txt` — pre-existing anti-bluff hits; do not extend without justification (CONST-035)
 
 <!-- BEGIN host-power-management addendum (CONST-033) -->
 

@@ -11,6 +11,32 @@
 5. **Release builds in containers** - `docker compose run --rm build ./docker/scripts/build.sh`
 6. **Bootstrap fresh clone** - `make bootstrap` (installs anti-bluff pre-commit hook + submodules)
 7. **Maintain Continuation Document** - `docs/CONTINUATION.md` MUST be kept in sync with current work at all times per CONST-036. After every task completion, file creation, or defect discovery, update the Continuation document so any CLI agent or LLM model can resume exactly where work left off.
+8. **Cross-Platform Impact MUST Be Reasoned About** - Per CONST-037, every change MUST be evaluated against all four user-visible platforms (Android / Desktop / iOS / Web) BEFORE coding, and commit bodies for multi-platform changes MUST contain a "Cross-platform impact" block. See the dedicated section below.
+
+## ⚠️ Cross-Platform Impact — MANDATORY Consideration (CONST-037)
+
+**Applies to ALL CLI agents working on this repo (Codex, Cursor, Gemini CLI, Copilot CLI, Claude Code, etc.) — not Claude-specific.**
+
+Yole ships to **Android, Desktop (Linux x64 / Windows x64 / macOS arm64), iOS, and Web (Wasm PWA)**. Every change MUST be reasoned about across all four targets BEFORE coding. A fix that works on one target but silently breaks another is a regression.
+
+**Pre-edit checklist** (applies to any change in `shared/`, `*App/`, or any module's UI / navigation / public API):
+
+- [ ] Which `*Main` source sets does this change touch? (`commonMain`, `androidMain`, `desktopMain`, `iosMain`, `wasmJsMain`)
+- [ ] Which `*Test` source sets cover the change? Missing coverage on any affected target = incomplete change.
+- [ ] Does the same UX make sense on every target, or is per-platform divergence required? If divergent, where is it documented?
+- [ ] Are platform manifests (`AndroidManifest.xml`, `Info.plist`, web `manifest.json`, container packaging) updated coherently?
+
+**Commit body requirement:** any change affecting more than one platform MUST include a "Cross-platform impact" block enumerating each platform's disposition (changed / unchanged / N/A with reason).
+
+```
+Cross-platform impact:
+- Android: <disposition>
+- Desktop: <disposition>
+- iOS:     <disposition>
+- Web:     <disposition>
+```
+
+**Enforcement:** `yole-challenges/scripts/cross_platform_parity_challenge.sh` runs in `make qa-all` and fails when a screen / navigation entry diverges across platforms without a documented reason. See CONST-037 in `CONSTITUTION.md` for the authoritative rule.
 
 ## Quick Resume
 
@@ -190,6 +216,8 @@ A change is done only when **all** of:
 2. All project-level tests pass on a clean clone
 3. All challenges in `yole-challenges/scripts/` pass on the running host
 4. Governance docs (`CONSTITUTION.md`, `AGENTS.md`, `CLAUDE.md`) remain coherent
+5. `docs/CONTINUATION.md` is updated to reflect current state per CONST-036
+6. The change has been reasoned about across all four user-visible platforms per CONST-037, and any per-platform divergence is documented in the commit body
 
 ## Quality Requirements
 

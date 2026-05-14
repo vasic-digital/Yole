@@ -238,6 +238,60 @@ wasting time and risking incomplete or duplicated work.
 
 <!-- END continuation-document addendum (CONST-036) -->
 
+<!-- BEGIN cross-platform-impact addendum (CONST-037) -->
+
+### CONST-037 — Cross-Platform Impact MUST Be Reasoned About
+
+**Status:** Mandatory. Non-negotiable. Applies to every change in this
+repository and its submodules.
+
+**Rule:** Yole ships to four user-visible platforms — Android, Desktop
+(Linux x64, Windows x64, macOS arm64), iOS, and Web (Wasm PWA). Every
+change that touches shared code, UI, a screen, a navigation entry, a
+data model, or a public API MUST explicitly answer all four questions
+below BEFORE the change is considered complete:
+
+1. **Does this compile on every target?** KMP common code,
+   `expect/actual` surfaces, and platform-specific code paths each have
+   their own compilation matrix. "Builds on my machine" is not a
+   platform-coverage answer.
+2. **Does this behave identically — or by-design differently — on
+   every target?** A bottom navigation bar that makes sense on Android
+   may be wrong on Desktop. A file picker that uses Android SAF needs
+   an `expect/actual` counterpart on Desktop / iOS / Web.
+3. **Is the change covered by a test on every affected target?** A fix
+   that lands only in `androidMain` but not in `desktopMain` /
+   `iosMain` / `wasmJsMain` is incomplete by default.
+4. **Are platform-specific resources (AndroidManifest.xml, Info.plist,
+   web `manifest.json`, container packaging) updated coherently?**
+
+**How to apply:**
+- Before editing shared code, list which `*Main` / `*Test` source sets
+  the change touches. If only one is touched but more are affected,
+  the change is incomplete.
+- Every PR description / commit body for a multi-platform change MUST
+  contain a "Cross-platform impact" block enumerating each platform
+  and its disposition (changed / unchanged / N/A with reason).
+- Per-platform divergence is allowed when justified, but MUST be
+  documented in the commit body and (for permanent divergences) in
+  `docs/ARCHITECTURE.md`.
+
+**Why:** End users experience Yole on whichever platform they install.
+A regression that ships only to iOS still ships. We have shipped fixes
+that worked on the host platform but silently broke others; mandatory
+up-front consideration is the only mitigation.
+
+**Enforcement:** `yole-challenges/scripts/cross_platform_parity_challenge.sh`
+runs in `make qa-all` and scans for divergent surfaces (e.g. a screen
+present in one platform's nav but absent in another's without a
+documented reason). Detekt rules and per-target test suites enforce
+compile-time parity.
+
+**See also:** `CLAUDE.md` and `AGENTS.md` "Cross-Platform Impact"
+sections; `docs/ARCHITECTURE.md` for the per-platform module map.
+
+<!-- END cross-platform-impact addendum (CONST-037) -->
+
 ## Definition of Done
 
 A change is done when:
@@ -248,6 +302,9 @@ A change is done when:
 4. Governance docs (`CONSTITUTION.md`, `AGENTS.md`, `CLAUDE.md`) are
    coherent with the change.
 5. `docs/CONTINUATION.md` is updated to reflect current state per CONST-036.
+6. The change has been reasoned about across all four user-visible
+   platforms per CONST-037, and any per-platform divergence is
+   documented in the commit body.
 
 ## See also
 
