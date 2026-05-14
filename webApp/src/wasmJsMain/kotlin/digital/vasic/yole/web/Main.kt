@@ -36,7 +36,7 @@ import digital.vasic.yole.syntax.theme.LegacyThemeBridge
 import digital.vasic.yole.syntax.theme.Theme
 import digital.vasic.yole.syntax.theme.ThemeProvider
 import digital.vasic.yole.syntax.theme.ThemeRegistry
-import digital.vasic.yole.ui.YoleColors
+import digital.vasic.yole.syntax.theme.themeUiColor
 import kotlinx.browser.document
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
@@ -131,7 +131,7 @@ fun YoleWebApp() {
                 // Sidebar
                 Surface(
                     modifier = Modifier.width(250.dp).fillMaxHeight(),
-                    color = if (isDarkTheme) YoleColors.Dark.SurfaceTertiary else YoleColors.SurfaceSecondary,
+                    color = themeUiColor("sideBar.background"),
                     tonalElevation = 2.dp
                 ) {
                     Column(
@@ -202,7 +202,7 @@ fun YoleWebApp() {
                                      }
                                  },
                                   colors = ButtonDefaults.buttonColors(
-                                      containerColor = YoleColors.BrandPrimary
+                                      containerColor = themeUiColor("focusBorder")
                                   )
                               ) {
                                   Text("Load")

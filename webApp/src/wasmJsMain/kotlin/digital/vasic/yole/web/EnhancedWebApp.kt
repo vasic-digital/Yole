@@ -37,7 +37,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
-import digital.vasic.yole.ui.YoleColors
+import digital.vasic.yole.syntax.theme.LegacyThemeBridge
+import digital.vasic.yole.syntax.theme.Theme
+import digital.vasic.yole.syntax.theme.ThemeRegistry
+import digital.vasic.yole.syntax.theme.themeUiColor
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
 import kotlinx.coroutines.*
@@ -53,40 +56,26 @@ private fun jsNavigatorOnLine(): Boolean = jsNavigatorOnLineRaw().toBoolean()
 private fun jsWindowPrintImpl(): kotlin.js.JsAny = js("window.print()")
 private fun jsWindowPrint() { jsWindowPrintImpl() }
 
-// --- IDE Theme Colors (references shared YoleColors tokens) ---
-object IdeColors {
-    val darkBackground = YoleColors.Ide.DarkBackground
-    val darkSurface = YoleColors.Ide.DarkSurface
-    val darkSurfaceVariant = YoleColors.Ide.DarkSurfaceVariant
-    val darkBorder = YoleColors.Ide.DarkBorder
-    val darkAccent = YoleColors.BrandPrimary
-    val darkText = YoleColors.Dark.TextPrimary
-    val darkTextSecondary = YoleColors.Dark.TextSecondary
-    val darkCurrentLine = YoleColors.Ide.DarkCurrentLine
-    val darkStatusBar = YoleColors.BrandPrimary
-    val darkTabActive = YoleColors.Ide.DarkBackground
-    val darkTabInactive = YoleColors.Ide.DarkSurfaceVariant
-    val darkSidebarBg = YoleColors.Ide.DarkSurface
-    val darkActivityBarBg = YoleColors.Ide.DarkActivityBar
-    val darkMenuHover = YoleColors.Ide.DarkMenuHover
-    val darkDanger = YoleColors.Error
+// --- IDE Theme Color Accessors (iter-57 Phase 3b) ---
+// All UI colors are resolved from LocalTheme.current via themeUiColor(VS-Code-key).
+// MUST be called from a Composable scope. The web's danger color stays inlined
+// (#F44336 Material Red 500) — it is not a theme-driven color.
+private val webDangerColor = androidx.compose.ui.graphics.Color(0xFFF44336)
 
-    val lightBackground = YoleColors.Ide.LightBackground
-    val lightSurface = YoleColors.Ide.LightSurface
-    val lightSurfaceVariant = YoleColors.Ide.LightSurfaceVariant
-    val lightBorder = YoleColors.Ide.LightBorder
-    val lightAccent = YoleColors.BrandPrimary
-    val lightText = YoleColors.TextPrimary
-    val lightTextSecondary = YoleColors.Ide.LightMutedText
-    val lightCurrentLine = YoleColors.Ide.LightCurrentLine
-    val lightStatusBar = YoleColors.BrandPrimary
-    val lightTabActive = YoleColors.Ide.LightBackground
-    val lightTabInactive = YoleColors.Ide.LightSurfaceVariant
-    val lightSidebarBg = YoleColors.Ide.LightSurface
-    val lightActivityBarBg = YoleColors.Ide.LightActivityBar
-    val lightMenuHover = YoleColors.Ide.LightMenuHover
-    val lightDanger = YoleColors.BrandPrimary
-}
+@Composable private fun ideBackground(): Color = themeUiColor("editor.background")
+@Composable private fun ideSurface(): Color = themeUiColor("sideBar.background")
+@Composable private fun ideSurfaceVariant(): Color = themeUiColor("tab.inactiveBackground")
+@Composable private fun ideBorder(): Color = themeUiColor("editorWidget.border")
+@Composable private fun ideAccent(): Color = themeUiColor("focusBorder")
+@Composable private fun ideText(): Color = themeUiColor("editor.foreground")
+@Composable private fun ideTextSecondary(): Color = themeUiColor("editorLineNumber.foreground")
+@Composable private fun ideCurrentLine(): Color = themeUiColor("editor.lineHighlightBackground")
+@Composable private fun ideStatusBar(): Color = themeUiColor("focusBorder")
+@Composable private fun ideTabActive(): Color = themeUiColor("tab.activeBackground")
+@Composable private fun ideTabInactive(): Color = themeUiColor("tab.inactiveBackground")
+@Composable private fun ideSidebarBg(): Color = themeUiColor("sideBar.background")
+@Composable private fun ideActivityBarBg(): Color = themeUiColor("activityBar.background")
+@Composable private fun ideMenuHover(): Color = themeUiColor("menu.selectionBackground")
 
 /** Represents an open document tab */
 data class DocumentTab(
@@ -265,21 +254,36 @@ fun EnhancedYoleWebApp() {
     // Note: Actual per-keystroke cursor tracking requires TextFieldValue
     // with selection.start, which is wired in the IdeEditor composable.
 
-    // IDE color accessors
-    val bg = if (isDarkTheme) IdeColors.darkBackground else IdeColors.lightBackground
-    val surface = if (isDarkTheme) IdeColors.darkSurface else IdeColors.lightSurface
-    val surfaceVar = if (isDarkTheme) IdeColors.darkSurfaceVariant else IdeColors.lightSurfaceVariant
-    val border = if (isDarkTheme) IdeColors.darkBorder else IdeColors.lightBorder
-    val accent = if (isDarkTheme) IdeColors.darkAccent else IdeColors.lightAccent
-    val text = if (isDarkTheme) IdeColors.darkText else IdeColors.lightText
-    val textSecondary = if (isDarkTheme) IdeColors.darkTextSecondary else IdeColors.lightTextSecondary
-    val statusBarBg = if (isDarkTheme) IdeColors.darkStatusBar else IdeColors.lightStatusBar
-    val tabActive = if (isDarkTheme) IdeColors.darkTabActive else IdeColors.lightTabActive
-    val tabInactive = if (isDarkTheme) IdeColors.darkTabInactive else IdeColors.lightTabInactive
-    val sidebarBg = if (isDarkTheme) IdeColors.darkSidebarBg else IdeColors.lightSidebarBg
-    val lineNumColor = if (isDarkTheme) IdeColors.darkTextSecondary else IdeColors.lightTextSecondary
-    val currentLineBg = if (isDarkTheme) IdeColors.darkCurrentLine else IdeColors.lightCurrentLine
-    val danger = if (isDarkTheme) IdeColors.darkDanger else IdeColors.lightDanger
+    // iter-57 Phase 3b: swap the active VS Code theme whenever the user
+    // toggles dark/light mode. WebApp's bundled JSON resources are not
+    // available at runtime (that lands in Phase 6); for now we synthesize
+    // the Theme from the LegacyThemeBridge palette under both modes.
+    LaunchedEffect(isDarkTheme) {
+        ThemeRegistry.setActive(
+            Theme(
+                name = if (isDarkTheme) "Yole Dark" else "Yole Light",
+                type = if (isDarkTheme) "dark" else "light",
+                uiColors = if (isDarkTheme) LegacyThemeBridge.legacyDark else LegacyThemeBridge.legacyLight,
+                tokenColors = emptyMap(),
+            ),
+        )
+    }
+
+    // IDE color accessors — all read from the active VS Code theme.
+    val bg = ideBackground()
+    val surface = ideSurface()
+    val surfaceVar = ideSurfaceVariant()
+    val border = ideBorder()
+    val accent = ideAccent()
+    val text = ideText()
+    val textSecondary = ideTextSecondary()
+    val statusBarBg = ideStatusBar()
+    val tabActive = ideTabActive()
+    val tabInactive = ideTabInactive()
+    val sidebarBg = ideSidebarBg()
+    val lineNumColor = ideTextSecondary()
+    val currentLineBg = ideCurrentLine()
+    val danger = webDangerColor
 
     Box(
         modifier = Modifier
@@ -740,7 +744,7 @@ fun IdeMenuBar(
     onToggleTheme: () -> Unit,
     onPrint: () -> Unit
 ) {
-    val menuHover = if (isDarkTheme) IdeColors.darkMenuHover else IdeColors.lightMenuHover
+    val menuHover = ideMenuHover()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1021,7 +1025,7 @@ fun IdeTabBar(
     onTabSelected: (String) -> Unit,
     onTabClosed: (String) -> Unit
 ) {
-    val tabBarBg = if (isDarkTheme) IdeColors.darkSurfaceVariant else IdeColors.lightSurfaceVariant
+    val tabBarBg = ideSurfaceVariant()
     Column {
         Row(
             modifier = Modifier
@@ -1279,7 +1283,7 @@ fun IdePreview(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(if (isDarkTheme) IdeColors.darkBorder else IdeColors.lightBorder)
+                .background(ideBorder())
         )
 
         // Preview content
