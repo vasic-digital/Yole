@@ -89,6 +89,11 @@ import digital.vasic.yole.ui.ScreenTransitions
 import digital.vasic.yole.ui.ListAnimations
 import digital.vasic.yole.ui.LoadingStateWrapper
 import digital.vasic.yole.ui.LoadingAnimations
+import digital.vasic.yole.syntax.EnabledFormatGate
+import digital.vasic.yole.syntax.SyntaxHighlighter
+import digital.vasic.yole.syntax.TokenizerEngine
+import digital.vasic.yole.syntax.grammar.GrammarRegistry
+import digital.vasic.yole.syntax.theme.LocalTheme
 import digital.vasic.yole.syntax.theme.themeUiColor
 import digital.vasic.yole.android.ui.settings.FormatsSettingsScreen
 import digital.vasic.yole.android.ui.settings.FormatsSettingsTopBar
@@ -1553,6 +1558,31 @@ fun IdeEditorScreen(
         if (textState.value != text) {
             textState.value = text
         }
+
+        // iter-57 Phase 9: detect the file's lang via GrammarRegistry and
+        // build a SyntaxHighlighter that reads from the active theme via
+        // LocalTheme. LocalTheme.current must be accessed during composition,
+        // so we capture it into `theme` then close over it inside the
+        // highlighter's theme-supplier lambda. Passing `theme` as a remember
+        // key ensures the highlighter is rebuilt when the theme changes.
+        // If lang resolves to "plaintext" we pass null to keep the editor
+        // unmodified (graceful no-op) and to match the iter-55 baseline
+        // behavior for unsupported / disabled formats.
+        val detectedLangId = remember(fileName) { GrammarRegistry.detectLangId(fileName) }
+        val tokenizerEngine = remember { TokenizerEngine() }
+        LaunchedEffect(tokenizerEngine) {
+            tokenizerEngine.initialize()
+        }
+        val theme = LocalTheme.current
+        val highlighter = remember(tokenizerEngine, detectedLangId, theme) {
+            if (detectedLangId != "plaintext") {
+                SyntaxHighlighter(tokenizerEngine) { theme }
+            } else {
+                null
+            }
+        }
+        val passedLangId = if (detectedLangId != "plaintext") detectedLangId else null
+
         digital.vasic.yole.android.ui.editor.SyncedScrollEditor(
             textState = textState,
             showLineNumbers = showLineNumbers,
@@ -1575,6 +1605,8 @@ fun IdeEditorScreen(
                 lineHeight = 20.sp,
                 color = textColor,
             ),
+            highlighter = highlighter,
+            langId = passedLangId,
         )
     }
 }
