@@ -21,6 +21,8 @@ import androidx.compose.ui.window.*
 import digital.vasic.yole.desktop.storage.DesktopSettingsStorage
 import digital.vasic.yole.desktop.ui.EnhancedYoleApp
 import digital.vasic.yole.desktop.ui.theme.YoleDesktopTheme
+import digital.vasic.yole.syntax.theme.ThemeProvider
+import digital.vasic.yole.syntax.theme.ThemeRegistry
 import java.awt.Dimension
 import java.awt.datatransfer.DataFlavor
 import java.awt.dnd.*
@@ -151,22 +153,41 @@ fun main() {
                 else -> digital.vasic.yole.ui.ThemeMode.SYSTEM
             }
 
-            YoleDesktopTheme(
-                themeMode = themeMode,
-                accentColor = appSettings.value.appearance.accentColor?.let {
-                    digital.vasic.yole.desktop.ui.theme.parseHexColor(it)
-                },
-                highContrast = appSettings.value.appearance.highContrastEnabled
-            ) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+            // iter-57 Phase 3: ThemeProvider publishes the active VS Code
+            // theme to every Composable under it via LocalTheme. The
+            // LaunchedEffect seeds the registry with the default ("Yole Dark"
+            // or "Yole Light" depending on user themeMode). Failures are
+            // swallowed: ThemeRegistry's bootstrap default keeps colors usable.
+            ThemeProvider {
+                val initialTheme = if (themeMode == digital.vasic.yole.ui.ThemeMode.LIGHT) {
+                    "Yole Light"
+                } else {
+                    "Yole Dark"
+                }
+                LaunchedEffect(initialTheme) {
+                    try {
+                        ThemeRegistry.setActive(initialTheme)
+                    } catch (t: Throwable) {
+                        println("ThemeRegistry init skipped: ${t.message}")
+                    }
+                }
+                YoleDesktopTheme(
+                    themeMode = themeMode,
+                    accentColor = appSettings.value.appearance.accentColor?.let {
+                        digital.vasic.yole.desktop.ui.theme.parseHexColor(it)
+                    },
+                    highContrast = appSettings.value.appearance.highContrastEnabled
                 ) {
-                    EnhancedYoleApp(
-                        droppedFile = droppedFile,
-                        onDroppedFileConsumed = { droppedFile = null },
-                        onExit = { exitRequested = true }
-                    )
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        EnhancedYoleApp(
+                            droppedFile = droppedFile,
+                            onDroppedFileConsumed = { droppedFile = null },
+                            onExit = { exitRequested = true }
+                        )
+                    }
                 }
             }
         }

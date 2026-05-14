@@ -32,6 +32,10 @@ import androidx.compose.ui.window.CanvasBasedWindow
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.TextFormat
+import digital.vasic.yole.syntax.theme.LegacyThemeBridge
+import digital.vasic.yole.syntax.theme.Theme
+import digital.vasic.yole.syntax.theme.ThemeProvider
+import digital.vasic.yole.syntax.theme.ThemeRegistry
 import digital.vasic.yole.ui.YoleColors
 import kotlinx.browser.document
 import kotlinx.browser.localStorage
@@ -55,10 +59,27 @@ fun main() {
     PWAFeatures.initialize()
 
     CanvasBasedWindow(canvasElementId = "yoleCanvas", title = "Yole - IDE Editor") {
-        MaterialTheme(
-            colorScheme = darkColorScheme()
-        ) {
-            EnhancedYoleWebApp()
+        // iter-57 Phase 3: ThemeProvider publishes the active VS Code theme
+        // to every Composable. Wasm/JS cannot yet fetch bundled JSON theme
+        // assets (that lands in Phase 6); for now we seed an in-memory Theme
+        // built from the LegacyThemeBridge so LocalTheme.current returns a
+        // usable value identical to pre-iter-57 dark mode.
+        LaunchedEffect(Unit) {
+            ThemeRegistry.setActive(
+                Theme(
+                    name = "Yole Dark",
+                    type = "dark",
+                    uiColors = LegacyThemeBridge.legacyDark,
+                    tokenColors = emptyMap(),
+                ),
+            )
+        }
+        ThemeProvider {
+            MaterialTheme(
+                colorScheme = darkColorScheme()
+            ) {
+                EnhancedYoleWebApp()
+            }
         }
     }
 }

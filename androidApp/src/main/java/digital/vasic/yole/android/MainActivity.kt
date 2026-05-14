@@ -22,9 +22,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import digital.vasic.yole.android.ui.YoleApp
 import digital.vasic.yole.android.util.FirebaseUtil
+import digital.vasic.yole.syntax.theme.ThemeProvider
+import digital.vasic.yole.syntax.theme.ThemeRegistry
 import digital.vasic.yole.util.AppContextHolder
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
@@ -39,12 +42,28 @@ class MainActivity : ComponentActivity() {
             if (Environment.isExternalStorageManager()) {
                 // Permission granted, reload the app content
                 setContent {
-                    MaterialTheme {
-                        Surface(
-                            modifier = Modifier.fillMaxSize(),
-                            color = MaterialTheme.colorScheme.background
-                        ) {
-                            YoleApp()
+                    // iter-57 Phase 3: every Composable subtree consuming theme
+                    // colors flows through this provider. Loads "Yole Dark" by
+                    // default so legacy color values continue to render until
+                    // the user picks a different theme.
+                    ThemeProvider {
+                        LaunchedEffect(Unit) {
+                            try {
+                                ThemeRegistry.setActive("Yole Dark")
+                            } catch (t: Throwable) {
+                                android.util.Log.w(
+                                    "MainActivity",
+                                    "ThemeRegistry init skipped: ${t.message}",
+                                )
+                            }
+                        }
+                        MaterialTheme {
+                            Surface(
+                                modifier = Modifier.fillMaxSize(),
+                                color = MaterialTheme.colorScheme.background
+                            ) {
+                                YoleApp()
+                            }
                         }
                     }
                 }
@@ -101,17 +120,32 @@ class MainActivity : ComponentActivity() {
         }
         
         setContent {
-            MaterialTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    YoleApp()
+            // iter-57 Phase 3: ThemeProvider seeds LocalTheme with the active
+            // VS Code theme (default Yole Dark). LaunchedEffect runs once on
+            // first composition and is a no-op on Robolectric / missing resources.
+            ThemeProvider {
+                LaunchedEffect(Unit) {
+                    try {
+                        ThemeRegistry.setActive("Yole Dark")
+                    } catch (t: Throwable) {
+                        android.util.Log.w(
+                            "MainActivity",
+                            "ThemeRegistry init skipped: ${t.message}",
+                        )
+                    }
+                }
+                MaterialTheme {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        YoleApp()
+                    }
                 }
             }
         }
     }
-    
+
     override fun onResume() {
         super.onResume()
         // Check permission every time app resumes and request if not granted.

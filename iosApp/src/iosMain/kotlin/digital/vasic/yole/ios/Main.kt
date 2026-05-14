@@ -43,6 +43,10 @@ import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.TextFormat
 import digital.vasic.yole.model.Document
 import digital.vasic.yole.model.currentTimeMillis
+import digital.vasic.yole.syntax.theme.ThemeProvider
+import digital.vasic.yole.syntax.theme.ThemeRegistry
+import digital.vasic.yole.syntax.theme.LegacyThemeBridge
+import digital.vasic.yole.syntax.theme.Theme
 import kotlinx.coroutines.*
 import platform.Foundation.NSUserDefaults
 
@@ -166,8 +170,25 @@ class YoleIOSSettings {
  */
 @Composable
 fun YoleIOSApp() {
-    MaterialTheme {
-        YoleAppContent()
+    // iter-57 Phase 3: ThemeProvider exposes the active VS Code theme to all
+    // Composables under it. iOS cannot yet load JSON theme resources from
+    // NSBundle (that lands in Phase 7); for now we seed an in-memory Theme
+    // built from the LegacyThemeBridge palette so LocalTheme.current returns
+    // a usable value identical to pre-iter-57 colors.
+    LaunchedEffect(Unit) {
+        ThemeRegistry.setActive(
+            Theme(
+                name = "Yole Dark",
+                type = "dark",
+                uiColors = LegacyThemeBridge.legacyDark,
+                tokenColors = emptyMap(),
+            ),
+        )
+    }
+    ThemeProvider {
+        MaterialTheme {
+            YoleAppContent()
+        }
     }
 }
 
