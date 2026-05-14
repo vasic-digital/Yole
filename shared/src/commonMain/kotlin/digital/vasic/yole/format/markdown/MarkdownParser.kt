@@ -111,7 +111,22 @@ class MarkdownParser : TextParser {
             if (trimmed.startsWith("```")) {
                 if (!inCodeBlock) {
                     codeBlockLanguage = trimmed.substring(3).trim()
-                    html.append("<pre><code>")
+                    // iter-57 Phase 10: emit `class="language-X"` so
+                    // PreviewCodeBlockHighlighter can locate and tokenize
+                    // fenced blocks. Empty language → bare `<pre><code>`
+                    // (preserved verbatim by the post-processor).
+                    if (codeBlockLanguage.isNotEmpty()) {
+                        val safeLang = codeBlockLanguage
+                            .lowercase()
+                            .filter { it.isLetterOrDigit() || it == '-' || it == '_' || it == '+' }
+                        if (safeLang.isNotEmpty()) {
+                            html.append("<pre><code class=\"language-$safeLang\">")
+                        } else {
+                            html.append("<pre><code>")
+                        }
+                    } else {
+                        html.append("<pre><code>")
+                    }
                     inCodeBlock = true
                 } else {
                     html.append("</code></pre>")

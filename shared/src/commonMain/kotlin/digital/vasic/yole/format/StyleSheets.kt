@@ -9,6 +9,7 @@
  *########################################################*/
 package digital.vasic.yole.format
 
+import digital.vasic.yole.syntax.theme.Theme
 import digital.vasic.yole.util.platformSynchronized
 
 /**
@@ -96,6 +97,37 @@ object StyleSheets {
      */
     fun clearCache() = platformSynchronized(cacheLock) {
         styleSheetCache.clear()
+    }
+
+    /**
+     * iter-57 Phase 10: emit a `<style>` block keyed on `.tok-<scope>`
+     * CSS classes from the active [theme]'s `tokenColors` map.
+     *
+     * Each token-color scope `foo.bar.baz` becomes one rule
+     * `.tok-foo-bar-baz { color: #RRGGBB; }` (the dots collapse to dashes
+     * because CSS identifiers may not contain dots).
+     * `PreviewCodeBlockHighlighter` emits matching `<span class="tok-…">`
+     * wrappers in tokenized fenced code blocks; pairing the two yields
+     * theme-driven preview syntax highlighting without baking colors
+     * into the HTML.
+     *
+     * Result is NOT cached (themes are mutable user state); callers that
+     * embed this in long-lived HTML should pass the active theme each
+     * render. The generated rules are sorted by scope key so the output
+     * is byte-stable for testing and for diffability.
+     */
+    fun tokenColorCss(theme: Theme): String {
+        if (theme.tokenColors.isEmpty()) return ""
+        val sb = StringBuilder()
+        sb.append("<style>\n")
+        for (scope in theme.tokenColors.keys.sorted()) {
+            val argb = theme.tokenColors[scope] ?: continue
+            val cssClass = "tok-" + scope.replace('.', '-')
+            val hex = "#" + (argb and 0xFFFFFF).toString(16).padStart(6, '0')
+            sb.append('.').append(cssClass).append(" { color: ").append(hex).append("; }\n")
+        }
+        sb.append("</style>")
+        return sb.toString()
     }
 
     /**

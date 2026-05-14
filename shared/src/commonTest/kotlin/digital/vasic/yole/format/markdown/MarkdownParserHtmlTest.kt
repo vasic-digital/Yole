@@ -217,7 +217,10 @@ class MarkdownParserHtmlTest {
         val content = "```kotlin\nfun main() {\n    println(\"Hello\")\n}\n```"
         val doc = parser.parse(content)
         val html = parser.toHtml(doc, lightMode = true)
-        assertTrue(html.contains("<pre><code>"))
+        // iter-57 Phase 10: when a fenced block declares a language, the
+        // parser emits `class="language-<lang>"` so PreviewCodeBlockHighlighter
+        // can locate and tokenize it.
+        assertTrue(html.contains("<pre><code class=\"language-kotlin\">"))
         assertTrue(html.contains("fun main()"))
     }
 
@@ -593,7 +596,11 @@ class MarkdownParserHtmlTest {
         assertTrue(html.contains("<strong>"))
         assertTrue(html.contains("<em>"))
         assertTrue(html.contains("<ul>"))
-        assertTrue(html.contains("<pre><code>"))
+        // iter-57 Phase 10: fenced ```kotlin block now emits the
+        // `class="language-kotlin"` attribute. Tolerate both bare and
+        // class-tagged forms here so this test stays focused on the
+        // overall document shape rather than the code-block attribute.
+        assertTrue(html.contains("<pre><code"))
         assertTrue(html.contains("<blockquote>"))
         assertTrue(html.contains("<table>"))
     }

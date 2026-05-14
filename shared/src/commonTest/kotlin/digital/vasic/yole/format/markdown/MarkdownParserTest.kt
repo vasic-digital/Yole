@@ -176,7 +176,9 @@ class MarkdownParserTest {
         val document = parser.parse(content)
         val html = parser.toHtml(document, true)
 
-        assertTrue(html.contains("<pre><code>"))
+        // iter-57 Phase 10: language-tagged fences emit `class="language-X"`
+        // so PreviewCodeBlockHighlighter can find them.
+        assertTrue(html.contains("<pre><code class=\"language-kotlin\">"))
         assertTrue(html.contains("fun main()"))
         assertTrue(html.contains("</code></pre>"))
     }
@@ -467,7 +469,9 @@ class MarkdownParserTest {
         assertTrue(html.contains("<strong>"))
         assertTrue(html.contains("<em>"))
         assertTrue(html.contains("<ul>"))
-        assertTrue(html.contains("<pre><code>"))
+        // iter-57 Phase 10: tolerate both bare `<pre><code>` and the
+        // class-tagged `<pre><code class="language-kotlin">` form.
+        assertTrue(html.contains("<pre><code"))
         assertTrue(html.contains("<blockquote>"))
         assertTrue(html.contains("<table>"))
     }
