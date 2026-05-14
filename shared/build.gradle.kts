@@ -9,6 +9,9 @@
  *########################################################*/
 
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 
 plugins {
     kotlin("multiplatform")
@@ -140,15 +143,38 @@ kotlin {
                 implementation(libs.sshj)   // SFTP via SSH
                 implementation(libs.smbj)   // SMB/CIFS
 
-                // Tree-Sitter (iter-57 Phase 5). The Java API loads fine on
-                // Android, but the upstream JAR ships native binaries only for
-                // x86_64/aarch64 linux/macos and x86_64-windows — no
-                // aarch64-linux-android.so. Consequence: on a real Android
-                // device, TokenizerEngine.initialize() returns Result.failure
-                // and the editor falls back to plain text. This is the honest
-                // path; producing fake tokens would violate CONST-035.
-                implementation(libs.tree.sitter)
-                implementation(libs.tree.sitter.markdown)
+                // Tree-Sitter (iter-57 Phase 5 — Android NDK fix landed
+                // post-Phase 13, ticket #android-tree-sitter-ndk-so-missing):
+                //
+                // The upstream bonede JAR ships native binaries only for 5
+                // desktop OS+arch combos (x86_64/aarch64 linux-gnu/macos +
+                // x86_64-windows) — no Android NDK binaries. To make
+                // syntax highlighting work on Android devices, the
+                // `repackageBonedeJarsForAndroid` Gradle task (defined below)
+                // resolves the bonede JARs, replaces their `lib/aarch64-linux-gnu-*.so`
+                // and `lib/x86_64-linux-gnu-*.so` resources with our own
+                // Android-NDK-built shared libraries (sourced from
+                // `shared/native/android-tree-sitter/<abi>/`, committed to the
+                // repo), and produces patched JARs under
+                // `build/repackaged-libs/`. The Android source set depends on
+                // those repackaged JARs instead of the upstream Maven
+                // coordinates. Bonede's NativeUtils.loadLib then transparently
+                // extracts our Android-compatible bytes at runtime.
+                //
+                // Architecture support:
+                //   arm64-v8a (aarch64) — primary target, modern Android
+                //   x86_64                — Android emulator + Chrome OS
+                //   armeabi-v7a (armv7l) — NOT supported by bonede's
+                //                         NativeUtils OS-arch detection
+                //                         (it only knows amd64/x86_64/aarch64).
+                //                         32-bit ARM dropped — Android 13+
+                //                         and Play Store require 64-bit
+                //                         per Google policy. Files retained
+                //                         in shared/native/android-tree-sitter/
+                //                         for future custom-loader use.
+                // Wired below — declared via dependencies { ... } after the
+                // repackage tasks are registered so AGP sees the explicit
+                // task-output relationship without an implicit-dep warning.
             }
         }
 
@@ -408,6 +434,15 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
+    // iter-57 #android-tree-sitter-ndk-so-missing — surface the prebuilt
+    // Android NDK libtree-sitter[-markdown].so files via standard
+    // jniLibs convention so AGP packages them at <apk>/lib/<abi>/lib*.so.
+    // Our Yole-replacement NativeUtils on Android then locates them via
+    // System.loadLibrary("tree-sitter") + System.loadLibrary("tree-sitter-markdown").
+    sourceSets.getByName("main").jniLibs.srcDirs(
+        layout.projectDirectory.dir("native/android-tree-sitter")
+    )
 }
 
 // Detekt configuration for static analysis
@@ -435,7 +470,7 @@ kover {
 
                 // Exclude generated code
                 annotatedBy("*Generated*")
-                
+
                 // Exclude test code from production coverage
                 packages("digital.vasic.yole.*Test*")
                 packages("digital.vasic.yole.*Tests*")
@@ -443,3 +478,171 @@ kover {
         }
     }
 }
+
+// =========================================================================
+// iter-57 Android NDK fix — #android-tree-sitter-ndk-so-missing
+// =========================================================================
+//
+// Resolves the long-standing gap that the bonede tree-sitter JARs do not
+// bundle Android NDK shared libraries. Two-step solution:
+//
+// 1. The .so files are built once via the Android NDK r29 clang
+//    toolchain against tree-sitter 0.22.6 + ikatyang's tree-sitter-markdown
+//    0.7.1 grammar (matching the bonede JAR versions pinned in
+//    libs.versions.toml). They are committed at
+//    shared/native/android-tree-sitter/<abi>/lib{tree-sitter,
+//    tree-sitter-markdown}.so and consumed via the standard Android
+//    jniLibs convention — androidApp.sourceSets.main.jniLibs.srcDirs
+//    points at that directory, so the APK ships them at
+//    <apk>/lib/<abi>/libtree-sitter.so etc.
+//
+// 2. The bonede `org.treesitter.utils.NativeUtils` class extracts JAR-
+//    embedded linux-gnu .so files at runtime — on Android, that flow
+//    fails (linux-gnu binaries are not loadable on bionic; ${user.home}
+//    is unwritable in app sandboxes; the CRC-overwrite logic destroys
+//    any operator-placed Android .so file). We therefore swap the
+//    bonede NativeUtils.class for a Yole-written drop-in replacement
+//    (source at shared/native/android-tree-sitter/java/...) that:
+//      - on Android (detected via java.vm.vendor / Dalvik / ART),
+//        loads the library via System.loadLibrary, which routes through
+//        the Android linker and picks up the jniLibs-placed .so file;
+//      - on Desktop / Server JVMs, preserves the bonede 0.22.6 extract-
+//        then-System.load flow byte-for-byte so :shared:desktopTest
+//        continues to pass.
+//
+// Architecture coverage: arm64-v8a + x86_64. armeabi-v7a is NOT included
+// because the upstream bonede NativeUtils we replace on Android already
+// would have rejected it (os.arch="armv7l" not in its supported set).
+// Google Play 64-bit-only policy + Android 13+ device shipping practice
+// make 32-bit ARM obsolete for new releases anyway.
+// =========================================================================
+val androidTreeSitterNativeDir =
+    layout.projectDirectory.dir("native/android-tree-sitter")
+val androidTreeSitterJavaDir =
+    layout.projectDirectory.dir("native/android-tree-sitter/java")
+val repackagedLibsDir = layout.buildDirectory.dir("repackaged-libs")
+val yoleAndroidNativeUtilsClassesDir = layout.buildDirectory.dir("yole-native-utils-classes")
+
+// Configuration that resolves only the upstream bonede JARs so we can
+// pull their bytes without polluting the Android compile classpath.
+val bonedeJarsToRepackage by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
+
+dependencies {
+    bonedeJarsToRepackage(libs.tree.sitter)
+    bonedeJarsToRepackage(libs.tree.sitter.markdown)
+}
+
+// Compile our Yole replacement org.treesitter.utils.NativeUtils against
+// JDK 11 bytecode (matching bonede's distribution). The output class
+// file is then patched into the repackaged JAR (replacing bonede's
+// original NativeUtils.class) by RepackageBonedeJarTask.
+val compileYoleNativeUtils = tasks.register<JavaCompile>(
+    "compileYoleAndroidNativeUtils"
+) {
+    group = "build"
+    description = "Compile Yole replacement org.treesitter.utils.NativeUtils for Android"
+    source = fileTree(androidTreeSitterJavaDir) { include("**/*.java") }
+    classpath = files()
+    destinationDirectory.set(yoleAndroidNativeUtilsClassesDir)
+    options.release.set(11)
+}
+
+abstract class RepackageBonedeJarTask : DefaultTask() {
+    @get:InputFile abstract val inputJar: RegularFileProperty
+    @get:InputDirectory abstract val compiledNativeUtilsDir: DirectoryProperty
+    @get:OutputFile abstract val outputJar: RegularFileProperty
+
+    @TaskAction
+    fun repackage() {
+        val srcJar = inputJar.get().asFile
+        val dstJar = outputJar.get().asFile
+        dstJar.parentFile.mkdirs()
+        val nativeUtilsClass = compiledNativeUtilsDir.get().asFile
+            .resolve("org/treesitter/utils/NativeUtils.class")
+        require(nativeUtilsClass.exists()) {
+            "Missing compiled NativeUtils.class at $nativeUtilsClass — " +
+                "verify compileYoleAndroidNativeUtils task ran."
+        }
+        val replacements = mapOf(
+            "org/treesitter/utils/NativeUtils.class" to nativeUtilsClass,
+        )
+        var matched = 0
+        ZipInputStream(srcJar.inputStream()).use { zin ->
+            ZipOutputStream(dstJar.outputStream()).use { zout ->
+                var entry = zin.nextEntry
+                while (entry != null) {
+                    val name = entry.name
+                    val replacement = replacements[name]
+                    if (replacement != null) {
+                        matched++
+                        val outEntry = ZipEntry(name)
+                        outEntry.time = entry.time
+                        zout.putNextEntry(outEntry)
+                        replacement.inputStream().use { it.copyTo(zout) }
+                        zout.closeEntry()
+                    } else {
+                        val outEntry = ZipEntry(name)
+                        outEntry.time = entry.time
+                        zout.putNextEntry(outEntry)
+                        if (!entry.isDirectory) zin.copyTo(zout)
+                        zout.closeEntry()
+                    }
+                    entry = zin.nextEntry
+                }
+            }
+        }
+        // bonede tree-sitter JAR has NativeUtils.class; tree-sitter-markdown
+        // does NOT (it depends transitively on tree-sitter for it). Both
+        // call paths are fine — matched==1 for tree-sitter, matched==0 for
+        // tree-sitter-markdown.
+        logger.lifecycle(
+            "Repackaged ${srcJar.name} → ${dstJar.name} (NativeUtils swaps=$matched)"
+        )
+    }
+}
+
+val repackageTreeSitterJar = tasks.register<RepackageBonedeJarTask>(
+    "repackageTreeSitterJarForAndroid"
+) {
+    group = "build"
+    description = "Patch bonede tree-sitter JAR with Yole replacement NativeUtils for Android"
+    dependsOn(compileYoleNativeUtils)
+    compiledNativeUtilsDir.set(yoleAndroidNativeUtilsClassesDir)
+    inputJar.fileProvider(provider {
+        bonedeJarsToRepackage.resolvedConfiguration.resolvedArtifacts
+            .single { it.moduleVersion.id.name == "tree-sitter" }
+            .file
+    })
+    outputJar.set(repackagedLibsDir.map { it.file("tree-sitter-android.jar") })
+}
+
+val repackageTreeSitterMarkdownJar = tasks.register<RepackageBonedeJarTask>(
+    "repackageTreeSitterMarkdownJarForAndroid"
+) {
+    group = "build"
+    description = "Pass-through copy of bonede tree-sitter-markdown JAR for the Android source set"
+    dependsOn(compileYoleNativeUtils)
+    compiledNativeUtilsDir.set(yoleAndroidNativeUtilsClassesDir)
+    inputJar.fileProvider(provider {
+        bonedeJarsToRepackage.resolvedConfiguration.resolvedArtifacts
+            .single { it.moduleVersion.id.name == "tree-sitter-markdown" }
+            .file
+    })
+    outputJar.set(repackagedLibsDir.map { it.file("tree-sitter-markdown-android.jar") })
+}
+
+// Re-bind the Android source set to the patched JARs produced by the
+// repackage tasks. Using `files(taskProvider)` carries the explicit
+// task-output dependency so AGP's strict validation does not flag an
+// implicit dependency (Gradle 8.11 error).
+dependencies {
+    val patchedTreeSitter = files(repackageTreeSitterJar.map { it.outputJar.get().asFile })
+    val patchedTreeSitterMarkdown = files(repackageTreeSitterMarkdownJar.map { it.outputJar.get().asFile })
+    add("androidMainImplementation", patchedTreeSitter)
+    add("androidMainImplementation", patchedTreeSitterMarkdown)
+}
+
+// jniLibs srcDirs is now configured inside the android { } block above.
