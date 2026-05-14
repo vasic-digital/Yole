@@ -6,8 +6,10 @@
  *
  * Android Theme Implementation for Yole
  *
- * Provides Material You dynamic colors, Android-specific theming,
- * and integration with the shared theme system.
+ * Provides Material You dynamic colors, Android-specific theming, and
+ * integration with the iter-57 VS Code theme system (ThemeProvider /
+ * LocalTheme). Material3 ColorScheme is derived from the active VS Code
+ * theme's colors.* keys via [LocalTheme.current.uiColor].
  *
  *########################################################*/
 
@@ -16,7 +18,14 @@ package digital.vasic.yole.android.ui.theme
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
@@ -25,13 +34,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import digital.vasic.yole.android.ui.YoleSettings
+import digital.vasic.yole.syntax.theme.LocalTheme
+import digital.vasic.yole.syntax.theme.Theme
 import digital.vasic.yole.ui.ThemeMode
 import digital.vasic.yole.ui.ThemeUtils
-import digital.vasic.yole.ui.YoleColors
 import digital.vasic.yole.ui.YoleTypography
 
 /**
  * Android-specific theme configuration with Material You support.
+ *
+ * iter-57 Phase 3b: semantic ColorScheme generation reads from the active
+ * VS Code [Theme] (via [LocalTheme]) so Material3 surfaces and tints stay
+ * consistent with editor/preview chrome.
  */
 object YoleAndroidTheme {
 
@@ -45,6 +59,7 @@ object YoleAndroidTheme {
         seedColor: Color? = null
     ): ColorScheme {
         val isDarkTheme = ThemeUtils.shouldUseDarkTheme(themeMode, isSystemInDarkTheme())
+        val theme = LocalTheme.current
 
         return when {
             // Material You dynamic colors with custom seed (Android 12+)
@@ -52,9 +67,9 @@ object YoleAndroidTheme {
                 createDynamicColorScheme(isDarkTheme, seedColor)
             }
 
-            // Fallback to custom semantic colors
+            // Fallback: derive Material3 ColorScheme from active VS Code theme
             else -> {
-                createSemanticColorScheme(isDarkTheme)
+                createSemanticColorScheme(isDarkTheme, theme)
             }
         }
     }
@@ -67,63 +82,47 @@ object YoleAndroidTheme {
         val context = LocalContext.current
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Dynamic color schemes are available on Android 12+
             if (seedColor != null) {
-                // Use custom seed color for dynamic color generation
                 if (isDarkTheme) {
-                    dynamicDarkColorScheme(context).copy(
-                        primary = seedColor,
-                        // Let Material You generate the rest of the palette from the seed
-                    )
+                    dynamicDarkColorScheme(context).copy(primary = seedColor)
                 } else {
-                    dynamicLightColorScheme(context).copy(
-                        primary = seedColor,
-                        // Let Material You generate the rest of the palette from the seed
-
-                    )
+                    dynamicLightColorScheme(context).copy(primary = seedColor)
                 }
             } else {
-                // Use default dynamic color schemes
-                if (isDarkTheme) {
-                    dynamicDarkColorScheme(context)
-                } else {
-                    dynamicLightColorScheme(context)
-                }
+                if (isDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             }
         } else {
-            // Fallback to static color schemes for older Android versions
-            if (isDarkTheme) {
-                darkColorScheme()
-            } else {
-                lightColorScheme()
-            }
+            if (isDarkTheme) darkColorScheme() else lightColorScheme()
         }
     }
 
     /**
-     * Creates a color scheme using semantic color tokens.
+     * Derives a Material3 ColorScheme from the active VS Code [Theme].
+     * Every Material3 role is mapped to the closest VS Code colors.* key.
      */
-    private fun createSemanticColorScheme(isDarkTheme: Boolean): ColorScheme {
+    private fun createSemanticColorScheme(isDarkTheme: Boolean, theme: Theme): ColorScheme {
         val baseScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
+        val accent = theme.uiColor("focusBorder")?.let { Color(it) } ?: baseScheme.primary
+        val surface = theme.uiColor("sideBar.background")?.let { Color(it) } ?: baseScheme.surface
+        val background = theme.uiColor("editor.background")?.let { Color(it) } ?: baseScheme.background
+        val onBackground = theme.uiColor("editor.foreground")?.let { Color(it) } ?: baseScheme.onBackground
+        val onSurface = theme.uiColor("editor.foreground")?.let { Color(it) } ?: baseScheme.onSurface
+        val outline = theme.uiColor("editorWidget.border")?.let { Color(it) } ?: baseScheme.outline
 
-        // Customize the base scheme with our semantic colors
         val customScheme = baseScheme.copy(
-            primary = YoleColors.BrandPrimary,
-            secondary = YoleColors.BrandSecondary,
-            tertiary = YoleColors.BrandTertiary,
-            error = YoleColors.Error,
-            surface = YoleColors.SurfacePrimary,
-            onSurface = YoleColors.TextPrimary,
-            background = YoleColors.SurfacePrimary,
-            onBackground = YoleColors.TextPrimary,
-            outline = YoleColors.BorderMedium
+            primary = accent,
+            secondary = accent,
+            tertiary = accent,
+            error = baseScheme.error,
+            surface = surface,
+            onSurface = onSurface,
+            background = background,
+            onBackground = onBackground,
+            outline = outline
         )
 
-        // Validate accessibility
         val violations = ThemeUtils.validateColorSchemeAccessibility(customScheme)
         if (violations.isNotEmpty()) {
-            // Log accessibility violations using Android's Log class
-            // This is only logged in debug builds and doesn't affect release performance
             val tag = "YoleTheme"
             if (android.util.Log.isLoggable(tag, android.util.Log.WARN)) {
                 android.util.Log.w(tag, "Color scheme accessibility violations: ${violations.joinToString(", ")}")
@@ -182,7 +181,6 @@ fun YoleAndroidTheme(
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            // Safe cast to Activity - only set status bar if context is an Activity
             (view.context as? Activity)?.window?.let { window ->
                 window.statusBarColor = colorScheme.primary.toArgb()
                 WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isDarkTheme

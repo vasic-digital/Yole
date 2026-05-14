@@ -6,21 +6,28 @@
  *
  * Desktop Theme Implementation for Yole
  *
- * Provides desktop-native theming with system integration,
- * custom accent colors, and high contrast support.
+ * Provides desktop-native theming with system integration, custom accent
+ * colors, and high contrast support. iter-57 Phase 3b: Material3
+ * ColorScheme is derived from the active VS Code [Theme] via LocalTheme.
  *
  *########################################################*/
 
 package digital.vasic.yole.desktop.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import digital.vasic.yole.desktop.ui.YoleDesktopSettings
+import digital.vasic.yole.syntax.theme.LocalTheme
+import digital.vasic.yole.syntax.theme.Theme
 import digital.vasic.yole.ui.ThemeMode
 import digital.vasic.yole.ui.ThemeUtils
-import digital.vasic.yole.ui.YoleColors
 import digital.vasic.yole.ui.YoleTypography
 import kotlin.text.toIntOrNull
 
@@ -66,11 +73,10 @@ object YoleDesktopTheme {
         accentColor: Color? = null
     ): ColorScheme {
         val isDarkTheme = ThemeUtils.shouldUseDarkTheme(themeMode, isSystemInDarkTheme())
+        val theme = LocalTheme.current
 
-        // Start with semantic color scheme
-        val baseScheme = createSemanticColorScheme(isDarkTheme)
+        val baseScheme = createSemanticColorScheme(isDarkTheme, theme)
 
-        // Apply custom accent color if provided
         return if (accentColor != null) {
             applyAccentColor(baseScheme, accentColor, isDarkTheme)
         } else {
@@ -79,51 +85,42 @@ object YoleDesktopTheme {
     }
 
     /**
-     * Creates a color scheme using IDE-inspired color tokens optimized for desktop.
-     * Dark mode uses VS Code-inspired colors; light mode uses clean editor colors.
+     * Derives a Material3 ColorScheme from the active VS Code [Theme].
+     * Mirrors the legacy `IDE Dark/Light` mapping, but pulls every color
+     * out of `theme.uiColor(...)` rather than hardcoded legacy palette tokens.
      */
-    private fun createSemanticColorScheme(isDarkTheme: Boolean): ColorScheme {
+    private fun createSemanticColorScheme(isDarkTheme: Boolean, theme: Theme): ColorScheme {
         val baseScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
 
-        return if (isDarkTheme) {
-            // IDE Dark Theme (VS Code inspired)
-            baseScheme.copy(
-                primary = YoleColors.BrandPrimary,
-                onPrimary = Color.White,
-                primaryContainer = YoleColors.Ide.DarkPrimaryContainer,
-                onPrimaryContainer = YoleColors.Dark.TextPrimary,
-                secondary = YoleColors.BrandSecondary,
-                tertiary = YoleColors.BrandTertiary,
-                error = YoleColors.Error,
-                surface = YoleColors.Ide.DarkSurface,
-                onSurface = YoleColors.Dark.TextPrimary,
-                surfaceVariant = YoleColors.Ide.DarkSurfaceVariant,
-                onSurfaceVariant = YoleColors.Dark.TextSecondary,
-                background = YoleColors.Ide.DarkBackground,
-                onBackground = YoleColors.Dark.TextPrimary,
-                outline = YoleColors.Ide.DarkBorder,
-                outlineVariant = YoleColors.Ide.DarkMutedText
-            )
-        } else {
-            // IDE Light Theme
-            baseScheme.copy(
-                primary = YoleColors.BrandPrimary,
-                onPrimary = Color.White,
-                primaryContainer = YoleColors.InteractivePressed,
-                onPrimaryContainer = YoleColors.TextPrimary,
-                secondary = YoleColors.BrandSecondary,
-                tertiary = YoleColors.BrandTertiary,
-                error = YoleColors.Error,
-                surface = YoleColors.Ide.LightSurface,
-                onSurface = YoleColors.TextPrimary,
-                surfaceVariant = YoleColors.Ide.LightSurfaceVariant,
-                onSurfaceVariant = YoleColors.Ide.LightMutedText,
-                background = YoleColors.Ide.LightBackground,
-                onBackground = YoleColors.TextPrimary,
-                outline = YoleColors.Ide.LightBorder,
-                outlineVariant = YoleColors.BorderMedium
-            )
-        }
+        val background = theme.uiColor("editor.background")?.let { Color(it) } ?: baseScheme.background
+        val surface = theme.uiColor("sideBar.background")?.let { Color(it) } ?: baseScheme.surface
+        val surfaceVariant =
+            theme.uiColor("tab.inactiveBackground")?.let { Color(it) } ?: baseScheme.surfaceVariant
+        val onBackground = theme.uiColor("editor.foreground")?.let { Color(it) } ?: baseScheme.onBackground
+        val onSurface = theme.uiColor("editor.foreground")?.let { Color(it) } ?: baseScheme.onSurface
+        val onSurfaceVariant =
+            theme.uiColor("editorLineNumber.foreground")?.let { Color(it) } ?: baseScheme.onSurfaceVariant
+        val accent = theme.uiColor("focusBorder")?.let { Color(it) } ?: baseScheme.primary
+        val outline = theme.uiColor("editorWidget.border")?.let { Color(it) } ?: baseScheme.outline
+        val outlineVariant =
+            theme.uiColor("editorLineNumber.foreground")?.let { Color(it) } ?: baseScheme.outlineVariant
+
+        return baseScheme.copy(
+            primary = accent,
+            onPrimary = Color.White,
+            primaryContainer = accent.copy(alpha = if (isDarkTheme) 0.3f else 0.15f),
+            onPrimaryContainer = onBackground,
+            secondary = accent,
+            tertiary = accent,
+            surface = surface,
+            onSurface = onSurface,
+            surfaceVariant = surfaceVariant,
+            onSurfaceVariant = onSurfaceVariant,
+            background = background,
+            onBackground = onBackground,
+            outline = outline,
+            outlineVariant = outlineVariant
+        )
     }
 
     /**
@@ -134,11 +131,10 @@ object YoleDesktopTheme {
         accentColor: Color,
         isDarkTheme: Boolean
     ): ColorScheme {
-        // Calculate derived colors from accent
         val accentContainer = if (isDarkTheme) {
-            accentColor.copy(alpha = 0.2f) // Darker container
+            accentColor.copy(alpha = 0.2f)
         } else {
-            accentColor.copy(alpha = 0.1f) // Lighter container
+            accentColor.copy(alpha = 0.1f)
         }
 
         val onAccent = if (ThemeUtils.calculateContrastRatio(accentColor, Color.White) > 4.5) {
@@ -169,7 +165,6 @@ object YoleDesktopTheme {
         val baseScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
 
         return if (isDarkTheme) {
-            // High contrast dark theme
             baseScheme.copy(
                 primary = Color.White,
                 onPrimary = Color.Black,
@@ -180,7 +175,6 @@ object YoleDesktopTheme {
                 outline = Color.White
             )
         } else {
-            // High contrast light theme
             baseScheme.copy(
                 primary = Color.Black,
                 onPrimary = Color.White,
@@ -220,7 +214,7 @@ object YoleDesktopTheme {
      * Creates Material3 Shapes optimized for desktop.
      */
     fun createShapes(): Shapes {
-        return Shapes() // Uses Material3 defaults, can be customized for desktop
+        return Shapes()
     }
 }
 

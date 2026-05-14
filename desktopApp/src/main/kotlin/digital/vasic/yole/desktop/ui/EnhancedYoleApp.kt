@@ -39,10 +39,18 @@ import digital.vasic.yole.desktop.windowVisibilityToggle
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.TextFormat
-import digital.vasic.yole.ui.YoleColors
 import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
+
+// iter-57 Phase 3b: YoleColors removed. The two color constants used by the
+// non-Composable helpers below (`buildHighlightedText`, `htmlToAnnotatedString`)
+// are inlined as literal Compose Colors. These are deliberately non-theme
+// colors: `findHighlightColor` is the universal Material Orange 500 tint used
+// across all themes, and `codeBlockBackgroundColor` is a constant block-quote
+// tint that remains readable on both light and dark surfaces.
+private val findHighlightColor = androidx.compose.ui.graphics.Color(0xFFFF9800)
+private val codeBlockBackgroundColor = androidx.compose.ui.graphics.Color(0xFF333333)
 
 /**
  * Undo/Redo manager that tracks text changes.
@@ -375,7 +383,7 @@ fun EnhancedYoleApp(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(IdeDarkBackground)
+            .background(ideBackground())
             .onKeyEvent { event ->
                 val action = keyboardShortcuts.handleKeyEvent(event)
                 when (action) {
@@ -605,7 +613,7 @@ fun EnhancedYoleApp(
                     modifier = Modifier
                         .width(1.dp)
                         .fillMaxHeight()
-                        .background(IdeDarkBorder)
+                        .background(ideBorder())
                 )
             }
 
@@ -636,7 +644,7 @@ fun EnhancedYoleApp(
                             modifier = Modifier
                                 .width(1.dp)
                                 .fillMaxHeight()
-                                .background(IdeDarkBorder)
+                                .background(ideBorder())
                         )
                         LivePreviewPane(
                             content = window.content,
@@ -762,7 +770,7 @@ private fun IdeTabBar(
         modifier = Modifier
             .fillMaxWidth()
             .height(34.dp)
-            .background(IdeDarkSurfaceVariant)
+            .background(ideSurfaceVariant())
             .horizontalScroll(rememberScrollState()),
         verticalAlignment = Alignment.Bottom
     ) {
@@ -772,12 +780,12 @@ private fun IdeTabBar(
                 modifier = Modifier
                     .clickable { onTabSelected(window) }
                     .background(
-                        if (isActive) IdeDarkBackground else Color.Transparent
+                        if (isActive) ideBackground() else Color.Transparent
                     )
                     .then(
                         if (isActive) Modifier.border(
                             width = 1.dp,
-                            color = IdeDarkBorder
+                            color = ideBorder()
                         ) else Modifier
                     )
                     .padding(horizontal = 12.dp, vertical = 6.dp)
@@ -791,7 +799,7 @@ private fun IdeTabBar(
                         Box(
                             modifier = Modifier
                                 .size(6.dp)
-                                .background(IdeAccent, shape = MaterialTheme.shapes.small)
+                                .background(ideAccent(), shape = MaterialTheme.shapes.small)
                         )
                     }
                     Text(
@@ -799,7 +807,7 @@ private fun IdeTabBar(
                         style = TextStyle(
                             fontSize = 12.sp,
                             fontFamily = FontFamily.Monospace,
-                            color = if (isActive) IdeTextPrimary else IdeTextSecondary
+                            color = if (isActive) ideTextPrimary() else ideTextSecondary()
                         ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -809,7 +817,7 @@ private fun IdeTabBar(
                         text = "x",
                         style = TextStyle(
                             fontSize = 11.sp,
-                            color = IdeTextMuted
+                            color = ideTextMuted()
                         ),
                         modifier = Modifier
                             .clickable { onTabClosed(window) }
@@ -830,7 +838,7 @@ private fun IdeTabBar(
                 style = TextStyle(
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = IdeTextSecondary
+                    color = ideTextSecondary()
                 )
             )
         }
@@ -841,7 +849,7 @@ private fun IdeTabBar(
         modifier = Modifier
             .fillMaxWidth()
             .height(1.dp)
-            .background(IdeDarkBorder)
+            .background(ideBorder())
     )
 }
 
@@ -873,7 +881,7 @@ private fun IdeToolbar(
         modifier = modifier
             .fillMaxWidth()
             .height(36.dp)
-            .background(IdeDarkSurface)
+            .background(ideSurface())
             .padding(horizontal = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -919,7 +927,7 @@ private fun IdeToolbar(
         modifier = Modifier
             .fillMaxWidth()
             .height(1.dp)
-            .background(IdeDarkBorder)
+            .background(ideBorder())
     )
 }
 
@@ -938,7 +946,7 @@ private fun IdeToolbarButton(
             text = label,
             style = TextStyle(
                 fontSize = 12.sp,
-                color = if (enabled) IdeTextPrimary else IdeTextMuted
+                color = if (enabled) ideTextPrimary() else ideTextMuted()
             )
         )
     }
@@ -950,7 +958,7 @@ private fun IdeToolbarSeparator() {
         modifier = Modifier
             .width(1.dp)
             .height(20.dp)
-            .background(IdeDarkBorder)
+            .background(ideBorder())
     )
     Spacer(modifier = Modifier.width(2.dp))
 }
@@ -970,13 +978,13 @@ private fun IdeFileExplorer(
 ) {
     var selectedTab by remember { mutableStateOf(0) }
 
-    Column(modifier = modifier.background(IdeDarkSurface)) {
+    Column(modifier = modifier.background(ideSurface())) {
         // Explorer header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(32.dp)
-                .background(IdeDarkSurfaceVariant)
+                .background(ideSurfaceVariant())
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -986,14 +994,14 @@ private fun IdeFileExplorer(
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.sp,
-                    color = IdeTextSecondary
+                    color = ideTextSecondary()
                 )
             )
             Spacer(modifier = Modifier.weight(1f))
             // Tab toggle
             Text(
                 text = if (selectedTab == 0) "Recent" else "Files",
-                style = TextStyle(fontSize = 11.sp, color = IdeAccent),
+                style = TextStyle(fontSize = 11.sp, color = ideAccent()),
                 modifier = Modifier
                     .clickable { selectedTab = if (selectedTab == 0) 1 else 0 }
                     .padding(4.dp)
@@ -1004,7 +1012,7 @@ private fun IdeFileExplorer(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(IdeDarkBorder)
+                .background(ideBorder())
         )
 
         when (selectedTab) {
@@ -1053,7 +1061,7 @@ private fun IdeFileBrowser(
             style = TextStyle(
                 fontSize = 10.sp,
                 fontFamily = FontFamily.Monospace,
-                color = IdeTextMuted
+                color = ideTextMuted()
             ),
             maxLines = 2,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -1069,7 +1077,7 @@ private fun IdeFileBrowser(
         ) {
             Text(
                 text = "[..] Up",
-                style = TextStyle(fontSize = 11.sp, color = IdeAccent),
+                style = TextStyle(fontSize = 11.sp, color = ideAccent()),
                 modifier = Modifier
                     .clickable(enabled = currentDirectory.parentFile != null) {
                         currentDirectory.parentFile?.let { currentDirectory = it }
@@ -1080,15 +1088,15 @@ private fun IdeFileBrowser(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "Hidden",
-                    style = TextStyle(fontSize = 10.sp, color = IdeTextMuted)
+                    style = TextStyle(fontSize = 10.sp, color = ideTextMuted())
                 )
                 Checkbox(
                     checked = showHiddenFiles,
                     onCheckedChange = { showHiddenFiles = it },
                     modifier = Modifier.size(20.dp),
                     colors = CheckboxDefaults.colors(
-                        checkedColor = IdeAccent,
-                        uncheckedColor = IdeTextMuted
+                        checkedColor = ideAccent(),
+                        uncheckedColor = ideTextMuted()
                     )
                 )
             }
@@ -1098,14 +1106,14 @@ private fun IdeFileBrowser(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(IdeDarkBorder)
+                .background(ideBorder())
                 .padding(vertical = 2.dp)
         )
 
         if (directoryEntries.isEmpty()) {
             Text(
                 text = "Empty directory",
-                style = TextStyle(fontSize = 11.sp, color = IdeTextMuted),
+                style = TextStyle(fontSize = 11.sp, color = ideTextMuted()),
                 modifier = Modifier.padding(8.dp)
             )
         } else {
@@ -1131,7 +1139,7 @@ private fun IdeFileBrowser(
                                 fontSize = 10.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isDirectory) IdeAccent else IdeTextMuted
+                                color = if (isDirectory) ideAccent() else ideTextMuted()
                             ),
                             modifier = Modifier
                                 .size(16.dp)
@@ -1144,7 +1152,7 @@ private fun IdeFileBrowser(
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = if (isDirectory) FontWeight.Medium else FontWeight.Normal,
-                                color = if (isDirectory) IdeAccent else IdeTextPrimary
+                                color = if (isDirectory) ideAccent() else ideTextPrimary()
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -1169,7 +1177,7 @@ private fun IdeRecentFilesList(
         if (recentFiles.isEmpty()) {
             Text(
                 text = "No recent files",
-                style = TextStyle(fontSize = 11.sp, color = IdeTextMuted),
+                style = TextStyle(fontSize = 11.sp, color = ideTextMuted()),
                 modifier = Modifier.padding(8.dp)
             )
         } else {
@@ -1186,7 +1194,7 @@ private fun IdeRecentFilesList(
                             style = TextStyle(
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace,
-                                color = IdeTextPrimary
+                                color = ideTextPrimary()
                             ),
                             maxLines = 1
                         )
@@ -1195,7 +1203,7 @@ private fun IdeRecentFilesList(
                             style = TextStyle(
                                 fontSize = 10.sp,
                                 fontFamily = FontFamily.Monospace,
-                                color = IdeTextMuted
+                                color = ideTextMuted()
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -1241,14 +1249,14 @@ private fun LivePreviewPane(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(IdeDarkBackground)
+            .background(ideBackground())
     ) {
         // Preview header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(28.dp)
-                .background(IdeDarkSurfaceVariant)
+                .background(ideSurfaceVariant())
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -1258,7 +1266,7 @@ private fun LivePreviewPane(
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.sp,
-                    color = IdeTextSecondary
+                    color = ideTextSecondary()
                 )
             )
         }
@@ -1267,7 +1275,7 @@ private fun LivePreviewPane(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(IdeDarkBorder)
+                .background(ideBorder())
         )
 
         Box(
@@ -1284,7 +1292,7 @@ private fun LivePreviewPane(
                 style = TextStyle(
                     fontSize = 13.sp,
                     fontFamily = FontFamily.Monospace,
-                    color = IdeTextPrimary,
+                    color = ideTextPrimary(),
                     lineHeight = 20.sp
                 ),
                 modifier = Modifier.fillMaxWidth()
@@ -1442,7 +1450,7 @@ private fun htmlToAnnotatedString(html: String): AnnotatedString {
                         addStyle(
                             SpanStyle(
                                 fontFamily = FontFamily.Monospace,
-                                background = YoleColors.Ide.DarkActivityBar
+                                background = codeBlockBackgroundColor
                             ),
                             start = startIdx,
                             end = this.length
@@ -1528,13 +1536,13 @@ private fun EnhancedEditorScreen(
         }
     }
 
-    Column(modifier = modifier.background(IdeDarkBackground)) {
+    Column(modifier = modifier.background(ideBackground())) {
         // Editor header with format info
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(28.dp)
-                .background(IdeDarkSurfaceVariant)
+                .background(ideSurfaceVariant())
                 .padding(horizontal = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -1544,7 +1552,7 @@ private fun EnhancedEditorScreen(
                 style = TextStyle(
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
-                    color = IdeTextPrimary
+                    color = ideTextPrimary()
                 )
             )
 
@@ -1555,13 +1563,13 @@ private fun EnhancedEditorScreen(
                         text = format.name,
                         style = TextStyle(
                             fontSize = 10.sp,
-                            color = IdeAccent
+                            color = ideAccent()
                         )
                     )
                 }
                 Text(
                     text = "UTF-8",
-                    style = TextStyle(fontSize = 10.sp, color = IdeTextMuted)
+                    style = TextStyle(fontSize = 10.sp, color = ideTextMuted())
                 )
             }
         }
@@ -1570,7 +1578,7 @@ private fun EnhancedEditorScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(IdeDarkBorder)
+                .background(ideBorder())
         )
 
         // Enhanced Text Editor
@@ -1616,13 +1624,13 @@ private fun buildHighlightedText(
             if (pos < text.length) {
                 if (index == currentMatchIndex) {
                     addStyle(
-                        SpanStyle(background = YoleColors.Warning),
+                        SpanStyle(background = findHighlightColor),
                         start = pos,
                         end = end
                     )
                 } else {
                     addStyle(
-                        SpanStyle(background = YoleColors.Warning.copy(alpha = 0.3f)),
+                        SpanStyle(background = findHighlightColor.copy(alpha = 0.3f)),
                         start = pos,
                         end = end
                     )
@@ -1652,7 +1660,7 @@ private fun EnhancedTextEditor(
     val textStyle = TextStyle(
         fontSize = fontSize,
         fontFamily = FontFamily.Monospace,
-        color = IdeTextPrimary,
+        color = ideTextPrimary(),
         lineHeight = (appSettings.appearance.fontSize * 1.5).sp
     )
 
@@ -1687,7 +1695,7 @@ private fun EnhancedTextEditor(
                 modifier = Modifier
                     .fillMaxHeight()
                     .width(52.dp)
-                    .background(IdeDarkSurface)
+                    .background(ideSurface())
                     .verticalScroll(scrollState)
                     .padding(end = 8.dp, top = 8.dp, start = 4.dp)
             ) {
@@ -1700,7 +1708,7 @@ private fun EnhancedTextEditor(
                             text = i.toString(),
                             style = textStyle.copy(
                                 fontSize = fontSize,
-                                color = IdeTextSecondary,
+                                color = ideTextSecondary(),
                                 lineHeight = (appSettings.appearance.fontSize * 1.5).sp
                             ),
                             modifier = Modifier.padding(horizontal = 4.dp)
@@ -1714,7 +1722,7 @@ private fun EnhancedTextEditor(
                 modifier = Modifier
                     .width(1.dp)
                     .fillMaxHeight()
-                    .background(IdeDarkBorder)
+                    .background(ideBorder())
             )
         }
 
@@ -1728,11 +1736,11 @@ private fun EnhancedTextEditor(
                 textFieldValue = newValue
             },
             textStyle = textStyle,
-            cursorBrush = SolidColor(IdeAccent),
+            cursorBrush = SolidColor(ideAccent()),
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .background(IdeDarkBackground)
+                .background(ideBackground())
                 .padding(start = 8.dp, top = 8.dp, end = 8.dp)
                 .verticalScroll(scrollState)
                 .then(
@@ -1744,7 +1752,7 @@ private fun EnhancedTextEditor(
                     if (content.isEmpty()) {
                         Text(
                             text = "Start typing...",
-                            style = textStyle.copy(color = IdeTextMuted)
+                            style = textStyle.copy(color = ideTextMuted())
                         )
                     }
                     innerTextField()
@@ -1772,7 +1780,7 @@ private fun IdeWelcomeScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(IdeDarkBackground)
+            .background(ideBackground())
             .padding(64.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -1782,7 +1790,7 @@ private fun IdeWelcomeScreen(
             style = TextStyle(
                 fontSize = 48.sp,
                 fontWeight = FontWeight.Light,
-                color = IdeTextPrimary,
+                color = ideTextPrimary(),
                 letterSpacing = 4.sp
             )
         )
@@ -1793,7 +1801,7 @@ private fun IdeWelcomeScreen(
             text = "Text Editor",
             style = TextStyle(
                 fontSize = 16.sp,
-                color = IdeTextSecondary,
+                color = ideTextSecondary(),
                 letterSpacing = 2.sp
             )
         )
@@ -1816,7 +1824,7 @@ private fun IdeWelcomeScreen(
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.sp,
-                    color = IdeTextSecondary
+                    color = ideTextSecondary()
                 )
             )
 
@@ -1838,7 +1846,7 @@ private fun IdeWelcomeScreen(
                             style = TextStyle(
                                 fontSize = 13.sp,
                                 fontFamily = FontFamily.Monospace,
-                                color = IdeAccent
+                                color = ideAccent()
                             ),
                             maxLines = 1
                         )
@@ -1848,7 +1856,7 @@ private fun IdeWelcomeScreen(
                             style = TextStyle(
                                 fontSize = 11.sp,
                                 fontFamily = FontFamily.Monospace,
-                                color = IdeTextMuted
+                                color = ideTextMuted()
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -1869,7 +1877,7 @@ private fun IdeWelcomeButton(
     Box(
         modifier = Modifier
             .clickable(onClick = onClick)
-            .border(width = 1.dp, color = IdeDarkBorder, shape = RoundedCornerShape(6.dp))
+            .border(width = 1.dp, color = ideBorder(), shape = RoundedCornerShape(6.dp))
             .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1877,7 +1885,7 @@ private fun IdeWelcomeButton(
                 text = label,
                 style = TextStyle(
                     fontSize = 14.sp,
-                    color = IdeTextPrimary
+                    color = ideTextPrimary()
                 )
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -1886,7 +1894,7 @@ private fun IdeWelcomeButton(
                 style = TextStyle(
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
-                    color = IdeTextMuted
+                    color = ideTextMuted()
                 )
             )
         }
@@ -1911,7 +1919,7 @@ private fun IdeEnhancedStatusBar(
     Row(
         modifier = modifier
             .height(24.dp)
-            .background(IdeAccent),
+            .background(ideAccent()),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

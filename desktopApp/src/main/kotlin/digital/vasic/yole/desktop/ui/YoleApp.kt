@@ -55,30 +55,16 @@ import androidx.compose.ui.unit.sp
 import digital.vasic.yole.desktop.ui.theme.YoleDesktopTheme
 import digital.vasic.yole.desktop.ui.theme.YoleDesktopThemeWithSettings
 import digital.vasic.yole.format.FormatRegistry
-import digital.vasic.yole.ui.YoleColors
+import digital.vasic.yole.syntax.theme.themeUiColor
 import java.util.prefs.Preferences
 
 // ============================================================================
-// IDE Color Palette (references shared YoleColors tokens)
+// IDE Color Helpers (iter-57 Phase 3b: read from active VS Code theme)
 // ============================================================================
-
-val IdeDarkBackground = YoleColors.Ide.DarkBackground
-val IdeDarkSurface = YoleColors.Ide.DarkSurface
-val IdeDarkSurfaceVariant = YoleColors.Ide.DarkSurfaceVariant
-val IdeDarkBorder = YoleColors.Ide.DarkBorder
-val IdeAccent = YoleColors.BrandPrimary
-val IdeTextPrimary = YoleColors.Dark.TextPrimary
-val IdeTextSecondary = YoleColors.Dark.TextSecondary
-val IdeTextMuted = YoleColors.Ide.DarkMutedText
-val IdeHighlightLine = YoleColors.Ide.DarkCurrentLine
-val IdeSelection = YoleColors.Ide.DarkSelection
-
-val IdeLightBackground = YoleColors.Ide.LightBackground
-val IdeLightSurface = YoleColors.Ide.LightSurface
-val IdeLightSurfaceVariant = YoleColors.Ide.LightSurfaceVariant
-val IdeLightBorder = YoleColors.Ide.LightBorder
-val IdeLightTextPrimary = YoleColors.TextPrimary
-val IdeLightTextSecondary = YoleColors.Ide.LightMutedText
+// All UI colors below are resolved from LocalTheme.current (wired by
+// ThemeProvider in desktopApp/Main.kt) via themeUiColor(VS-Code-key). The
+// previous YoleColors-based palette is gone; these helpers preserve the same
+// semantic-role names that the rest of this file uses.
 
 // ============================================================================
 // Settings Manager
@@ -145,38 +131,32 @@ enum class Screen {
 // ============================================================================
 
 /**
- * Returns IDE-appropriate colors based on the current theme.
+ * Returns IDE-appropriate colors derived from the active VS Code [Theme].
+ * All helpers must be called from a Composable scope.
  */
 @Composable
-fun ideBackground(): Color = if (isIdeInDarkMode()) IdeDarkBackground else IdeLightBackground
+fun ideBackground(): Color = themeUiColor("editor.background")
 
 @Composable
-fun ideSurface(): Color = if (isIdeInDarkMode()) IdeDarkSurface else IdeLightSurface
+fun ideSurface(): Color = themeUiColor("sideBar.background")
 
 @Composable
-fun ideSurfaceVariant(): Color = if (isIdeInDarkMode()) IdeDarkSurfaceVariant else IdeLightSurfaceVariant
+fun ideSurfaceVariant(): Color = themeUiColor("tab.inactiveBackground")
 
 @Composable
-fun ideBorder(): Color = if (isIdeInDarkMode()) IdeDarkBorder else IdeLightBorder
+fun ideBorder(): Color = themeUiColor("editorWidget.border")
 
 @Composable
-fun ideTextPrimary(): Color = if (isIdeInDarkMode()) IdeTextPrimary else IdeLightTextPrimary
+fun ideTextPrimary(): Color = themeUiColor("editor.foreground")
 
 @Composable
-fun ideTextSecondary(): Color = if (isIdeInDarkMode()) IdeTextSecondary else IdeLightTextSecondary
+fun ideTextSecondary(): Color = themeUiColor("editorLineNumber.foreground")
 
 @Composable
-private fun isIdeInDarkMode(): Boolean {
-    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    return isDark
-}
+fun ideAccent(): Color = themeUiColor("focusBorder")
 
-/**
- * Approximate luminance calculation for a Color.
- */
-private fun Color.luminance(): Float {
-    return 0.2126f * red + 0.7152f * green + 0.0722f * blue
-}
+@Composable
+fun ideTextMuted(): Color = themeUiColor("editorLineNumber.foreground")
 
 // ============================================================================
 // Root App Entry Point
@@ -472,7 +452,7 @@ private fun IdeNavButton(
                 text = if (isActive) label else label,
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isActive) IdeAccent else ideTextSecondary()
+                    color = if (isActive) ideAccent() else ideTextSecondary()
                 )
             )
             if (isActive) {
@@ -481,7 +461,7 @@ private fun IdeNavButton(
                     modifier = Modifier
                         .width(32.dp)
                         .height(2.dp)
-                        .background(IdeAccent)
+                        .background(ideAccent())
                 )
             }
         }
@@ -704,7 +684,7 @@ fun FileBrowserScreen(onFileSelected: (String, String) -> Unit) {
             Spacer(modifier = Modifier.height(32.dp))
             Text(
                 text = "Or press Ctrl+N to create a new file",
-                style = TextStyle(fontSize = 12.sp, color = IdeTextMuted)
+                style = TextStyle(fontSize = 12.sp, color = ideTextMuted())
             )
         }
     }
@@ -740,7 +720,7 @@ private fun IdeFileItem(
             modifier = Modifier
                 .size(18.dp)
                 .background(
-                    color = IdeAccent.copy(alpha = 0.15f),
+                    color = ideAccent().copy(alpha = 0.15f),
                     shape = MaterialTheme.shapes.extraSmall
                 ),
             contentAlignment = Alignment.Center
@@ -751,7 +731,7 @@ private fun IdeFileItem(
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace,
-                    color = IdeAccent
+                    color = ideAccent()
                 )
             )
         }
@@ -895,7 +875,7 @@ fun EditorScreen(
                     color = textColor,
                     lineHeight = 20.sp
                 ),
-                cursorBrush = SolidColor(IdeAccent),
+                cursorBrush = SolidColor(ideAccent()),
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
@@ -910,7 +890,7 @@ fun EditorScreen(
                                 style = TextStyle(
                                     fontSize = 13.sp,
                                     fontFamily = FontFamily.Monospace,
-                                    color = IdeTextMuted
+                                    color = ideTextMuted()
                                 )
                             )
                         }
@@ -1048,7 +1028,7 @@ fun SettingsScreen(
             modifier = Modifier
                 .width(4.dp)
                 .fillMaxHeight()
-                .background(IdeAccent)
+                .background(ideAccent())
         )
 
         // Settings content
@@ -1161,7 +1141,7 @@ fun SettingsScreen(
             if (FormatRegistry.formats.size > 5) {
                 Text(
                     text = "  ... and ${FormatRegistry.formats.size - 5} more",
-                    style = TextStyle(fontSize = 12.sp, color = IdeTextMuted)
+                    style = TextStyle(fontSize = 12.sp, color = ideTextMuted())
                 )
             }
 
@@ -1181,7 +1161,7 @@ fun SettingsScreen(
 
             Text(
                 text = "Version: 1.0.0",
-                style = TextStyle(fontSize = 12.sp, color = IdeTextMuted)
+                style = TextStyle(fontSize = 12.sp, color = ideTextMuted())
             )
         }
     }
@@ -1206,7 +1186,7 @@ private fun IdeSettingsSectionHeader(title: String) {
             modifier = Modifier
                 .width(48.dp)
                 .height(2.dp)
-                .background(IdeAccent)
+                .background(ideAccent())
         )
     }
 }
@@ -1233,7 +1213,7 @@ private fun IdeSettingsToggle(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = IdeAccent,
+                checkedTrackColor = ideAccent(),
                 uncheckedThumbColor = ideTextSecondary(),
                 uncheckedTrackColor = ideBorder()
             )
