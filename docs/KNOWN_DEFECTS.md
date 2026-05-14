@@ -7,6 +7,118 @@ blocker. Anyone closing a ticket here must also remove the corresponding
 SKIP-OK exemption(s) from the affected test(s) so the regression guard is
 re-armed.
 
+## #phase-7-blocked-on-ios-baseline — NEW iter-57 Phase 7
+
+**Symptom**
+`./gradlew :shared:compileKotlinIosArm64` (and therefore every iOS
+target the `shared` module fans out to) fails at the compile stage of
+the sibling submodule `:Document-KMP:compileKotlinIosArm64`. The
+exact upstream errors (reproduced on master tip `c0bf3305`):
+
+```
+e: file:///Users/milosvasic/Projects/Document-KMP/src/iosMain/kotlin/digital/vasic/document/Document.ios.kt:9:50
+   This declaration needs opt-in. Its usage must be marked with
+   '@kotlinx.cinterop.ExperimentalForeignApi' or
+   '@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)'
+e: file:///Users/milosvasic/Projects/Document-KMP/src/iosMain/kotlin/digital/vasic/document/Document.ios.kt:10:30
+   Unresolved reference 'objectForKey'.
+e: file:///Users/milosvasic/Projects/Document-KMP/src/iosMain/kotlin/digital/vasic/document/Document.ios.kt:17:50
+   This declaration needs opt-in. Its usage must be marked with
+   '@kotlinx.cinterop.ExperimentalForeignApi' or
+   '@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)'
+e: file:///Users/milosvasic/Projects/Document-KMP/src/iosMain/kotlin/digital/vasic/document/Document.ios.kt:18:31
+   Unresolved reference 'objectForKey'.
+```
+
+`Document-KMP` is one of the 10 sibling KMP modules consumed via
+`includeBuild()` from `settings.gradle.kts` (path: `../Document-KMP`).
+Per CONST-038 (sibling submodule decoupling) Yole cannot patch
+sibling submodule source from this repo.
+
+**End-user impact**
+Phase 7 of iter-57 cannot deliver the Tree-Sitter Kotlin/Native iOS
+actual. iOS users see plain text (no syntax highlighting) — the
+editor falls back gracefully per spec §4 "Engine load failed at
+startup". No fake tokens are emitted (CONST-035 honoured).
+
+**Discovered by**
+Iter-57 Phase 7 implementation. `./gradlew :shared:compileKotlinIosArm64`
+on clean master tip `c0bf3305` (after Phase 6 closeout). Same failure
+reproduces on a freshly stashed working tree — predates any Phase 7
+changes.
+
+**Why not fix Document-KMP.ios.kt directly?**
+1. CONST-038: sibling submodule decoupling — `Document-KMP` lives at
+   `/Users/milosvasic/Projects/Document-KMP/` and is consumed via
+   `includeBuild()`. Its git history is independent; patching from
+   inside Yole would violate the decoupling contract.
+2. The fix is small (`@OptIn(ExperimentalForeignApi::class)` +
+   replace `NSDictionary.objectForKey(...)` with
+   `valueForKey(...)`-equivalent or the right `@OptIn` import) but
+   must land upstream first.
+
+**Proper fix (operator action on `Document-KMP`)**
+On a branch of `Document-KMP`:
+1. Edit `src/iosMain/kotlin/digital/vasic/document/Document.ios.kt`
+   - Add `@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)`
+     at the top of the file.
+   - Replace the two `objectForKey(...)` calls with the correct
+     `platform.Foundation.NSDictionary` API (likely
+     `valueForKey(...)` or cast to typed accessor) — exact API
+     depends on the source intent which lives in that repo.
+2. Commit + push the upstream fix.
+3. Re-run `./gradlew :Document-KMP:compileKotlinIosArm64` from Yole;
+   it should succeed.
+4. Re-run `./gradlew :shared:compileKotlinIosArm64` — Phase 7 can
+   then proceed.
+
+**Phase 7 disposition while blocked**
+- `shared/src/iosMain/cinterop/tree-sitter.def` is **scaffolded with
+  commented-out directives** documenting the linking strategy from
+  Phase 0 research §2.2/§2.3/§2.4 — useful as soon as the upstream
+  unblocks.
+- `shared/src/iosMain/kotlin/digital/vasic/yole/syntax/TokenizerEngine.ios.kt`
+  remains an honest `NotImplementedError` stub (same as Phase 5
+  shipped); a large header comment block names this defect.
+- The static libraries (`libtree-sitter.a` +
+  `libtree-sitter-markdown.a`) for the three iOS slices remain a
+  separate OPEN spike from Phase 0 §2.6 — operator-built XCFrameworks.
+  That spike has NOT been performed either; it would have been
+  pointless before this baseline unblocks.
+
+**Blocker**
+Upstream `Document-KMP` operator fix. Estimated ~30 min wallclock
+once the operator opens the repo.
+
+**Anti-bluff disposition (CONST-035)**
+Honest. The iOS `TokenizerEngine.initialize()` returns
+`Result.failure` with an explicit ticket reference in the error
+message. No fake tokens, no `PASS` claimed for iOS in any
+Challenge or test. Phase 7 status is officially BLOCKED in
+`docs/CONTINUATION.md`.
+
+**Exit criteria**
+1. `:Document-KMP:compileKotlinIosArm64` compiles cleanly on a fresh
+   clone.
+2. `:shared:compileKotlinIosArm64` compiles cleanly.
+3. Operator provides `libtree-sitter.a` + `libtree-sitter-markdown.a`
+   static libs at `shared/src/iosMain/nativeLibs/{ios_arm64,
+   ios_simulator_arm64,macos_arm64}/` (Phase 0 §2.6 spike).
+4. `shared/src/iosMain/cinterop/tree-sitter.def` directives are
+   uncommented + wired into `shared/build.gradle.kts` via
+   `cinterops.create("tree_sitter") { ... }`.
+5. `TokenizerEngine.ios.kt` actual replaced with real cinterop
+   bindings calling `ts_parser_new` /
+   `ts_parser_set_language` / `ts_parser_parse_string` /
+   `ts_tree_root_node` / cursor walk.
+6. On a real iOS device or simulator, the future
+   `tokenizer_ios_real_tokens_challenge.sh` (Phase 12) runs
+   `TokenizerEngine.tokenize("# Heading", "markdown")` and asserts
+   `tokens.size >= 5` with a non-blank first scope — same bar as
+   Desktop `TokenizerEngineJvmTest.tokenizesMarkdownSnippet`.
+
+---
+
 ## #smb-stub-no-negotiation — CLOSED 2026-05-07 (commit `1f6472c9`)
 
 **Resolution:** `SmbService.connect()` rewritten to perform real SMB

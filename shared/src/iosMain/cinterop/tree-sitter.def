@@ -1,0 +1,66 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# iter-57 Phase 7 — Tree-Sitter Kotlin/Native cinterop descriptor.
+#
+# STATUS: SCAFFOLDED-BUT-NOT-YET-WIRED (commented out below).
+#
+# This .def file documents the linking strategy chosen by Phase 0
+# research (`docs/features/syntax-highlighting/research-report.md`
+# §2.2 + §2.3 + §2.4). Phase 7 cannot wire it up yet because:
+#
+#   (A) The iOS K/N baseline is BLOCKED by a pre-existing defect in
+#       the sibling submodule `:Document-KMP:compileKotlinIosArm64`
+#       (`/Users/milosvasic/Projects/Document-KMP/src/iosMain/kotlin/
+#       digital/vasic/document/Document.ios.kt:9:50` —
+#       `ExperimentalForeignApi` opt-in missing + unresolved
+#       `objectForKey` references). Per CONST-038 the sibling
+#       submodule cannot be fixed from this repo. See KNOWN_DEFECTS
+#       entry `#phase-7-blocked-on-ios-baseline`.
+#
+#   (B) The static libraries this `.def` references
+#       (`libtree-sitter.a`, `libtree-sitter-markdown.a`) for the
+#       `ios_arm64`, `ios_simulator_arm64`, and `macos_x64`
+#       slices are NOT vendored in the repo yet — Phase 0 §2.6
+#       flagged this as an OPEN operator spike (per-grammar build
+#       pipeline on iOS, expected output documented).
+#
+# When BOTH (A) and (B) are resolved:
+#   1. Uncomment the directives below.
+#   2. Drop the static libs into
+#      `shared/src/iosMain/nativeLibs/{ios_arm64,
+#       ios_simulator_arm64, macos_x64}/`.
+#   3. Wire this `.def` into `shared/build.gradle.kts` via
+#      `kotlin { iosArm64 { compilations.getByName("main") {
+#         cinterops.create("tree_sitter") {
+#            defFile(project.file(
+#                "src/iosMain/cinterop/tree-sitter.def"))
+#         } } } }`
+#      (and equivalent blocks for `iosSimulatorArm64` /
+#      `iosX64`).
+#   4. Replace the `NotImplementedError` stub in
+#      `TokenizerEngine.ios.kt` with a real cinterop-backed
+#      implementation calling `ts_parser_new` /
+#      `ts_parser_set_language` / `ts_parser_parse_string` /
+#      `ts_tree_root_node` etc.
+#
+# References:
+#   - Phase 0 research §2: docs/features/syntax-highlighting/
+#     research-report.md
+#   - Tree-Sitter public C header:
+#     https://github.com/tree-sitter/tree-sitter/blob/master/lib/include/tree_sitter/api.h
+#   - K/N cinterop docs:
+#     https://kotlinlang.org/docs/native-c-interop.html
+#   - Apple App Review Guidelines §2.5.2 (static linking OK):
+#     https://developer.apple.com/app-store/review/guidelines/#software-requirements
+#
+# language = C
+# headers = tree_sitter/api.h
+# linkerOpts.ios_arm64 = -L${TREE_SITTER_PREFIX}/lib -ltree-sitter -ltree-sitter-markdown -lstdc++
+# linkerOpts.ios_simulator_arm64 = -L${TREE_SITTER_PREFIX}/lib -ltree-sitter -ltree-sitter-markdown -lstdc++
+# linkerOpts.macos_arm64 = -L${TREE_SITTER_PREFIX}/lib -ltree-sitter -ltree-sitter-markdown -lstdc++
+# staticLibraries = libtree-sitter.a libtree-sitter-markdown.a
+# libraryPaths.ios_arm64 = src/iosMain/nativeLibs/ios_arm64
+# libraryPaths.ios_simulator_arm64 = src/iosMain/nativeLibs/ios_simulator_arm64
+# libraryPaths.macos_arm64 = src/iosMain/nativeLibs/macos_arm64
+# compilerOpts = -I${TREE_SITTER_PREFIX}/include
