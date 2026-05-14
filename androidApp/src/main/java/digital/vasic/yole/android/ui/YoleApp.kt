@@ -89,39 +89,29 @@ import digital.vasic.yole.ui.ScreenTransitions
 import digital.vasic.yole.ui.ListAnimations
 import digital.vasic.yole.ui.LoadingStateWrapper
 import digital.vasic.yole.ui.LoadingAnimations
-import digital.vasic.yole.ui.YoleColors
+import digital.vasic.yole.syntax.theme.themeUiColor
 import digital.vasic.yole.android.util.PdfExportUtil
 import digital.vasic.yole.android.util.BackupRestoreUtil
 import java.io.File
 
-// ===== IDE Theme Colors (references shared YoleColors tokens) =====
-object IdeTheme {
-    val darkBackground = YoleColors.Ide.DarkBackground
-    val darkSurface = YoleColors.Ide.DarkSurface
-    val darkSurfaceVariant = YoleColors.Ide.DarkSurfaceVariant
-    val darkBorder = YoleColors.Ide.DarkBorder
-    val darkAccent = YoleColors.BrandPrimary
-    val darkText = YoleColors.Dark.TextPrimary
-    val darkTextSecondary = YoleColors.Dark.TextSecondary
-    val darkCurrentLine = YoleColors.Ide.DarkCurrentLine
-    val darkStatusBar = YoleColors.BrandPrimary
-    val darkTabActive = YoleColors.Ide.DarkBackground
-    val darkTabInactive = YoleColors.Ide.DarkSurfaceVariant
-    val darkLineNumbers = YoleColors.Dark.TextSecondary
-
-    val lightBackground = YoleColors.Ide.LightBackground
-    val lightSurface = YoleColors.Ide.LightSurface
-    val lightSurfaceVariant = YoleColors.Ide.LightSurfaceVariant
-    val lightBorder = YoleColors.Ide.LightBorder
-    val lightAccent = YoleColors.BrandPrimary
-    val lightText = YoleColors.TextPrimary
-    val lightTextSecondary = YoleColors.Ide.LightMutedText
-    val lightCurrentLine = YoleColors.Ide.LightCurrentLine
-    val lightStatusBar = YoleColors.BrandPrimary
-    val lightTabActive = YoleColors.Ide.LightBackground
-    val lightTabInactive = YoleColors.Ide.LightSurfaceVariant
-    val lightLineNumbers = YoleColors.Ide.LightMutedText
-}
+// ===== IDE Theme Color Accessors =====
+// iter-57 Phase 3b: replaced legacy IdeTheme/YoleColors palette. All UI
+// colors are now read from the active VS Code theme via LocalTheme.current
+// (wired by ThemeProvider in MainActivity). The accessor functions below
+// preserve the same semantic role names that the rest of this file uses;
+// they MUST be invoked from a Composable scope.
+@Composable private fun ideBackground(): Color = themeUiColor("editor.background")
+@Composable private fun ideSurface(): Color = themeUiColor("sideBar.background")
+@Composable private fun ideSurfaceVariant(): Color = themeUiColor("tab.inactiveBackground")
+@Composable private fun ideBorder(): Color = themeUiColor("editorWidget.border")
+@Composable private fun ideAccent(): Color = themeUiColor("focusBorder")
+@Composable private fun ideText(): Color = themeUiColor("editor.foreground")
+@Composable private fun ideTextSecondary(): Color = themeUiColor("editorLineNumber.foreground")
+@Composable private fun ideCurrentLine(): Color = themeUiColor("editor.lineHighlightBackground")
+@Composable private fun ideStatusBar(): Color = themeUiColor("focusBorder")
+@Composable private fun ideTabActive(): Color = themeUiColor("tab.activeBackground")
+@Composable private fun ideTabInactive(): Color = themeUiColor("tab.inactiveBackground")
+@Composable private fun ideLineNumbers(): Color = themeUiColor("editorLineNumber.foreground")
 
 /**
  * Settings manager for Yole app
@@ -375,16 +365,16 @@ fun MainScreen() {
     }
 
     // IDE theme colors
-    val bg = if (isDarkTheme) IdeTheme.darkBackground else IdeTheme.lightBackground
-    val surface = if (isDarkTheme) IdeTheme.darkSurface else IdeTheme.lightSurface
-    val border = if (isDarkTheme) IdeTheme.darkBorder else IdeTheme.lightBorder
-    val accent = if (isDarkTheme) IdeTheme.darkAccent else IdeTheme.lightAccent
-    val textColor = if (isDarkTheme) IdeTheme.darkText else IdeTheme.lightText
-    val textSecondary = if (isDarkTheme) IdeTheme.darkTextSecondary else IdeTheme.lightTextSecondary
-    val statusBarBg = if (isDarkTheme) IdeTheme.darkStatusBar else IdeTheme.lightStatusBar
-    val tabActive = if (isDarkTheme) IdeTheme.darkTabActive else IdeTheme.lightTabActive
-    val tabInactive = if (isDarkTheme) IdeTheme.darkTabInactive else IdeTheme.lightTabInactive
-    val lineNumColor = if (isDarkTheme) IdeTheme.darkLineNumbers else IdeTheme.lightLineNumbers
+    val bg = ideBackground()
+    val surface = ideSurface()
+    val border = ideBorder()
+    val accent = ideAccent()
+    val textColor = ideText()
+    val textSecondary = ideTextSecondary()
+    val statusBarBg = ideStatusBar()
+    val tabActive = ideTabActive()
+    val tabInactive = ideTabInactive()
+    val lineNumColor = ideLineNumbers()
 
     // Helper: open file in a new tab or switch to existing tab
     fun openFileInTab(fileName: String, content: String, contentUri: String? = null) {
@@ -1209,7 +1199,7 @@ fun IdeMainTopBar(
     onSearchClick: () -> Unit,
     onMoreClick: () -> Unit
 ) {
-    val bg = if (isDarkTheme) IdeTheme.darkSurface else IdeTheme.lightSurface
+    val bg = ideSurface()
     TopAppBar(
         title = {
             Text(
@@ -1259,7 +1249,7 @@ fun IdeEditorTopBar(
     onPreviewClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
-    val bg = if (isDarkTheme) IdeTheme.darkSurface else IdeTheme.lightSurface
+    val bg = ideSurface()
     TopAppBar(
         title = {
             Text(
@@ -1317,7 +1307,7 @@ fun IdeTabBar(
     onTabClosed: (Int) -> Unit,
     onNewTab: () -> Unit
 ) {
-    val surfaceVar = if (isDarkTheme) IdeTheme.darkSurfaceVariant else IdeTheme.lightSurfaceVariant
+    val surfaceVar = ideSurfaceVariant()
 
     Column {
         Row(
@@ -1404,10 +1394,10 @@ fun IdeEditorScreen(
 ) {
     var text by remember(content) { mutableStateOf(content) }
     val format = remember(fileName) { FormatRegistry.detectByFilename(fileName) }
-    val bg = if (isDarkTheme) IdeTheme.darkBackground else IdeTheme.lightBackground
-    val textColor = if (isDarkTheme) IdeTheme.darkText else IdeTheme.lightText
-    val lineNumColor = if (isDarkTheme) IdeTheme.darkLineNumbers else IdeTheme.lightLineNumbers
-    val borderColor = if (isDarkTheme) IdeTheme.darkBorder else IdeTheme.lightBorder
+    val bg = ideBackground()
+    val textColor = ideText()
+    val lineNumColor = ideLineNumbers()
+    val borderColor = ideBorder()
 
     // Undo/Redo history
     var history by remember { mutableStateOf(listOf(content)) }
@@ -1429,7 +1419,7 @@ fun IdeEditorScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(36.dp)
-                .background(if (isDarkTheme) IdeTheme.darkSurface else IdeTheme.lightSurface)
+                .background(ideSurface())
                 .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -1469,7 +1459,7 @@ fun IdeEditorScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(if (isDarkTheme) YoleColors.Ide.DarkSurface else YoleColors.Ide.LightSurface)
+                    .background(ideSurface())
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1545,9 +1535,9 @@ fun IdeMarkdownToolbar(
     isDarkTheme: Boolean,
     onInsert: (String) -> Unit
 ) {
-    val surface = if (isDarkTheme) IdeTheme.darkSurface else IdeTheme.lightSurface
-    val textColor = if (isDarkTheme) IdeTheme.darkText else IdeTheme.lightText
-    val border = if (isDarkTheme) IdeTheme.darkBorder else IdeTheme.lightBorder
+    val surface = ideSurface()
+    val textColor = ideText()
+    val border = ideBorder()
 
     Column {
         Row(
@@ -1653,9 +1643,9 @@ fun IdeBottomNavBar(
     isDarkTheme: Boolean,
     onScreenSelected: (Screen) -> Unit
 ) {
-    val bg = if (isDarkTheme) IdeTheme.darkSurface else IdeTheme.lightSurface
-    val border = if (isDarkTheme) IdeTheme.darkBorder else IdeTheme.lightBorder
-    val accent = if (isDarkTheme) IdeTheme.darkAccent else IdeTheme.lightAccent
+    val bg = ideSurface()
+    val border = ideBorder()
+    val accent = ideAccent()
 
     Column {
         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(border))
@@ -1952,7 +1942,7 @@ fun IdeNewDocumentDialog(
                             .fillMaxWidth()
                             .clickable { onFormatSelected(id) }
                             .background(
-                                if (selectedFormat == id) YoleColors.BrandPrimary.copy(alpha = 0.2f)
+                                if (selectedFormat == id) ideAccent().copy(alpha = 0.2f)
                                 else Color.Transparent
                             )
                             .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -2931,7 +2921,7 @@ fun SettingsScreen(
     onFormatToggled: (String, Boolean) -> Unit
 ) {
     val isDarkTheme = isSystemInDarkTheme()
-    val bg = if (isDarkTheme) IdeTheme.darkBackground else IdeTheme.lightBackground
+    val bg = ideBackground()
 
     Column(
         modifier = Modifier
@@ -4136,7 +4126,7 @@ fun QuickNoteScreen(content: String, onContentChanged: (String) -> Unit, onSaveC
     var noteContent by remember { mutableStateOf(content) }
     var isPreviewMode by remember { mutableStateOf(false) }
     val isDarkTheme = isSystemInDarkTheme()
-    val bg = if (isDarkTheme) IdeTheme.darkBackground else IdeTheme.lightBackground
+    val bg = ideBackground()
 
     Column(modifier = Modifier.fillMaxSize().background(bg)) {
         // Quick actions toolbar
@@ -4210,7 +4200,7 @@ fun MoreScreen(
     onAboutClick: () -> Unit = {}
 ) {
     val isDarkTheme = isSystemInDarkTheme()
-    val bg = if (isDarkTheme) IdeTheme.darkBackground else IdeTheme.lightBackground
+    val bg = ideBackground()
 
     Column(
         modifier = Modifier

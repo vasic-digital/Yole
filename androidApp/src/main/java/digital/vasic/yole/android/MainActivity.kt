@@ -19,6 +19,7 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -43,13 +44,14 @@ class MainActivity : ComponentActivity() {
                 // Permission granted, reload the app content
                 setContent {
                     // iter-57 Phase 3: every Composable subtree consuming theme
-                    // colors flows through this provider. Loads "Yole Dark" by
-                    // default so legacy color values continue to render until
-                    // the user picks a different theme.
+                    // colors flows through this provider. The active theme
+                    // tracks system dark/light mode so VS Code uiColor keys
+                    // resolve correctly under both palettes.
+                    val isDark = isSystemInDarkTheme()
                     ThemeProvider {
-                        LaunchedEffect(Unit) {
+                        LaunchedEffect(isDark) {
                             try {
-                                ThemeRegistry.setActive("Yole Dark")
+                                ThemeRegistry.setActive(if (isDark) "Yole Dark" else "Yole Light")
                             } catch (t: Throwable) {
                                 android.util.Log.w(
                                     "MainActivity",
@@ -121,12 +123,14 @@ class MainActivity : ComponentActivity() {
         
         setContent {
             // iter-57 Phase 3: ThemeProvider seeds LocalTheme with the active
-            // VS Code theme (default Yole Dark). LaunchedEffect runs once on
-            // first composition and is a no-op on Robolectric / missing resources.
+            // VS Code theme. The bundle to load is selected from the system
+            // dark/light setting; the LaunchedEffect re-runs whenever the
+            // setting flips so light/dark switches actually swap palettes.
+            val isDark = isSystemInDarkTheme()
             ThemeProvider {
-                LaunchedEffect(Unit) {
+                LaunchedEffect(isDark) {
                     try {
-                        ThemeRegistry.setActive("Yole Dark")
+                        ThemeRegistry.setActive(if (isDark) "Yole Dark" else "Yole Light")
                     } catch (t: Throwable) {
                         android.util.Log.w(
                             "MainActivity",
