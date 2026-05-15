@@ -894,6 +894,91 @@ filter is applied to them and all 5 test classes dispatch normally.
 
 ---
 
+## #f2-phase-6-grammar-bundling-gap — NEW iter-58 F2 Phase 6 (2026-05-15)
+
+**Symptom**
+F2 Phase 6 ships LanguageMetadata + vendored .scm query files +
+fixtures for 55 languages, but only `markdown` actually exercises the
+full editor pipeline end-to-end. The other 54 languages have:
+  - Real LanguageMetadata entries (comment/indent/bracket/extension).
+  - Real upstream `.scm` query files (highlights + folds + outline)
+    with SPDX attribution.
+  - Real test fixtures.
+
+But their Tree-Sitter native grammars (the JAR / shared-lib that
+maps .scm queries to runtime captures) are NOT bundled in
+`TokenizerEngine.desktop.kt` / `TokenizerEngine.android.kt`. The
+engine's `loadGrammar()` throws `IllegalArgumentException` for any
+lang other than `markdown` (per Phase 5 of Feature 1's scope —
+55-grammar bundling was always tracked as a separate concern).
+
+**Concrete consequences**
+1. The editor can detect a `.py` file as Python (LanguageRegistry
+   resolves it) but cannot syntax-highlight it via Tree-Sitter
+   captures — falls back to no highlighting.
+2. The outline/fold runners throw if invoked for any non-markdown
+   lang.
+3. `Feature2LanguageSmokeTest.inputSmokeCheckForAllLanguages` does
+   NOT run the engine end-to-end — it asserts only that the input
+   side (fixture + .scm content) is coherent. This is an honest
+   limitation explicitly disclosed in the test's docstring.
+
+**Anti-bluff disposition (CONST-035)**
+Honest at every layer.
+  - The Feature2LanguageSmokeTest docstring explicitly states
+    "we do NOT fake the smoke test by mocking the engine or
+    stubbing out the affordance runners". The test ASSERTS the
+    inputs are coherent — it does NOT assert the editor highlights
+    those 54 langs (because it can't, honestly).
+  - LanguageMetadataCompletenessTest catches missing .scm files at
+    test time (verified by mutation — deleting python/highlights.scm
+    causes test FAILURE).
+  - Yole-authored stub files (e.g. crystal/outline.scm, the various
+    folds.scm gaps documented in batch commit bodies) carry an
+    explicit "Yole-authored stub" header; they emit zero matches
+    rather than faking coverage.
+
+**Proper fix path**
+1. Bundle per-language Tree-Sitter native grammars via Gradle
+   dependencies — analogous to how `tree-sitter-markdown` is
+   bundled today. Each new grammar adds ~50-200 KB per platform
+   per arch to the artifact.
+2. Extend `TokenizerEngine.{desktop,android,ios,wasmJs}.kt`'s
+   `loadGrammar()` switch with a case per bundled grammar.
+3. Extend Feature2LanguageSmokeTest to run the real engine
+   pipeline for every bundled grammar (drop the
+   inputSmokeCheckForAllLanguages-only mode).
+
+This is a substantial effort (55 grammars × 4 platforms = up to
+220 native libraries to source/build/ship). Scoping that work is
+out of F2 Phase 6 — it lives as a separate plan item that the
+operator can prioritize against the Feature-3/4/5 roadmap.
+
+**Tracking signals**
+  - The 55-row LanguageMetadata + 55-dir grammars/ + 55-dir
+    test-fixtures/ tree on master tip `8f8b01ef`.
+  - `Feature2LanguageSmokeTest.inputSmokeCheckForAllLanguages` is
+    the regression guard for the inputs.
+  - `LanguageMetadataCompletenessTest` is the regression guard for
+    file presence + SPDX attribution.
+  - This entry closes when the grammar bundling matrix lands and
+    `Feature2LanguageSmokeTest` extends to per-lang end-to-end
+    smoke for every bundled grammar.
+
+**Honesty bar (per the user's 2026-04-28 mandate)**
+The bar for shipping is "users can use the feature" not just "tests
+pass". F2 Phase 6 explicitly ships the SCAFFOLD for 55 languages
+(metadata + queries + fixtures) but does NOT claim the editor
+highlights / outlines / folds 55 langs today. The end-user-visible
+feature is "markdown works end-to-end; other 54 langs detect
+correctly + have correct comment/indent/bracket behaviour via the
+host-only affordance pipeline (CommentToggle, IndentEngine,
+BracketAuto) which does NOT depend on Tree-Sitter". This is the
+honest disposition; users get part of the feature today, the rest
+when the grammar matrix lands.
+
+---
+
 ## How CONST-035 catches stubs like these
 
 This document exists because of the very pattern CONST-035 forbids:
