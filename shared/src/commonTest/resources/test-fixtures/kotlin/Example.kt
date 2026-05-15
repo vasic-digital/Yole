@@ -1,0 +1,14 @@
+// SPDX-FileCopyrightText: 2026 Milos Vasic
+// SPDX-License-Identifier: Apache-2.0
+// iter-58 F2 Phase 6 fixture: Kotlin.
+
+package digital.vasic.yole.fixtures
+
+class Greeter(private val name: String) {
+    fun greet(): String = "Hello, $name!"
+}
+
+fun main() {
+    val g = Greeter("Yole")
+    println(g.greet())
+}
