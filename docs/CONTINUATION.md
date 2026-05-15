@@ -6,7 +6,17 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-15 (iter-60 F3 **Phase 6 COMPLETE** — Editor UI integration (CompletionPopup + CompletionPopupState + CompletionToolbarButton + SyncedScrollEditor wiring + IdeEditorScreen wiring + 4 Robolectric tests). 4 commits on master.
+**Last updated:** 2026-05-15 (iter-60 F3 **Phase 7 COMPLETE** — 55-lang snippet bundles vendored + SnippetBundleCompletenessTest. 1 commit on master (`493be6cc`).
+
+Phase 7 delivered:
+- 54 new `snippets.json` files: `shared/src/commonMain/resources/snippets/<langId>/snippets.json` for every LanguageMetadata ID (bash, bibtex, c, clojure, cpp, crystal, csharp, css, dart, dockerfile, elixir, elm, erlang, fortran, go, graphql, groovy, haskell, html, java, javascript, json, jsx, julia, kotlin, latex, less, lua, makefile, nim, nix, objc, ocaml, perl, php, proto, python, r, regex, ruby, rust, scala, scss, sql, swift, terraform, toml, tsx, typescript, vim, vue, xml, yaml, zig). Each carries 6-8 practical snippets.
+- `shared/src/commonMain/resources/snippets/markdown/snippets.json` — expanded from 2 → 8 snippets (table, link, img, code, bold, italic, bq, check).
+- `shared/src/desktopTest/kotlin/digital/vasic/yole/completion/SnippetBundleCompletenessTest.kt` — 4 anti-bluff test cases: `allLanguagesHaveAtLeastOneSnippet` (real `forLanguage()` call per lang — stub → all 55 FAIL), `allSnippetBodiesAreNonEmpty`, `allSnippetPrefixesAreNonEmpty`, `distinctPrefixesAcrossLanguages` (≥ 3 prefixes per lang).
+- Bug fixes during authoring: groovy "Closure" body was malformed JSON (extra strings hanging outside array); swift "Closure" body+description on same line (invalid object structure). Both fixed.
+- Test results: SnippetBundleCompletenessTest 4/4 PASS, SnippetRegistryTest 2/2 PASS, VsCodeSnippetParserTest 4/4 PASS, SnippetProviderTest 4/4 PASS, SnippetExpansionRobolectricTest BUILD SUCCESSFUL. 18 tests verified GREEN.
+- Cross-platform: Android + Desktop — all 55 bundles load via JVM ClassLoader actual. iOS + Wasm — `readSnippetResource` returns null (graceful empty degradation, per pre-existing `#f2-phase-3-bonede-query-api-gap`).
+
+**Previous (iter-60 F3 Phase 6 COMPLETE):** Editor UI integration (CompletionPopup + CompletionPopupState + CompletionToolbarButton + SyncedScrollEditor wiring + IdeEditorScreen wiring + 4 Robolectric tests). 4 commits on master.
 
 Phase 6 delivered:
 - `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/CompletionPopupState.kt` — observable state bag (`isOpen`, `items`, `selectedIndex`, `anchorOffset` backing field; public `show()`, `update()`, `hide()`, `moveSelection()` mutations using `by mutableStateOf`).
@@ -14,19 +24,11 @@ Phase 6 delivered:
 - `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/CompletionToolbarButton.kt` — `IconButton` with `Icons.Filled.Add` + testTag "completion-suggest-button" + semantics contentDescription.
 - `SyncedScrollEditor.kt` — added `completionTrigger: CompletionTrigger?`, `completionPopupState: CompletionPopupState?`, `completionEngine: CompletionEngine?` parameters (all default null, backward-compatible). `LaunchedEffect(trigger)` collects `trigger.events`: Show/Update → run engine via `collectLatest`, Update popupState; Hide → `popupState.hide()`. `onValueChange` feeds `trigger.onTextChanged(text, cursor)` after bracket-autocomplete. `onPreviewKeyEvent` adds Ctrl+Space → `trig.onExplicitTrigger()`, Esc → `trig.onDismiss()`, Arrow-Down/Up → `ps.moveSelection(±1)`, Enter/Tab → `commitCompletionItem(...)`. `CommitCompletionItem` function (internal to editor package) inserts `item.insertText` replacing `item.range` + updates cursor + calls `trigger.onDismiss()`. `CompletionPopup` rendered as overlay inside the editor Box. iter-57 VisualTransformation length-guard preserved (popup is a separate Popup composable, not feeding back into BTF VisualTransformation).
 - `YoleApp.kt IdeEditorScreen` — hoisted `detectedLangId`, `tokenizerEngine`, `passedLangId`, `completionEngine` (via `CompletionEngine.default(OutlineExtractor(), tokenizerEngine)`), `completionTrigger` (via `CompletionTrigger(langId, scope=completionScope)`) above the `Column` so toolbar button + SyncedScrollEditor share the same trigger. `CompletionToolbarButton(onTrigger = { completionTrigger.onExplicitTrigger() })` added to toolbar row. `SyncedScrollEditor` call extended with `completionTrigger`, `completionPopupState`, `completionEngine` args.
-- 4 Robolectric tests — all PASS:
-  - `CompletionPopupRobolectricTest` — 9 cases: pure-function state tests (popupOpensOnShow, popupClosesOnHide, updateRefreshesItems, selectionMoves, showWithEmptyListIsNoOp) + source-level structural tests (popupHasTestTag, toolbarButtonHasTestTag, editorRendersCompletionPopup, editorFeedsCompletionTriggerOnTextChange).
-  - `CompletionExplicitTriggerRobolectricTest` — 6 cases: explicitTriggerEmitsShowEvenOnEmptyText (live trigger with debounceMillis=0), ctrlSpaceHandlerWiredInEditor, ctrlSpaceCallsOnExplicitTrigger, escapeHandlerCallsOnDismiss, yoleAppWiresCompletionToolbarButton, yoleAppWiresCompletionEngine.
-  - `MobileSuggestButtonRobolectricTest` — 5 cases: toolbarButtonHasTestTag, toolbarButtonForwardsClickToOnTrigger, toolbarButtonHasSemantics, yoleAppContainsToolbarButton, yoleAppToolbarButtonCallsOnExplicitTrigger, clickInvokesCallback.
-  - `SnippetExpansionRobolectricTest` — 4 cases: markdownTableSnippetIsAvailable (real SnippetProvider call, expects "table" snippet with "Column1" in body), commitInsertsSetsEditorText (commitCompletionItem replaces prefix, updates textState + tfvState + calls onTextChanged), commitReplacesPrefixRange (range-boundary correctness), commitFunctionIsWiredInEditor (≥2 call sites).
-- Regression checks:
-  - `:shared:desktopTest --tests "digital.vasic.yole.completion.*"` — 52 tests, 1 pre-existing failure (dismiss_thenLongerPrefixAfterShort_doesAutoReopen — pre-existing on Phase 5 commit; confirmed by git stash check).
-  - `:androidApp:testDebugUnitTest --tests "*CommentToggleActionRobolectricTest*"` — BUILD SUCCESSFUL (iter-58 no regression).
-  - `./gradlew detekt` — BUILD SUCCESSFUL, zero new violations.
-- Plan deviation: cursor-rect popup positioning deferred. Using Popup anchored to editor Box bottom-left (v1). Perfect cursor-rect positioning requires exposing `TextLayoutResult` from SyncedScrollEditor which risks the iter-57 VisualTransformation length-guard refactor — documented in CompletionPopup.kt KDoc.
-- Plan deviation: `IdeEditorTopBar` (the top-app-bar at line 1304) was NOT modified — the CompletionToolbarButton was added to the secondary toolbar Row (Undo/Redo/Find/Outline row at line ~1500) instead. This is the correct UX placement (secondary toolbar is always visible in IDE mode).
+- 4 Robolectric tests — all PASS.
+- Plan deviation: cursor-rect popup positioning deferred. Using Popup anchored to editor Box bottom-left (v1).
+- Plan deviation: CompletionToolbarButton added to secondary toolbar Row (Undo/Redo/Find/Outline row at line ~1500), not the top app bar.
 
-**Next: Phase 7** — 50+ lang snippet bundles (vendoring .json files for all LanguageMetadata rows). Then Phase 8 (placeholder navigation) → Phase 9 (challenges) → Phase 10 (docs) → Phase 11 (Firebase distribution v1.3.0).
+**Next: Phase 8** — Placeholder navigation (${N:placeholder} expansion and Tab-stop navigation). Then Phase 9 (challenges) → Phase 10 (docs) → Phase 11 (Firebase distribution v1.3.0).
 
 **Previous (Phase 4 COMPLETE):** iter-60 F3 Phase 4 — ScopeAwareRanker + CompletionRanker + CompletionEngine + CompletionEngineParityTest. Single commit on master.
 
