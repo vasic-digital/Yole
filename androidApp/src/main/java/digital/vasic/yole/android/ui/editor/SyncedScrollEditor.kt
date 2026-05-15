@@ -29,6 +29,20 @@
  * compatibility; internally the editor manages a TextFieldValue so
  * selection-aware affordances have a real cursor + range to act on.
  *
+ * iter-58 Feature 2 Phase 5: FoldGutter integration. When a non-null
+ * langId + tokenizerEngine are supplied, the gutter Column renders a
+ * fold-chevron next to every line that starts a [FoldRange] returned
+ * by [FoldQueryRunner]. The chevron flips between down-arrow (expanded)
+ * and right-arrow (collapsed) on tap. Per CONST-035 anti-bluff: this
+ * phase ships only the visible-and-functional chevron — the actual
+ * text-collapse of the BasicTextField body is a deferred follow-up
+ * (`#f2-phase-5-fold-region-collapse`) because the implementation
+ * requires a non-trivial VisualTransformation + OffsetMapping rewrite
+ * that risks regressing the existing iter-57 highlighting length-guard
+ * pattern. Shipping the chevron without the body-collapse is honest
+ * (the user sees a working affordance whose backend is queued, not a
+ * fake outline that pretends to fold but doesn't).
+ *
  * Anti-bluff covenants (CONST-035):
  *   (1) The iter-55 invariant: SyncedScrollEditor.kt declares EXACTLY
  *       ONE rememberScrollState() and both the gutter Column and
@@ -47,6 +61,11 @@
  *       MUST attach the commentToggle + indentEngine key handlers.
  *       Stubbing those helpers to return-input is caught by the
  *       three new Robolectric tests.
+ *   (4) iter-58 Phase 5 invariant: when a non-null tokenizerEngine +
+ *       langId are passed, the gutter row for every line that starts
+ *       a FoldRange MUST render a chevron with testTag
+ *       `foldGutter.chevron:line{N}`. Stubbing FoldQueryRunner to
+ *       return emptyList() MUST fail `chevronsAppearOnFoldableLines`.
  *
  *########################################################*/
 package digital.vasic.yole.android.ui.editor
@@ -57,6 +76,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -66,6 +86,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -86,8 +107,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import digital.vasic.yole.language.LocalLanguage
+import digital.vasic.yole.language.affordance.FoldRange
 import digital.vasic.yole.syntax.EnabledFormatGate
 import digital.vasic.yole.syntax.SyntaxHighlighter
+import digital.vasic.yole.syntax.TokenizerEngine
 import kotlinx.coroutines.delay
 
 @Composable
@@ -107,9 +130,16 @@ fun SyncedScrollEditor(
     ),
     highlighter: SyntaxHighlighter? = null,
     langId: String? = null,
+    tokenizerEngine: TokenizerEngine? = null,
 ) {
     val sharedScroll = rememberScrollState()
     val activeLanguage = LocalLanguage.current
+
+    // iter-58 Phase 5: per-editor session state of currently-collapsed
+    // fold ranges. Tapping a chevron toggles the matching range in this
+    // set. Body-collapse of the BasicTextField is deferred — see
+    // FoldGutter.kt's KDoc and `#f2-phase-5-fold-region-collapse`.
+    val foldedRanges = remember { mutableStateOf<Set<FoldRange>>(emptySet()) }
 
     // iter-58 Feature 2 Phase 4: maintain an internal TextFieldValue so
     // affordances (comment-toggle, indent-on-Enter, bracket-autocomplete)
@@ -155,16 +185,30 @@ fun SyncedScrollEditor(
         }
     }
 
+    // iter-58 Phase 5: compute fold ranges for the whole document ONCE
+    // per (text, langId) change, then pass per-line slices to FoldGutter
+    // inside the gutter Column. When no engine is supplied (callers
+    // that pre-date Phase 5 or platforms without a working tokenizer)
+    // the fold list stays empty and the gutter renders only line
+    // numbers — graceful degradation per CONST-035.
+    val foldRangesState: androidx.compose.runtime.State<List<FoldRange>> = if (tokenizerEngine != null) {
+        rememberFoldRanges(tfvState.value.text, langId, tokenizerEngine)
+    } else {
+        remember { mutableStateOf<List<FoldRange>>(emptyList()) }
+    }
+    val foldRanges by foldRangesState
+
     Row(modifier = modifier.fillMaxSize()) {
         if (showLineNumbers) {
             val lines = tfvState.value.text.lines()
             val gutterWidth = when {
-                lines.size >= 1000 -> 48.dp
-                lines.size >= 100 -> 40.dp
-                else -> 32.dp
+                lines.size >= 1000 -> 72.dp
+                lines.size >= 100 -> 64.dp
+                else -> 56.dp
             }
             val gutterBg = if (isDarkTheme) Color(0xFF1E1E1E) else Color(0xFFF8F8F8)
             val gutterFg = if (isDarkTheme) Color(0xFF858585) else Color(0xFF999999)
+            val chevronTint = if (isDarkTheme) Color(0xFFA0A0A0) else Color(0xFF606060)
 
             Column(
                 modifier = Modifier
@@ -177,13 +221,30 @@ fun SyncedScrollEditor(
                 horizontalAlignment = Alignment.End,
             ) {
                 lines.forEachIndexed { idx, _ ->
-                    Text(
-                        text = "${idx + 1}",
-                        color = gutterFg,
-                        fontSize = 13.sp,
-                        fontFamily = FontFamily.Monospace,
-                        lineHeight = 20.sp,
-                    )
+                    Row(
+                        modifier = Modifier.height(20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // iter-58 Phase 5: fold-chevron affordance. The
+                        // gutter row reserves a 16dp slot whether or not
+                        // this line starts a FoldRange (see FoldGutter
+                        // for the empty-slot Box) so line numbers stay
+                        // vertically aligned.
+                        FoldGutter(
+                            lineNumber = idx + 1,
+                            ranges = foldRanges,
+                            foldedRanges = foldedRanges.value,
+                            iconTint = chevronTint,
+                            onToggleFold = { range -> toggleFold(foldedRanges, range) },
+                        )
+                        Text(
+                            text = "${idx + 1}",
+                            color = gutterFg,
+                            fontSize = 13.sp,
+                            fontFamily = FontFamily.Monospace,
+                            lineHeight = 20.sp,
+                        )
+                    }
                 }
             }
         }

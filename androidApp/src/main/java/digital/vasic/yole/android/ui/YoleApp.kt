@@ -1473,6 +1473,11 @@ fun IdeEditorScreen(
     var findText by remember { mutableStateOf("") }
     var findMatchCount by remember { mutableStateOf(0) }
 
+    // iter-58 Feature 2 Phase 5: outline drawer toggle. Tapping the
+    // "Outline" toolbar icon flips this and overlays the OutlineDrawer
+    // on the left edge of the editor surface.
+    var outlineDrawerOpen by remember { mutableStateOf(false) }
+
     Column(modifier = Modifier.fillMaxSize().background(bg)) {
         // General editor toolbar (undo/redo/find)
         Row(
@@ -1501,6 +1506,13 @@ fun IdeEditorScreen(
             Spacer(modifier = Modifier.width(8.dp))
             IdeToolbarButton("Find", "Find in document", textColor) {
                 showFindBar = !showFindBar
+            }
+            // iter-58 Feature 2 Phase 5: outline drawer toggle button.
+            // The label uses the same monospace badge style as the
+            // existing toolbar buttons; the IconButton variant lives
+            // inside the drawer for closing.
+            IdeToolbarButton("Outline", "Outline", textColor) {
+                outlineDrawerOpen = !outlineDrawerOpen
             }
 
             // Format-specific tools (markdown)
@@ -1596,31 +1608,57 @@ fun IdeEditorScreen(
         }
 
         CompositionLocalProvider(LocalLanguage provides activeLanguage) {
-            digital.vasic.yole.android.ui.editor.SyncedScrollEditor(
-                textState = textState,
-                showLineNumbers = showLineNumbers,
-                isDarkTheme = isDarkTheme,
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                onTextChanged = { newText ->
-                    val oldText = text
-                    text = newText
-                    onContentChanged(newText)
-                    if (newText.length - oldText.length > 5 || oldText.length - newText.length > 5 ||
-                        newText.endsWith(" ") || newText.endsWith("\n")) {
-                        addToHistory(newText)
-                    }
-                },
-                semanticsLabel = "Code editor for $fileName",
-                placeholder = "Start typing...",
-                textStyle = TextStyle(
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp,
-                    color = textColor,
-                ),
-                highlighter = highlighter,
-                langId = passedLangId,
-            )
+            // iter-58 Feature 2 Phase 5: editor body + OutlineDrawer
+            // overlay. The Row arranges the drawer on the LEFT (when
+            // open) and the editor surface fills the remaining width.
+            // Closing the drawer reclaims the full editor width.
+            Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                digital.vasic.yole.android.ui.editor.OutlineDrawer(
+                    textState = textState,
+                    langId = passedLangId,
+                    engine = tokenizerEngine,
+                    isOpen = outlineDrawerOpen,
+                    onClose = { outlineDrawerOpen = false },
+                    onItemClick = { _ ->
+                        // Phase 5 v1: tapping an outline item only
+                        // dismisses the drawer. Scroll-to-byte wiring
+                        // is a deferred follow-up; the BasicTextField
+                        // does not expose a public scroll-to-offset
+                        // API today, and the iter-55 SyncedScrollEditor
+                        // intentionally hides the scroll state from
+                        // outside callers to keep the gutter+body
+                        // invariant. Closing the drawer at least makes
+                        // the click visible.
+                        outlineDrawerOpen = false
+                    },
+                )
+                digital.vasic.yole.android.ui.editor.SyncedScrollEditor(
+                    textState = textState,
+                    showLineNumbers = showLineNumbers,
+                    isDarkTheme = isDarkTheme,
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    onTextChanged = { newText ->
+                        val oldText = text
+                        text = newText
+                        onContentChanged(newText)
+                        if (newText.length - oldText.length > 5 || oldText.length - newText.length > 5 ||
+                            newText.endsWith(" ") || newText.endsWith("\n")) {
+                            addToHistory(newText)
+                        }
+                    },
+                    semanticsLabel = "Code editor for $fileName",
+                    placeholder = "Start typing...",
+                    textStyle = TextStyle(
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = textColor,
+                    ),
+                    highlighter = highlighter,
+                    langId = passedLangId,
+                    tokenizerEngine = tokenizerEngine,
+                )
+            }
         }
     }
 }
