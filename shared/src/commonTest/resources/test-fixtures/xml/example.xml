@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SPDX-FileCopyrightText: 2026 Milos Vasic
+  SPDX-License-Identifier: Apache-2.0
+  iter-58 F2 Phase 6 fixture: XML.
+-->
+<application name="Yole" version="1.0.1">
+  <platforms>
+    <platform>android</platform>
+    <platform>desktop</platform>
+    <platform>ios</platform>
+    <platform>web</platform>
+  </platforms>
+  <features highlighting="true" outline="true" fold="true" />
+</application>

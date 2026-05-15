@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+# iter-58 F2 Phase 6 fixture: TOML.
+
+[application]
+name = "Yole"
+version = "1.0.1"
+platforms = ["android", "desktop", "ios", "web"]
+
+[features]
+highlighting = true
+outline = true
+fold = true
+
+[[build.matrix]]
+target = "android"
+jvm = "11"
+
+[[build.matrix]]
+target = "desktop"
+jvm = "11"
