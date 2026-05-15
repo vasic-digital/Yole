@@ -1,0 +1,16 @@
+{
+  "Table": {
+    "prefix": "table",
+    "body": [
+      "| ${1:Column1} | ${2:Column2} |",
+      "| --- | --- |",
+      "| $0 |  |"
+    ],
+    "description": "Markdown table skeleton"
+  },
+  "Link": {
+    "prefix": "link",
+    "body": "[${1:text}](${2:url})",
+    "description": "Markdown link"
+  }
+}

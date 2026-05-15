@@ -353,6 +353,13 @@ falls back gracefully — no faked affordances.
    Yole-authored markdown/folds.scm can be replaced with the verbatim
    nvim-treesitter upstream (which will work against the newer
    grammar that emits `(section)`).
+4. **iter-60 Phase 7 also covers snippet JSON bundling for iOS + Wasm.**
+   `readSnippetResource` on iOS returns `null` and on Wasm returns
+   `null` until Phase 7 wires NSBundle (iOS) / fetch (Wasm) access for
+   `snippets/<lang>/snippets.json` files. This is benign — snippets are
+   optional; the registry degrades gracefully to an empty list. See
+   `shared/src/iosMain/.../SnippetRegistry.ios.kt` and
+   `shared/src/wasmJsMain/.../SnippetRegistry.wasmJs.kt` for the stubs.
 
 **Anti-bluff disposition (CONST-035)**
 Honest at every layer. The desktop + Android JVM actuals execute real
