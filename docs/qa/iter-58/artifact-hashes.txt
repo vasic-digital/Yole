@@ -1,0 +1,9 @@
+=== SHA-256 of distributed artifacts ===
+e9b15671ce6d512cc27834416fda29a094b28f39bffb670bd2afab03bea44e39  releases/Yole-Android-1.2.0-Debug-0.0.0.1.20.apk
+f151c5dd40a0ed4d236f75ddd63a6bdbfa65d27710bfbc846c9f045d113545ea  releases/Yole-Android-1.2.0-Release-0.0.0.1.20.apk
+0c1664ec9dd193201bda93c06643a8adfaf23514fdc067551c0a7aa3a9882b31  releases/Yole-Desktop-macos-arm64-1.2.0-Release-0.0.0.1.20.dmg
+
+=== Source APK / DMG paths ===
+f151c5dd40a0ed4d236f75ddd63a6bdbfa65d27710bfbc846c9f045d113545ea  androidApp/build/outputs/apk/release/androidApp-release.apk
+e9b15671ce6d512cc27834416fda29a094b28f39bffb670bd2afab03bea44e39  androidApp/build/outputs/apk/debug/androidApp-debug.apk
+0c1664ec9dd193201bda93c06643a8adfaf23514fdc067551c0a7aa3a9882b31  desktopApp/build/compose/binaries/main/dmg/Yole-1.2.0.dmg

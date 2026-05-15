@@ -1,0 +1,20 @@
+=== Yole 1.2.0 (iter-58) — Desktop Windows x64 Distribution ===
+Status: BLOCKED — pre-existing infrastructure gap (carry-over from iter-54 / iter-57)
+
+Reason: Compose Desktop only packages for the current host OS. Building
+Windows x64 .msi requires a Windows host or the crossbuild-wine container
+(see #crossbuild-windows-image-provisioning in docs/KNOWN_DEFECTS.md).
+Same gate documented in iter-54 closeout (commit 0548af07) and iter-57
+closeout (commit 6c543006). Not introduced in iter-58.
+
+Operator action paths (one of):
+  1. Run on a Windows host:
+       ./gradlew :desktopApp:packageMsi
+  2. Use Containers/ pkg/crossbuild WineContainer backend (when
+     #crossbuild-windows-image-provisioning is provisioned).
+
+Firebase App Distribution does NOT support Windows desktop binaries
+(only Android + iOS). For Windows Desktop, the channel is GitHub Releases
+or manual installer drop, NOT Firebase.
+
+No Firebase distribution attempted for this artifact.

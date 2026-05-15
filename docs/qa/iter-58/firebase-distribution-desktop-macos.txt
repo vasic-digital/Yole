@@ -1,0 +1,43 @@
+=== Yole 1.2.0 (iter-58) — Desktop macOS-arm64 Distribution ===
+Status: BUILT but NOT distributed via Firebase
+
+Artifact: releases/Yole-Desktop-macos-arm64-1.2.0-Release-0.0.0.1.20.dmg
+SHA-256:  0c1664ec9dd193201bda93c06643a8adfaf23514fdc067551c0a7aa3a9882b31
+Size:     ~172 MB
+Built on: macOS-arm64 host, 2026-05-15
+Source:   desktopApp/build/compose/binaries/main/dmg/Yole-1.2.0.dmg
+Task:     :desktopApp:packageDmg → BUILD SUCCESSFUL in 1m 59s
+
+Reason for not distributing via Firebase:
+
+Firebase App Distribution as a product supports ONLY Android (.apk/.aab)
+and iOS (.ipa). Desktop binaries (.dmg, .msi, .deb) are not a supported
+artifact type — `firebase appdistribution:distribute Yole.dmg --app <id>`
+returns "no matching Firebase app" because the project has no macOS-
+desktop app registration (and Firebase has no such category for App
+Distribution).
+
+This is consistent with iter-30 / iter-30b / iter-54 / iter-57 history:
+in every prior release, only Android APKs were distributed via Firebase.
+Desktop artifacts were carried in the gitignored releases/ directory and
+distributed out-of-band (GitHub Releases or direct tester drop).
+
+Operator action paths for macOS-arm64 distribution:
+  1. GitHub Releases (preferred for desktop): attach DMG to v1.2.0-iter58 tag.
+  2. Direct tester drop via signed URL / shared drive.
+  3. Future: implement a Firebase Hosting page or self-hosted update server
+     (out of scope for iter-58).
+
+Confirmed against live Firebase project (yole-app) in iter-57 — registration
+unchanged in iter-58:
+  $ firebase apps:list --project yole-app
+  ┌──────────────────┬───────────────────────────────────────────────┬──────────┐
+  │ App Display Name │ App ID                                        │ Platform │
+  ├──────────────────┼───────────────────────────────────────────────┼──────────┤
+  │ Yole Android     │ 1:578988389676:android:d61715a0a84a42c65d2889 │ ANDROID  │
+  └──────────────────┴───────────────────────────────────────────────┴──────────┘
+  1 app(s) total.
+
+  (No macOS / Linux / Windows / Web app registered. Firebase does not
+   offer a "Desktop" or "Web" App Distribution channel — this is a
+   product gap, not a Yole configuration gap.)

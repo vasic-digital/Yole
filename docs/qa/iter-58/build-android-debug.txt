@@ -1,0 +1,503 @@
+Configuration on demand is an incubating feature.
+Calculating task graph as configuration cache cannot be reused because file 'gradle/libs.versions.toml' has changed.
+Type-safe project accessors is an incubating feature.
+
+> Configure project :RateLimiter-KMP
+w: Kotlin Multiplatform <-> Android Gradle Plugin compatibility issue:
+The applied Android Gradle Plugin version (8.9.0) is higher 
+than the maximum known to the Kotlin Gradle Plugin.
+Tooling stability in such configuration isn't tested, please report encountered issues to https://kotl.in/issue
+
+Minimum supported Android Gradle Plugin version: 7.1
+Maximum tested Android Gradle Plugin version: 8.5
+
+To suppress this message add 'kotlin.mpp.androidGradlePluginCompatibility.nowarn=true' to your gradle.properties
+
+
+> Configure project :Concurrency-KMP
+w: Kotlin Multiplatform <-> Android Gradle Plugin compatibility issue:
+The applied Android Gradle Plugin version (8.9.0) is higher 
+than the maximum known to the Kotlin Gradle Plugin.
+Tooling stability in such configuration isn't tested, please report encountered issues to https://kotl.in/issue
+
+Minimum supported Android Gradle Plugin version: 7.1
+Maximum tested Android Gradle Plugin version: 8.5
+
+To suppress this message add 'kotlin.mpp.androidGradlePluginCompatibility.nowarn=true' to your gradle.properties
+
+
+> Configure project :Formatters-KMP
+w: Kotlin Multiplatform <-> Android Gradle Plugin compatibility issue:
+The applied Android Gradle Plugin version (8.9.0) is higher 
+than the maximum known to the Kotlin Gradle Plugin.
+Tooling stability in such configuration isn't tested, please report encountered issues to https://kotl.in/issue
+
+Minimum supported Android Gradle Plugin version: 7.1
+Maximum tested Android Gradle Plugin version: 8.5
+
+To suppress this message add 'kotlin.mpp.androidGradlePluginCompatibility.nowarn=true' to your gradle.properties
+
+
+> Configure project :shared
+warning: Dokka Gradle plugin V1 is deprecated
+    
+    Dokka Gradle plugin V1 is deprecated, and will be removed in Dokka version 2.1.0
+    Please migrate to Dokka Gradle plugin V2. This will require updating your project.
+    To learn about migrating read the migration guide https://kotl.in/dokka-gradle-migration
+    
+    To start migrating to Dokka Gradle plugin V2 add
+        org.jetbrains.dokka.experimental.gradle.pluginMode=V2EnabledWithHelpers
+    into your project's `gradle.properties` file.
+    
+    We would appreciate your feedback!
+     - Please report any feedback or problems https://kotl.in/dokka-issues
+     - Chat with the community visit #dokka in https://kotlinlang.slack.com/ (To sign up visit https://kotl.in/slack)
+    
+
+> Task :Document-KMP:preBuild UP-TO-DATE
+> Task :Concurrency-KMP:preBuild UP-TO-DATE
+> Task :Database-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Document-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Concurrency-KMP:preDebugBuild UP-TO-DATE
+> Task :Config-KMP:preBuild UP-TO-DATE
+> Task :Config-KMP:preDebugBuild UP-TO-DATE
+> Task :Document-KMP:preDebugBuild UP-TO-DATE
+> Task :Database-KMP:preBuild UP-TO-DATE
+> Task :Database-KMP:preDebugBuild UP-TO-DATE
+> Task :Document-KMP:debugAssetsCopyForAGP NO-SOURCE
+> Task :Auth-KMP:preBuild UP-TO-DATE
+> Task :Auth-KMP:preDebugBuild UP-TO-DATE
+> Task :androidApp:preBuild UP-TO-DATE
+> Task :androidApp:preDebugBuild UP-TO-DATE
+> Task :Document-KMP:generateDebugResValues UP-TO-DATE
+> Task :androidApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Auth-KMP:writeDebugAarMetadata UP-TO-DATE
+> Task :Config-KMP:writeDebugAarMetadata UP-TO-DATE
+> Task :Concurrency-KMP:writeDebugAarMetadata UP-TO-DATE
+> Task :Database-KMP:writeDebugAarMetadata UP-TO-DATE
+> Task :Document-KMP:writeDebugAarMetadata UP-TO-DATE
+> Task :androidApp:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :commons:preBuild UP-TO-DATE
+> Task :commons:preDebugBuild UP-TO-DATE
+> Task :Concurrency-KMP:generateDebugResValues UP-TO-DATE
+> Task :Auth-KMP:generateDebugResValues UP-TO-DATE
+> Task :Config-KMP:generateDebugResValues UP-TO-DATE
+> Task :Database-KMP:generateDebugResValues UP-TO-DATE
+> Task :Concurrency-KMP:generateDebugResources UP-TO-DATE
+> Task :Document-KMP:generateDebugResources UP-TO-DATE
+> Task :Config-KMP:generateDebugResources UP-TO-DATE
+> Task :Auth-KMP:generateDebugResources UP-TO-DATE
+> Task :Database-KMP:generateDebugResources UP-TO-DATE
+> Task :Document-KMP:processDebugManifest UP-TO-DATE
+> Task :shared:preBuild UP-TO-DATE
+> Task :shared:preDebugBuild UP-TO-DATE
+> Task :shared:compileYoleAndroidNativeUtils UP-TO-DATE
+> Task :shared:repackageTreeSitterJarForAndroid UP-TO-DATE
+> Task :Document-KMP:packageDebugResources UP-TO-DATE
+> Task :Config-KMP:packageDebugResources UP-TO-DATE
+> Task :Auth-KMP:packageDebugResources UP-TO-DATE
+> Task :UI-Components-KMP:preBuild UP-TO-DATE
+> Task :UI-Components-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :UI-Components-KMP:preDebugBuild UP-TO-DATE
+> Task :Database-KMP:packageDebugResources UP-TO-DATE
+> Task :Document-KMP:extractDeepLinksDebug UP-TO-DATE
+> Task :Auth-KMP:extractDeepLinksDebug UP-TO-DATE
+> Task :Config-KMP:extractDeepLinksDebug UP-TO-DATE
+> Task :Concurrency-KMP:packageDebugResources UP-TO-DATE
+> Task :Document-KMP:parseDebugLocalResources UP-TO-DATE
+> Task :Database-KMP:extractDeepLinksDebug UP-TO-DATE
+> Task :UI-Components-KMP:generateDebugResValues UP-TO-DATE
+> Task :Concurrency-KMP:extractDeepLinksDebug UP-TO-DATE
+> Task :UI-Components-KMP:writeDebugAarMetadata UP-TO-DATE
+> Task :UI-Components-KMP:generateDebugResources UP-TO-DATE
+> Task :UI-Components-KMP:extractDeepLinksDebug UP-TO-DATE
+> Task :Document-KMP:generateDebugRFile UP-TO-DATE
+> Task :Config-KMP:processDebugManifest UP-TO-DATE
+> Task :Auth-KMP:processDebugManifest UP-TO-DATE
+> Task :Document-KMP:compileDebugLibraryResources UP-TO-DATE
+> Task :Auth-KMP:parseDebugLocalResources UP-TO-DATE
+> Task :Config-KMP:parseDebugLocalResources UP-TO-DATE
+> Task :Database-KMP:processDebugManifest UP-TO-DATE
+> Task :Concurrency-KMP:processDebugManifest UP-TO-DATE
+> Task :UI-Components-KMP:processDebugManifest UP-TO-DATE
+> Task :UI-Components-KMP:packageDebugResources UP-TO-DATE
+> Task :Concurrency-KMP:parseDebugLocalResources UP-TO-DATE
+> Task :UI-Components-KMP:parseDebugLocalResources UP-TO-DATE
+> Task :UI-Components-KMP:compileDebugLibraryResources UP-TO-DATE
+> Task :UI-Components-KMP:convertXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :Database-KMP:parseDebugLocalResources UP-TO-DATE
+> Task :Auth-KMP:generateDebugRFile UP-TO-DATE
+> Task :UI-Components-KMP:copyNonXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :Config-KMP:generateDebugRFile UP-TO-DATE
+> Task :UI-Components-KMP:prepareComposeResourcesTaskForAndroidMain NO-SOURCE
+> Task :UI-Components-KMP:generateResourceAccessorsForAndroidMain SKIPPED
+> Task :UI-Components-KMP:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :Config-KMP:compileDebugLibraryResources UP-TO-DATE
+> Task :Concurrency-KMP:generateDebugRFile UP-TO-DATE
+> Task :UI-Components-KMP:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :UI-Components-KMP:generateDebugRFile UP-TO-DATE
+> Task :UI-Components-KMP:generateComposeResClass SKIPPED
+> Task :UI-Components-KMP:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :UI-Components-KMP:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :UI-Components-KMP:convertXmlValueResourcesForAndroidDebug NO-SOURCE
+> Task :UI-Components-KMP:generateResourceAccessorsForCommonMain SKIPPED
+> Task :UI-Components-KMP:generateActualResourceCollectorsForAndroidMain SKIPPED
+> Task :Database-KMP:generateDebugRFile UP-TO-DATE
+> Task :Auth-KMP:compileDebugLibraryResources UP-TO-DATE
+> Task :Config-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :UI-Components-KMP:copyNonXmlValueResourcesForAndroidDebug NO-SOURCE
+> Task :Auth-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :UI-Components-KMP:prepareComposeResourcesTaskForAndroidDebug NO-SOURCE
+> Task :UI-Components-KMP:javaPreCompileDebug UP-TO-DATE
+> Task :Concurrency-KMP:compileDebugLibraryResources UP-TO-DATE
+> Task :Database-KMP:compileDebugLibraryResources UP-TO-DATE
+> Task :Concurrency-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :UI-Components-KMP:generateResourceAccessorsForAndroidDebug SKIPPED
+> Task :UI-Components-KMP:mergeDebugShaders UP-TO-DATE
+> Task :UI-Components-KMP:compileDebugShaders NO-SOURCE
+> Task :UI-Components-KMP:copyDebugComposeResourcesToAndroidAssets UP-TO-DATE
+> Task :UI-Components-KMP:debugAssetsCopyForAGP NO-SOURCE
+> Task :UI-Components-KMP:generateDebugAssets UP-TO-DATE
+> Task :UI-Components-KMP:mergeDebugAssets UP-TO-DATE
+> Task :androidApp:generateDebugBuildConfig
+> Task :shared:repackageTreeSitterMarkdownJarForAndroid UP-TO-DATE
+> Task :UI-Components-KMP:mergeDebugJniLibFolders UP-TO-DATE
+> Task :copyRepoFiles UP-TO-DATE
+> Task :UI-Components-KMP:mergeDebugNativeLibs NO-SOURCE
+> Task :UI-Components-KMP:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :androidApp:generateDebugResValues FROM-CACHE
+> Task :androidApp:processDebugGoogleServices FROM-CACHE
+> Task :androidApp:injectCrashlyticsMappingFileIdDebug
+> Task :Document-KMP:compileDebugKotlinAndroid UP-TO-DATE
+> Task :Document-KMP:javaPreCompileDebug UP-TO-DATE
+> Task :Document-KMP:compileDebugJavaWithJavac NO-SOURCE
+> Task :Auth-KMP:compileDebugKotlinAndroid UP-TO-DATE
+> Task :UI-Components-KMP:compileDebugKotlinAndroid UP-TO-DATE
+> Task :commons:generateDebugResValues FROM-CACHE
+> Task :Document-KMP:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :Config-KMP:compileDebugKotlinAndroid UP-TO-DATE
+> Task :Auth-KMP:javaPreCompileDebug UP-TO-DATE
+> Task :UI-Components-KMP:compileDebugJavaWithJavac NO-SOURCE
+> Task :Auth-KMP:compileDebugJavaWithJavac NO-SOURCE
+> Task :Config-KMP:javaPreCompileDebug UP-TO-DATE
+> Task :UI-Components-KMP:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :shared:generateDebugResValues UP-TO-DATE
+> Task :Config-KMP:compileDebugJavaWithJavac NO-SOURCE
+> Task :Auth-KMP:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :Config-KMP:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :Auth-KMP:mergeDebugShaders UP-TO-DATE
+> Task :Auth-KMP:compileDebugShaders NO-SOURCE
+> Task :Auth-KMP:debugAssetsCopyForAGP NO-SOURCE
+> Task :commons:generateDebugResources FROM-CACHE
+> Task :Concurrency-KMP:compileDebugKotlinAndroid UP-TO-DATE
+> Task :Config-KMP:mergeDebugShaders UP-TO-DATE
+> Task :Auth-KMP:generateDebugAssets UP-TO-DATE
+> Task :Config-KMP:compileDebugShaders NO-SOURCE
+> Task :UI-Components-KMP:processDebugJavaRes UP-TO-DATE
+> Task :UI-Components-KMP:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :Concurrency-KMP:javaPreCompileDebug UP-TO-DATE
+> Task :Config-KMP:debugAssetsCopyForAGP NO-SOURCE
+> Task :Config-KMP:generateDebugAssets UP-TO-DATE
+> Task :Auth-KMP:mergeDebugAssets UP-TO-DATE
+> Task :Document-KMP:mergeDebugShaders UP-TO-DATE
+> Task :shared:generateDebugResources UP-TO-DATE
+> Task :Concurrency-KMP:compileDebugJavaWithJavac NO-SOURCE
+> Task :Config-KMP:mergeDebugAssets UP-TO-DATE
+> Task :Database-KMP:compileDebugKotlinAndroid UP-TO-DATE
+> Task :Database-KMP:javaPreCompileDebug UP-TO-DATE
+> Task :Concurrency-KMP:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :Auth-KMP:processDebugJavaRes UP-TO-DATE
+> Task :Concurrency-KMP:mergeDebugShaders UP-TO-DATE
+> Task :Config-KMP:processDebugJavaRes UP-TO-DATE
+> Task :Database-KMP:compileDebugJavaWithJavac NO-SOURCE
+> Task :Document-KMP:compileDebugShaders NO-SOURCE
+> Task :Document-KMP:generateDebugAssets UP-TO-DATE
+> Task :androidApp:generateDebugResources
+> Task :Concurrency-KMP:compileDebugShaders NO-SOURCE
+> Task :Concurrency-KMP:debugAssetsCopyForAGP NO-SOURCE
+> Task :Concurrency-KMP:generateDebugAssets UP-TO-DATE
+> Task :shared:packageDebugResources UP-TO-DATE
+> Task :commons:packageDebugResources
+> Task :Database-KMP:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :Concurrency-KMP:mergeDebugAssets UP-TO-DATE
+> Task :androidApp:createDebugCompatibleScreenManifests
+> Task :Database-KMP:mergeDebugShaders UP-TO-DATE
+> Task :androidApp:extractDeepLinksDebug FROM-CACHE
+> Task :Concurrency-KMP:processDebugJavaRes UP-TO-DATE
+> Task :commons:extractDeepLinksDebug FROM-CACHE
+> Task :Document-KMP:mergeDebugAssets UP-TO-DATE
+> Task :Database-KMP:compileDebugShaders NO-SOURCE
+> Task :Auth-KMP:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :Config-KMP:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :Database-KMP:debugAssetsCopyForAGP NO-SOURCE
+> Task :Auth-KMP:mergeDebugJniLibFolders UP-TO-DATE
+> Task :Database-KMP:generateDebugAssets UP-TO-DATE
+> Task :shared:extractDeepLinksDebug FROM-CACHE
+> Task :Database-KMP:mergeDebugAssets UP-TO-DATE
+> Task :Concurrency-KMP:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :Config-KMP:mergeDebugJniLibFolders UP-TO-DATE
+> Task :Auth-KMP:mergeDebugNativeLibs NO-SOURCE
+> Task :Auth-KMP:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :Concurrency-KMP:mergeDebugJniLibFolders UP-TO-DATE
+> Task :Config-KMP:mergeDebugNativeLibs NO-SOURCE
+> Task :Database-KMP:processDebugJavaRes UP-TO-DATE
+> Task :commons:processDebugManifest FROM-CACHE
+> Task :Security-KMP:preBuild UP-TO-DATE
+> Task :Security-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Security-KMP:preDebugBuild UP-TO-DATE
+> Task :Concurrency-KMP:mergeDebugNativeLibs NO-SOURCE
+> Task :Config-KMP:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :Concurrency-KMP:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :Security-KMP:generateDebugResValues UP-TO-DATE
+> Task :Security-KMP:writeDebugAarMetadata UP-TO-DATE
+> Task :Database-KMP:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :Security-KMP:extractDeepLinksDebug UP-TO-DATE
+> Task :Security-KMP:generateDebugResources UP-TO-DATE
+> Task :Security-KMP:javaPreCompileDebug UP-TO-DATE
+> Task :Security-KMP:debugAssetsCopyForAGP NO-SOURCE
+> Task :shared:writeDebugAarMetadata
+> Task :Security-KMP:mergeDebugShaders UP-TO-DATE
+> Task :Database-KMP:mergeDebugJniLibFolders UP-TO-DATE
+> Task :Security-KMP:processDebugManifest UP-TO-DATE
+> Task :Security-KMP:mergeDebugJniLibFolders UP-TO-DATE
+> Task :Security-KMP:compileDebugShaders NO-SOURCE
+> Task :Database-KMP:mergeDebugNativeLibs NO-SOURCE
+> Task :Security-KMP:generateDebugAssets UP-TO-DATE
+> Task :Security-KMP:mergeDebugNativeLibs NO-SOURCE
+> Task :Security-KMP:packageDebugResources UP-TO-DATE
+> Task :Security-KMP:mergeDebugAssets UP-TO-DATE
+> Task :commons:parseDebugLocalResources FROM-CACHE
+> Task :Database-KMP:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :Security-KMP:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :Security-KMP:compileDebugLibraryResources UP-TO-DATE
+> Task :Security-KMP:parseDebugLocalResources UP-TO-DATE
+> Task :Formatters-KMP:preBuild UP-TO-DATE
+> Task :Formatters-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Formatters-KMP:preDebugBuild UP-TO-DATE
+> Task :commons:writeDebugAarMetadata
+> Task :Formatters-KMP:debugAssetsCopyForAGP NO-SOURCE
+> Task :Document-KMP:processDebugJavaRes UP-TO-DATE
+> Task :Security-KMP:generateDebugRFile UP-TO-DATE
+> Task :Formatters-KMP:generateDebugResValues UP-TO-DATE
+> Task :Formatters-KMP:writeDebugAarMetadata UP-TO-DATE
+> Task :shared:compileDebugLibraryResources
+> Task :shared:processDebugManifest FROM-CACHE
+> Task :Formatters-KMP:extractDeepLinksDebug UP-TO-DATE
+> Task :Formatters-KMP:generateDebugResources UP-TO-DATE
+> Task :Formatters-KMP:javaPreCompileDebug UP-TO-DATE
+> Task :Formatters-KMP:mergeDebugShaders UP-TO-DATE
+> Task :Formatters-KMP:processDebugManifest UP-TO-DATE
+> Task :commons:compileDebugLibraryResources
+> Task :Formatters-KMP:mergeDebugJniLibFolders UP-TO-DATE
+> Task :Formatters-KMP:packageDebugResources UP-TO-DATE
+> Task :Formatters-KMP:mergeDebugNativeLibs NO-SOURCE
+> Task :Formatters-KMP:compileDebugShaders NO-SOURCE
+> Task :Formatters-KMP:generateDebugAssets UP-TO-DATE
+> Task :shared:parseDebugLocalResources UP-TO-DATE
+> Task :commons:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Formatters-KMP:parseDebugLocalResources UP-TO-DATE
+> Task :Formatters-KMP:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :Formatters-KMP:compileDebugLibraryResources UP-TO-DATE
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:convertXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :Formatters-KMP:generateDebugRFile UP-TO-DATE
+> Task :shared:copyNonXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :commons:javaPreCompileDebug FROM-CACHE
+> Task :shared:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :commons:generateDebugRFile FROM-CACHE
+> Task :shared:prepareComposeResourcesTaskForAndroidMain NO-SOURCE
+> Task :shared:generateResourceAccessorsForAndroidMain SKIPPED
+> Task :shared:generateComposeResClass SKIPPED
+> Task :shared:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :shared:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :commons:generateDebugBuildConfig
+> Task :Document-KMP:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :shared:copyNonXmlValueResourcesForAndroidDebug NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :shared:generateResourceAccessorsForCommonMain SKIPPED
+> Task :shared:generateActualResourceCollectorsForAndroidMain SKIPPED
+> Task :shared:convertXmlValueResourcesForAndroidDebug NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForAndroidDebug NO-SOURCE
+> Task :Formatters-KMP:mergeDebugAssets UP-TO-DATE
+> Task :shared:generateResourceAccessorsForAndroidDebug SKIPPED
+> Task :androidApp:javaPreCompileDebug FROM-CACHE
+> Task :shared:javaPreCompileDebug FROM-CACHE
+> Task :RateLimiter-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :RateLimiter-KMP:preBuild UP-TO-DATE
+> Task :Storage-KMP:preBuild UP-TO-DATE
+> Task :Storage-KMP:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :RateLimiter-KMP:preDebugBuild UP-TO-DATE
+> Task :Storage-KMP:preDebugBuild UP-TO-DATE
+> Task :Document-KMP:mergeDebugJniLibFolders UP-TO-DATE
+> Task :RateLimiter-KMP:generateDebugResValues UP-TO-DATE
+> Task :Storage-KMP:writeDebugAarMetadata UP-TO-DATE
+> Task :Security-KMP:compileDebugKotlinAndroid UP-TO-DATE
+> Task :RateLimiter-KMP:writeDebugAarMetadata UP-TO-DATE
+> Task :Document-KMP:mergeDebugNativeLibs NO-SOURCE
+> Task :RateLimiter-KMP:generateDebugResources UP-TO-DATE
+> Task :RateLimiter-KMP:javaPreCompileDebug UP-TO-DATE
+> Task :Storage-KMP:generateDebugResValues UP-TO-DATE
+> Task :RateLimiter-KMP:processDebugManifest UP-TO-DATE
+> Task :RateLimiter-KMP:extractDeepLinksDebug UP-TO-DATE
+> Task :RateLimiter-KMP:debugAssetsCopyForAGP NO-SOURCE
+> Task :Storage-KMP:generateDebugResources UP-TO-DATE
+> Task :RateLimiter-KMP:mergeDebugShaders UP-TO-DATE
+> Task :RateLimiter-KMP:compileDebugShaders NO-SOURCE
+> Task :RateLimiter-KMP:generateDebugAssets UP-TO-DATE
+> Task :RateLimiter-KMP:mergeDebugJniLibFolders UP-TO-DATE
+> Task :androidApp:mergeDebugShaders
+> Task :RateLimiter-KMP:mergeDebugAssets UP-TO-DATE
+> Task :Formatters-KMP:compileDebugKotlinAndroid UP-TO-DATE
+> Task :RateLimiter-KMP:packageDebugResources UP-TO-DATE
+> Task :Storage-KMP:extractDeepLinksDebug UP-TO-DATE
+> Task :RateLimiter-KMP:mergeDebugNativeLibs NO-SOURCE
+> Task :Storage-KMP:packageDebugResources UP-TO-DATE
+> Task :RateLimiter-KMP:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :Storage-KMP:javaPreCompileDebug UP-TO-DATE
+> Task :RateLimiter-KMP:parseDebugLocalResources UP-TO-DATE
+> Task :RateLimiter-KMP:compileDebugLibraryResources UP-TO-DATE
+> Task :Storage-KMP:compileDebugLibraryResources UP-TO-DATE
+> Task :Storage-KMP:debugAssetsCopyForAGP NO-SOURCE
+> Task :Storage-KMP:parseDebugLocalResources UP-TO-DATE
+> Task :Document-KMP:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :Storage-KMP:mergeDebugShaders UP-TO-DATE
+> Task :Storage-KMP:processDebugManifest UP-TO-DATE
+> Task :Storage-KMP:mergeDebugJniLibFolders UP-TO-DATE
+> Task :Formatters-KMP:compileDebugJavaWithJavac NO-SOURCE
+> Task :RateLimiter-KMP:generateDebugRFile UP-TO-DATE
+> Task :Storage-KMP:compileDebugShaders NO-SOURCE
+> Task :Storage-KMP:generateDebugAssets UP-TO-DATE
+> Task :Formatters-KMP:processDebugJavaRes UP-TO-DATE
+> Task :Storage-KMP:generateDebugRFile UP-TO-DATE
+> Task :Formatters-KMP:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :Storage-KMP:mergeDebugAssets UP-TO-DATE
+> Task :Storage-KMP:mergeDebugNativeLibs NO-SOURCE
+> Task :Storage-KMP:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :Formatters-KMP:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :Security-KMP:compileDebugJavaWithJavac NO-SOURCE
+> Task :Security-KMP:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :Security-KMP:processDebugJavaRes UP-TO-DATE
+> Task :commons:mergeDebugShaders
+> Task :Security-KMP:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :RateLimiter-KMP:compileDebugKotlinAndroid UP-TO-DATE
+> Task :Storage-KMP:compileDebugKotlinAndroid UP-TO-DATE
+> Task :Storage-KMP:compileDebugJavaWithJavac NO-SOURCE
+> Task :Storage-KMP:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :Storage-KMP:processDebugJavaRes UP-TO-DATE
+> Task :RateLimiter-KMP:compileDebugJavaWithJavac NO-SOURCE
+> Task :Storage-KMP:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :RateLimiter-KMP:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :RateLimiter-KMP:processDebugJavaRes UP-TO-DATE
+> Task :RateLimiter-KMP:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :androidApp:compileDebugShaders NO-SOURCE
+> Task :androidApp:generateDebugAssets UP-TO-DATE
+> Task :commons:compileDebugShaders NO-SOURCE
+> Task :commons:generateDebugAssets UP-TO-DATE
+> Task :shared:mergeDebugShaders
+> Task :shared:compileDebugShaders NO-SOURCE
+> Task :shared:copyDebugComposeResourcesToAndroidAssets
+> Task :shared:debugAssetsCopyForAGP NO-SOURCE
+> Task :shared:generateDebugAssets UP-TO-DATE
+> Task :commons:mergeDebugAssets
+> Task :shared:mergeDebugAssets
+> Task :androidApp:checkDebugAarMetadata
+> Task :androidApp:mergeDebugAssets
+> Task :shared:generateDebugRFile UP-TO-DATE
+> Task :androidApp:compressDebugAssets
+> Task :androidApp:mapDebugSourceSetPaths
+> Task :androidApp:checkDebugDuplicateClasses
+> Task :androidApp:processDebugMainManifest
+> Task :androidApp:processDebugManifest
+> Task :androidApp:processDebugManifestForPackage
+> Task :androidApp:desugarDebugFileDependencies
+> Task :commons:mergeDebugJniLibFolders
+> Task :commons:mergeDebugNativeLibs NO-SOURCE
+> Task :androidApp:validateSigningDebug
+> Task :androidApp:writeDebugAppMetadata
+> Task :androidApp:writeDebugSigningConfigVersions
+> Task :commons:compileDebugKotlin
+> Task :androidApp:mergeDebugResources
+> Task :shared:compileDebugKotlinAndroid
+> Task :androidApp:mergeExtDexDebug
+> Task :androidApp:mergeDebugJniLibFolders
+> Task :shared:mergeDebugJniLibFolders
+> Task :commons:copyDebugJniLibsProjectOnly
+
+> Task :commons:compileDebugKotlin
+w: file:///Users/milosvasic/Projects/Yole/commons/src/main/kotlin/digital/vasic/opoc/util/GsContextUtils.kt:120:24 'constructor(): GsContextUtils' is deprecated. Use specialized utility classes instead: GsResourceUtils, GsStorageUtils, GsImageUtils, GsIntentUtils, GsUiUtils.
+w: file:///Users/milosvasic/Projects/Yole/commons/src/main/kotlin/digital/vasic/opoc/util/GsStorageUtils.kt:684:29 Condition is always 'false'.
+w: file:///Users/milosvasic/Projects/Yole/commons/src/main/kotlin/digital/vasic/opoc/util/GsUiUtils.kt:326:13 Condition is always 'true'.
+
+> Task :commons:processDebugJavaRes
+> Task :shared:mergeDebugNativeLibs
+> Task :shared:copyDebugJniLibsProjectOnly
+> Task :commons:compileDebugJavaWithJavac
+> Task :commons:bundleLibCompileToJarDebug
+> Task :commons:bundleLibRuntimeToDirDebug
+> Task :androidApp:mergeDebugNativeLibs
+
+> Task :androidApp:stripDebugDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so, libtree-sitter-markdown.so, libtree-sitter.so.
+
+> Task :androidApp:processDebugResources
+
+> Task :shared:compileDebugKotlinAndroid
+w: file:///Users/milosvasic/Projects/Yole/shared/src/androidMain/kotlin/digital/vasic/yole/language/affordance/FoldQueryRunner.android.kt:28:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/androidMain/kotlin/digital/vasic/yole/language/affordance/OutlineExtractor.android.kt:25:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/androidMain/kotlin/digital/vasic/yole/network/platform/PlatformFileIOFactory.android.kt:10:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/androidMain/kotlin/digital/vasic/yole/network/platform/SecureStorageFactory.android.kt:21:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/androidMain/kotlin/digital/vasic/yole/network/protocols/ftp/FtpProtocolClient.kt:32:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/androidMain/kotlin/digital/vasic/yole/network/protocols/sftp/SshClient.kt:31:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/androidMain/kotlin/digital/vasic/yole/network/protocols/sftp/SshClient.kt:110:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/androidMain/kotlin/digital/vasic/yole/network/protocols/smb/SmbProtocolClient.kt:34:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/androidMain/kotlin/digital/vasic/yole/syntax/TokenizerEngine.android.kt:60:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/androidMain/kotlin/digital/vasic/yole/util/FileStorage.android.kt:15:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/language/affordance/FoldQueryRunner.kt:49:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/language/affordance/OutlineExtractor.kt:42:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/network/platform/PlatformFileIOFactory.kt:13:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/network/platform/SecureStorage.kt:169:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/ftp/FtpProtocolClient.kt:26:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/sftp/SshClient.kt:20:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/sftp/SshClient.kt:46:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/network/protocols/smb/SmbProtocolClient.kt:20:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/syntax/TokenizerEngine.kt:40:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/milosvasic/Projects/Yole/shared/src/commonMain/kotlin/digital/vasic/yole/util/FileStorage.kt:16:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+
+> Task :shared:compileDebugJavaWithJavac NO-SOURCE
+> Task :shared:processDebugJavaRes
+> Task :shared:bundleLibCompileToJarDebug
+> Task :shared:bundleLibRuntimeToDirDebug
+> Task :androidApp:mergeLibDexDebug
+
+> Task :androidApp:compileDebugKotlin
+w: file:///Users/milosvasic/Projects/Yole/androidApp/src/main/java/digital/vasic/yole/android/ui/Accessibility.kt:53:71 'static fun obtain(p0: Int): AccessibilityEvent!' is deprecated. Deprecated in Java.
+w: file:///Users/milosvasic/Projects/Yole/androidApp/src/main/java/digital/vasic/yole/android/ui/YoleApp.kt:1097:29 'fun ClickableText(text: AnnotatedString, modifier: Modifier = ..., style: TextStyle = ..., softWrap: Boolean = ..., overflow: TextOverflow = ..., maxLines: Int = ..., onTextLayout: (TextLayoutResult) -> Unit = ..., onClick: (Int) -> Unit): Unit' is deprecated. Use Text or BasicText and pass an AnnotatedString that contains a LinkAnnotation.
+w: file:///Users/milosvasic/Projects/Yole/androidApp/src/main/java/digital/vasic/yole/android/ui/YoleApp.kt:1791:44 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///Users/milosvasic/Projects/Yole/androidApp/src/main/java/digital/vasic/yole/android/ui/YoleApp.kt:1966:33 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///Users/milosvasic/Projects/Yole/androidApp/src/main/java/digital/vasic/yole/android/ui/YoleApp.kt:2547:35 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///Users/milosvasic/Projects/Yole/androidApp/src/main/java/digital/vasic/yole/android/ui/YoleApp.kt:2753:80 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///Users/milosvasic/Projects/Yole/androidApp/src/main/java/digital/vasic/yole/android/ui/YoleApp.kt:3847:35 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///Users/milosvasic/Projects/Yole/androidApp/src/main/java/digital/vasic/yole/android/ui/editor/FoldGutter.kt:150:30 'val Icons.Filled.KeyboardArrowRight: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.KeyboardArrowRight.
+w: file:///Users/milosvasic/Projects/Yole/androidApp/src/main/java/digital/vasic/yole/android/ui/editor/OutlineDrawer.kt:98:43 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///Users/milosvasic/Projects/Yole/androidApp/src/main/java/digital/vasic/yole/android/ui/theme/Theme.kt:185:24 'var statusBarColor: Int' is deprecated. Deprecated in Java.
+
+> Task :androidApp:processDebugJavaRes
+> Task :androidApp:compileDebugJavaWithJavac
+> Task :androidApp:dexBuilderDebug
+> Task :androidApp:mergeProjectDexDebug
+> Task :androidApp:mergeDebugJavaResource
+> Task :androidApp:packageDebug
+> Task :androidApp:assembleDebug
+> Task :androidApp:createDebugApkListingFileRedirect
+Kotlin build report is written to file:///Users/milosvasic/Projects/Yole/build/reports/kotlin-build/Yole-build-2026-05-15-14-34-35-0.txt
+[Incubating] Problems report is available at: file:///Users/milosvasic/Projects/Yole/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 1m 56s
+261 actionable tasks: 57 executed, 14 from cache, 190 up-to-date
+Configuration cache entry stored.

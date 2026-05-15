@@ -1,0 +1,35 @@
+=== Yole 1.2.0 (iter-58) — Web (Wasm) Distribution ===
+Status: BLOCKED — pre-existing infrastructure gap (NOT new in iter-58)
+
+Reason 1 (build): `:webApp:wasmJsBrowserDistribution` task does not exist.
+The webApp module's Kotlin/Wasm `browser { }` block does not declare
+`binaries.executable()`, which is what registers the BrowserDistribution
+task. Same gate documented in iter-54 closeout (commit 0548af07) and
+iter-57 closeout (commit 6c543006): "Web Wasm
+:webApp:BrowserDistribution task not wired — pre-existing webApp
+module config gap." Tracked as #wasmjs-production-distribution-gap.
+Not introduced in iter-58; carry-over from iter-54 / iter-57.
+
+Attempted command + output (verified in iter-57, unchanged in iter-58):
+  $ ./gradlew :webApp:wasmJsBrowserDistribution
+  FAILURE: Cannot locate tasks that match ':webApp:wasmJsBrowserDistribution'
+  as task 'wasmJsBrowserDistribution' not found in project ':webApp'.
+
+Reason 2 (channel): Firebase App Distribution does not support Web/Wasm
+bundles. For a PWA, the appropriate channel is Firebase Hosting (a
+different Firebase product) or any static-host (Netlify, GitHub Pages,
+self-hosted nginx). The yole-app Firebase project has no Hosting
+configuration in this iteration.
+
+Operator action paths:
+  1. Wire `binaries.executable()` into webApp/build.gradle.kts then run
+       ./gradlew :webApp:wasmJsBrowserDistribution
+     to produce webApp/build/dist/wasmJs/productionExecutable/.
+     (Tracked as the same gap recorded in iter-54 / iter-57.)
+  2. Once a Wasm bundle exists, deploy via:
+       firebase deploy --only hosting --project yole-app
+     after running `firebase init hosting`.
+
+No Firebase distribution attempted for Web in iter-58 (consistent with
+iter-30, iter-30b, iter-54, iter-57 — Web Wasm has never been Firebase-
+distributed in any prior iteration).

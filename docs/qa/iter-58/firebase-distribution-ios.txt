@@ -1,0 +1,17 @@
+=== Yole 1.2.0 (iter-58) — iOS Distribution ===
+Status: BLOCKED — pre-existing infrastructure gap (carry-over from iter-57)
+
+Reason: iOS build still blocked on:
+  - #phase-7-blocked-on-ios-baseline   (iter-57)
+  - #shared-iosmain-databasefactory-broken
+Documented in docs/KNOWN_DEFECTS.md and iter-57 release-notes.md
+"Known limitations (carry-over)". Yole 1.1.0 (iter-57) did not ship an
+iOS .ipa. iter-58 also does not — same baseline gap, no new code in
+iter-58 makes iOS buildable.
+
+Firebase project yole-app has NO iOS App ID registered (only the Android
+app — see firebase-distribution-desktop-macos.txt for the apps:list
+output). Even if a buildable .ipa existed, a Firebase iOS app
+registration would be required first.
+
+No Firebase distribution attempted for iOS in iter-58.
