@@ -91,8 +91,13 @@ import digital.vasic.yole.ui.ScreenTransitions
 import digital.vasic.yole.ui.ListAnimations
 import digital.vasic.yole.ui.LoadingStateWrapper
 import digital.vasic.yole.ui.LoadingAnimations
+import digital.vasic.yole.android.ui.editor.CompletionPopupState
+import digital.vasic.yole.android.ui.editor.CompletionToolbarButton
+import digital.vasic.yole.completion.CompletionEngine
+import digital.vasic.yole.completion.trigger.CompletionTrigger
 import digital.vasic.yole.language.LanguageRegistry
 import digital.vasic.yole.language.LocalLanguage
+import digital.vasic.yole.language.affordance.OutlineExtractor
 import digital.vasic.yole.syntax.EnabledFormatGate
 import digital.vasic.yole.syntax.SyntaxHighlighter
 import digital.vasic.yole.syntax.TokenizerEngine
@@ -1478,6 +1483,38 @@ fun IdeEditorScreen(
     // on the left edge of the editor surface.
     var outlineDrawerOpen by remember { mutableStateOf(false) }
 
+    // iter-60 Phase 6.5: completion engine + trigger + popup state.
+    // Hoisted here so the toolbar button can call trigger.onExplicitTrigger
+    // independently of the SyncedScrollEditor's onPreviewKeyEvent. The
+    // engine is re-built when detectedLangId changes (different file).
+    // CompletionPopupState is a plain class with Compose-observable
+    // fields — no need to wrap in remember {} (it is stable).
+    val completionPopupState = remember { CompletionPopupState() }
+    // The coroutine scope for the trigger is remembered so it matches
+    // the composable's lifecycle; it is cancelled when IdeEditorScreen
+    // leaves the composition.
+    val completionScope = rememberCoroutineScope()
+
+    // Hoist lang detection + engine + trigger here (above the Column) so
+    // both the toolbar button and the SyncedScrollEditor share the same
+    // trigger instance without needing to thread it through composable args.
+    val detectedLangId = remember(fileName) { GrammarRegistry.detectLangId(fileName) }
+    val tokenizerEngine = remember { TokenizerEngine() }
+    LaunchedEffect(tokenizerEngine) {
+        tokenizerEngine.initialize()
+    }
+    val passedLangId = if (detectedLangId != "plaintext") detectedLangId else null
+    val completionEngine = remember(detectedLangId) {
+        val extractor = OutlineExtractor()
+        CompletionEngine.default(extractor, tokenizerEngine)
+    }
+    val completionTrigger = remember(completionEngine) {
+        CompletionTrigger(
+            langId = passedLangId,
+            scope = completionScope,
+        )
+    }
+
     Column(modifier = Modifier.fillMaxSize().background(bg)) {
         // General editor toolbar (undo/redo/find)
         Row(
@@ -1514,6 +1551,12 @@ fun IdeEditorScreen(
             IdeToolbarButton("Outline", "Outline", textColor) {
                 outlineDrawerOpen = !outlineDrawerOpen
             }
+            // iter-60 Phase 6.5: completion suggest button. Fires an
+            // explicit trigger so touchscreen users can open the popup
+            // without Ctrl+Space.
+            CompletionToolbarButton(
+                onTrigger = { completionTrigger.onExplicitTrigger() },
+            )
 
             // Format-specific tools (markdown)
             if (format.id == "markdown") {
@@ -1584,11 +1627,12 @@ fun IdeEditorScreen(
         // If lang resolves to "plaintext" we pass null to keep the editor
         // unmodified (graceful no-op) and to match the iter-55 baseline
         // behavior for unsupported / disabled formats.
-        val detectedLangId = remember(fileName) { GrammarRegistry.detectLangId(fileName) }
-        val tokenizerEngine = remember { TokenizerEngine() }
-        LaunchedEffect(tokenizerEngine) {
-            tokenizerEngine.initialize()
-        }
+        //
+        // Note: detectedLangId, tokenizerEngine, passedLangId,
+        // completionEngine, and completionTrigger are all hoisted ABOVE
+        // the Column so the toolbar's CompletionToolbarButton can share
+        // the trigger. Only the highlighter needs LocalTheme, which must
+        // be read inside composition, so it remains here.
         val theme = LocalTheme.current
         val highlighter = remember(tokenizerEngine, detectedLangId, theme) {
             if (detectedLangId != "plaintext") {
@@ -1597,7 +1641,6 @@ fun IdeEditorScreen(
                 null
             }
         }
-        val passedLangId = if (detectedLangId != "plaintext") detectedLangId else null
 
         // iter-58 Feature 2 Phase 4: resolve the active LanguageFormat from
         // the detected lang id and provide it via LocalLanguage so the
@@ -1657,6 +1700,9 @@ fun IdeEditorScreen(
                     highlighter = highlighter,
                     langId = passedLangId,
                     tokenizerEngine = tokenizerEngine,
+                    completionTrigger = completionTrigger,
+                    completionPopupState = completionPopupState,
+                    completionEngine = completionEngine,
                 )
             }
         }
