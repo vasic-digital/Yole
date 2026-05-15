@@ -6,17 +6,18 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-15 (iter-60 F3 **Phase 10 COMPLETE** — user-guide + architecture + snippet-coverage matrix + CHANGELOG bump 1.2.1 → 1.3.0. 1 commit on master.
+**Last updated:** 2026-05-15 (iter-60 F3 **Phase 11 COMPLETE** — Firebase distribution v1.3.0. Version bumped 1.2.1 → 1.3.0 (versionCode 121 → 130; dotted `0.0.0.1.30`) in `androidApp/build.gradle.kts` + `desktopApp/build.gradle.kts`. **Artifacts built + staged** (releases/): `Yole-Android-1.3.0-Release-0.0.0.1.30.apk` (28 MB), `Yole-Android-1.3.0-Debug-0.0.0.1.30.apk` (35 MB), `Yole-Desktop-macos-arm64-1.3.0-Release-0.0.0.1.30.dmg` (172 MB; `:desktopApp:packageDmg` BUILD SUCCESSFUL 1m 27s). **Firebase distribution (real evidence):** Android Release release id `7j7pkasr3lo48` Console URL `https://console.firebase.google.com/project/yole-app/appdistribution/app/android:digital.vasic.yole.android/releases/7j7pkasr3lo48` Tester URL `https://appdistribution.firebase.google.com/testerapps/1:578988389676:android:d61715a0a84a42c65d2889/releases/7j7pkasr3lo48`; Android DEV (debug, package `digital.vasic.yole.android.dev`) release id `6goh6dubhuc5o` Console URL `https://console.firebase.google.com/project/yole-app/appdistribution/app/android:digital.vasic.yole.android.dev/releases/6goh6dubhuc5o` Tester URL `https://appdistribution.firebase.google.com/testerapps/1:578988389676:android:5a3d47a9fb23b6465d2889/releases/6goh6dubhuc5o`. Both distributed to `milos85vasic@gmail.com,milos85vasic.2nd@gmail.com,milos85vasic.3rd@gmail.com` — `distributed to testers/groups successfully` confirmed in CLI output. Tester group used `--testers` (email list direct); no `--groups` flag, so no 404 (same pattern as iter-59 which hit a group-404 only when `--groups internal-testers` was attempted). **Desktop macOS-arm64 DMG** BUILT (172 MB staged in releases/) but NOT distributed via Firebase (Firebase App Distribution has no Desktop product category — same gap as iter-58; out-of-band channel per pre-existing `#wasmjs-production-distribution-gap` analogue for Desktop). **Non-distributed platforms:** Desktop Linux-x64 BLOCKED on `#linux-build-host-jdk-jmods-bootstrap` + `#crossbuild-windows-image-provisioning`; Desktop Windows-x64 same gap; Web Wasm BLOCKED on `#wasmjs-production-distribution-gap`; iOS BLOCKED on `#shared-iosmain-databasefactory-broken` + `#phase-7-blocked-on-ios-baseline`. **iter-60 COMPLETE.** Feature 3 (auto-complete) fully shipped end-to-end. **Next: Feature 4** — LSP integration.
 
-Phase 10 delivered:
-- `docs/features/auto-complete/user-guide.md` — end-user guide: what auto-complete does, trigger mechanics per platform, popup navigation, snippet placeholder Tab-stop behaviour, 55-language coverage reference, known v1 limitations (popup anchor, choice-list, $VARIABLE, user-defined snippets, Desktop/iOS/Web popup UI gap).
-- `docs/features/auto-complete/architecture.md` — contributor guide: pipeline ASCII diagram, provider interface + 3 v1 impls, how-to-add-provider walkthrough for Feature 4 (LSP), how-to-add-language-bundle, ranker boost table, per-platform notes (Android full / Desktop engine-only / iOS+Web deferred), anti-bluff invariants for both challenges, CONST-037 cross-platform block.
-- `docs/features/auto-complete/snippet-coverage-matrix.md` — generated from source tree: 55 rows × 4 columns (langId, bundled count, user-snippets wired, ranker disposition). 361 snippets total. 5 languages below the 6-snippet Phase 7 norm noted with reasoning (bibtex 4, dart 5, json 4, jsx 4, tsx 4).
-- `CHANGELOG.md` — iter-60 v1.3.0 entry added at top following iter-59 format: version bump, summary, Added / Behind-the-scenes / Known-gaps / Cross-platform-impact-summary sections.
+Phase 11 delivered:
+- `androidApp/build.gradle.kts` — versionCode 121 → 130, versionName "1.2.1" → "1.3.0".
+- `desktopApp/build.gradle.kts` — packageVersion "1.2.0" → "1.3.0".
+- `releases/Yole-Android-1.3.0-Release-0.0.0.1.30.apk` (28 MB) — built via `:androidApp:assembleRelease`.
+- `releases/Yole-Android-1.3.0-Debug-0.0.0.1.30.apk` (35 MB, package digital.vasic.yole.android.dev, "1.3.0 DEV") — built via `:androidApp:assembleDebug`.
+- `releases/Yole-Desktop-macos-arm64-1.3.0-Release-0.0.0.1.30.dmg` (172 MB) — built via `:desktopApp:packageDmg`.
+- Firebase Android Release: release id `7j7pkasr3lo48`, app `1:578988389676:android:d61715a0a84a42c65d2889`, distributed to all 3 testers.
+- Firebase Android DEV: release id `6goh6dubhuc5o`, app `1:578988389676:android:5a3d47a9fb23b6465d2889`, distributed to all 3 testers.
 
-**Next: Phase 11** — Firebase distribution v1.3.0. Version bump in `androidApp/build.gradle.kts` (versionCode 121 → 130, versionName 1.2.1 → 1.3.0), `desktopApp/build.gradle.kts`, then APK + DMG build + Firebase upload.
-
-**After Phase 11:** Feature 4 — LSP integration.
+**Next: Feature 4** — LSP integration.
 
 **Previous (iter-60 F3 Phase 9 COMPLETE):** 2 anti-bluff challenges + `qa-iter-60-gates` Makefile target + Robolectric classpath fix. 1 commit on master.
 
