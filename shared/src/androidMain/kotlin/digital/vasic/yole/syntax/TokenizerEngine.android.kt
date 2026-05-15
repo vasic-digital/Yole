@@ -131,6 +131,34 @@ actual class TokenizerEngine actual constructor() {
     actual fun isGrammarLoaded(lang: String): Boolean = loadedGrammars.containsKey(lang)
 
     /**
+     * iter-58 Phase 3 JVM-only accessor — returns the cached [TSLanguage]
+     * for [lang], or `null` if no grammar has been loaded for it.
+     * Mirrors the Desktop actual exactly so [FoldQueryRunner] /
+     * [OutlineExtractor] share a single Android+Desktop codepath.
+     */
+    internal fun jvmGrammarFor(lang: String): TSLanguage? = loadedGrammars[lang]
+
+    /**
+     * iter-58 Phase 3 JVM-only accessor — parses [text] using the cached
+     * grammar for [lang] and returns the raw [TSTree]. The caller owns
+     * any subsequent processing (query application, walking, etc.).
+     *
+     * @throws IllegalStateException if the engine has not been initialised
+     *   or the grammar has not been loaded for [lang].
+     */
+    internal fun jvmParseTree(text: String, lang: String): TSTree {
+        check(initialized.get()) {
+            "TokenizerEngine.initialize() must be called first (and must succeed)"
+        }
+        EnabledFormatGate.requireEnabled(lang)
+        val tsLang = loadedGrammars[lang]
+            ?: error("grammar `$lang` is not loaded — call loadGrammar() first")
+        val parser = TSParser()
+        parser.setLanguage(tsLang)
+        return parser.parseString(null, text)
+    }
+
+    /**
      * Pre-order DFS over the parse tree. For each leaf node we emit a
      * Token spanning the same byte range with the node's grammar type
      * as the scope. Bit-for-bit identical to the Desktop actual to keep

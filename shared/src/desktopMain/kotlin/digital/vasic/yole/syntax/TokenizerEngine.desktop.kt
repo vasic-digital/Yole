@@ -95,6 +95,38 @@ actual class TokenizerEngine actual constructor() {
     actual fun isGrammarLoaded(lang: String): Boolean = loadedGrammars.containsKey(lang)
 
     /**
+     * iter-58 Phase 3 JVM-only accessor — returns the cached [TSLanguage]
+     * for [lang], or `null` if no grammar has been loaded for it.
+     *
+     * Consumers ([FoldQueryRunner], [OutlineExtractor]) call this so they
+     * can construct a [org.treesitter.TSQuery] against the same grammar
+     * the engine is parsing with. NOT part of the expect surface — JVM
+     * only. iOS + Wasm affordance runners take their own platform-
+     * specific path per research-report.md §6.
+     */
+    internal fun jvmGrammarFor(lang: String): TSLanguage? = loadedGrammars[lang]
+
+    /**
+     * iter-58 Phase 3 JVM-only accessor — parses [text] using the cached
+     * grammar for [lang] and returns the raw [TSTree]. The caller is
+     * responsible for any subsequent processing (query application,
+     * tree walking, etc.). The tree is freshly allocated per call so the
+     * caller may freely walk it on any thread.
+     *
+     * @throws IllegalStateException if the engine has not been initialised
+     *   or the grammar has not been loaded for [lang].
+     */
+    internal fun jvmParseTree(text: String, lang: String): TSTree {
+        check(initialized.get()) { "TokenizerEngine.initialize() must be called first" }
+        EnabledFormatGate.requireEnabled(lang)
+        val tsLang = loadedGrammars[lang]
+            ?: error("grammar `$lang` is not loaded — call loadGrammar() first")
+        val parser = TSParser()
+        parser.setLanguage(tsLang)
+        return parser.parseString(null, text)
+    }
+
+    /**
      * Pre-order DFS over the parse tree. For each leaf node we emit a
      * Token spanning the same byte range with the node's grammar type
      * as the scope. Interior nodes are not emitted (their child leaves

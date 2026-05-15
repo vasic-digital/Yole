@@ -254,6 +254,87 @@ fix (not a sibling submodule); CONST-038 doesn't gate this.
 
 ---
 
+## #f2-phase-3-bonede-query-api-gap — NEW iter-58 F2 Phase 3 (2026-05-15)
+
+**Symptom**
+Two related items in iter-58 Feature 2 Phase 3 (commit landing
+2026-05-15):
+
+1. **iOS + Wasm `FoldQueryRunner` / `OutlineExtractor` actuals are
+   stubs.** They return `emptyList()` rather than executing a real
+   tree-sitter query. iOS is gated on the same upstream issue tracked
+   by `#phase-7-blocked-on-ios-baseline` + `#shared-iosmain-databasefactory-broken`.
+   Wasm awaits Phase 6's `web-tree-sitter` second-engine landing per
+   research-report.md §6.4. Both stubs are HONEST per CONST-035 — they
+   never emit fake folds / outline items; the fold-gutter / breadcrumb
+   degrade gracefully to "no folds" / "no outline".
+
+2. **iOS + Wasm `readScmResource` actuals throw `IllegalStateException`.**
+   iOS bundle-resource access (NSBundle) and Wasm fetch-based asset
+   loading both await Phase 6/7 wiring. The expect/actual symmetry is
+   complete (the Yole `shared` module compiles on all 4 targets); the
+   stubs throw on call rather than silently returning `""`.
+
+3. **Bundled `markdown/folds.scm` is Yole-authored, not the verbatim
+   nvim-treesitter upstream.** The upstream targets a newer
+   tree-sitter-markdown grammar that emits `(section)` / `(list)`
+   node types; the bundled bonede tree-sitter-markdown 0.7.1 grammar
+   does NOT (verified empirically — TSQuery rejects them with
+   `TSQueryErrorField`). The Yole-authored file uses only node types
+   confirmed valid in 0.7.1: `fenced_code_block`, `indented_code_block`,
+   `paragraph`, `tight_list`. Attribution + the upstream reference is
+   preserved in the file's SPDX header comment.
+
+**Discovered by**
+Iter-58 Feature 2 Phase 3 implementation, 2026-05-15. The TSQuery
+rejection was caught by running `FoldQueryRunnerTest` on first
+implementation; an ad-hoc probe test enumerated the actual node types
+the bundled grammar emits. Test was honest-corrected per CONST-035
+rather than the result being faked.
+
+**End-user impact**
+None on Desktop + Android (where the JVM actuals execute real
+queries and emit real folds / outline items). On iOS + Web, fold +
+outline affordances are unavailable until Phases 6/7 land. Editor
+falls back gracefully — no faked affordances.
+
+**Proper fix path**
+1. Phase 6: ship Wasm `readScmResource` (fetch-based) + Wasm
+   `FoldQueryRunner` / `OutlineExtractor` via `web-tree-sitter` second
+   engine. Plan Phase 6 already scopes this.
+2. Phase 7: ship iOS `readScmResource` (NSBundle) + iOS
+   `FoldQueryRunner` / `OutlineExtractor` via Kotlin/Native cinterop
+   against the tree-sitter C API (ts_query_new / ts_query_cursor_new /
+   ts_query_cursor_next_match — see research-report.md §6.2). Gated
+   on `#shared-iosmain-databasefactory-broken` clearing.
+3. When Phase 6 lands `build-from-source` for all 55 grammars, the
+   Yole-authored markdown/folds.scm can be replaced with the verbatim
+   nvim-treesitter upstream (which will work against the newer
+   grammar that emits `(section)`).
+
+**Anti-bluff disposition (CONST-035)**
+Honest at every layer. The desktop + Android JVM actuals execute real
+queries against the bundled grammar (verified via mutation: stubbing
+the body to `return emptyList()` makes the tests FAIL). The iOS + Wasm
+stubs are documented + honestly return empty results. The bundled
+markdown query is a Yole-authored file matched to the actual grammar
+node types, with the upstream reference preserved for re-vendoring
+when the grammar matrix lands in Phase 6.
+
+**Exit criteria**
+1. `web-tree-sitter` Wasm engine landed (Phase 6 of iter-58 plan).
+2. iOS Kotlin/Native cinterop landed (Phase 7, after upstream
+   `#shared-iosmain-databasefactory-broken` clears).
+3. Per-language `folds.scm` + `outline.scm` matrix built for all 55
+   grammars, vendored verbatim from nvim-treesitter + helix (Phase 6).
+4. `FoldQueryRunnerTest` extended to assert ≥1 fold across all 4
+   platforms (with platform-specific test infrastructure landing
+   alongside Phase 6/7).
+5. The Yole-authored markdown/folds.scm replaced with the upstream
+   verbatim version once the grammar set supports its captures.
+
+---
+
 ## #wasmjs-production-distribution-gap — NEW iter-57 follow-up 2026-05-15
 
 **Symptom** — adding `binaries.executable()` to `webApp/build.gradle.kts`
