@@ -1,0 +1,13 @@
+{
+  "_comment_a": "SPDX-FileCopyrightText: 2026 Milos Vasic",
+  "_comment_b": "SPDX-License-Identifier: Apache-2.0",
+  "_comment_c": "iter-58 F2 Phase 6 fixture: JSON.",
+  "name": "Yole",
+  "version": "1.0.1",
+  "platforms": ["android", "desktop", "ios", "web"],
+  "features": {
+    "highlighting": true,
+    "outline": true,
+    "fold": true
+  }
+}
