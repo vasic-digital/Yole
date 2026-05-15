@@ -108,6 +108,8 @@ import digital.vasic.yole.syntax.theme.LocalTheme
 import digital.vasic.yole.syntax.theme.themeUiColor
 import digital.vasic.yole.android.ui.settings.FormatsSettingsScreen
 import digital.vasic.yole.android.ui.settings.FormatsSettingsTopBar
+import digital.vasic.yole.android.ui.settings.LspSettingsScreen
+import digital.vasic.yole.android.ui.settings.LspSettingsTopBar
 import digital.vasic.yole.android.ui.settings.MaybeShowFormatMigrationDialog
 import digital.vasic.yole.android.util.PdfExportUtil
 import digital.vasic.yole.android.util.BackupRestoreUtil
@@ -333,7 +335,10 @@ enum class SubScreen {
     SETTINGS,
     // iter-57 Phase 4.5: Settings → Formats sub-screen (Markdown-default
     // operator constraint UI per spec §3.7).
-    FORMATS_SETTINGS
+    FORMATS_SETTINGS,
+    // iter-61 Phase 8: Settings → LSP Language Support sub-screen.
+    // v1: Android shows honest "not available" stub for all 15 LSP servers.
+    LSP_SETTINGS
 }
 
 @Composable
@@ -645,6 +650,9 @@ fun MainScreen() {
                         SubScreen.FORMATS_SETTINGS -> FormatsSettingsTopBar(
                             onBackClick = { currentSubScreen = SubScreen.SETTINGS }
                         )
+                        SubScreen.LSP_SETTINGS -> LspSettingsTopBar(
+                            onBackClick = { currentSubScreen = SubScreen.SETTINGS }
+                        )
                         null -> {
                             IdeMainTopBar(
                                 currentScreen = currentScreen,
@@ -841,10 +849,16 @@ fun MainScreen() {
                                 },
                                 onOpenFormatsClick = {
                                     currentSubScreen = SubScreen.FORMATS_SETTINGS
+                                },
+                                onOpenLspSettingsClick = {
+                                    currentSubScreen = SubScreen.LSP_SETTINGS
                                 }
                             )
                             SubScreen.FORMATS_SETTINGS -> FormatsSettingsScreen(
                                 settings = settings,
+                                onBackClick = { currentSubScreen = SubScreen.SETTINGS }
+                            )
+                            SubScreen.LSP_SETTINGS -> LspSettingsScreen(
                                 onBackClick = { currentSubScreen = SubScreen.SETTINGS }
                             )
                             null -> {
@@ -975,10 +989,16 @@ fun MainScreen() {
                             },
                             onOpenFormatsClick = {
                                 currentSubScreen = SubScreen.FORMATS_SETTINGS
+                            },
+                            onOpenLspSettingsClick = {
+                                currentSubScreen = SubScreen.LSP_SETTINGS
                             }
                         )
                         SubScreen.FORMATS_SETTINGS -> FormatsSettingsScreen(
                             settings = settings,
+                            onBackClick = { currentSubScreen = SubScreen.SETTINGS }
+                        )
+                        SubScreen.LSP_SETTINGS -> LspSettingsScreen(
                             onBackClick = { currentSubScreen = SubScreen.SETTINGS }
                         )
                         null -> {
@@ -3144,7 +3164,9 @@ fun SettingsScreen(
     onAnimationsEnabledChanged: (Boolean) -> Unit,
     enabledFormatIds: Set<String>,
     onFormatToggled: (String, Boolean) -> Unit,
-    onOpenFormatsClick: () -> Unit = {}
+    onOpenFormatsClick: () -> Unit = {},
+    // iter-61 Phase 8: navigate to the LSP language support sub-screen.
+    onOpenLspSettingsClick: () -> Unit = {}
 ) {
     val isDarkTheme = isSystemInDarkTheme()
     val bg = ideBackground()
@@ -3317,6 +3339,52 @@ fun SettingsScreen(
         enabledFormatIds
         @Suppress("UNUSED_EXPRESSION")
         onFormatToggled
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // iter-61 Phase 8: LSP LANGUAGE SUPPORT section navigating to LspSettingsScreen.
+        // v1: all 15 servers show "not available on Android" (honest stub per CONST-035).
+        Text(
+            text = "LANGUAGE SERVERS",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.sp
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("settings-lsp-entry"),
+            onClick = { onOpenLspSettingsClick() }
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "LSP language support",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "15 bundled language servers. Desktop only in v1.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+                Text(
+                    text = "›",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 

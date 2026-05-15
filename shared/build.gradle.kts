@@ -709,3 +709,126 @@ dependencies {
 }
 
 // jniLibs srcDirs is now configured inside the android { } block above.
+
+// ─── LSP Binary acquisition task (Phase 7) ────────────────────────────────
+// Downloads pre-built LSP server binaries into .lsp-binary-cache/ and stages
+// them for use by LspServerInstaller at runtime.  Binaries are NOT committed
+// to git; the cache directory is gitignored.  Storage policy: option (c).
+//
+// Run explicitly:   ./gradlew :shared:lspBinaries
+// Run with force:   ./gradlew :shared:lspBinaries --rerun-tasks
+//
+// The task is intentionally NOT wired into processResources — it performs
+// network I/O and must remain opt-in so offline builds do not regress.
+tasks.register<Exec>("lspBinaries") {
+    group = "build"
+    description = "Download and stage LSP server binaries for Desktop macos-arm64 (Phase 7 v1)"
+
+    val scriptFile = file("${rootDir}/scripts/acquire-lsp-binaries.sh")
+    inputs.file(scriptFile)
+    outputs.dir(file("${rootDir}/.lsp-binary-cache"))
+
+    commandLine("bash", scriptFile.absolutePath, "--abi", "macos-arm64")
+
+    doFirst {
+        if (!scriptFile.exists()) {
+            throw GradleException(
+                "LSP acquire script not found: ${scriptFile.absolutePath}\n" +
+                "Run from the repo root: bash scripts/acquire-lsp-binaries.sh"
+            )
+        }
+        logger.lifecycle("Acquiring LSP binaries → ${rootDir}/.lsp-binary-cache/")
+    }
+}
+
+// Convenience task: acquire + verify SHA256 checksums where available
+tasks.register<Exec>("lspBinariesVerify") {
+    group = "verification"
+    description = "Download LSP binaries and verify SHA256 checksums"
+    val scriptFile = file("${rootDir}/scripts/acquire-lsp-binaries.sh")
+    commandLine("bash", scriptFile.absolutePath, "--abi", "macos-arm64", "--verify")
+}
+
+// ── iter-61 Phase 8: Gradle binary bridge ──────────────────────────────────
+//
+// Stages cached LSP server binaries from .lsp-binary-cache/<langId>/macos-arm64/
+// into the JVM processedResources directory (lsp-bundles/<langId>/<executable>).
+// This makes binaries available on the desktopTest classpath so
+// LspServerInstaller.desktop.kt can extract them at test time without network I/O.
+//
+// Layout mapping:
+//   .lsp-binary-cache/<langId>/macos-arm64/<exe>
+//   → shared/build/processedResources/desktop/main/lsp-bundles/<langId>/<exe>
+//
+// Also staged into the test resource dir so desktopTest classpath resolves them.
+//
+// The task is incremental via Gradle's Sync semantics (only copies changed files).
+// Run explicitly: ./gradlew :shared:lspBundleStage
+// Wired to:       desktopProcessResources + desktopTestProcessResources
+
+val lspBundleStage = tasks.register<Sync>("lspBundleStage") {
+    description = "Stages cached LSP server binaries from .lsp-binary-cache into JVM lsp-bundles resources."
+    group = "build"
+
+    val cacheDir = rootProject.projectDir.resolve(".lsp-binary-cache")
+
+    // Include only the <langId>/macos-arm64/<anything> subtree.
+    // Strip the ABI dir ("macos-arm64") so the resource lands at lsp-bundles/<langId>/<exe>.
+    from(cacheDir) {
+        include("*/macos-arm64/**")
+        // eachFile iterates files (not dirs). Segments: [<langId>, "macos-arm64", <rest...>]
+        // After stripping index 1 ("macos-arm64") → [<langId>, <rest...>].
+        eachFile {
+            val segs = relativePath.segments.toMutableList()
+            if (segs.size >= 2 && segs[1] == "macos-arm64") {
+                segs.removeAt(1)
+                relativePath = RelativePath(true, *segs.toTypedArray())
+            }
+        }
+        includeEmptyDirs = false
+    }
+
+    into(layout.buildDirectory.dir("processedResources/desktop/main/lsp-bundles"))
+
+    doFirst {
+        if (!cacheDir.exists() || cacheDir.listFiles().isNullOrEmpty()) {
+            logger.warn(
+                "lspBundleStage: .lsp-binary-cache is absent or empty. " +
+                "Run `bash scripts/acquire-lsp-binaries.sh` first. " +
+                "Staging nothing — desktopTest smoke tests will SKIP (not FAIL)."
+            )
+        }
+    }
+}
+
+// Also stage into the desktop test resource dir so desktopTest classpath picks them up.
+val lspBundleStageTest = tasks.register<Sync>("lspBundleStageTest") {
+    description = "Stages cached LSP server binaries into the desktop TEST resource dir for desktopTest classpath."
+    group = "build"
+
+    val cacheDir = rootProject.projectDir.resolve(".lsp-binary-cache")
+
+    from(cacheDir) {
+        include("*/macos-arm64/**")
+        eachFile {
+            val segs = relativePath.segments.toMutableList()
+            if (segs.size >= 2 && segs[1] == "macos-arm64") {
+                segs.removeAt(1)
+                relativePath = RelativePath(true, *segs.toTypedArray())
+            }
+        }
+        includeEmptyDirs = false
+    }
+
+    into(layout.buildDirectory.dir("processedResources/desktop/test/lsp-bundles"))
+}
+
+// Wire into the standard Gradle resource-processing lifecycle so that
+// `./gradlew :shared:desktopProcessResources` and desktopTest both include
+// the staged binaries without any additional developer action.
+tasks.named("desktopProcessResources") {
+    dependsOn(lspBundleStage)
+}
+tasks.named("desktopTestProcessResources") {
+    dependsOn(lspBundleStage, lspBundleStageTest)
+}

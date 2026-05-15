@@ -1,7 +1,7 @@
 /*#######################################################
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
- * iter-61 Phase 7 step 4: RealServerSmokeTest
+ * iter-61 Phase 7 step 4 + Phase 8: RealServerSmokeTest
  *
  * ANTI-BLUFF COVENANT (CONST-035): each test either exercises a real
  * OS subprocess (positive evidence) or honestly skips via assumeTrue
@@ -9,15 +9,28 @@
  * No test passes trivially if the binary is missing; assumeTrue ensures
  * skip → SKIP, not skip → PASS.
  *
- * Binary source: .lsp-binary-cache/<langId>/macos-arm64/<exe>
- * Populated by: bash scripts/acquire-lsp-binaries.sh
+ * Binary source (Phase 7): .lsp-binary-cache/<langId>/macos-arm64/<exe>
+ * Binary source (Phase 8): JVM classpath lsp-bundles/<langId>/<exe>
+ *   — staged by :shared:lspBundleStage Sync task wired into desktopTestProcessResources.
  *
- * Mutation procedure (CONST-035):
+ * Mutation procedure — Phase 7 tests (CONST-035):
  *   1. Replace `val proc = ProcessBuilder(...).start()` with
  *      `error("mutated - stub")` in binaryStartsAndExitsOrPrintsOutput().
  *   2. Run: ./gradlew :shared:desktopTest \
  *        --tests "digital.vasic.yole.lsp.RealServerSmokeTest"
  *   3. Expect: tests that have cached binaries FAIL (exception propagates).
+ *   4. Revert; confirm PASS or SKIP.
+ *
+ * Mutation procedure — Phase 8 end-to-end test (CONST-035):
+ *   1. In LspServerHost.desktop.kt, inside acquireOrNull(), replace:
+ *        val server = RunningServer(process, ls, lastActivity = System.currentTimeMillis())
+ *        servers[langId] = server
+ *        emitState()
+ *      with:
+ *        // mutated — skip state emit
+ *   2. Run: ./gradlew :shared:desktopTest \
+ *        --tests "digital.vasic.yole.lsp.RealServerSmokeTest.marksman_viaInstallerAndHost_serverBecomesReady"
+ *   3. Expect: FAIL — statesSnapshot["markdown"] will be null (not Ready).
  *   4. Revert; confirm PASS or SKIP.
  *
  * Cross-platform impact (CONST-037):
@@ -232,5 +245,83 @@ class RealServerSmokeTest {
             !serverJar.isNullOrEmpty(),
             "kotlin-language-server fat JAR present in lib/. Found: ${libDir.listFiles()?.map { it.name }?.take(5)}"
         )
+    }
+
+    // ── Phase 8: end-to-end test via LspServerInstaller + LspServerHost ───────
+    //
+    // This test exercises the full Phase 8 classpath path:
+    //   lspBundleStage Sync task → lsp-bundles/markdown/marksman (classpath resource)
+    //   → LspServerInstaller.desktop.kt extracts to ~/Library/…/yole/lsp-servers/markdown/marksman
+    //   → LspServerHost.acquireOrNull spawns the process + handshakes LSP
+    //   → emitState() fires ServerState.Ready into _states
+    //   → test asserts states.replayCache contains "markdown" → Ready
+    //
+    // Anti-bluff (CONST-035): the load-bearing assertion is the state machine
+    // check, not "request completed without exception". Stubbing acquireOrNull
+    // to skip emitState() causes the states map to remain empty → assertion FAILS.
+    //
+    // Mutation procedure documented in the file header.
+
+    @Test
+    fun marksman_viaInstallerAndHost_serverBecomesReady() = runBlocking<Unit> {
+        // Precondition: marksman must be on the classpath (staged by lspBundleStage).
+        // Use findResourceStream heuristic: check the classpath resource directly.
+        val resourcePath = "lsp-bundles/markdown/marksman"
+        val stream = Thread.currentThread().contextClassLoader?.getResourceAsStream(resourcePath)
+            ?: LspServerInstaller::class.java.classLoader?.getResourceAsStream(resourcePath)
+            ?: ClassLoader.getSystemClassLoader()?.getResourceAsStream(resourcePath)
+
+        assumeTrue(
+            "lsp-bundles/markdown/marksman not on classpath — run `./gradlew :shared:lspBundleStage` first. " +
+                "// SKIP-OK: #lsp-binary-not-staged",
+            stream != null,
+        )
+        stream?.close()
+
+        val registry = LspServerRegistry.default()
+        val spec = registry.forLanguage("markdown")
+        assumeTrue(
+            "No markdown spec in LspServerRegistry — server.json missing. // SKIP-OK: #lsp-spec-missing",
+            spec != null,
+        )
+
+        val host = LspServerHost(registry, idleShutdownMillis = 120_000L, maxCrashRetries = 1)
+        try {
+            val tmpDir = java.nio.file.Files.createTempDirectory("yole-lsp-e2e-smoke-")
+            val mdFile = tmpDir.resolve("smoke.md").also {
+                java.nio.file.Files.writeString(it, "# Yole LSP Smoke\n\nHello [")
+            }
+
+            // Drive the host through complete() which triggers acquireOrNull internally.
+            host.complete(
+                langId = "markdown",
+                documentUri = "file://${mdFile.toAbsolutePath()}",
+                documentText = java.nio.file.Files.readString(mdFile),
+                documentVersion = 0,
+                line = 2,
+                character = 7,
+                workspaceRoot = tmpDir.toString(),
+            )
+
+            // Anti-bluff assertion: verify the server actually became Ready via emitState().
+            // replayCache holds the last-emitted state map (replay = 1).
+            val statesSnapshot = host.states.replayCache.firstOrNull().orEmpty()
+            val markdownState = statesSnapshot["markdown"]
+
+            assertTrue(
+                markdownState is ServerState.Ready,
+                "Expected marksman to reach ServerState.Ready after complete(), " +
+                    "but states map = $statesSnapshot. " +
+                    "This fails if acquireOrNull skips emitState() (mutation) or the " +
+                    "binary failed to spawn / handshake.",
+            )
+
+            // Cleanup temp files.
+            java.nio.file.Files.walk(tmpDir)
+                .sorted(Comparator.reverseOrder())
+                .forEach { java.nio.file.Files.deleteIfExists(it) }
+        } finally {
+            host.shutdownAll()
+        }
     }
 }
