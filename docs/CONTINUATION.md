@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-61 **Phase 5 COMPLETE** — LspCompletionProvider (4th provider in CompletionEngine). 10 files added/modified. 7 new tests + all prior 65 completion tests + 18 LSP tests = 90+ PASS. Mutation verified (CONST-035): stub `mapLspKindToItemKind→Word` → `mapKind_FunctionMapsToIdentifier` + `mapKind_SnippetMapsToSnippet` FAILED. Revert confirmed 7/7 PASS. Detekt clean. Committed to master. **Next: Phase 6** — IdeEditorScreen integration (pass documentUri + workspaceRoot into CompletionContext; wire LspServerHost.didOpen/didChange/didClose to editor lifecycle). Plan at `docs/superpowers/plans/2026-05-15-lsp-plan.md`.
+**Last updated:** 2026-05-16 (iter-61 **Phase 6.4 COMPLETE** — Wire LspServerHost into IdeEditorScreen. 1 file modified. Build `:androidApp:assembleDebug` SUCCESSFUL (1m 17s). `desktopTest "digital.vasic.yole.completion.*"` FROM-CACHE PASS. `:androidApp:testDebugUnitTest --tests "*completion*"` PASS. Detekt clean. Committed `7dab179c`, pushed to master. **Phase 6 COMPLETE.** All iter-61 completion-wiring phases done. **Next: Phase 7** — LspServerInstaller Phase 8 (real installer for Android/Desktop), didOpen/didChange/didClose wiring to editor lifecycle, and Phase 9 Robolectric coverage for LspServerHost wiring. Plan at `docs/superpowers/plans/2026-05-15-lsp-plan.md`.
 
 **iter-61 Phase 5 delivered:**
 - `shared/src/commonMain/kotlin/digital/vasic/yole/completion/CompletionContext.kt` — added `documentUri: String? = null` + `workspaceRoot: String? = null` optional fields (plan deviation; backward-compatible defaults). Documented as deviation in file header + CONTINUATION.md.
