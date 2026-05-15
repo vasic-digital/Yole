@@ -54,6 +54,11 @@ ktor = "3.0.2"
 sshj = "0.38.0"
 smbj = "0.13.0"
 
+# LSP4J (iter-61 Phase 4) — Eclipse LSP4J JSON-RPC client/server.
+# Pinned at 1.0.0 (released 2026-02-10) per Phase 0 research §8.
+# JDK 11 compatible. MIT / EPL-2.0 dual-licensed.
+lsp4j = "1.0.0"
+
 # Tree-Sitter (iter-57 Phase 5)
 # bonede tree-sitter-ng: JDK 11+ bytecode, MIT licensed, JAR bundles native
 # .so/.dylib/.dll for x86_64-linux, aarch64-linux, x86_64-macos, aarch64-macos,
@@ -247,6 +252,9 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 # Protocol Libraries
 sshj = { module = "com.hierynomus:sshj", version.ref = "sshj" }
 smbj = { module = "com.hierynomus:smbj", version.ref = "smbj" }
+
+# LSP4J (iter-61 Phase 4)
+lsp4j = { module = "org.eclipse.lsp4j:org.eclipse.lsp4j", version.ref = "lsp4j" }
 
 # Tree-Sitter (iter-57 Phase 5)
 tree-sitter = { module = "io.github.bonede:tree-sitter", version.ref = "tree-sitter" }

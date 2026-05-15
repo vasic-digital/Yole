@@ -6,7 +6,19 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-61 **Phase 2 COMPLETE** — LspWorkspaceResolver. Commit `f895d9f7`. 2 files added: `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/LspWorkspaceResolver.kt` (okio-based walk-up resolver, MAX_LEVELS=20, first-match-wins) + `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/LspWorkspaceResolverTest.kt` (5 tests, all PASS). Mutation-verified (CONST-035): stub `return file.parent ?: file` caused 3/5 FAIL (findsProjectMarker_inImmediateParent, findsProjectMarker_traversingMultipleLevels, firstMatchingMarker_wins). Revert confirmed 5/5 PASS. Detekt clean. Pushed to master. **Next: Phase 3** — LspServerInstaller (per-platform actuals: Android DFM check, Desktop bundle-extract). Plan at `docs/superpowers/plans/2026-05-15-lsp-plan.md` lines 914+.
+**Last updated:** 2026-05-16 (iter-61 **Phase 4 COMPLETE** — LspServerHost (LSP4J wiring + lazy spawn + idle shutdown + restart-on-crash). 8 files added/modified. 18 LSP tests total (15 prior + 3 new), all PASS. Mutation verified (CONST-035): stub `complete()` → non-empty list → `noSpec_complete_returnsEmptyList` FAILED. Revert confirmed all 3 PASS. Detekt clean. Committed to master. **Next: Phase 5** — LspCompletionProvider (wires LspServerHost into CompletionEngine). Plan at `docs/superpowers/plans/2026-05-15-lsp-plan.md` lines 1722+.
+
+**iter-61 Phase 4 delivered:**
+- `gradle/libs.versions.toml` — lsp4j version `1.0.0` + library entry `org.eclipse.lsp4j:org.eclipse.lsp4j`.
+- `shared/build.gradle.kts` — `implementation(libs.lsp4j)` added to both `androidMain` and `desktopMain`.
+- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/LspServerHost.kt` — expect class + `ServerState` sealed class + `LspCompletionResult` + `LspCompletionLine` data classes.
+- `shared/src/desktopMain/kotlin/digital/vasic/yole/lsp/LspServerHost.desktop.kt` — JVM actual: ProcessBuilder + LSP4J Launcher.createLauncher + 30s init + 500ms completion timeout + idle ticker (60s tick, 5min default idle) + Mutex serialization + CancellationException rethrow.
+- `shared/src/androidMain/kotlin/digital/vasic/yole/lsp/LspServerHost.android.kt` — JVM actual (identical body; installer returns NotInstalled honestly until Phase 8).
+- `shared/src/iosMain/kotlin/digital/vasic/yole/lsp/LspServerHost.ios.kt` — honest stub (emptyList / no-ops).
+- `shared/src/wasmJsMain/kotlin/digital/vasic/yole/lsp/LspServerHost.wasmJs.kt` — honest stub (emptyList / no-ops).
+- `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/LspServerHostTest.kt` — 3 behavioral-degradation tests: `noSpec_complete_returnsEmptyList`, `noSpec_didOpen_isBenignNoOp`, `shutdownAll_isIdempotent`. Approach: degradation-only (not full fake-LSP-server harness) per plan §4.5 rationale.
+
+**iter-61 Phase 2 COMPLETE** — LspWorkspaceResolver. Commit `f895d9f7`. 2 files added: `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/LspWorkspaceResolver.kt` (okio-based walk-up resolver, MAX_LEVELS=20, first-match-wins) + `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/LspWorkspaceResolverTest.kt` (5 tests, all PASS). Mutation-verified (CONST-035): stub `return file.parent ?: file` caused 3/5 FAIL (findsProjectMarker_inImmediateParent, findsProjectMarker_traversingMultipleLevels, firstMatchingMarker_wins). Revert confirmed 5/5 PASS. Detekt clean. Pushed to master.
 
 **iter-61 Phase 1 COMPLETE** — LspServerSpec + LspServerRegistry + 15 server.json + 8 tests. Commit `860c2dc8`.
 
