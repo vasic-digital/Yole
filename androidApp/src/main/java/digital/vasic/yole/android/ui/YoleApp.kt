@@ -95,6 +95,8 @@ import digital.vasic.yole.android.ui.editor.CompletionPopupState
 import digital.vasic.yole.android.ui.editor.CompletionToolbarButton
 import digital.vasic.yole.completion.CompletionEngine
 import digital.vasic.yole.completion.trigger.CompletionTrigger
+import digital.vasic.yole.lsp.LspServerHost
+import digital.vasic.yole.lsp.LspServerRegistry
 import digital.vasic.yole.language.LanguageRegistry
 import digital.vasic.yole.language.LocalLanguage
 import digital.vasic.yole.language.affordance.OutlineExtractor
@@ -1503,10 +1505,22 @@ fun IdeEditorScreen(
     LaunchedEffect(tokenizerEngine) {
         tokenizerEngine.initialize()
     }
+    // iter-61 Phase 6.4: one LspServerHost per editor session, lifetime-tied
+    // to IdeEditorScreen composition. The host is created once (not keyed on
+    // detectedLangId) so state is preserved across document switches inside
+    // the same screen instance.
+    val lspHost = remember { LspServerHost(LspServerRegistry.default()) }
+    DisposableEffect(lspHost) {
+        onDispose {
+            completionScope.launch {
+                try { lspHost.shutdownAll() } catch (_: Throwable) {}
+            }
+        }
+    }
     val passedLangId = if (detectedLangId != "plaintext") detectedLangId else null
-    val completionEngine = remember(detectedLangId) {
+    val completionEngine = remember(detectedLangId, lspHost) {
         val extractor = OutlineExtractor()
-        CompletionEngine.default(extractor, tokenizerEngine)
+        CompletionEngine.default(extractor, tokenizerEngine, lspHost)
     }
     val completionTrigger = remember(completionEngine) {
         CompletionTrigger(
