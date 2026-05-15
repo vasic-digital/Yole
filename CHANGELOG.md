@@ -3,6 +3,142 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## iter-58 v1.2.0 — Source-code file support: 55 languages + 5 editor affordances (2026-05-15)
+
+**Version:** 1.2.0 (versionCode 120 → dotted `0.0.0.1.20`)
+**Build status:** Desktop full (47/55 languages with Tree-Sitter); Android partial (markdown only — NDK bulk-build pending); iOS BLOCKED (Xcode not in build env); Web limited (vscode-textmate, markdown grammar).
+
+### Added
+
+- **`LanguageFormat` data class** (`shared/.../language/LanguageFormat.kt`) — unified
+  per-language manifest: id, displayName, extensions, mimeTypes, commentSyntax,
+  indentRules, bracketPairs, indentUnit. Extends the iter-57 Grammar abstraction
+  with Feature 2 affordance data.
+- **`LanguageMetadata` object** — 55 `LanguageFormat` singletons covering all languages
+  in the iter-57 inventory. Sourced from research-report.md §4.2 (55-language
+  comment/indent/bracket convention table).
+- **`LanguageRegistry`** — lookup by id or filename extension; `detectByFilename`
+  powers format detection for the new language set.
+- **`LocalLanguage` CompositionLocal** — Compose plumbing so any editor Composable
+  reads the current file's `LanguageFormat?` without prop-drilling.
+- **`CommentSyntax` + `IndentRules` + `BracketPairs` data classes** — the three
+  affordance-data carriers; each populated per-language from the canonical style-guide
+  sources (PEP-8, K&R, rustfmt, gofmt, etc.).
+- **`ScmQueryLoader`** — loads `.scm` Tree-Sitter query files from the classpath
+  resource path `grammars/<id>/<query>.scm` with in-memory cache and
+  `clearCacheForTest()` test hook.
+- **`FoldQueryRunner` (`expect class`)** — platform-dispatched Tree-Sitter fold-range
+  extraction using `folds.scm`. Desktop actual uses the bonede JVM API; Android/iOS/
+  Wasm actuals return `emptyList()` + log a defect reference honestly (CONST-035).
+- **`OutlineExtractor`** — commonMain class; runs `outline.scm` captures via
+  `TokenizerEngine` to produce `List<OutlineItem>(name, kind, lineNumber)`.
+- **`HtmlEmbeddedLang` object** — re-tokenizes `<style>` and `<script>` embedded
+  regions using CSS and JavaScript sub-engines; merges byte-offset-adjusted token
+  streams back into the outer HTML token list. Honest: no sub-tokens fabricated
+  when the sub-engine is unavailable (CONST-035).
+- **`MarkdownCodeFences` object** — detects fenced code blocks by sub-language tag
+  via Markdown's `injections.scm`; re-tokenizes each fence body using the matching
+  sub-engine when the grammar is available and enabled.
+- **5 editor affordances** wired into `androidApp` `SyncedScrollEditor`:
+  - `CommentToggleAction` — Ctrl+/ comment/uncomment using `CommentSyntax`.
+  - `IndentEngine` — smart Enter-key indent using `IndentRules` + `indentUnit` +
+    optional `indents.scm` Tree-Sitter query.
+  - `BracketAutoCompleter` — auto-close pairs from `BracketPairs`.
+  - `OutlineDrawer` — slide-in Composable drawer with symbol list + tap-to-navigate.
+  - `FoldGutter` — chevron gutter with collapse/expand on tap.
+- **165 `.scm` Tree-Sitter query files** vendored at
+  `shared/src/commonMain/resources/grammars/<id>/` (55 languages × 3 query types:
+  `highlights.scm`, `folds.scm`, `outline.scm`). Primary source: nvim-treesitter
+  (Apache-2.0). Fallback for `less` and `crystal`: helix-editor (MPL-2.0 query
+  files). `THIRD-PARTY.md` + `MANIFEST.json` in the grammars root.
+- **55 test fixtures** at `shared/src/commonTest/resources/test-fixtures/<id>/` —
+  one representative source file per language, each containing the language's own
+  comment marker.
+- **47 Desktop Tree-Sitter grammars** declared as Gradle dependencies in
+  `shared/build.gradle.kts` `desktopMain` block via `io.github.bonede:tree-sitter-<lang>`
+  JARs. Each JAR ships native binaries for `linux-x86_64`, `linux-aarch64`,
+  `windows-x86_64`, `osx-x86_64`, `osx-aarch64`.
+- **`BonedeGrammarRegistry`** (Desktop JVM) — maps 47 Yole language IDs to their
+  `org.treesitter.TreeSitter<Name>` class names; explicitly lists the 8-lang gap set
+  as `unsupportedLangs` so the engine never fabricates a grammar instance.
+- **2 anti-bluff challenges** wired into `make qa-all`:
+  - `language_grammar_bundle_challenge.sh` — verifies 47 bonede JARs declared + gap
+    set documented in `KNOWN_DEFECTS.md` + Gradle build succeeds.
+  - `language_support_completeness_challenge.sh` — verifies all 55 languages have
+    comment coverage + `LanguageRegistry.detectByFilename` returns non-null for each.
+- **`make qa-iter-58-gates`** — runs both new challenges + the full shared test suite
+  in a single target.
+
+### Changed
+
+- **`LanguageRegistry` wiring** — `FormatRegistry.createFormats()` now reads from
+  `LanguageRegistry.all()` for the programming-language entries; the iter-57 format
+  list and the iter-58 language list are unified under a single detection pass.
+- **`MarkdownParser`** — upgraded to consume `MarkdownCodeFences` output; fenced
+  code blocks are now re-tokenized by the appropriate sub-grammar when available
+  (previously the upgrade was preview-only; iter-58 extends it to the editor view).
+
+### Known limitations (each tracked as a `#…` entry in `docs/KNOWN_DEFECTS.md`)
+
+- **`#f2-phase-7-android-ndk-bulk-build-pending`** — 47 bonede language grammars are
+  bundled for Desktop (JVM) only. Android builds require cross-compilation against
+  the Android NDK clang toolchain. The build script `tools/build-language-grammars.sh`
+  is fully implemented; the operator must run it for all 47 langs × 3 ABIs (~141
+  NDK builds, ~5-15 min). Android users currently see plain text for 46/55
+  non-markdown languages (honest: `TokenizerEngine.android.kt loadGrammar()` throws
+  `IllegalArgumentException` naming this ticket).
+- **`#f2-phase-7-no-bonede-artifact`** — 7 languages (`jsx`, `xml`, `vim`, `less`,
+  `crystal`, `groovy`, `bibtex`) have no published Maven Central bonede artifact.
+  Comment toggle, auto-indent, and bracket-pair auto-close work via `LanguageMetadata`
+  data; outline and fold are grammar-gated and currently unavailable.
+- **`#f2-phase-7-nim-grammar-broken`** — the Nim bonede artifact exists but the
+  native `.so` segfaults on parse against all tested bonede core versions. Nim is
+  in `BonedeGrammarRegistry.unsupportedLangs`; non-grammar affordances are unaffected.
+- **`#f2-phase-7-ios-xcode-required`** — the iOS build scaffold is fully implemented
+  in `tools/build-language-grammars.sh ios`; however `xcrun --sdk iphoneos` fails on
+  the build host (Command-Line Tools only; Xcode not installed). iOS users see the
+  three non-grammar affordances only.
+
+### Cross-platform impact summary (per CONST-037)
+
+- **Android:** comment toggle, auto-indent, bracket-pair auto-close active for all
+  55 languages. Outline + fold + syntax highlighting active for Markdown only. 46
+  other languages awaiting NDK bulk-build.
+- **Desktop:** full feature set — all 5 affordances + syntax highlighting for 47/55
+  languages. The 8-lang gap set (no bonede artifact or broken artifact) is honestly
+  limited to non-grammar affordances.
+- **iOS:** three non-grammar affordances for all 55 languages. Tree-Sitter grammars
+  BLOCKED on Xcode build environment.
+- **Web:** three non-grammar affordances for all 55 languages. Outline and fold
+  require a future upgrade from `vscode-textmate` to `web-tree-sitter`.
+
+### Commits (this iteration, in order)
+
+```
+9e98b6e8  docs(iter-58): Phase 0 deep-research report
+42d30d24  docs(iter-58): source-code file support implementation plan
+f4444bc1  docs(iter-58): source-code-file-support design spec
+281356d0  feat(iter-58): Phase 1 — LanguageFormat + LanguageRegistry + LocalLanguage foundation
+e50295c6  feat(iter-58): Phase 2 — CommentSyntax + IndentRules + BracketPairs data + tests
+2402addc  feat(iter-58): F2 Phase 3 — ScmQueryLoader + FoldQueryRunner + OutlineExtractor
+a9482ec2  feat(iter-58): F2 Phase 4 — wire CommentToggle + BracketAuto + IndentEngine into Android editor
+8c7862d0  feat(iter-58): F2 Phase 5 — OutlineDrawer + FoldGutter UI wired into Android editor
+36621a3f  feat(iter-58): F2 Phase 6 Batch 1 — 53-row LanguageMetadata + 12 langs vendored
+c6d98067  feat(iter-58): F2 Phase 6 Batch 2 — 10 langs vendored (tsx jsx yaml toml xml bash ruby php swift scala)
+8883ccd7  feat(iter-58): F2 Phase 6 Batch 3 — 10 langs vendored (dart lua perl haskell ocaml julia r elixir erlang fortran)
+928b9c32  feat(iter-58): F2 Phase 6 Batch 4 — 10 langs vendored (vim dockerfile makefile terraform regex vue graphql csharp less scss)
+0673d1d9  feat(iter-58): F2 Phase 6 Batch 5 — final 11 langs + kotlin/markdown anchors
+8f8b01ef  feat(iter-58): F2 Phase 6 final — 3 structural tests + crystal stub correction
+042e4beb  docs(iter-58): F2 Phase 6 closeout — KNOWN_DEFECTS entry for grammar bundling gap
+bd20ab40  docs(iter-58): F2 Phase 6 closeout — CONTINUATION.md update
+9606ff42  feat(iter-58): F2 Phase 7 — 47 Tree-Sitter grammars bundled on Desktop (5 ABIs)
+a68bd8e9  feat(iter-58): F2 Phase 8 — HtmlEmbeddedLang + MarkdownCodeFences sub-language tokenization
+2982ded0  test(iter-58): F2 Phase 9 — 2 anti-bluff challenges + qa-iter-58-gates
+<Phase 10 docs commit>
+```
+
+---
+
 ## iter-57 v1.1.0 — Syntax highlighting + unified theme system (2026-05-14)
 
 **Version:** 1.1.0 (versionCode 110 → dotted `0.0.0.1.10`)

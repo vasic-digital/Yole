@@ -102,9 +102,17 @@ historical log.
 
 ---
 
-## 2. Current State (Iter 57 — 2026-05-14)
+## 2. Current State (Iter 58 — 2026-05-15)
 
 ### What Was Just Done
+
+- **Iter 58 Phases 0–10** (commits `9e98b6e8`…Phase 10 docs commit, 2026-05-15):
+  Feature 2 (source-code file support) shipped on master. 55 programming languages
+  with 5 editor affordances (comment toggle, smart auto-indent, bracket-pair
+  auto-close, outline panel, fold gutter). 47 Desktop Tree-Sitter grammars bundled
+  via bonede JARs. 165 `.scm` query files vendored. 2 new challenges in qa-all.
+  Full documentation in `docs/features/source-code-file-support/`. See **Section 42**
+  below for the full forensic anchor.
 
 - **Iter 57 Phase 14** (release v1.1.0 distribution, 2026-05-14): version
   bumped 1.0.1 → 1.1.0 (versionCode 101 → 110, dotted `0.0.0.1.10`).
@@ -516,6 +524,124 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 42. Iter 58 — Source-code file support: 55 languages + 5 editor affordances (2026-05-15)
+
+**Status:** Phases 0–10 shipped on master (tip `<Phase 10 docs commit>`). All 55 languages
+have metadata + non-grammar affordances. 47/55 languages have full Desktop Tree-Sitter support.
+Android NDK bulk-build pending. iOS BLOCKED on Xcode. Web limited.
+
+**Forensic anchor:** Feature 2 of the 5-feature initiative launched in iter-57. Spec:
+`docs/superpowers/specs/2026-05-15-source-code-file-support-design.md`. Plan:
+`docs/superpowers/plans/2026-05-15-source-code-file-support-plan.md`. Research:
+`docs/features/source-code-file-support/research-report.md` (55-language inventory,
+query-file survey, per-language data tables).
+
+### Phases landed (commits in chronological order)
+
+| # | Commit(s) | Status |
+|---|---|---|
+| 0 | `9e98b6e8` | DONE — research report; 55-lang inventory; query-file survey; per-lang data |
+| 1 | `281356d0` | DONE — `LanguageFormat` + `LanguageRegistry` + `LocalLanguage`; 4 tests |
+| 2 | `e50295c6` | DONE — `CommentSyntax` + `IndentRules` + `BracketPairs`; 19 tests |
+| 3 | `2402addc` | DONE — `ScmQueryLoader` + `FoldQueryRunner` + `OutlineExtractor` |
+| 4 | `a9482ec2` | DONE — `CommentToggleAction` + `IndentEngine` + `BracketAutoCompleter` wired in Android editor; 11 Robolectric tests |
+| 5 | `8c7862d0` | DONE — `OutlineDrawer` + `FoldGutter` UI wired in Android editor; 12 Robolectric tests |
+| 6 | `36621a3f`…`8f8b01ef` (6 commits) | DONE — 55 `LanguageMetadata` rows + 165 `.scm` files + 55 fixtures; 6 completeness tests |
+| 7 | `9606ff42` | DONE_WITH_CONCERNS — 47 Desktop grammars via bonede JARs; 3 smoke tests; 8-lang gap set documented |
+| 8 | `a68bd8e9` | DONE — `HtmlEmbeddedLang` + `MarkdownCodeFences`; 4 tests (2+2) |
+| 9 | `2982ded0` | DONE — 2 challenges + `make qa-iter-58-gates` |
+| 10 | (this commit) | DONE — 3 docs + CHANGELOG + CONTINUATION |
+
+### Test pass counts by source set
+
+| Source set | Tests added in iter-58 | Key test files |
+|---|---|---|
+| `commonTest` | 23 | `LanguageAffordanceParityTest`(8), `CommentSyntaxTest`(4), `IndentRulesTest`(4), `BracketPairsTest`(3), `LanguageRegistryTest`(4) |
+| `desktopTest` | 29 | `LanguageMetadataCompletenessTest`(6), `Feature2LanguageSmokeTest`(6), `BonedeGrammarSmokeTest`(3), `ScmQueryLoaderTest`(4), `FoldQueryRunnerTest`(3), `OutlineExtractorTest`(2), `HtmlEmbeddedLangTest`(2), `MarkdownCodeFencesTest`(2), `BonedeGrammarSmokeTest`(1 more from Phase 7) |
+| `androidUnitTest` (Robolectric) | 23 | `CommentToggleActionRobolectricTest`(4), `IndentEngineRobolectricTest`(4), `BracketAutoCompleterRobolectricTest`(3), `OutlineDrawerRobolectricTest`(6), `FoldGutterRobolectricTest`(6) |
+
+**Total new tests in iter-58: ~75** (across commonTest + desktopTest + androidUnitTest).
+
+### Mutation verifications (anti-bluff covenant CONST-035)
+
+| Mutation | Test that fails |
+|---|---|
+| Rename `python/highlights.scm` → `python/_.scm` | `everyLanguageHasHighlightsScm` |
+| Strip SPDX header from `kotlin/folds.scm` | `everyScmFileHasSpdxHeader` |
+| Stub `ScmQueryLoader.load` → blank | `loaderRoundtripWorksForEveryLanguage` (all 165 cases) |
+| Stub `TokenizerEngine.tokenize` → emptyList() | `realTokenizationForAllBundledLangs` (all 47 cases) |
+| Stub `OutlineExtractor.outlineFor` → emptyList() | `markdownEndToEndProducesOutlineItems` |
+| Stub `FoldQueryRunner.foldRangesFor` → emptyList() | `markdownEndToEndProducesFoldRange` |
+| Add `"xml"` to `BonedeGrammarRegistry.classNames` with fake class | `unsupportedLangs_throwHonestly` detects unexpected success |
+| Remove `CommentSyntax.lineComment` for Kotlin | `LanguageAffordanceParityTest.kotlin_hasLineComment` |
+
+### Critical known limitations (each entry in `docs/KNOWN_DEFECTS.md`)
+
+1. **`#f2-phase-7-android-ndk-bulk-build-pending`** — 47 language grammars available on Desktop
+   (JVM) are NOT available on Android. Only Markdown ships an NDK-built `.so` (iter-57).
+   `TokenizerEngine.android.kt loadGrammar()` throws `IllegalArgumentException` naming this
+   ticket for all 46 non-markdown languages. Outline and fold return `emptyList()` with an
+   honest log. Comment toggle, auto-indent, and bracket-pair auto-close work for all 55 langs.
+   **Exit criteria:** run `tools/build-language-grammars.sh android` for 47 langs × 3 ABIs;
+   extend Gradle repackage task; add androidUnitTest verification.
+
+2. **`#f2-phase-7-no-bonede-artifact`** — 7 languages (`jsx`, `xml`, `vim`, `less`, `crystal`,
+   `groovy`, `bibtex`) have no Maven Central bonede artifact. All non-grammar affordances active.
+   **Exit criteria:** source a compatible JNI wrapper per language.
+
+3. **`#f2-phase-7-nim-grammar-broken`** — Nim bonede JAR segfaults on parse (bonede cores 0.24.4,
+   0.25.3, 0.26.6 all tested). All non-grammar affordances active.
+   **Exit criteria:** upstream fix in the bonede Nim grammar or a replacement grammar source.
+
+4. **`#f2-phase-7-ios-xcode-required`** — iOS build scaffold fully implemented; build host lacks
+   Xcode + iOS SDK. Three non-grammar affordances only.
+   **Exit criteria:** install Xcode; run `tools/build-language-grammars.sh ios`; commit static
+   `.a` libs.
+
+5. **`#f2-phase-3-bonede-query-api-gap`** — `TSQuery` / `TSQueryCursor` API for running
+   `.scm` queries against a live parse tree is JVM-only in the bonede v0.22.6 binding.
+   `FoldQueryRunner` and `OutlineExtractor` use the query API on Desktop; Android/iOS/Wasm
+   actuals return `emptyList()` honestly. Full multi-platform query support requires either
+   a `web-tree-sitter` upgrade path (Wasm) or a Kotlin/Native cinterop binding (iOS).
+
+### How to resume after this session
+
+```
+iter-58 Feature 2 (source-code file support) Phases 0–10 are on master.
+Next operator decisions in priority order:
+
+1. Android NDK bulk-build:
+   Run tools/build-language-grammars.sh android for all 47 bundled langs × 3 ABIs.
+   This unblocks syntax highlighting, outline, and fold for Android users on 46/55 langs.
+   Estimated time: 5–15 min operator wall-clock.
+
+2. iOS Xcode build:
+   Install Xcode + iOS SDK, then run tools/build-language-grammars.sh ios for all
+   47 langs. Unblocks all 5 affordances on iOS.
+
+3. Feature 3 — Auto-complete:
+   Start the brainstorm → spec → plan cycle for Feature 3 (token+snippet first,
+   LSP-fed later). This is the next item in the 5-feature initiative.
+
+4. Feature 4 — LSP integration:
+   Deferred until Feature 3 is shipped (LSP is the graduation path for auto-complete).
+
+5. Fix #f2-phase-7-no-bonede-artifact:
+   For each of the 7 gap-set langs (jsx, xml, vim, less, crystal, groovy, bibtex),
+   find or build a compatible JNI grammar wrapper and add it to BonedeGrammarRegistry.
+```
+
+### Anti-bluff posture (CONST-035)
+
+iter-58 ships HONEST capabilities per the anti-bluff mandate. Every gap is documented
+in `docs/KNOWN_DEFECTS.md` with a specific ticket ID. Every stub implementation
+(Android fold, iOS fold, Wasm fold) returns `emptyList()` and logs the defect reference
+— it never fabricates fold ranges or outline items. The 8-lang gap set in
+`BonedeGrammarRegistry.unsupportedLangs` causes an `IllegalArgumentException` on grammar
+load rather than a silent no-op. The 2 challenges enforce these invariants in `make qa-all`.
 
 ---
 
