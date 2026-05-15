@@ -20,6 +20,19 @@ plugins {
 kotlin {
     wasmJs {
         moduleName = "yole-web"
+        // iter-57 follow-up: production-distribution gap.
+        //
+        // Adding `binaries.executable()` here surfaces a Kotlin Wasm DSL
+        // configuration error ("Cannot invoke flatMap... because
+        // this.optimizeTask is null") — Compose-Multiplatform wasmJs
+        // production builds need a fuller DSL setup (binaryen optimization
+        // task wiring + webpack production config + asset pipeline). This
+        // is tracked separately as #wasmjs-production-distribution-gap in
+        // docs/KNOWN_DEFECTS.md.
+        //
+        // Until that lands, the wasmJs target produces test/dev artifacts
+        // only; the `:webApp:wasmJsBrowserDistribution` task is not
+        // generated.
         browser {
             commonWebpackConfig {
                 outputFileName = "yole-web.js"

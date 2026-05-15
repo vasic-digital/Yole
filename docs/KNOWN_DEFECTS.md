@@ -7,6 +7,24 @@ blocker. Anyone closing a ticket here must also remove the corresponding
 SKIP-OK exemption(s) from the affected test(s) so the regression guard is
 re-armed.
 
+## #phase-7-blocked-on-ios-baseline — PARTIALLY RESOLVED 2026-05-15
+
+**Update 2026-05-15:** Document-KMP `@OptIn` fix landed upstream
+(commit `609add7` in `git@github.com:vasic-digital/Document-KMP.git`,
+branch `main`). Running `./gradlew :Document-KMP:compileKotlinIosArm64`
+now BUILDS SUCCESSFUL. However, `./gradlew :shared:compileKotlinIosArm64`
+still fails on Yole-internal iOS K/N breakage in `shared/iosMain` —
+specifically `DatabaseFactory.ios.kt` has multiple `actual`s without
+matching `expect` declarations, missing `@OptIn(ExperimentalForeignApi)`
+calls, and `Unresolved reference 'DatabaseInterface'`. These are
+**pre-existing Yole-internal defects**, not sibling-submodule issues.
+
+The Document-KMP layer is no longer the blocker. The iOS Phase 7
+Tree-Sitter integration is still gated, but on a different defect now:
+see `#shared-iosmain-databasefactory-broken` below.
+
+**Original entry follows for historical context:**
+
 ## #phase-7-blocked-on-ios-baseline — NEW iter-57 Phase 7
 
 **Symptom**
@@ -200,6 +218,64 @@ runs and the test asserts `tokens.isNotEmpty()` against
 `# Heading\n\nA paragraph.\n`. Mutation step: stub the inner
 `for (i in 0 until tokenCount)` loop in
 `TokenizerEngine.wasmJs.kt::tokenize` to a no-op; the test MUST fail.
+
+---
+
+## #shared-iosmain-databasefactory-broken — NEW iter-57 follow-up 2026-05-15
+
+**Symptom** — `./gradlew :shared:compileKotlinIosArm64` fails (after the
+Document-KMP `@OptIn` fix landed upstream, 2026-05-15):
+
+```
+e: .../shared/src/iosMain/kotlin/digital/vasic/yole/database/DatabaseFactory.ios.kt:
+   - 'actual object DatabaseFactory : Any' has no corresponding expected declaration
+   - Unresolved reference 'DatabaseInterface'
+   - Unresolved reference 'path'
+   - Several 'This declaration needs opt-in. ExperimentalForeignApi' warnings
+```
+
+**Origin** — pre-existing. `DatabaseFactory.kt` in `commonMain` was
+refactored (or deleted entirely) without updating the iosMain actual.
+Predates iter-57; iter-57 surfaced it because the Document-KMP fix
+now lets the iOS compile proceed to the next failure.
+
+**Impact** — iOS K/N compile of `:shared:compileKotlinIosArm64` is
+BLOCKED. Phase 7 Tree-Sitter integration cannot proceed. iOS app
+builds against shared cannot proceed.
+
+**Fix path** — read the current `expect` shape of `DatabaseFactory` in
+`shared/src/commonMain/kotlin/digital/vasic/yole/database/`. Update the
+iosMain `actual` declarations to match. Add `@OptIn(ExperimentalForeignApi)`
+where K/N requires it. Likely a 30-60 minute task — well-scoped but
+needs careful expect/actual alignment.
+
+**Owner / next step** — operator-flagged for next session. Yole-internal
+fix (not a sibling submodule); CONST-038 doesn't gate this.
+
+---
+
+## #wasmjs-production-distribution-gap — NEW iter-57 follow-up 2026-05-15
+
+**Symptom** — adding `binaries.executable()` to `webApp/build.gradle.kts`
+wasmJs block surfaces:
+
+```
+Cannot invoke "org.gradle.api.tasks.TaskProvider.flatMap(...)" because
+"this.optimizeTask" is null
+```
+
+The Compose-Multiplatform wasmJs production-distribution pipeline
+(`binaryen` optimization + production webpack + asset pipeline) is
+incompletely configured.
+
+**Impact** — `:webApp:wasmJsBrowserDistribution` task is not generated;
+Phase 14 cannot produce a web distribution artifact. Dev mode (Karma)
+works; production bundling does not.
+
+**Fix path** — research Compose-MP 1.7.x's current wasmJs production
+configuration recommendation; may need explicit `applyBinaryen()`,
+`webpack.config.d/` overrides, or a Kotlin/Wasm version bump. Tracked
+for the next infrastructure-focused session.
 
 ---
 
