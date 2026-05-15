@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  iter-59: adaptive launcher icon for the DEV (debug) variant.
+  Background is pure green (#00FF00) so the operator and testers can
+  visually distinguish the DEV-installed app from the production one
+  at a glance on the launcher grid. Foreground reuses the existing
+  legacy launcher PNG — the green clip mask makes it unmistakable.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background_dev"/>
+    <foreground android:drawable="@mipmap/ic_launcher"/>
+    <monochrome android:drawable="@mipmap/ic_launcher"/>
+</adaptive-icon>

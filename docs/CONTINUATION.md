@@ -102,9 +102,25 @@ historical log.
 
 ---
 
-## 2. Current State (Iter 58 — 2026-05-15)
+## 2. Current State (Iter 59 — 2026-05-15)
 
 ### What Was Just Done
+
+- **Iter 59** (this commit, 2026-05-15): Android DEV/DEBUG variant
+  introduced. `applicationIdSuffix = ".dev"`, `versionNameSuffix = " DEV"`,
+  green-tinted adaptive launcher (`#FF00FF00`), label `"Yole DEV"` via
+  `manifestPlaceholders["appLabel"]`. Version bump 1.2.0 → 1.2.1
+  (versionCode 120 → 121, dotted `0.0.0.1.20` → `0.0.0.1.21`). New
+  Firebase Android app registered for `digital.vasic.yole.android.dev`
+  (App ID `1:578988389676:android:5a3d47a9fb23b6465d2889`).
+  `androidApp/google-services.json` regenerated to contain both client
+  entries. Both Debug + Release APKs distributed via Firebase
+  (release IDs `1fqnia7g6leio` for DEV, `2j5cfopftric0` for Release).
+  Group `internal-testers` distribution returns HTTP 404
+  (`#iter59-firebase-tester-groups-empty`) — uploaded binary still
+  visible in Console. New structural anti-bluff test
+  `IterB59VariantConfigTest` (6 PASS, mutation verified). See
+  **Section 43** below for the full forensic anchor.
 
 - **Iter 58 Phases 0–10** (commits `9e98b6e8`…Phase 10 docs commit, 2026-05-15):
   Feature 2 (source-code file support) shipped on master. 55 programming languages
@@ -524,6 +540,96 @@ remaining gap is the container release pipeline (Docker/Podman setup
 on macOS not yet validated end-to-end). Feature work on §7.4 / §7.5 /
 §7.6 / §7.7 is unblocked on macOS as long as the workflow doesn't
 require container-based artifacts.
+
+---
+
+## 43. Iter 59 — Android DEV/DEBUG variant + green launcher icon + re-distribute (2026-05-15)
+
+**Status:** SHIPPED on master. Tag `v1.2.1-iter59`. v1.2.0 → 1.2.1
+(versionCode 120 → 121, dotted `0.0.0.1.20` → `0.0.0.1.21`).
+
+**Headline:** Android DEV variant introduced with `.dev` package suffix,
+green-tinted adaptive launcher icon, `Yole DEV` label, and a fresh
+Firebase Android app registration. Production release runtime behavior
+unchanged from v1.2.0.
+
+### Changes landed
+
+1. **`androidApp/build.gradle.kts`**
+   - `versionCode = 121`, `versionName = "1.2.1"`.
+   - Existing `release` block now has
+     `manifestPlaceholders["appLabel"] = "Yole"`.
+   - New `debug` block:
+     - `applicationIdSuffix = ".dev"`
+     - `versionNameSuffix = " DEV"`
+     - `manifestPlaceholders["appLabel"] = "Yole DEV"`
+     - `isDebuggable = true`
+2. **`androidApp/src/main/AndroidManifest.xml`** — `android:label`
+   switched from `@string/app_name` to `${appLabel}`.
+3. **Adaptive launcher icons** —
+   - `src/main/res/mipmap-anydpi-v26/ic_launcher.xml` (NEW, release-tinted)
+   - `src/debug/res/mipmap-anydpi-v26/ic_launcher.xml` (NEW, green-tinted)
+4. **Color resources** —
+   - `src/main/res/values/colors.xml` (NEW; `ic_launcher_background` = #FFFFFFFF)
+   - `src/debug/res/values/colors.xml` (NEW; `ic_launcher_background_dev` = #FF00FF00)
+5. **Legacy raster icon overrides** (API 24-25 fallback) at all five
+   densities under `src/debug/res/mipmap-{m,h,xh,xxh,xxxh}dpi/ic_launcher.png`,
+   generated via ImageMagick `colorize 40%` over the source PNG.
+6. **`androidApp/google-services.json`** — regenerated via
+   `firebase apps:sdkconfig ANDROID 1:578988389676:android:d61715a0a84a42c65d2889`
+   so that the file now contains BOTH client entries (production +
+   the new .dev). Verified: `grep -c '"package_name"' = 2`.
+7. **New Firebase Android app "Yole DEV"** created via
+   `firebase apps:create ANDROID "Yole DEV" --package-name digital.vasic.yole.android.dev --project yole-app`.
+   App ID: `1:578988389676:android:5a3d47a9fb23b6465d2889`.
+8. **`androidApp/src/test/kotlin/digital/vasic/yole/android/IterB59VariantConfigTest.kt`**
+   — 6-test structural anti-bluff anchor (CONST-035). Mutation verified:
+   commenting out `applicationIdSuffix` caused the corresponding test to
+   FAIL; reverting restored PASS.
+
+### Artifacts
+
+| Variant | APK | SHA-256 | Firebase release ID |
+|---------|-----|---------|---------------------|
+| Release | `releases/Yole-Android-1.2.1-Release-0.0.0.1.21.apk` | `4bab87802b306931c0f9e7be61d2469015e28bd4dc04eaf75aa16c43734ae15a` | `2j5cfopftric0` |
+| Debug | `releases/Yole-Android-1.2.1-Debug-0.0.0.1.21.apk` | `726fe27dbfd8f4e586e12a10fb1313d9e42495816427fb515b6b07f45dcbe751` | `1fqnia7g6leio` |
+
+`aapt dump badging` verification (positive evidence per CONST-035):
+- Debug APK: `package=digital.vasic.yole.android.dev versionName="1.2.1 DEV" application-label='Yole DEV'`
+- Release APK: `package=digital.vasic.yole.android versionName="1.2.1" application-label='Yole'`
+
+### Firebase URLs
+
+- Release Console: https://console.firebase.google.com/project/yole-app/appdistribution/app/android:digital.vasic.yole.android/releases/2j5cfopftric0
+- Release tester share: https://appdistribution.firebase.google.com/testerapps/1:578988389676:android:d61715a0a84a42c65d2889/releases/2j5cfopftric0
+- Debug (.dev) Console: https://console.firebase.google.com/project/yole-app/appdistribution/app/android:digital.vasic.yole.android.dev/releases/1fqnia7g6leio
+- Debug (.dev) tester share: https://appdistribution.firebase.google.com/testerapps/1:578988389676:android:5a3d47a9fb23b6465d2889/releases/1fqnia7g6leio
+
+### Cross-platform impact (CONST-037)
+
+- **Android:** DEV variant added; production untouched.
+- **Desktop / iOS / Web:** Not affected — `.dev` is an Android
+  `applicationId` concept. Carry-over blockers from iter-54 / iter-57 /
+  iter-58 unchanged.
+
+### New / updated defects
+
+- **`#iter59-firebase-tester-groups-empty`** (NEW): Distribution
+  via `--groups internal-testers` returns HTTP 404 because the group
+  list for `yole-app` is empty in `firebase appdistribution:groups:list`.
+  Workaround: omit `--groups`; binary upload + release notes still
+  succeed, testers with existing console access install via the
+  tester-share URL. Operator action required.
+
+### Evidence files
+
+- `docs/qa/iter-59/release-notes.md`
+- `docs/qa/iter-59/artifact-hashes.txt`
+- `docs/qa/iter-59/apk-aapt-verification.txt`
+- `docs/qa/iter-59/build-android-debug.txt`
+- `docs/qa/iter-59/build-android-release.txt`
+- `docs/qa/iter-59/firebase-distribution-android-release.txt`
+- `docs/qa/iter-59/firebase-distribution-android-debug.txt`
 
 ---
 

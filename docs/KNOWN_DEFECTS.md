@@ -7,6 +7,48 @@ blocker. Anyone closing a ticket here must also remove the corresponding
 SKIP-OK exemption(s) from the affected test(s) so the regression guard is
 re-armed.
 
+## #iter59-firebase-tester-groups-empty — NEW iter-59 (2026-05-15)
+
+**Symptom**
+`firebase appdistribution:groups:list --project yole-app` returns zero
+groups. Distribution attempts via
+`firebase appdistribution:distribute --groups internal-testers …` therefore
+return:
+
+```
+Error: failed to distribute to testers/groups: Request to
+https://firebaseappdistribution.googleapis.com/v1/projects/578988389676/apps/<APP_ID>/releases/<RELEASE_ID>:distribute
+had HTTP Error: 404, Requested entity was not found.
+```
+
+This affects BOTH the production app
+(`1:578988389676:android:d61715a0a84a42c65d2889`) and the new iter-59 DEV
+app (`1:578988389676:android:5a3d47a9fb23b6465d2889`).
+
+iter-57 / iter-58 logged "distributed to testers/groups successfully"
+with the same group name — most likely the group existed at that point
+and was deleted between iter-58 and iter-59 (or the project state was
+migrated and group state was lost). Either way, the upload-step itself
+still succeeds: binary is stored, release notes attached, console URL
+is live.
+
+**Proper fix**
+Create the `internal-testers` group via Firebase Console
+(`Project Settings → App Distribution → Testers & Groups`) on BOTH
+the production and DEV app entries, add at least one tester email,
+then re-run distribution with `--groups internal-testers`.
+
+**Blocker**
+Operator-side action — adding testers requires the project owner's
+email list. No code fix possible from the build pipeline.
+
+**Workaround applied iter-59**
+Distribution runs proceed without `--groups`. Binary upload + release
+notes succeed; testers with existing console access can install via
+the tester-share URL. Release-notes file lists both Firebase release
+IDs (`2j5cfopftric0` for production, `1fqnia7g6leio` for DEV) and
+console URLs as positive evidence per CONST-035.
+
 ## #phase-7-blocked-on-ios-baseline — PARTIALLY RESOLVED 2026-05-15
 
 **Update 2026-05-15:** Document-KMP `@OptIn` fix landed upstream

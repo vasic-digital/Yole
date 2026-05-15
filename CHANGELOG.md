@@ -3,6 +3,84 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## iter-59 v1.2.1 — Android DEV/DEBUG variant + green launcher icon (2026-05-15)
+
+**Version:** 1.2.1 (versionCode 121 → dotted `0.0.0.1.21`)
+**Build status:** Android only — DEV variant landed with `.dev` package
+suffix, green-tinted adaptive launcher, `Yole DEV` label, and a fresh
+Firebase Android app registration. Production release unchanged at runtime.
+
+### Added
+
+- **`debug` build type** in `androidApp/build.gradle.kts` with
+  `applicationIdSuffix = ".dev"`, `versionNameSuffix = " DEV"`,
+  `manifestPlaceholders["appLabel"] = "Yole DEV"`, and explicit
+  `isDebuggable = true`. DEV builds install side-by-side with
+  production (separate package `digital.vasic.yole.android.dev`).
+- **Per-variant `appLabel` placeholder** — release variant also gets
+  `manifestPlaceholders["appLabel"] = "Yole"`; `AndroidManifest.xml`
+  swapped from hard-coded `@string/app_name` to `${appLabel}` so the
+  launcher label changes per variant without resource overrides.
+- **Adaptive launcher icons** (`src/main/res/mipmap-anydpi-v26/ic_launcher.xml`
+  + `src/debug/res/mipmap-anydpi-v26/ic_launcher.xml`) using
+  `@color/ic_launcher_background` (white, release) and
+  `@color/ic_launcher_background_dev` (#FF00FF00 green, debug). API 26+
+  devices render the per-variant background; the foreground is the
+  legacy `@mipmap/ic_launcher` raster reused.
+- **Green-tinted legacy PNG launcher icons** for API 24-25 at all five
+  densities (mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi) under
+  `src/debug/res/mipmap-*/ic_launcher.png`, generated via
+  ImageMagick `colorize 40%` over the source raster.
+- **New Firebase Android app entry "Yole DEV"** in `yole-app` project
+  (App ID `1:578988389676:android:5a3d47a9fb23b6465d2889`, package
+  `digital.vasic.yole.android.dev`). `androidApp/google-services.json`
+  regenerated to contain both client entries (verified by
+  `grep -c '"package_name"' = 2`).
+- **`IterB59VariantConfigTest`** structural anti-bluff anchor
+  (`androidApp/src/test/kotlin/digital/vasic/yole/android/IterB59VariantConfigTest.kt`)
+  — 6 tests asserting the gradle config, colors.xml, adaptive-icon XML,
+  manifest placeholder, and google-services.json registration each
+  hold. Mutation verified: commenting out `applicationIdSuffix = ".dev"`
+  causes `debugVariantHasApplicationIdSuffixDotDev` to FAIL; reverting
+  restores PASS (CONST-035 mutation contract honored).
+
+### Changed
+
+- `versionCode = 121`, `versionName = "1.2.1"` in `androidApp/build.gradle.kts`.
+- `androidApp/src/main/AndroidManifest.xml` — `android:label` switched
+  from `@string/app_name` to `${appLabel}`.
+
+### Distributed (Firebase App Distribution)
+
+| Variant | APK | SHA-256 | Release ID |
+|---------|-----|---------|------------|
+| Release | Yole-Android-1.2.1-Release-0.0.0.1.21.apk | 4bab87802b306931c0f9e7be61d2469015e28bd4dc04eaf75aa16c43734ae15a | 2j5cfopftric0 |
+| Debug | Yole-Android-1.2.1-Debug-0.0.0.1.21.apk | 726fe27dbfd8f4e586e12a10fb1313d9e42495816427fb515b6b07f45dcbe751 | 1fqnia7g6leio |
+
+Console URLs + tester-share URLs recorded in
+`docs/qa/iter-59/release-notes.md` and the per-distribution log files.
+
+### Cross-platform impact summary (CONST-037)
+
+- **Android:** DEV variant introduced; production package unchanged.
+  Both variants distributable side-by-side from the same source tree.
+- **Desktop (linux-x64 / windows-x64 / macos-arm64):** Not affected —
+  `.dev` is Android-only `applicationId` semantics. Carry-over
+  blockers from iter-54 / iter-57 / iter-58 unchanged.
+- **iOS:** Not affected — bundle ID is set in `iosApp.xcodeproj`.
+  iter-57 `#f2-phase-7-ios-xcode-required` unchanged.
+- **Web Wasm:** Not affected — no package-suffix concept.
+  `#wasmjs-production-distribution-gap` unchanged.
+
+### Known issues
+
+- **`#iter59-firebase-tester-groups-empty`** — `firebase appdistribution:groups:list`
+  returns zero groups for `yole-app`. Group distribution via
+  `--groups internal-testers` returns HTTP 404. Releases still
+  upload with release notes; testers must be added via Firebase
+  Console. Tracker only; does not gate release.
+
+
 ## iter-58 v1.2.0 — Source-code file support: 55 languages + 5 editor affordances (2026-05-15)
 
 **Version:** 1.2.0 (versionCode 120 → dotted `0.0.0.1.20`)

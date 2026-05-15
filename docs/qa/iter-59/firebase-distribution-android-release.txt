@@ -1,0 +1,11 @@
+⚠  Authenticating with `FIREBASE_TOKEN` is deprecated and will be removed in a future major version of `firebase-tools`. Instead, use a service account key with `GOOGLE_APPLICATION_CREDENTIALS`: https://cloud.google.com/docs/authentication/getting-started
+i  uploading binary...
+✔  re-uploaded already existing release 1.2.1 (121) successfully!
+✔  View this release in the Firebase console: https://console.firebase.google.com/project/yole-app/appdistribution/app/android:digital.vasic.yole.android/releases/2j5cfopftric0?utm_source=firebase-tools
+✔  Share this release with testers who have access: https://appdistribution.firebase.google.com/testerapps/1:578988389676:android:d61715a0a84a42c65d2889/releases/2j5cfopftric0?utm_source=firebase-tools
+✔  Download the release binary (link expires in 1 hour): https://firebaseappdistribution.googleapis.com/app-binary-downloads/projects/578988389676/apps/1:578988389676:android:d61715a0a84a42c65d2889/releases/2j5cfopftric0/binaries/4bab87802b306931c0f9e7be61d2469015e28bd4dc04eaf75aa16c43734ae15a/app.apk?utm_source=firebase-tools&token=APM0tkIAAAAAagcDVo3VlS86JduMFv0uiSj1lV4Cz-CB7zayRbL3U0T5xq63h-IYKGK46mFh8Ct9cbJd6MPvU7i3UfiKyiYxwnBDBNZ9YwU7vKXu3ufacY6F_pkqB0m5NzkeldV75GwGbrLmQfJ4cXzrTl6rkOXaBF6lohkHmICNxdfqvjaiHgs_kP7c_Fr1uRTZKKM_VpOXnrubX25v7-XZEW8VsRvX2StRPDqTxUHd6fJ_nhUdQms_D0763pug3pP0HkuIKTHWwT5ORnUuJAv0vwkzhQ13O6TBG8ZNYZqBoZlqsJC8CdM0SwqK6FdgyuwPEweFOGbwmAquGMivvDjN8r-WMSFct3UvsKc
+i  updating release notes...
+✔  added release notes successfully
+i  distributing to testers/groups...
+
+Error: failed to distribute to testers/groups: Request to https://firebaseappdistribution.googleapis.com/v1/projects/578988389676/apps/1:578988389676:android:d61715a0a84a42c65d2889/releases/2j5cfopftric0:distribute had HTTP Error: 404, Requested entity was not found.

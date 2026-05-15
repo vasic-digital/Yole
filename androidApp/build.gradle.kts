@@ -25,8 +25,8 @@ android {
         applicationId = "digital.vasic.yole.android"
         minSdk = 24
         targetSdk = 35
-        versionCode = 120
-        versionName = "1.2.0"
+        versionCode = 121
+        versionName = "1.2.1"
 
         // Custom runner grants MANAGE_EXTERNAL_STORAGE before any test
         // launches MainActivity. Resolves Bucket A of the iter-34 finding
@@ -65,6 +65,19 @@ android {
             // for release distributions — that violates the user mandate
             // "properly signed with the key" recorded in iter 30.
             signingConfig = signingConfigs.getByName("release")
+            // iter-59: production label (no DEV suffix).
+            manifestPlaceholders["appLabel"] = "Yole"
+        }
+        debug {
+            // iter-59: distinguish dev builds from production at every visible
+            // surface so the operator (and testers) never confuse the two.
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = " DEV"
+            // Override the launcher icon + label per-variant — see
+            // androidApp/src/debug/res/ for the tinted resources.
+            manifestPlaceholders["appLabel"] = "Yole DEV"
+            isDebuggable = true
+            // No keystore signing for debug — AGP defaults (debug keystore) apply.
         }
     }
 

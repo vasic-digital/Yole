@@ -1,0 +1,2 @@
+726fe27dbfd8f4e586e12a10fb1313d9e42495816427fb515b6b07f45dcbe751  /Users/milosvasic/Projects/Yole/releases/Yole-Android-1.2.1-Debug-0.0.0.1.21.apk
+4bab87802b306931c0f9e7be61d2469015e28bd4dc04eaf75aa16c43734ae15a  /Users/milosvasic/Projects/Yole/releases/Yole-Android-1.2.1-Release-0.0.0.1.21.apk

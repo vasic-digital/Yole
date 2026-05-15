@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  iter-59: launcher icon background colors.
+  ic_launcher_background — release variant (white).
+  ic_launcher_background_dev — overridden in src/debug/res/values/colors.xml
+  to pure green (#FF00FF00) for visual distinction.
+-->
+<resources>
+    <color name="ic_launcher_background">#FFFFFFFF</color>
+</resources>

@@ -1,0 +1,9 @@
+⚠  Authenticating with `FIREBASE_TOKEN` is deprecated and will be removed in a future major version of `firebase-tools`. Instead, use a service account key with `GOOGLE_APPLICATION_CREDENTIALS`: https://cloud.google.com/docs/authentication/getting-started
+i  uploading binary...
+✔  uploaded new release 1.2.1 DEV (121) successfully!
+✔  View this release in the Firebase console: https://console.firebase.google.com/project/yole-app/appdistribution/app/android:digital.vasic.yole.android.dev/releases/1fqnia7g6leio?utm_source=firebase-tools
+✔  Share this release with testers who have access: https://appdistribution.firebase.google.com/testerapps/1:578988389676:android:5a3d47a9fb23b6465d2889/releases/1fqnia7g6leio?utm_source=firebase-tools
+✔  Download the release binary (link expires in 1 hour): https://firebaseappdistribution.googleapis.com/app-binary-downloads/projects/578988389676/apps/1:578988389676:android:5a3d47a9fb23b6465d2889/releases/1fqnia7g6leio/binaries/726fe27dbfd8f4e586e12a10fb1313d9e42495816427fb515b6b07f45dcbe751/app.apk?utm_source=firebase-tools&token=APM0tkIAAAAAagcEANlhmZIh6SyIf6lizClPXOrBBZtO9RK7F_ipa6rxpO3WGwuKrTkmMG7Mei0aP4iaQWXKF1UV9DzBERuLPqCwBPgAogtU5Iyv6c3hvrh_KNdXTSn9nQEXHj_qy7pY_xR5PWN1l418oaswABNDdXn41WNuJCuRD6rMhzTRVFbAKtjoSCp5shr27iJuY0vzigIHVpoQtYbV7KZ9E4a4TcDPoAt4fS5USec48xENIX-I_3uLX95tRTs_7ZaRHK8n8YnE8Z-chJtgBAsPHbAxpVsLue2_TK_PwUnxt6X1IeK3JQhlfA-znKs1GVPbmnp5jQmp2MyHKgLqtBVCNMtmgoD-Ezo
+i  updating release notes...
+✔  added release notes successfully
+⚠  no testers or groups specified, skipping

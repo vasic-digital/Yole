@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  iter-59: adaptive launcher icon for the release variant.
+  Background is the standard white per Material Design icon spec.
+  Foreground reuses @mipmap/ic_launcher (legacy raster) to avoid
+  re-authoring artwork in iter-59; the system clips it to the
+  current launcher mask.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background"/>
+    <foreground android:drawable="@mipmap/ic_launcher"/>
+    <monochrome android:drawable="@mipmap/ic_launcher"/>
+</adaptive-icon>

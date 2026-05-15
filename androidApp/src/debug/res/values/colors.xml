@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  iter-59: launcher icon background — DEV variant override.
+  Pure green (#FF00FF00) so the DEV build is visually distinct from
+  the production release on the launcher grid. Mandated by the
+  iter-59 user requirement.
+-->
+<resources>
+    <color name="ic_launcher_background_dev">#FF00FF00</color>
+</resources>
