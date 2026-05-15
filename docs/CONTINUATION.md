@@ -529,7 +529,7 @@ require container-based artifacts.
 
 ## 42. Iter 58 — Source-code file support: 55 languages + 5 editor affordances (2026-05-15)
 
-**Status:** Phases 0–10 shipped on master (tip `<Phase 10 docs commit>`). All 55 languages
+**Status:** Phases 0–10 shipped on master (tip `84714a90`). All 55 languages
 have metadata + non-grammar affordances. 47/55 languages have full Desktop Tree-Sitter support.
 Android NDK bulk-build pending. iOS BLOCKED on Xcode. Web limited.
 
@@ -553,7 +553,7 @@ query-file survey, per-language data tables).
 | 7 | `9606ff42` | DONE_WITH_CONCERNS — 47 Desktop grammars via bonede JARs; 3 smoke tests; 8-lang gap set documented |
 | 8 | `a68bd8e9` | DONE — `HtmlEmbeddedLang` + `MarkdownCodeFences`; 4 tests (2+2) |
 | 9 | `2982ded0` | DONE — 2 challenges + `make qa-iter-58-gates` |
-| 10 | (this commit) | DONE — 3 docs + CHANGELOG + CONTINUATION |
+| 10 | `84714a90` | DONE — 3 docs + CHANGELOG + CONTINUATION |
 
 ### Test pass counts by source set
 

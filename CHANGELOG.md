@@ -134,7 +134,7 @@ bd20ab40  docs(iter-58): F2 Phase 6 closeout — CONTINUATION.md update
 9606ff42  feat(iter-58): F2 Phase 7 — 47 Tree-Sitter grammars bundled on Desktop (5 ABIs)
 a68bd8e9  feat(iter-58): F2 Phase 8 — HtmlEmbeddedLang + MarkdownCodeFences sub-language tokenization
 2982ded0  test(iter-58): F2 Phase 9 — 2 anti-bluff challenges + qa-iter-58-gates
-<Phase 10 docs commit>
+84714a90  docs(iter-58): Phase 10 — 3 docs + CHANGELOG + CONTINUATION
 ```
 
 ---
