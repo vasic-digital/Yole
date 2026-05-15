@@ -119,6 +119,25 @@ android {
             isReturnDefaultValues = true
         }
     }
+
+    // iter-60 Phase 9 fix (#iter-60-robolectric-snippet-classpath):
+    // KMP commonMain/resources are NOT placed on the Android unit-test
+    // classpath automatically — they end up only in the desktop
+    // processedResources and the production AAR assets, never in the
+    // JVM classpath that Robolectric's SandboxClassLoader interrogates
+    // via getResourceAsStream(). Adding the shared commonMain/resources
+    // directory as a test Java resource source set makes the snippet
+    // JSON files visible to all three classloader probes in
+    // SnippetRegistry.android.kt (Thread context + anonymous object +
+    // system classloader) under Robolectric.
+    sourceSets {
+        getByName("test") {
+            resources.srcDirs(
+                "src/test/resources",
+                "../shared/src/commonMain/resources",
+            )
+        }
+    }
 }
 
 // Robolectric Compose UI tests run in a DEDICATED container per the user

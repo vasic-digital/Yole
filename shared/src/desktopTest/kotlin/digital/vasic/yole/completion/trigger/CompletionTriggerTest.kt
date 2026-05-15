@@ -57,9 +57,13 @@ private const val TEST_DEBOUNCE_MS = 30L
 
 /**
  * Slack added on top of the debounce window when "waiting for quiescence".
- * Guarantees the debounce timer has fired even on a slow CI host.
+ * Guarantees the debounce timer has fired even on a slow CI host or when
+ * the Dispatchers.Default pool is under load (e.g. running alongside 60+
+ * other coroutine-heavy tests). Increased from 50 ms to 150 ms in iter-60
+ * Phase 9 to eliminate flakiness of dismiss_thenLongerPrefixAfterShort
+ * when the full digital.vasic.yole.completion.* suite runs concurrently.
  */
-private const val DEBOUNCE_SLACK_MS = 50L
+private const val DEBOUNCE_SLACK_MS = 150L
 
 class CompletionTriggerTest {
 
@@ -334,7 +338,13 @@ class CompletionTriggerTest {
     @Test
     fun dismiss_thenLongerPrefixAfterShort_doesAutoReopen() = runBlocking<Unit> {
         val trig = trigger(minPrefix = 2)
-        val events = collectEvents(trig, graceMs = TEST_DEBOUNCE_MS + DEBOUNCE_SLACK_MS) {
+        // Use a larger graceMs here: this test has a complex timing sequence
+        // (initial Show + dismiss + re-arm + re-open debounce). Under load (when
+        // running alongside 60+ other tests in digital.vasic.yole.completion.*)
+        // the final debounced Show can arrive after the default graceMs window.
+        // Using 2× DEBOUNCE_SLACK_MS for the grace period ensures the collector
+        // stays open long enough even on a heavily loaded CI coroutine thread pool.
+        val events = collectEvents(trig, graceMs = TEST_DEBOUNCE_MS + 2 * DEBOUNCE_SLACK_MS) {
             // Get a Show first, then dismiss.
             trig.onTextChanged("foo", 3)
             delay(TEST_DEBOUNCE_MS + DEBOUNCE_SLACK_MS)

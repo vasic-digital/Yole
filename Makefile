@@ -390,8 +390,16 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates
 	bash automation/run-qa-all.sh --skip-unit --skip-build
+	@echo "-----------------------------------------------------------------------------------"
+
+# iter-60 gates: 2 auto-complete anti-bluff challenges (CONST-035 + CONST-037).
+# Order: static-layer first (cheap, no Gradle) → runtime layer (full desktopTest suites).
+qa-iter-60-gates:
+	@echo "=== iter-60 gates: auto-complete anti-bluff suite ==="
+	bash yole-challenges/scripts/auto_complete_completeness_challenge.sh
+	bash yole-challenges/scripts/snippet_library_bundle_challenge.sh
 	@echo "-----------------------------------------------------------------------------------"
 
 # iter-58 gates: 2 syntax-highlighting language-support anti-bluff challenges (CONST-035 + CONST-037).

@@ -6,17 +6,31 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-15 (iter-60 F3 **Phase 8 COMPLETE** — Snippet placeholder navigation. 2 commits on master (`621a85c4` Phase 8a, `df7da6d0` Phase 8b).
+**Last updated:** 2026-05-15 (iter-60 F3 **Phase 9 COMPLETE** — 2 anti-bluff challenges + `qa-iter-60-gates` Makefile target + Robolectric classpath fix. 1 commit on master.
+
+Phase 9 delivered:
+- `yole-challenges/scripts/auto_complete_completeness_challenge.sh` — static layer (12 foundation files + 3 providers + engine references) + runtime layer (`:shared:desktopTest` filter `digital.vasic.yole.completion.*`, ≥50 PASSED, 0 FAILED). Both layers PASS: 65 PASSED, 0 FAILED.
+- `yole-challenges/scripts/snippet_library_bundle_challenge.sh` — static layer (≥50 `snippets.json` files, python3 JSON validation per bundle) + runtime layer (`SnippetBundleCompletenessTest` + `SnippetRegistryTest` + `VsCodeSnippetParserTest`, ≥10 PASSED). Both layers PASS: 55 bundles valid, 10 tests PASSED.
+- `Makefile` — `qa-iter-60-gates` target inserted before `qa-iter-58-gates`; `qa-all` chain updated to include `qa-iter-60-gates`.
+- **Robolectric fix (Option A):**
+  - `shared/src/androidMain/kotlin/digital/vasic/yole/completion/snippet/SnippetRegistry.android.kt` — `readSnippetResource` updated to probe three classloaders (Thread context, anonymous object, system) instead of one. The multi-classloader probe alone was insufficient.
+  - `androidApp/build.gradle.kts` — `sourceSets { test { resources.srcDirs("../shared/src/commonMain/resources") } }` added. This makes `snippets/*.json` visible on the Android unit-test classpath so `markdownTableSnippetIsAvailable` passes under Robolectric.
+  - Result: all 6 `SnippetExpansionRobolectricTest` cases PASS (including `markdownTableSnippetIsAvailable`). Pre-existing `VersionConsistencyTests` failures (version mismatch 1.0.0 vs 1.2.1) remain; those are unrelated to Phase 9.
+- **Flakiness fix:** `CompletionTriggerTest.dismiss_thenLongerPrefixAfterShort_doesAutoReopen` was timing-sensitive under load. Fixed: `DEBOUNCE_SLACK_MS` increased from 50→150ms; `collectEvents` grace for test 6 increased to `TEST_DEBOUNCE_MS + 2 * DEBOUNCE_SLACK_MS`. Two consecutive full-suite runs PASS.
+- Plan deviation: APK/tarball packaging layer deferred (Phase 11/Firebase will exercise packaged APK).
+
+**Next: Phase 10** — Documentation + diagrams for auto-complete. Then Phase 11 (Firebase distribution v1.3.0).
+
+**Previous (iter-60 F3 Phase 8 COMPLETE):** Snippet placeholder navigation. 2 commits on master (`621a85c4` Phase 8a, `df7da6d0` Phase 8b).
 
 Phase 8 delivered:
 - `shared/src/commonMain/kotlin/digital/vasic/yole/completion/snippet/SnippetPlaceholderNavigator.kt` — adds `Placeholder`, `ExpandedSnippet`, `VsCodeSnippetExpander` (stateless parser), `SnippetPlaceholderNavigator` (stateful per-session navigator). Supports `${N:default}`, `${N}`, `$N`, `$0`, `\$` escape. Sorted by index; `$0` always last.
 - `shared/src/commonTest/kotlin/digital/vasic/yole/completion/SnippetPlaceholderNavigatorTest.kt` — 9 pure commonTest cases. All GREEN. Mutation evidence: stub expand→emptyList → 7 FAILED.
 - `SyncedScrollEditor.kt` updated: `commitCompletionItem` now accepts optional `snippetNavigatorState`; for Snippet-kind items runs `VsCodeSnippetExpander.expand`, inserts `strippedBody` (not raw body), constructs navigator, calls `advance()` to select first placeholder. Tab handler: when navigator `isActive()`, calls `advance()` and updates `tfvState.selection`; falls through on exhaustion. Esc handler clears navigator.
 - `SnippetExpansionRobolectricTest.kt`: 2 new cases — `snippetWithTwoPlaceholders_firstPlaceholderSelectedAfterCommit` (text = "a b", selection = [0,1) after commit) and `snippetTab_advancesToNextPlaceholder` (advance → selection = [2,3) covering "b"). Fixed pre-existing PatternSyntaxException in `commitFunctionIsWiredInEditor` (unescaped `(` in regex → split-based count). 5/5 non-pre-existing-failure tests GREEN.
-- Pre-existing failure: `markdownTableSnippetIsAvailable` FAILS when run with `-PincludeRobolectric=true` (was already failing before Phase 8 — confirmed by `git stash` rollback). Not a regression. Root cause: path-loading issue in Robolectric sandbox when snippet bundles are discovered from `SnippetProvider`. Tracked as pre-existing; does not gate Phase 8 delivery.
 - Mutation evidence for Phase 8b: stub expand→emptyList → `snippetWithTwoPlaceholders` FAILED, `snippetTab` FAILED. Reverted. IndentEngineRobolectricTest 4/4 PASS (no regression).
 
-**Next: Phase 9** — Anti-bluff challenges for auto-complete. Then Phase 10 (docs) → Phase 11 (Firebase distribution v1.3.0).
+**Next (after Phase 10+11): Feature 4** — LSP integration.
 
 **Previous (iter-60 F3 Phase 7 COMPLETE):** 55-lang snippet bundles vendored + SnippetBundleCompletenessTest. 1 commit on master (`493be6cc`).
 
