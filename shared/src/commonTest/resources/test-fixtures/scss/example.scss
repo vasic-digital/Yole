@@ -1,0 +1,21 @@
+// SPDX-FileCopyrightText: 2026 Milos Vasic
+// SPDX-License-Identifier: Apache-2.0
+// iter-58 F2 Phase 6 fixture: SCSS.
+
+$primary: #336699;
+$bg: #fafafa;
+
+@mixin shadow($depth) {
+  box-shadow: 0 #{$depth}px #{$depth * 2}px rgba(0, 0, 0, 0.15);
+}
+
+.greeter {
+  color: $primary;
+  background: $bg;
+  @include shadow(2);
+
+  &__title {
+    font-size: 2rem;
+    margin: 0;
+  }
+}
