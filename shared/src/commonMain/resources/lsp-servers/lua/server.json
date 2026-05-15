@@ -1,0 +1,7 @@
+{
+  "langIds": ["lua"],
+  "executable": "lua-language-server",
+  "args": [],
+  "projectMarkers": [".luarc.json", ".luarc.jsonc"],
+  "initOptions": {}
+}

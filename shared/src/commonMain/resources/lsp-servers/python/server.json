@@ -1,0 +1,7 @@
+{
+  "langIds": ["python"],
+  "executable": "pyright-langserver",
+  "args": ["--stdio"],
+  "projectMarkers": ["pyrightconfig.json", "pyproject.toml", "setup.py"],
+  "initOptions": {}
+}

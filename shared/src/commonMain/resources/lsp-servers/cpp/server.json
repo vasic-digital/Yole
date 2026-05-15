@@ -1,0 +1,7 @@
+{
+  "langIds": ["cpp"],
+  "executable": "clangd",
+  "args": ["--background-index"],
+  "projectMarkers": ["compile_commands.json", "CMakeLists.txt", "Makefile"],
+  "initOptions": {}
+}

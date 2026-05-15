@@ -1,0 +1,7 @@
+{
+  "langIds": ["yaml"],
+  "executable": "yaml-language-server",
+  "args": ["--stdio"],
+  "projectMarkers": [".yamllint", ".yamllint.yml", ".yamllint.yaml"],
+  "initOptions": {}
+}

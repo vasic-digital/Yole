@@ -1,0 +1,7 @@
+{
+  "langIds": ["go"],
+  "executable": "gopls",
+  "args": ["serve"],
+  "projectMarkers": ["go.mod", "go.work"],
+  "initOptions": {}
+}

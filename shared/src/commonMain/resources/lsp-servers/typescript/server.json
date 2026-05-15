@@ -1,0 +1,7 @@
+{
+  "langIds": ["typescript"],
+  "executable": "typescript-language-server",
+  "args": ["--stdio"],
+  "projectMarkers": ["tsconfig.json", "package.json"],
+  "initOptions": {}
+}

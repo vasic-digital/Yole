@@ -1,0 +1,7 @@
+{
+  "langIds": ["elixir"],
+  "executable": "elixir-ls",
+  "args": [],
+  "projectMarkers": ["mix.exs"],
+  "initOptions": {}
+}

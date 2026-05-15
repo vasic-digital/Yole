@@ -1,0 +1,7 @@
+{
+  "langIds": ["java"],
+  "executable": "jdtls",
+  "args": [],
+  "projectMarkers": ["pom.xml", "build.gradle", "build.gradle.kts", ".classpath"],
+  "initOptions": {}
+}

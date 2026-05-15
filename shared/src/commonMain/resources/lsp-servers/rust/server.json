@@ -1,0 +1,7 @@
+{
+  "langIds": ["rust"],
+  "executable": "rust-analyzer",
+  "args": [],
+  "projectMarkers": ["Cargo.toml"],
+  "initOptions": {}
+}

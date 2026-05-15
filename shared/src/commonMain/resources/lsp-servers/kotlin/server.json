@@ -1,0 +1,7 @@
+{
+  "langIds": ["kotlin"],
+  "executable": "kotlin-language-server",
+  "args": [],
+  "projectMarkers": ["build.gradle.kts", "build.gradle", "settings.gradle.kts"],
+  "initOptions": {}
+}

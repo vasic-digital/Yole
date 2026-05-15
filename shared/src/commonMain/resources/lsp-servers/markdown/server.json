@@ -1,0 +1,7 @@
+{
+  "langIds": ["markdown"],
+  "executable": "marksman",
+  "args": ["server"],
+  "projectMarkers": [".marksman.toml", "README.md"],
+  "initOptions": {}
+}

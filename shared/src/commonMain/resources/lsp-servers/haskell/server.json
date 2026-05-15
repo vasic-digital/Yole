@@ -1,0 +1,7 @@
+{
+  "langIds": ["haskell"],
+  "executable": "haskell-language-server-wrapper",
+  "args": ["--lsp"],
+  "projectMarkers": ["*.cabal", "stack.yaml", "cabal.project", "hie.yaml"],
+  "initOptions": {}
+}

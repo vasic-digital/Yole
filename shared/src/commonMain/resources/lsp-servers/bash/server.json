@@ -1,0 +1,7 @@
+{
+  "langIds": ["bash"],
+  "executable": "bash-language-server",
+  "args": ["start"],
+  "projectMarkers": [".shellcheckrc", ".bash_profile", "bashrc"],
+  "initOptions": {}
+}

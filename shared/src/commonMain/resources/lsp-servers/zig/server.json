@@ -1,0 +1,7 @@
+{
+  "langIds": ["zig"],
+  "executable": "zls",
+  "args": [],
+  "projectMarkers": ["build.zig", "build.zig.zon"],
+  "initOptions": {}
+}
