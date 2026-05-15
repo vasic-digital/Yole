@@ -35,10 +35,14 @@ import digital.vasic.yole.android.ui.editor.commitCompletionItem
 import digital.vasic.yole.completion.CompletionContext
 import digital.vasic.yole.completion.CompletionItem
 import digital.vasic.yole.completion.providers.SnippetProvider
+import digital.vasic.yole.completion.snippet.SnippetPlaceholderNavigator
 import digital.vasic.yole.completion.trigger.CompletionTrigger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -205,11 +209,149 @@ class SnippetExpansionRobolectricTest {
             src.contains("commitCompletionItem("),
         )
         // Both the key-event handler and the popup click MUST call it.
-        val occurrences = "commitCompletionItem(".toRegex().findAll(src).count()
+        // Use literal string counting (not regex) to avoid PatternSyntaxException
+        // from unescaped '(' in the pattern.
+        val occurrences = src.split("commitCompletionItem(").size - 1
         assertTrue(
             "commitCompletionItem MUST be called from both the key-handler and the popup " +
                 "(expected ≥ 2 occurrences, got $occurrences)",
             occurrences >= 2,
         )
+    }
+
+    // -----------------------------------------------------------------------
+    // Phase 8b: snippet placeholder navigation
+    // -----------------------------------------------------------------------
+
+    /**
+     * After committing a Snippet item with two placeholders, the editor
+     * selection MUST be the range of the first placeholder's default text.
+     *
+     * Input snippet body: "${1:a} ${2:b}"
+     * strippedBody:       "a b"
+     * inserted at start=0 → text becomes "a b"
+     * first placeholder "a" occupies position 0..0 in strippedBody.
+     * After advance(): selection should be TextRange(0, 1) (start=0, end=1).
+     *
+     * Anti-bluff mutation guard:
+     *   Stubbing navigator.advance() to always return null → selection stays
+     *   at end of inserted text (index 3), NOT at the first placeholder → FAILS.
+     *   Stubbing expand() to return emptyList() placeholders → navigator has
+     *   nothing to navigate, cursor ends at 3, firstPlaceholderSelected FAILS.
+     */
+    @Test
+    fun snippetWithTwoPlaceholders_firstPlaceholderSelectedAfterCommit() {
+        val snippetBody = "\${1:a} \${2:b}"
+        val item = CompletionItem(
+            label = "twoPlaceholder",
+            insertText = snippetBody,
+            kind = CompletionItem.Kind.Snippet,
+            score = 1.0,
+            range = 0..0, // replace empty prefix
+        )
+        val textState = mutableStateOf("")
+        val tfvState = mutableStateOf(TextFieldValue("", TextRange(0)))
+        val navigatorState = mutableStateOf<SnippetPlaceholderNavigator?>(null)
+        val job = Job()
+        val scope = CoroutineScope(job)
+        val trigger = CompletionTrigger(langId = null, scope = scope)
+
+        commitCompletionItem(item, tfvState, textState, {}, trigger, navigatorState)
+
+        // strippedBody = "a b" (placeholders removed, defaults inserted)
+        assertEquals(
+            "After commit, textState MUST contain strippedBody 'a b' (got: '${textState.value}')",
+            "a b",
+            textState.value,
+        )
+
+        // The navigator MUST have been created.
+        val nav = navigatorState.value
+        assertNotNull("snippetNavigatorState MUST be non-null after snippet commit", nav)
+
+        // The selection MUST cover "a" (index 0 in "a b"), i.e. TextRange(0, 1).
+        val sel = tfvState.value.selection
+        assertTrue(
+            "Selection start MUST be 0 (start of first placeholder 'a'), got ${sel.start}",
+            sel.start == 0,
+        )
+        assertTrue(
+            "Selection end MUST be 1 (exclusive end of 'a'), got ${sel.end}",
+            sel.end == 1,
+        )
+
+        job.cancel()
+    }
+
+    /**
+     * After committing the snippet and selecting the first placeholder,
+     * a Tab advance MUST move the selection to the second placeholder.
+     *
+     * Continuing from the state in [snippetWithTwoPlaceholders_firstPlaceholderSelectedAfterCommit]:
+     *   strippedBody = "a b", first placeholder "a" at 0..0, second "b" at 2..2.
+     *   After advance() for Tab: selection → TextRange(2, 3) (covers "b").
+     *
+     * Anti-bluff mutation guard:
+     *   Stubbing advance() to always return null → second advance returns null →
+     *   the code falls through without updating selection → FAILS because
+     *   the selection remains at the first-placeholder range not "b"'s range.
+     */
+    @Test
+    fun snippetTab_advancesToNextPlaceholder() {
+        val snippetBody = "\${1:a} \${2:b}"
+        val item = CompletionItem(
+            label = "twoPlaceholder",
+            insertText = snippetBody,
+            kind = CompletionItem.Kind.Snippet,
+            score = 1.0,
+            range = 0..0,
+        )
+        val textState = mutableStateOf("")
+        val tfvState = mutableStateOf(TextFieldValue("", TextRange(0)))
+        val navigatorState = mutableStateOf<SnippetPlaceholderNavigator?>(null)
+        val job = Job()
+        val scope = CoroutineScope(job)
+        val trigger = CompletionTrigger(langId = null, scope = scope)
+
+        // Commit → first placeholder selected.
+        commitCompletionItem(item, tfvState, textState, {}, trigger, navigatorState)
+        assertEquals("a b", textState.value)
+
+        // Simulate Tab: advance the navigator and update tfvState selection.
+        val nav = navigatorState.value
+        assertNotNull("Navigator must exist after commit", nav)
+        val nextRange = nav!!.advance()
+        assertNotNull("Second advance() MUST return a non-null range (placeholder 2)", nextRange)
+        // "b" is at index 2 in "a b" → baseOffset=0 → absolute 2..2
+        assertEquals("Second placeholder start MUST be 2", 2, nextRange!!.first)
+        assertEquals("Second placeholder last MUST be 2", 2, nextRange.last)
+
+        // Update tfvState to reflect Tab navigation (mirrors what the editor's
+        // onPreviewKeyEvent Tab handler does).
+        tfvState.value = tfvState.value.copy(
+            selection = TextRange(nextRange.first, nextRange.last + 1),
+        )
+
+        val sel = tfvState.value.selection
+        assertEquals(
+            "After Tab, selection start MUST be 2 (start of 'b'), got ${sel.start}",
+            2,
+            sel.start,
+        )
+        assertEquals(
+            "After Tab, selection end MUST be 3 (exclusive end of 'b'), got ${sel.end}",
+            3,
+            sel.end,
+        )
+
+        // Navigator should still be active (one more stop to go — $0 absent,
+        // but the navigator hasn't exhausted: there were 2 placeholders, we've
+        // consumed both via the initial advance() in commit + this advance()).
+        assertFalse(
+            "Navigator MUST be inactive after both placeholders are consumed",
+            nav.isActive(),
+        )
+
+        job.cancel()
     }
 }

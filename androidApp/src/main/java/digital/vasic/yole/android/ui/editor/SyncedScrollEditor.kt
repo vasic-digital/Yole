@@ -55,6 +55,17 @@
  *   - Enter/Tab (when popup open) → commit selected item.
  *   - CompletionPopup renders as an overlay inside the editor Box.
  *
+ * iter-60 Phase 8b: snippet placeholder navigation. When a committed item
+ * is of kind Snippet:
+ *   - commitCompletionItem runs VsCodeSnippetExpander.expand on the body,
+ *     inserts strippedBody (not the raw body with `${N:...}` markers),
+ *     constructs a SnippetPlaceholderNavigator, and calls advance() to
+ *     select the first placeholder.
+ *   - The navigator is stored in snippetNavigatorState (mutableStateOf).
+ *   - Tab (when no popup open but navigator isActive) → advance() to next
+ *     placeholder; if null, deactivate and fall through.
+ *   - Esc (when navigator is active) → complete() + fall through.
+ *
  * The VisualTransformation length-guard (iter-57) is preserved: the popup
  * is a separate Popup composable and does NOT feed back into the BTF's
  * VisualTransformation. Commit inserts text via onValueChange path.
@@ -82,6 +93,10 @@
  *       a FoldRange MUST render a chevron with testTag
  *       `foldGutter.chevron:line{N}`. Stubbing FoldQueryRunner to
  *       return emptyList() MUST fail `chevronsAppearOnFoldableLines`.
+ *   (5) iter-60 Phase 8b invariant: commitCompletionItem for Snippet kind
+ *       MUST insert strippedBody (not the raw body) and select the first
+ *       placeholder. Stubbing navigator.advance() to always return null
+ *       MUST cause SnippetExpansionRobolectricTest Phase 8 cases to fail.
  *
  *########################################################*/
 package digital.vasic.yole.android.ui.editor
@@ -128,6 +143,8 @@ import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import digital.vasic.yole.completion.CompletionItem
+import digital.vasic.yole.completion.snippet.SnippetPlaceholderNavigator
+import digital.vasic.yole.completion.snippet.VsCodeSnippetExpander
 import digital.vasic.yole.completion.trigger.CompletionTrigger
 import digital.vasic.yole.completion.trigger.TriggerEvent
 import digital.vasic.yole.language.LocalLanguage
@@ -168,6 +185,11 @@ fun SyncedScrollEditor(
     // set. Body-collapse of the BasicTextField is deferred — see
     // FoldGutter.kt's KDoc and `#f2-phase-5-fold-region-collapse`.
     val foldedRanges = remember { mutableStateOf<Set<FoldRange>>(emptySet()) }
+
+    // iter-60 Phase 8b: active snippet placeholder navigator.
+    // Non-null between snippet commit and the final Tab/Esc dismissal.
+    // Null when no snippet traversal is in progress (the common case).
+    val snippetNavigatorState = remember { mutableStateOf<SnippetPlaceholderNavigator?>(null) }
 
     // iter-58 Feature 2 Phase 4: maintain an internal TextFieldValue so
     // affordances (comment-toggle, indent-on-Enter, bracket-autocomplete)
@@ -378,8 +400,10 @@ fun SyncedScrollEditor(
                                     trig.onExplicitTrigger()
                                     true
                                 }
-                                // Esc — dismiss popup if open.
+                                // Esc — dismiss popup if open; also clear snippet navigator.
                                 event.key == Key.Escape && ps.isOpen -> {
+                                    snippetNavigatorState.value?.complete()
+                                    snippetNavigatorState.value = null
                                     trig.onDismiss()
                                     true
                                 }
@@ -397,11 +421,45 @@ fun SyncedScrollEditor(
                                 (event.key == Key.Enter || event.key == Key.Tab) && ps.isOpen -> {
                                     val item = ps.items.getOrNull(ps.selectedIndex)
                                     if (item != null) {
-                                        commitCompletionItem(item, tfvState, textState, onTextChanged, trig)
+                                        commitCompletionItem(
+                                            item, tfvState, textState, onTextChanged, trig,
+                                            snippetNavigatorState,
+                                        )
                                     }
                                     true
                                 }
                                 else -> false
+                            }
+                        // iter-60 Phase 8b: snippet placeholder Tab traversal.
+                        // Checked BEFORE popup handlers when popup is closed,
+                        // AFTER popup block when popup is open (popup takes priority).
+                        } else if (event.type == KeyEventType.KeyDown && event.key == Key.Tab) {
+                            val nav = snippetNavigatorState.value
+                            if (nav != null && nav.isActive()) {
+                                val next = nav.advance()
+                                if (next != null) {
+                                    // Select the next placeholder range.
+                                    tfvState.value = tfvState.value.copy(
+                                        selection = TextRange(next.first, next.last + 1),
+                                    )
+                                    true
+                                } else {
+                                    // Navigation exhausted — deactivate and fall through.
+                                    snippetNavigatorState.value = null
+                                    false
+                                }
+                            } else {
+                                false
+                            }
+                        // iter-60 Phase 8b: Esc clears snippet navigator when popup not open.
+                        } else if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) {
+                            val nav = snippetNavigatorState.value
+                            if (nav != null) {
+                                nav.complete()
+                                snippetNavigatorState.value = null
+                                true
+                            } else {
+                                false
                             }
                         } else if (
                             // iter-58 Phase 4: try comment-toggle first
@@ -455,7 +513,10 @@ fun SyncedScrollEditor(
                     state = popupState,
                     isDarkTheme = isDarkTheme,
                     onCommit = { item ->
-                        commitCompletionItem(item, tfvState, textState, onTextChanged, trigger)
+                        commitCompletionItem(
+                            item, tfvState, textState, onTextChanged, trigger,
+                            snippetNavigatorState,
+                        )
                     },
                     onDismiss = { trigger.onDismiss() },
                 )
@@ -468,9 +529,12 @@ fun SyncedScrollEditor(
  * Insert [item].insertText into the editor, replacing the partial prefix
  * captured by [item].range, then close the popup and reset the trigger.
  *
- * After insertion the cursor is placed at the end of the inserted text.
- * Phase 8 (snippet placeholder navigation) will refine this for `${N:...}`
- * markers; for now end-of-insert is the correct v1 behaviour.
+ * For [CompletionItem.Kind.Snippet] items the body is first expanded via
+ * [VsCodeSnippetExpander]: `${N:default}` markers are stripped to their
+ * default text, and a [SnippetPlaceholderNavigator] is created and stored
+ * in [snippetNavigatorState]. The first placeholder is selected immediately.
+ *
+ * For non-snippet items the cursor is placed at the end of the inserted text.
  *
  * This function is internal to the editor package; it is extracted so both
  * the onPreviewKeyEvent handler and the CompletionPopup click callback
@@ -479,6 +543,8 @@ fun SyncedScrollEditor(
  * Anti-bluff anchor (CONST-035):
  *   Stubbing this to a no-op → SnippetExpansionRobolectricTest FAILS
  *   because the editor text remains unchanged after the commit.
+ *   Stubbing navigator.advance() to always return null → Phase 8b
+ *   Robolectric cases FAIL because the selection stays at end-of-insert.
  */
 internal fun commitCompletionItem(
     item: CompletionItem,
@@ -486,6 +552,7 @@ internal fun commitCompletionItem(
     textState: androidx.compose.runtime.MutableState<String>,
     onTextChanged: (String) -> Unit,
     trigger: CompletionTrigger,
+    snippetNavigatorState: androidx.compose.runtime.MutableState<SnippetPlaceholderNavigator?>? = null,
 ) {
     val current = tfvState.value
     val text = current.text
@@ -493,11 +560,36 @@ internal fun commitCompletionItem(
     // stale ranges (text may have changed between Show and commit).
     val start = item.range.first.coerceIn(0, text.length)
     val end = item.range.last.coerceIn(start, text.length)
-    val newText = text.substring(0, start) + item.insertText + text.substring(end)
-    val newCursor = start + item.insertText.length
-    val newValue = TextFieldValue(newText, TextRange(newCursor))
-    tfvState.value = newValue
-    textState.value = newText
-    onTextChanged(newText)
+
+    if (item.kind == CompletionItem.Kind.Snippet && snippetNavigatorState != null) {
+        // Snippet path: expand placeholders, insert strippedBody, navigate.
+        val expansion = VsCodeSnippetExpander.expand(item.insertText)
+        val insertedText = expansion.strippedBody
+        val newText = text.substring(0, start) + insertedText + text.substring(end)
+        val endOfInsert = start + insertedText.length
+
+        val navigator = SnippetPlaceholderNavigator(expansion, baseOffset = start)
+        snippetNavigatorState.value = navigator
+
+        // Select first placeholder, or place cursor at end if none.
+        val firstRange = if (expansion.placeholders.isNotEmpty()) navigator.advance() else null
+        val newSelection = if (firstRange != null) {
+            TextRange(firstRange.first, firstRange.last + 1)
+        } else {
+            TextRange(endOfInsert)
+        }
+        val newValue = TextFieldValue(newText, newSelection)
+        tfvState.value = newValue
+        textState.value = newText
+        onTextChanged(newText)
+    } else {
+        // Non-snippet path (or no navigator state available): plain insert.
+        val newText = text.substring(0, start) + item.insertText + text.substring(end)
+        val newCursor = start + item.insertText.length
+        val newValue = TextFieldValue(newText, TextRange(newCursor))
+        tfvState.value = newValue
+        textState.value = newText
+        onTextChanged(newText)
+    }
     trigger.onDismiss()
 }

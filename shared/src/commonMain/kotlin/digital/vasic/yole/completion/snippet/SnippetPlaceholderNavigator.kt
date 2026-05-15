@@ -193,8 +193,17 @@ class SnippetPlaceholderNavigator(
     private var currentIdx: Int = -1   // index into expansion.placeholders (-1 = not started)
     private var done: Boolean = expansion.placeholders.isEmpty()
 
-    /** True if there are still placeholders to navigate through. */
-    fun isActive(): Boolean = !done
+    /**
+     * True if there are still placeholders to navigate through.
+     *
+     * After [advance] returns the last placeholder (or null), this returns false.
+     * Before any [advance] call, this is true when placeholders exist.
+     */
+    fun isActive(): Boolean {
+        if (done) return false
+        // If we're already at or past the last placeholder, nothing left to visit.
+        return currentIdx < expansion.placeholders.size - 1
+    }
 
     /**
      * Advance to the next placeholder.
