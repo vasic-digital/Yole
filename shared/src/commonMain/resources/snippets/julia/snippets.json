@@ -1,0 +1,32 @@
+{
+  "Function": {
+    "prefix": "fun",
+    "body": ["function ${1:name}(${2:args})", "\t${0}", "end"],
+    "description": "Function definition"
+  },
+  "Struct": {
+    "prefix": "struct",
+    "body": ["struct ${1:Name}", "\t${2:field}::${3:Int}",  "end"],
+    "description": "Struct definition"
+  },
+  "For loop": {
+    "prefix": "for",
+    "body": ["for ${1:i} in ${2:1:10}", "\t${0}", "end"],
+    "description": "For loop"
+  },
+  "While loop": {
+    "prefix": "while",
+    "body": ["while ${1:condition}", "\t${0}", "end"],
+    "description": "While loop"
+  },
+  "Println": {
+    "prefix": "pl",
+    "body": "println(${0})",
+    "description": "println statement"
+  },
+  "Module": {
+    "prefix": "module",
+    "body": ["module ${1:Name}", "\t${0}", "end"],
+    "description": "Module definition"
+  }
+}

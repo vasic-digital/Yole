@@ -1,0 +1,37 @@
+{
+  "Module": {
+    "prefix": "defmodule",
+    "body": ["defmodule ${1:Name} do", "\t${0}", "end"],
+    "description": "Module definition"
+  },
+  "Function": {
+    "prefix": "def",
+    "body": ["def ${1:name}(${2:args}) do", "\t${0}", "end"],
+    "description": "Public function"
+  },
+  "Private function": {
+    "prefix": "defp",
+    "body": ["defp ${1:name}(${2:args}) do", "\t${0}", "end"],
+    "description": "Private function"
+  },
+  "Case": {
+    "prefix": "case",
+    "body": ["case ${1:expr} do", "\t${2:pattern} -> ${3}", "\t_ -> ${0}", "end"],
+    "description": "Case expression"
+  },
+  "Pipe": {
+    "prefix": "pipe",
+    "body": "${1:value}\n|> ${0}",
+    "description": "Pipe operator"
+  },
+  "IO puts": {
+    "prefix": "io",
+    "body": "IO.puts(${0})",
+    "description": "IO.puts"
+  },
+  "With": {
+    "prefix": "with",
+    "body": ["with {:ok, ${1:val}} <- ${2:call} do", "\t${0}", "end"],
+    "description": "With expression"
+  }
+}

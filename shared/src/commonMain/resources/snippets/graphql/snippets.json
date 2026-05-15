@@ -1,0 +1,32 @@
+{
+  "Query": {
+    "prefix": "query",
+    "body": ["query ${1:Name}(${2:\\$param}: ${3:String}) {", "\t${0}", "}"],
+    "description": "GraphQL query"
+  },
+  "Mutation": {
+    "prefix": "mutation",
+    "body": ["mutation ${1:Name}(${2:\\$input}: ${3:Input!}) {", "\t${0}", "}"],
+    "description": "GraphQL mutation"
+  },
+  "Subscription": {
+    "prefix": "subscription",
+    "body": ["subscription ${1:Name} {", "\t${0}", "}"],
+    "description": "GraphQL subscription"
+  },
+  "Type": {
+    "prefix": "type",
+    "body": ["type ${1:Name} {", "\t${2:field}: ${3:String}!", "}"],
+    "description": "Type definition"
+  },
+  "Input": {
+    "prefix": "input",
+    "body": ["input ${1:Name}Input {", "\t${2:field}: ${3:String}!", "}"],
+    "description": "Input type"
+  },
+  "Fragment": {
+    "prefix": "fragment",
+    "body": ["fragment ${1:Name} on ${2:Type} {", "\t${0}", "}"],
+    "description": "Fragment definition"
+  }
+}

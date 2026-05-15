@@ -1,0 +1,32 @@
+{
+  "Resource": {
+    "prefix": "resource",
+    "body": ["resource \"${1:type}\" \"${2:name}\" {", "\t${0}", "}"],
+    "description": "Terraform resource block"
+  },
+  "Variable": {
+    "prefix": "variable",
+    "body": ["variable \"${1:name}\" {", "\ttype        = ${2:string}", "\tdescription = \"${3}\"", "\tdefault     = \"${0}\"", "}"],
+    "description": "Variable declaration"
+  },
+  "Output": {
+    "prefix": "output",
+    "body": ["output \"${1:name}\" {", "\tvalue       = ${2}", "\tdescription = \"${0}\"", "}"],
+    "description": "Output declaration"
+  },
+  "Data source": {
+    "prefix": "data",
+    "body": ["data \"${1:type}\" \"${2:name}\" {", "\t${0}", "}"],
+    "description": "Data source"
+  },
+  "Module": {
+    "prefix": "module",
+    "body": ["module \"${1:name}\" {", "\tsource = \"${2:./module}\"", "\t${0}", "}"],
+    "description": "Module call"
+  },
+  "Provider": {
+    "prefix": "provider",
+    "body": ["provider \"${1:aws}\" {", "\tregion = \"${0:us-east-1}\"", "}"],
+    "description": "Provider block"
+  }
+}

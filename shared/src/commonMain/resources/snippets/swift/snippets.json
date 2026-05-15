@@ -1,0 +1,42 @@
+{
+  "Function": {
+    "prefix": "func",
+    "body": ["func ${1:name}(${2:params}) -> ${3:Void} {", "\t${0}", "}"],
+    "description": "Function declaration"
+  },
+  "Struct": {
+    "prefix": "struct",
+    "body": ["struct ${1:Name} {", "\t${0}", "}"],
+    "description": "Struct declaration"
+  },
+  "Class": {
+    "prefix": "class",
+    "body": ["class ${1:Name} {", "\tinit(${2:params}) {", "\t\t${0}", "\t}", "}"],
+    "description": "Class declaration"
+  },
+  "Protocol": {
+    "prefix": "protocol",
+    "body": ["protocol ${1:Name} {", "\t${0}", "}"],
+    "description": "Protocol declaration"
+  },
+  "Extension": {
+    "prefix": "ext",
+    "body": ["extension ${1:Type} {", "\t${0}", "}"],
+    "description": "Extension"
+  },
+  "Guard": {
+    "prefix": "guard",
+    "body": ["guard ${1:condition} else {", "\t${0}", "\treturn", "}"],
+    "description": "Guard statement"
+  },
+  "Print": {
+    "prefix": "print",
+    "body": "print(${0})",
+    "description": "Print statement"
+  },
+  "Closure": {
+    "prefix": "cl",
+    "body": ["{ ${1:params} in", "\t${0}", "}"],
+    "description": "Closure"
+  }
+}

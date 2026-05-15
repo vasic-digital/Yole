@@ -1,0 +1,37 @@
+{
+  "Module": {
+    "prefix": "module",
+    "body": "module ${1:Main} where",
+    "description": "Module declaration"
+  },
+  "Function": {
+    "prefix": "fun",
+    "body": ["${1:name} :: ${2:a} -> ${3:b}", "${1:name} ${4:x} = ${0}"],
+    "description": "Function with type signature"
+  },
+  "Data type": {
+    "prefix": "data",
+    "body": "data ${1:Name} = ${2:Constructor} ${3:Type}",
+    "description": "Data type declaration"
+  },
+  "Where clause": {
+    "prefix": "where",
+    "body": ["where", "\t${1:name} = ${0}"],
+    "description": "Where clause"
+  },
+  "Case expression": {
+    "prefix": "case",
+    "body": ["case ${1:expr} of", "\t${2:pattern} -> ${0}"],
+    "description": "Case expression"
+  },
+  "Do block": {
+    "prefix": "do",
+    "body": ["do", "\t${0}"],
+    "description": "Do block"
+  },
+  "Import": {
+    "prefix": "import",
+    "body": "import ${1:Data.List} (${0})",
+    "description": "Import statement"
+  }
+}

@@ -12,5 +12,35 @@
     "prefix": "link",
     "body": "[${1:text}](${2:url})",
     "description": "Markdown link"
+  },
+  "Image": {
+    "prefix": "img",
+    "body": "![${1:alt}](${2:url})",
+    "description": "Markdown image"
+  },
+  "Code block": {
+    "prefix": "code",
+    "body": ["```${1:language}", "${0}", "```"],
+    "description": "Fenced code block"
+  },
+  "Bold": {
+    "prefix": "bold",
+    "body": "**${0}**",
+    "description": "Bold text"
+  },
+  "Italic": {
+    "prefix": "italic",
+    "body": "*${0}*",
+    "description": "Italic text"
+  },
+  "Blockquote": {
+    "prefix": "bq",
+    "body": "> ${0}",
+    "description": "Blockquote"
+  },
+  "Checklist item": {
+    "prefix": "check",
+    "body": "- [ ] ${0}",
+    "description": "Checklist item"
   }
 }

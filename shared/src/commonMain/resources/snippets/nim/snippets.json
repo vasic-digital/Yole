@@ -1,0 +1,32 @@
+{
+  "Proc": {
+    "prefix": "proc",
+    "body": ["proc ${1:name}(${2:params}): ${3:void} =", "\t${0}"],
+    "description": "Procedure declaration"
+  },
+  "Type": {
+    "prefix": "type",
+    "body": ["type", "\t${1:Name} = object", "\t\t${0}: ${2:string}"],
+    "description": "Type definition"
+  },
+  "For loop": {
+    "prefix": "for",
+    "body": ["for ${1:i} in ${2:0 ..< 10}:", "\t${0}"],
+    "description": "For loop"
+  },
+  "While loop": {
+    "prefix": "while",
+    "body": ["while ${1:condition}:", "\t${0}"],
+    "description": "While loop"
+  },
+  "Echo": {
+    "prefix": "echo",
+    "body": "echo ${0}",
+    "description": "Echo statement"
+  },
+  "Import": {
+    "prefix": "import",
+    "body": "import ${0}",
+    "description": "Import statement"
+  }
+}

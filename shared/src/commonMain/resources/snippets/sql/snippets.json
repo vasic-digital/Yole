@@ -1,0 +1,43 @@
+{
+  "Select": {
+    "prefix": "sel",
+    "body": "SELECT ${1:*} FROM ${2:table} WHERE ${0};",
+    "description": "SELECT statement"
+  },
+  "Insert": {
+    "prefix": "ins",
+    "body": "INSERT INTO ${1:table} (${2:columns}) VALUES (${0});",
+    "description": "INSERT statement"
+  },
+  "Update": {
+    "prefix": "upd",
+    "body": "UPDATE ${1:table} SET ${2:column} = ${3:value} WHERE ${0};",
+    "description": "UPDATE statement"
+  },
+  "Delete": {
+    "prefix": "del",
+    "body": "DELETE FROM ${1:table} WHERE ${0};",
+    "description": "DELETE statement"
+  },
+  "Create table": {
+    "prefix": "crt",
+    "body": [
+      "CREATE TABLE ${1:name} (",
+      "\tid SERIAL PRIMARY KEY,",
+      "\t${2:column} ${3:VARCHAR(255)} NOT NULL,",
+      "\tcreated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+      ");"
+    ],
+    "description": "CREATE TABLE"
+  },
+  "Join": {
+    "prefix": "join",
+    "body": "INNER JOIN ${1:table} ON ${2:a}.${3:id} = ${4:b}.${5:id}",
+    "description": "INNER JOIN clause"
+  },
+  "Group by": {
+    "prefix": "grp",
+    "body": "GROUP BY ${1:column} HAVING ${0}",
+    "description": "GROUP BY + HAVING"
+  }
+}

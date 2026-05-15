@@ -1,0 +1,42 @@
+{
+  "Public class": {
+    "prefix": "class",
+    "body": ["public class ${1:Name} {", "\t${0}", "}"],
+    "description": "Public class declaration"
+  },
+  "Main method": {
+    "prefix": "main",
+    "body": ["public static void main(String[] args) {", "\t${0}", "}"],
+    "description": "Main entry point"
+  },
+  "Getter": {
+    "prefix": "get",
+    "body": ["public ${1:String} get${2:Field}() {", "\treturn ${3:field};", "}"],
+    "description": "Getter method"
+  },
+  "Setter": {
+    "prefix": "set",
+    "body": ["public void set${1:Field}(${2:String} ${3:value}) {", "\tthis.${4:field} = ${3:value};", "}"],
+    "description": "Setter method"
+  },
+  "Try-catch": {
+    "prefix": "try",
+    "body": ["try {", "\t${1}", "} catch (${2:Exception} ${3:e}) {", "\t${0}", "}"],
+    "description": "Try-catch block"
+  },
+  "Interface": {
+    "prefix": "interface",
+    "body": ["public interface ${1:Name} {", "\t${0}", "}"],
+    "description": "Interface declaration"
+  },
+  "For-each": {
+    "prefix": "foreach",
+    "body": ["for (${1:Type} ${2:item} : ${3:collection}) {", "\t${0}", "}"],
+    "description": "Enhanced for loop"
+  },
+  "Sysout": {
+    "prefix": "sout",
+    "body": "System.out.println(${0});",
+    "description": "Print to stdout"
+  }
+}

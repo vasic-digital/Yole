@@ -1,0 +1,42 @@
+{
+  "Function": {
+    "prefix": "fn",
+    "body": ["fn ${1:name}(${2:params}) -> ${3:()} {", "\t${0}", "}"],
+    "description": "Function declaration"
+  },
+  "Struct": {
+    "prefix": "struct",
+    "body": ["struct ${1:Name} {", "\t${2:field}: ${3:String},", "}"],
+    "description": "Struct definition"
+  },
+  "Impl": {
+    "prefix": "impl",
+    "body": ["impl ${1:Name} {", "\t${0}", "}"],
+    "description": "Impl block"
+  },
+  "Trait": {
+    "prefix": "trait",
+    "body": ["trait ${1:Name} {", "\t${0}", "}"],
+    "description": "Trait definition"
+  },
+  "Match": {
+    "prefix": "match",
+    "body": ["match ${1:expr} {", "\t${2:pattern} => ${3},", "\t_ => ${0},", "}"],
+    "description": "Match expression"
+  },
+  "Enum": {
+    "prefix": "enum",
+    "body": ["enum ${1:Name} {", "\t${2:Variant},", "}"],
+    "description": "Enum definition"
+  },
+  "Println": {
+    "prefix": "pl",
+    "body": "println!(\"${1}\", ${0});",
+    "description": "println! macro"
+  },
+  "Unwrap or else": {
+    "prefix": "uoe",
+    "body": "${1:result}.unwrap_or_else(|${2:e}| ${0})",
+    "description": "Unwrap or else"
+  }
+}

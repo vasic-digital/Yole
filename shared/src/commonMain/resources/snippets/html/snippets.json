@@ -1,0 +1,44 @@
+{
+  "HTML5 boilerplate": {
+    "prefix": "html5",
+    "body": [
+      "<!DOCTYPE html>",
+      "<html lang=\"${1:en}\">",
+      "<head>",
+      "\t<meta charset=\"UTF-8\">",
+      "\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">",
+      "\t<title>${2:Document}</title>",
+      "</head>",
+      "<body>",
+      "\t${0}",
+      "</body>",
+      "</html>"
+    ],
+    "description": "HTML5 boilerplate"
+  },
+  "Div": {
+    "prefix": "div",
+    "body": "<div class=\"${1}\">${0}</div>",
+    "description": "Div element"
+  },
+  "Link": {
+    "prefix": "link",
+    "body": "<link rel=\"${1:stylesheet}\" href=\"${2:style.css}\">",
+    "description": "Link tag"
+  },
+  "Script": {
+    "prefix": "script",
+    "body": "<script src=\"${1:app.js}\"></script>",
+    "description": "Script tag"
+  },
+  "Image": {
+    "prefix": "img",
+    "body": "<img src=\"${1}\" alt=\"${2}\" />",
+    "description": "Image element"
+  },
+  "Anchor": {
+    "prefix": "a",
+    "body": "<a href=\"${1:#}\">${0}</a>",
+    "description": "Anchor element"
+  }
+}

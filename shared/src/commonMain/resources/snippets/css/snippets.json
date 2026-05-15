@@ -1,0 +1,49 @@
+{
+  "Flexbox container": {
+    "prefix": "flex",
+    "body": [
+      ".${1:container} {",
+      "\tdisplay: flex;",
+      "\talign-items: ${2:center};",
+      "\tjustify-content: ${3:space-between};",
+      "}"
+    ],
+    "description": "Flexbox container"
+  },
+  "Grid container": {
+    "prefix": "grid",
+    "body": [
+      ".${1:container} {",
+      "\tdisplay: grid;",
+      "\tgrid-template-columns: ${2:repeat(3, 1fr)};",
+      "\tgap: ${3:1rem};",
+      "}"
+    ],
+    "description": "Grid container"
+  },
+  "Media query": {
+    "prefix": "mq",
+    "body": ["@media (max-width: ${1:768px}) {", "\t${0}", "}"],
+    "description": "Media query"
+  },
+  "Variable": {
+    "prefix": "var",
+    "body": "--${1:color}: ${0};",
+    "description": "CSS custom property"
+  },
+  "Animation": {
+    "prefix": "anim",
+    "body": [
+      "@keyframes ${1:name} {",
+      "\tfrom { ${2} }",
+      "\tto { ${0} }",
+      "}"
+    ],
+    "description": "Keyframe animation"
+  },
+  "Transition": {
+    "prefix": "trans",
+    "body": "transition: ${1:all} ${2:0.3s} ${3:ease};",
+    "description": "CSS transition"
+  }
+}

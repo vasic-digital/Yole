@@ -1,0 +1,42 @@
+{
+  "Shebang": {
+    "prefix": "shebang",
+    "body": "#!/usr/bin/env bash",
+    "description": "Bash shebang line"
+  },
+  "Function": {
+    "prefix": "fun",
+    "body": ["${1:name}() {", "\t${0}", "}"],
+    "description": "Bash function"
+  },
+  "If-else": {
+    "prefix": "if",
+    "body": ["if [[ ${1:condition} ]]; then", "\t${2}", "else", "\t${0}", "fi"],
+    "description": "If-else block"
+  },
+  "For loop": {
+    "prefix": "for",
+    "body": ["for ${1:item} in ${2:list}; do", "\t${0}", "done"],
+    "description": "For loop"
+  },
+  "While loop": {
+    "prefix": "while",
+    "body": ["while [[ ${1:condition} ]]; do", "\t${0}", "done"],
+    "description": "While loop"
+  },
+  "Case statement": {
+    "prefix": "case",
+    "body": ["case ${1:var} in", "\t${2:pattern})", "\t\t${0}", "\t\t;;", "\t*)", "\t\t;;", "esac"],
+    "description": "Case statement"
+  },
+  "Echo": {
+    "prefix": "echo",
+    "body": "echo \"${0}\"",
+    "description": "Echo string"
+  },
+  "Set strict": {
+    "prefix": "strict",
+    "body": "set -euo pipefail",
+    "description": "Strict mode"
+  }
+}

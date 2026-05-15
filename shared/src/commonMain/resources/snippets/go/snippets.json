@@ -1,0 +1,42 @@
+{
+  "Function": {
+    "prefix": "func",
+    "body": ["func ${1:name}(${2:params}) ${3:error} {", "\t${0}", "}"],
+    "description": "Function declaration"
+  },
+  "Main": {
+    "prefix": "main",
+    "body": ["func main() {", "\t${0}", "}"],
+    "description": "Main function"
+  },
+  "Struct": {
+    "prefix": "struct",
+    "body": ["type ${1:Name} struct {", "\t${2:Field} ${3:string}", "}"],
+    "description": "Struct declaration"
+  },
+  "Interface": {
+    "prefix": "iface",
+    "body": ["type ${1:Name} interface {", "\t${2:Method}(${3:params}) ${4:error}", "}"],
+    "description": "Interface declaration"
+  },
+  "Error check": {
+    "prefix": "iferr",
+    "body": ["if err != nil {", "\treturn ${0:err}", "}"],
+    "description": "Error nil check"
+  },
+  "Goroutine": {
+    "prefix": "go",
+    "body": "go func() {\n\t${0}\n}()",
+    "description": "Goroutine"
+  },
+  "Defer": {
+    "prefix": "defer",
+    "body": "defer ${0}",
+    "description": "Defer statement"
+  },
+  "Printf": {
+    "prefix": "pf",
+    "body": "fmt.Printf(\"${1:%v}\\n\", ${0})",
+    "description": "fmt.Printf"
+  }
+}

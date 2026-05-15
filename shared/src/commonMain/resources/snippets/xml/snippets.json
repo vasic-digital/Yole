@@ -1,0 +1,32 @@
+{
+  "XML declaration": {
+    "prefix": "xml",
+    "body": "<?xml version=\"1.0\" encoding=\"${1:UTF-8}\"?>",
+    "description": "XML declaration"
+  },
+  "Element": {
+    "prefix": "el",
+    "body": "<${1:tag}>${0}</${1:tag}>",
+    "description": "XML element"
+  },
+  "Element with attribute": {
+    "prefix": "ela",
+    "body": "<${1:tag} ${2:attr}=\"${3:value}\">${0}</${1:tag}>",
+    "description": "XML element with attribute"
+  },
+  "Self-closing": {
+    "prefix": "sc",
+    "body": "<${1:tag} ${2:attr}=\"${0}\" />",
+    "description": "Self-closing element"
+  },
+  "Comment": {
+    "prefix": "comment",
+    "body": "<!-- ${0} -->",
+    "description": "XML comment"
+  },
+  "CDATA": {
+    "prefix": "cdata",
+    "body": "<![CDATA[${0}]]>",
+    "description": "CDATA section"
+  }
+}

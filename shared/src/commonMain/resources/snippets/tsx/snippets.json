@@ -1,0 +1,38 @@
+{
+  "Functional component": {
+    "prefix": "fc",
+    "body": [
+      "import React from 'react';",
+      "",
+      "interface ${1:Name}Props {",
+      "\t${2:prop}: ${3:string};",
+      "}",
+      "",
+      "const ${1:Name}: React.FC<${1:Name}Props> = ({ ${2:prop} }) => {",
+      "\treturn (",
+      "\t\t<div>",
+      "\t\t\t${0}",
+      "\t\t</div>",
+      "\t);",
+      "};",
+      "",
+      "export default ${1:Name};"
+    ],
+    "description": "React functional component"
+  },
+  "useState": {
+    "prefix": "us",
+    "body": "const [${1:state}, set${2:State}] = useState<${3:string}>(${0});",
+    "description": "useState hook"
+  },
+  "useEffect": {
+    "prefix": "ue",
+    "body": ["useEffect(() => {", "\t${0}", "}, [${1:deps}]);"],
+    "description": "useEffect hook"
+  },
+  "JSX element": {
+    "prefix": "div",
+    "body": "<div className=\"${1}\">${0}</div>",
+    "description": "JSX div element"
+  }
+}

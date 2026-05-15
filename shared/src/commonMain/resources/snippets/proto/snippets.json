@@ -1,0 +1,32 @@
+{
+  "Syntax": {
+    "prefix": "syntax",
+    "body": "syntax = \"proto3\";",
+    "description": "Proto3 syntax declaration"
+  },
+  "Message": {
+    "prefix": "message",
+    "body": ["message ${1:Name} {", "\t${2:string} ${3:field} = ${0:1};", "}"],
+    "description": "Message definition"
+  },
+  "Service": {
+    "prefix": "service",
+    "body": ["service ${1:Name} {", "\trpc ${2:Method}(${3:Request}) returns (${4:Response});", "}"],
+    "description": "Service definition"
+  },
+  "Enum": {
+    "prefix": "enum",
+    "body": ["enum ${1:Name} {", "\t${2:VALUE_UNSPECIFIED} = 0;", "\t${3:VALUE_ONE} = 1;", "}"],
+    "description": "Enum definition"
+  },
+  "Import": {
+    "prefix": "import",
+    "body": "import \"${0:google/protobuf/timestamp.proto}\";",
+    "description": "Import statement"
+  },
+  "Repeated": {
+    "prefix": "rep",
+    "body": "repeated ${1:string} ${2:items} = ${0:1};",
+    "description": "Repeated field"
+  }
+}

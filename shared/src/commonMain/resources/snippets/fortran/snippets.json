@@ -1,0 +1,32 @@
+{
+  "Program": {
+    "prefix": "program",
+    "body": ["program ${1:main}", "\timplicit none", "\t${0}", "end program ${1:main}"],
+    "description": "Program block"
+  },
+  "Subroutine": {
+    "prefix": "sub",
+    "body": ["subroutine ${1:name}(${2:args})", "\timplicit none", "\t${0}", "end subroutine ${1:name}"],
+    "description": "Subroutine"
+  },
+  "Function": {
+    "prefix": "fun",
+    "body": ["function ${1:name}(${2:args}) result(${3:res})", "\timplicit none", "\t${0}", "end function ${1:name}"],
+    "description": "Function"
+  },
+  "Do loop": {
+    "prefix": "do",
+    "body": ["do ${1:i} = ${2:1}, ${3:10}", "\t${0}", "end do"],
+    "description": "Do loop"
+  },
+  "If-else": {
+    "prefix": "if",
+    "body": ["if (${1:condition}) then", "\t${2}", "else", "\t${0}", "end if"],
+    "description": "If-else block"
+  },
+  "Print": {
+    "prefix": "print",
+    "body": "print *, ${0}",
+    "description": "Print statement"
+  }
+}

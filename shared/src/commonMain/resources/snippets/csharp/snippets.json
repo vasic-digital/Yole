@@ -1,0 +1,42 @@
+{
+  "Class": {
+    "prefix": "class",
+    "body": ["public class ${1:Name} {", "\t${0}", "}"],
+    "description": "Class declaration"
+  },
+  "Method": {
+    "prefix": "method",
+    "body": ["public ${1:void} ${2:Name}(${3:params}) {", "\t${0}", "}"],
+    "description": "Method declaration"
+  },
+  "Main": {
+    "prefix": "main",
+    "body": ["static void Main(string[] args) {", "\t${0}", "}"],
+    "description": "Main method"
+  },
+  "Console write": {
+    "prefix": "cw",
+    "body": "Console.WriteLine(${0});",
+    "description": "Console.WriteLine"
+  },
+  "Foreach": {
+    "prefix": "foreach",
+    "body": ["foreach (${1:var} ${2:item} in ${3:collection}) {", "\t${0}", "}"],
+    "description": "Foreach loop"
+  },
+  "Interface": {
+    "prefix": "interface",
+    "body": ["public interface ${1:IName} {", "\t${0}", "}"],
+    "description": "Interface declaration"
+  },
+  "Try-catch": {
+    "prefix": "try",
+    "body": ["try {", "\t${1}", "} catch (${2:Exception} ${3:e}) {", "\t${0}", "}"],
+    "description": "Try-catch block"
+  },
+  "Property": {
+    "prefix": "prop",
+    "body": "public ${1:string} ${2:Name} { get; set; }",
+    "description": "Auto property"
+  }
+}

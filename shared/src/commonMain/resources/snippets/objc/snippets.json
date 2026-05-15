@@ -1,0 +1,36 @@
+{
+  "Interface": {
+    "prefix": "interface",
+    "body": [
+      "@interface ${1:Name} : ${2:NSObject}",
+      "@property (nonatomic, strong) ${3:NSString} *${4:prop};",
+      "@end"
+    ],
+    "description": "ObjC interface"
+  },
+  "Implementation": {
+    "prefix": "impl",
+    "body": ["@implementation ${1:Name}", "${0}", "@end"],
+    "description": "ObjC implementation"
+  },
+  "Method": {
+    "prefix": "method",
+    "body": "- (${1:void})${2:name} {",
+    "description": "Instance method"
+  },
+  "Init": {
+    "prefix": "init",
+    "body": ["- (instancetype)init {", "\tself = [super init];", "\tif (self) {", "\t\t${0}", "\t}", "\treturn self;", "}"],
+    "description": "Init method"
+  },
+  "NSLog": {
+    "prefix": "nslog",
+    "body": "NSLog(@\"${0}\");",
+    "description": "NSLog"
+  },
+  "Block": {
+    "prefix": "block",
+    "body": "^(${1:params}) {",
+    "description": "Block literal"
+  }
+}

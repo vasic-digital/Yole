@@ -1,0 +1,37 @@
+{
+  "Function": {
+    "prefix": "fun",
+    "body": "${1:name} <- function(${2:args}) {\n\t${0}\n}",
+    "description": "Function definition"
+  },
+  "For loop": {
+    "prefix": "for",
+    "body": ["for (${1:i} in ${2:1:10}) {", "\t${0}", "}"],
+    "description": "For loop"
+  },
+  "If-else": {
+    "prefix": "if",
+    "body": ["if (${1:condition}) {", "\t${2}", "} else {", "\t${0}", "}"],
+    "description": "If-else block"
+  },
+  "Print": {
+    "prefix": "print",
+    "body": "print(${0})",
+    "description": "Print statement"
+  },
+  "Library": {
+    "prefix": "lib",
+    "body": "library(${0})",
+    "description": "Load library"
+  },
+  "Apply": {
+    "prefix": "apply",
+    "body": "lapply(${1:list}, function(${2:x}) ${0})",
+    "description": "lapply"
+  },
+  "Dataframe": {
+    "prefix": "df",
+    "body": "${1:df} <- data.frame(${0})",
+    "description": "Create data frame"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "Document": {
+    "prefix": "doc",
+    "body": [
+      "\\\\documentclass[${1:12pt}]{${2:article}}",
+      "\\\\begin{document}",
+      "",
+      "${0}",
+      "",
+      "\\\\end{document}"
+    ],
+    "description": "Document skeleton"
+  },
+  "Section": {
+    "prefix": "sec",
+    "body": "\\\\section{${0}}",
+    "description": "Section"
+  },
+  "Subsection": {
+    "prefix": "sub",
+    "body": "\\\\subsection{${0}}",
+    "description": "Subsection"
+  },
+  "Enumerate": {
+    "prefix": "enum",
+    "body": ["\\\\begin{enumerate}", "\t\\\\item ${0}", "\\\\end{enumerate}"],
+    "description": "Enumerate list"
+  },
+  "Itemize": {
+    "prefix": "item",
+    "body": ["\\\\begin{itemize}", "\t\\\\item ${0}", "\\\\end{itemize}"],
+    "description": "Itemize list"
+  },
+  "Math inline": {
+    "prefix": "mi",
+    "body": "\\$${0}\\$",
+    "description": "Inline math"
+  },
+  "Math display": {
+    "prefix": "md",
+    "body": ["\\\\[", "\t${0}", "\\\\]"],
+    "description": "Display math"
+  },
+  "Figure": {
+    "prefix": "fig",
+    "body": [
+      "\\\\begin{figure}[h]",
+      "\t\\\\centering",
+      "\t\\\\includegraphics[width=0.8\\\\textwidth]{${1:image}}",
+      "\t\\\\caption{${2:caption}}",
+      "\t\\\\label{fig:${3:label}}",
+      "\\\\end{figure}"
+    ],
+    "description": "Figure environment"
+  }
+}

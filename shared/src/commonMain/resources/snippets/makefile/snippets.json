@@ -1,0 +1,32 @@
+{
+  "Target": {
+    "prefix": "target",
+    "body": ["${1:name}: ${2:deps}", "\t${0}"],
+    "description": "Make target"
+  },
+  "Phony target": {
+    "prefix": "phony",
+    "body": [".PHONY: ${1:target}", "${1:target}:", "\t${0}"],
+    "description": "Phony target"
+  },
+  "Variable": {
+    "prefix": "var",
+    "body": "${1:NAME} := ${0}",
+    "description": "Make variable"
+  },
+  "Echo": {
+    "prefix": "echo",
+    "body": "\t@echo \"${0}\"",
+    "description": "Echo (silent)"
+  },
+  "All target": {
+    "prefix": "all",
+    "body": [".PHONY: all", "all: ${0}"],
+    "description": "All target"
+  },
+  "Include": {
+    "prefix": "include",
+    "body": "include ${0:file.mk}",
+    "description": "Include makefile"
+  }
+}

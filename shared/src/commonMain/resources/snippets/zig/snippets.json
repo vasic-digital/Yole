@@ -1,0 +1,37 @@
+{
+  "Function": {
+    "prefix": "fun",
+    "body": ["pub fn ${1:name}(${2:params}) ${3:void} {", "\t${0}", "}"],
+    "description": "Function declaration"
+  },
+  "Struct": {
+    "prefix": "struct",
+    "body": ["const ${1:Name} = struct {", "\t${2:field}: ${3:u32},", "};"],
+    "description": "Struct definition"
+  },
+  "Main": {
+    "prefix": "main",
+    "body": ["pub fn main() !void {", "\t${0}", "}"],
+    "description": "Main function"
+  },
+  "Print": {
+    "prefix": "print",
+    "body": "std.debug.print(\"${1}\\n\", .{${0}});",
+    "description": "std.debug.print"
+  },
+  "Error union": {
+    "prefix": "err",
+    "body": "${1:Type} catch |${2:err}| ${0}",
+    "description": "Error union catch"
+  },
+  "Defer": {
+    "prefix": "defer",
+    "body": "defer ${0};",
+    "description": "Defer statement"
+  },
+  "Comptime": {
+    "prefix": "comptime",
+    "body": "comptime ${0}",
+    "description": "Comptime block"
+  }
+}

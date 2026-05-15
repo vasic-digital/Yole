@@ -1,0 +1,37 @@
+{
+  "Variable": {
+    "prefix": "var",
+    "body": "\\$${1:name}: ${0};",
+    "description": "SCSS variable"
+  },
+  "Mixin": {
+    "prefix": "mixin",
+    "body": ["@mixin ${1:name}(${2:args}) {", "\t${0}", "}"],
+    "description": "SCSS mixin"
+  },
+  "Include": {
+    "prefix": "include",
+    "body": "@include ${1:mixin}(${0});",
+    "description": "Include mixin"
+  },
+  "Nested rule": {
+    "prefix": "nest",
+    "body": ["${1:parent} {", "\t${2:child} {", "\t\t${0}", "\t}", "}"],
+    "description": "Nested rule"
+  },
+  "Media query": {
+    "prefix": "mq",
+    "body": ["@media (max-width: ${1:768px}) {", "\t${0}", "}"],
+    "description": "Media query"
+  },
+  "Each": {
+    "prefix": "each",
+    "body": "@each \\$${1:item} in ${2:list} {\n\t${0}\n}",
+    "description": "Each loop"
+  },
+  "Function": {
+    "prefix": "fun",
+    "body": ["@function ${1:name}(${2:args}) {", "\t@return ${0};", "}"],
+    "description": "SCSS function"
+  }
+}

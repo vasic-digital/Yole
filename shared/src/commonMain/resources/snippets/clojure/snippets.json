@@ -1,0 +1,37 @@
+{
+  "Namespace": {
+    "prefix": "ns",
+    "body": "(ns ${1:my.namespace}\n\t(:require [${2:clojure.string :as str}]))",
+    "description": "Namespace declaration"
+  },
+  "Function": {
+    "prefix": "defn",
+    "body": "(defn ${1:name} [${2:args}]\n\t${0})",
+    "description": "Function definition"
+  },
+  "Let": {
+    "prefix": "let",
+    "body": "(let [${1:x} ${2:val}]\n\t${0})",
+    "description": "Let binding"
+  },
+  "Map": {
+    "prefix": "map",
+    "body": "(map ${1:#(${0} %)} ${2:coll})",
+    "description": "Map function"
+  },
+  "Filter": {
+    "prefix": "filter",
+    "body": "(filter ${1:#(${0} %)} ${2:coll})",
+    "description": "Filter function"
+  },
+  "Println": {
+    "prefix": "println",
+    "body": "(println ${0})",
+    "description": "println"
+  },
+  "Def": {
+    "prefix": "def",
+    "body": "(def ${1:name} ${0})",
+    "description": "Var definition"
+  }
+}

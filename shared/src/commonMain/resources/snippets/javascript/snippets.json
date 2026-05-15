@@ -1,0 +1,42 @@
+{
+  "Arrow function": {
+    "prefix": "af",
+    "body": "const ${1:name} = (${2:params}) => ${0};",
+    "description": "Arrow function"
+  },
+  "Async arrow function": {
+    "prefix": "aaf",
+    "body": "const ${1:name} = async (${2:params}) => {",
+    "description": "Async arrow function"
+  },
+  "Function": {
+    "prefix": "fun",
+    "body": ["function ${1:name}(${2:params}) {", "\t${0}", "}"],
+    "description": "Function declaration"
+  },
+  "Console log": {
+    "prefix": "log",
+    "body": "console.log(${0});",
+    "description": "Console.log"
+  },
+  "Try-catch": {
+    "prefix": "try",
+    "body": ["try {", "\t${1}", "} catch (${2:error}) {", "\t${0}", "}"],
+    "description": "Try-catch block"
+  },
+  "Class": {
+    "prefix": "class",
+    "body": ["class ${1:Name} {", "\tconstructor(${2:params}) {", "\t\t${0}", "\t}", "}"],
+    "description": "ES6 class"
+  },
+  "Import": {
+    "prefix": "imp",
+    "body": "import ${1:name} from '${2:module}';",
+    "description": "ES6 import"
+  },
+  "Promise": {
+    "prefix": "prom",
+    "body": ["new Promise((resolve, reject) => {", "\t${0}", "});"],
+    "description": "Promise constructor"
+  }
+}

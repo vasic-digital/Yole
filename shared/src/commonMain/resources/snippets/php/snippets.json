@@ -1,0 +1,37 @@
+{
+  "PHP tag": {
+    "prefix": "php",
+    "body": "<?php\n\n${0}",
+    "description": "PHP opening tag"
+  },
+  "Class": {
+    "prefix": "class",
+    "body": ["class ${1:Name} {", "\tpublic function __construct(${2:params}) {", "\t\t${0}", "\t}", "}"],
+    "description": "PHP class"
+  },
+  "Function": {
+    "prefix": "fun",
+    "body": ["function ${1:name}(${2:params}): ${3:void} {", "\t${0}", "}"],
+    "description": "Function declaration"
+  },
+  "Echo": {
+    "prefix": "echo",
+    "body": "echo ${0};",
+    "description": "Echo statement"
+  },
+  "Foreach": {
+    "prefix": "foreach",
+    "body": ["foreach (${1:array} as ${2:key} => ${3:value}) {", "\t${0}", "}"],
+    "description": "Foreach loop"
+  },
+  "Var dump": {
+    "prefix": "vd",
+    "body": "var_dump(${0});",
+    "description": "var_dump"
+  },
+  "Try-catch": {
+    "prefix": "try",
+    "body": ["try {", "\t${1}", "} catch (${2:Exception} \\$${3:e}) {", "\t${0}", "}"],
+    "description": "Try-catch block"
+  }
+}

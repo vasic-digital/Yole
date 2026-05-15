@@ -1,0 +1,32 @@
+{
+  "Class": {
+    "prefix": "class",
+    "body": ["class ${1:Name} {", "\t${0}", "}"],
+    "description": "Class declaration"
+  },
+  "Method": {
+    "prefix": "def",
+    "body": ["def ${1:name}(${2:args}) {", "\t${0}", "}"],
+    "description": "Method definition"
+  },
+  "Closure": {
+    "prefix": "cl",
+    "body": ["{ ${1:args} ->", "\t${0}", "}"],
+    "description": "Closure"
+  },
+  "Each": {
+    "prefix": "each",
+    "body": ["${1:list}.each { ${2:item} ->", "\t${0}", "}"],
+    "description": "each closure"
+  },
+  "Println": {
+    "prefix": "pl",
+    "body": "println ${0}",
+    "description": "println"
+  },
+  "Assert": {
+    "prefix": "assert",
+    "body": "assert ${1:condition} : \"${0}\"",
+    "description": "Assert statement"
+  }
+}

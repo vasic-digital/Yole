@@ -1,0 +1,42 @@
+{
+  "From": {
+    "prefix": "from",
+    "body": "FROM ${1:ubuntu:22.04}",
+    "description": "FROM instruction"
+  },
+  "Run": {
+    "prefix": "run",
+    "body": "RUN ${0}",
+    "description": "RUN instruction"
+  },
+  "Copy": {
+    "prefix": "copy",
+    "body": "COPY ${1:src} ${2:dest}",
+    "description": "COPY instruction"
+  },
+  "Env": {
+    "prefix": "env",
+    "body": "ENV ${1:KEY}=${2:value}",
+    "description": "ENV instruction"
+  },
+  "Expose": {
+    "prefix": "expose",
+    "body": "EXPOSE ${0:8080}",
+    "description": "EXPOSE instruction"
+  },
+  "Entrypoint": {
+    "prefix": "entrypoint",
+    "body": "ENTRYPOINT [\"${1:executable}\", \"${0}\"]",
+    "description": "ENTRYPOINT instruction"
+  },
+  "CMD": {
+    "prefix": "cmd",
+    "body": "CMD [\"${1:executable}\", \"${0}\"]",
+    "description": "CMD instruction"
+  },
+  "Workdir": {
+    "prefix": "workdir",
+    "body": "WORKDIR ${0:/app}",
+    "description": "WORKDIR instruction"
+  }
+}

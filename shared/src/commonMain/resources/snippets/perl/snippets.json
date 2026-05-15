@@ -1,0 +1,32 @@
+{
+  "Shebang": {
+    "prefix": "shebang",
+    "body": "#!/usr/bin/perl\nuse strict;\nuse warnings;",
+    "description": "Perl shebang + strict"
+  },
+  "Sub": {
+    "prefix": "sub",
+    "body": ["sub ${1:name} {", "\tmy (${2:args}) = @_;", "\t${0}", "}"],
+    "description": "Subroutine"
+  },
+  "For loop": {
+    "prefix": "for",
+    "body": ["for my ${1:\\$i} (0..${2:9}) {", "\t${0}", "}"],
+    "description": "For loop"
+  },
+  "Foreach": {
+    "prefix": "foreach",
+    "body": ["foreach my ${1:\\$item} (@${2:array}) {", "\t${0}", "}"],
+    "description": "Foreach loop"
+  },
+  "Print": {
+    "prefix": "print",
+    "body": "print \"${0}\\n\";",
+    "description": "Print statement"
+  },
+  "Regex match": {
+    "prefix": "re",
+    "body": "if (${1:\\$var} =~ /${2:pattern}/) {\n\t${0}\n}",
+    "description": "Regex match"
+  }
+}

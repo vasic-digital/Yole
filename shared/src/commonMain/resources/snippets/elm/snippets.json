@@ -1,0 +1,32 @@
+{
+  "Module": {
+    "prefix": "module",
+    "body": "module ${1:Main} exposing (..)",
+    "description": "Module declaration"
+  },
+  "Function": {
+    "prefix": "fun",
+    "body": ["${1:name} : ${2:a} -> ${3:b}", "${1:name} ${4:x} =", "\t${0}"],
+    "description": "Function with type signature"
+  },
+  "Type alias": {
+    "prefix": "type",
+    "body": "type alias ${1:Name} =\n\t{ ${2:field} : ${3:String}\n\t}",
+    "description": "Type alias"
+  },
+  "Case expression": {
+    "prefix": "case",
+    "body": ["case ${1:expr} of", "\t${2:pattern} ->", "\t\t${0}"],
+    "description": "Case expression"
+  },
+  "Update function": {
+    "prefix": "update",
+    "body": ["update : ${1:Msg} -> ${2:Model} -> ${2:Model}", "update msg model =", "\tcase msg of", "\t\t${0} ->", "\t\t\tmodel"],
+    "description": "Update function"
+  },
+  "Let-in": {
+    "prefix": "let",
+    "body": ["let", "\t${1:name} =", "\t\t${2}", "in", "${0}"],
+    "description": "Let-in expression"
+  }
+}

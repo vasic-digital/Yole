@@ -1,0 +1,37 @@
+{
+  "Object": {
+    "prefix": "object",
+    "body": ["object ${1:Name} {", "\t${0}", "}"],
+    "description": "Singleton object"
+  },
+  "Case class": {
+    "prefix": "case",
+    "body": "case class ${1:Name}(${2:field}: ${3:String})",
+    "description": "Case class"
+  },
+  "Function": {
+    "prefix": "def",
+    "body": "def ${1:name}(${2:params}): ${3:Unit} = ${0}",
+    "description": "Function definition"
+  },
+  "Match": {
+    "prefix": "match",
+    "body": ["${1:expr} match {", "\tcase ${2:pattern} => ${3}", "\tcase _ => ${0}", "}"],
+    "description": "Match expression"
+  },
+  "For-comprehension": {
+    "prefix": "for",
+    "body": ["for {", "\t${1:x} <- ${2:source}", "} yield ${0}"],
+    "description": "For comprehension"
+  },
+  "Trait": {
+    "prefix": "trait",
+    "body": ["trait ${1:Name} {", "\t${0}", "}"],
+    "description": "Trait definition"
+  },
+  "Println": {
+    "prefix": "pl",
+    "body": "println(${0})",
+    "description": "println statement"
+  }
+}

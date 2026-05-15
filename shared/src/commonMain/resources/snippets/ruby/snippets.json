@@ -1,0 +1,37 @@
+{
+  "Class": {
+    "prefix": "class",
+    "body": ["class ${1:Name}", "\tdef initialize(${2:args})", "\t\t${0}", "\tend", "end"],
+    "description": "Class definition"
+  },
+  "Method": {
+    "prefix": "def",
+    "body": ["def ${1:name}(${2:args})", "\t${0}", "end"],
+    "description": "Method definition"
+  },
+  "Block": {
+    "prefix": "do",
+    "body": ["do |${1:var}|", "\t${0}", "end"],
+    "description": "do..end block"
+  },
+  "Each": {
+    "prefix": "each",
+    "body": "${1:collection}.each do |${2:item}|\n\t${0}\nend",
+    "description": "each iteration"
+  },
+  "Puts": {
+    "prefix": "puts",
+    "body": "puts ${0}",
+    "description": "puts statement"
+  },
+  "Require": {
+    "prefix": "req",
+    "body": "require '${0}'",
+    "description": "require statement"
+  },
+  "Frozen string literal": {
+    "prefix": "frozen",
+    "body": "# frozen_string_literal: true",
+    "description": "Frozen string literal comment"
+  }
+}

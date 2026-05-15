@@ -1,0 +1,52 @@
+{
+  "Article": {
+    "prefix": "article",
+    "body": [
+      "@article{${1:key},",
+      "\tauthor  = {${2:Author}},",
+      "\ttitle   = {${3:Title}},",
+      "\tjournal = {${4:Journal}},",
+      "\tyear    = {${5:2024}},",
+      "\tvolume  = {${6:1}},",
+      "\tpages   = {${0:1--10}},",
+      "}"
+    ],
+    "description": "Article entry"
+  },
+  "Book": {
+    "prefix": "book",
+    "body": [
+      "@book{${1:key},",
+      "\tauthor    = {${2:Author}},",
+      "\ttitle     = {${3:Title}},",
+      "\tpublisher = {${4:Publisher}},",
+      "\tyear      = {${0:2024}},",
+      "}"
+    ],
+    "description": "Book entry"
+  },
+  "InProceedings": {
+    "prefix": "inproc",
+    "body": [
+      "@inproceedings{${1:key},",
+      "\tauthor    = {${2:Author}},",
+      "\ttitle     = {${3:Title}},",
+      "\tbooktitle = {${4:Proceedings}},",
+      "\tyear      = {${0:2024}},",
+      "}"
+    ],
+    "description": "InProceedings entry"
+  },
+  "Misc": {
+    "prefix": "misc",
+    "body": [
+      "@misc{${1:key},",
+      "\tauthor = {${2:Author}},",
+      "\ttitle  = {${3:Title}},",
+      "\tyear   = {${4:2024}},",
+      "\turl    = {${0:https://}},",
+      "}"
+    ],
+    "description": "Misc entry"
+  }
+}

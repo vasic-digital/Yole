@@ -1,0 +1,32 @@
+{
+  "Module": {
+    "prefix": "module",
+    "body": ["-module(${1:name}).", "-export([${0}])."],
+    "description": "Module declaration"
+  },
+  "Function": {
+    "prefix": "fun",
+    "body": "${1:name}(${2:Args}) ->\n\t${0}.",
+    "description": "Function clause"
+  },
+  "Case": {
+    "prefix": "case",
+    "body": ["case ${1:Expr} of", "\t${2:pattern} -> ${3};", "\t_ -> ${0}", "end"],
+    "description": "Case expression"
+  },
+  "If": {
+    "prefix": "if",
+    "body": ["if", "\t${1:Guard} -> ${2};", "\ttrue -> ${0}", "end"],
+    "description": "If expression"
+  },
+  "IO format": {
+    "prefix": "io",
+    "body": "io:format(\"${1:~p}~n\", [${0}]).",
+    "description": "io:format"
+  },
+  "Spawn": {
+    "prefix": "spawn",
+    "body": "spawn(fun() -> ${0} end)",
+    "description": "Spawn process"
+  }
+}

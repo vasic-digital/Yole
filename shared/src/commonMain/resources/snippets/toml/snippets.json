@@ -1,0 +1,32 @@
+{
+  "Table": {
+    "prefix": "table",
+    "body": ["[${1:section}]", "${2:key} = \"${0}\""],
+    "description": "TOML table"
+  },
+  "Array of tables": {
+    "prefix": "aot",
+    "body": ["[[${1:section}]]", "${2:key} = \"${0}\""],
+    "description": "TOML array of tables"
+  },
+  "Key-value string": {
+    "prefix": "kvs",
+    "body": "${1:key} = \"${0}\"",
+    "description": "Key = string value"
+  },
+  "Key-value integer": {
+    "prefix": "kvi",
+    "body": "${1:key} = ${0:0}",
+    "description": "Key = integer value"
+  },
+  "Key-value boolean": {
+    "prefix": "kvb",
+    "body": "${1:key} = ${0:true}",
+    "description": "Key = boolean value"
+  },
+  "Inline array": {
+    "prefix": "arr",
+    "body": "${1:key} = [${0}]",
+    "description": "Inline array value"
+  }
+}

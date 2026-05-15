@@ -1,0 +1,42 @@
+{
+  "Fun": {
+    "prefix": "fun",
+    "body": ["fun ${1:name}(${2:params}): ${3:Unit} {", "\t${0}", "}"],
+    "description": "Function declaration"
+  },
+  "Data class": {
+    "prefix": "data",
+    "body": ["data class ${1:Name}(", "\tval ${2:field}: ${3:String},", ")", ""],
+    "description": "Data class declaration"
+  },
+  "When expression": {
+    "prefix": "when",
+    "body": ["when (${1:expr}) {", "\t${2:value} -> ${3}", "\telse -> ${0}", "}"],
+    "description": "When expression"
+  },
+  "Coroutine launch": {
+    "prefix": "launch",
+    "body": ["launch {", "\t${0}", "}"],
+    "description": "Coroutine launch block"
+  },
+  "Sealed class": {
+    "prefix": "sealed",
+    "body": ["sealed class ${1:Name} {", "\tdata class ${2:Success}(val ${3:data}: ${4:String}) : ${1:Name}()", "\tobject ${5:Failure} : ${1:Name}()", "}"],
+    "description": "Sealed class with variants"
+  },
+  "Companion object": {
+    "prefix": "companion",
+    "body": ["companion object {", "\t${0}", "}"],
+    "description": "Companion object block"
+  },
+  "Object declaration": {
+    "prefix": "object",
+    "body": ["object ${1:Name} {", "\t${0}", "}"],
+    "description": "Singleton object declaration"
+  },
+  "Interface": {
+    "prefix": "interface",
+    "body": ["interface ${1:Name} {", "\t${0}", "}"],
+    "description": "Interface declaration"
+  }
+}

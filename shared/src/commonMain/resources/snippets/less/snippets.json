@@ -1,0 +1,32 @@
+{
+  "Mixin": {
+    "prefix": "mixin",
+    "body": [".${1:name}(@${2:arg}: ${3:default}) {", "\t${0}", "}"],
+    "description": "LESS mixin"
+  },
+  "Variable": {
+    "prefix": "var",
+    "body": "@${1:name}: ${0};",
+    "description": "LESS variable"
+  },
+  "Nested rule": {
+    "prefix": "nest",
+    "body": ["${1:parent} {", "\t${2:child} {", "\t\t${0}", "\t}", "}"],
+    "description": "Nested rule"
+  },
+  "Media query": {
+    "prefix": "mq",
+    "body": ["@media (max-width: ${1:768px}) {", "\t${0}", "}"],
+    "description": "Media query"
+  },
+  "Import": {
+    "prefix": "import",
+    "body": "@import \"${0}\";",
+    "description": "Import statement"
+  },
+  "Each loop": {
+    "prefix": "each",
+    "body": ["each(@${1:list}, {", "\t.${2:prefix}-@{key} { ${0} }",  "});"],
+    "description": "LESS each loop"
+  }
+}

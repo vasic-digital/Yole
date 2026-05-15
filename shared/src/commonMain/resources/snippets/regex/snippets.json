@@ -1,0 +1,32 @@
+{
+  "Email": {
+    "prefix": "email",
+    "body": "[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}",
+    "description": "Email pattern"
+  },
+  "URL": {
+    "prefix": "url",
+    "body": "https?://[a-zA-Z0-9.\\-]+(?:/[^\\s]*)?",
+    "description": "URL pattern"
+  },
+  "IPv4": {
+    "prefix": "ipv4",
+    "body": "(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)",
+    "description": "IPv4 address"
+  },
+  "Named group": {
+    "prefix": "ng",
+    "body": "(?P<${1:name}>${0})",
+    "description": "Named capture group"
+  },
+  "Non-capturing group": {
+    "prefix": "nc",
+    "body": "(?:${0})",
+    "description": "Non-capturing group"
+  },
+  "Lookahead": {
+    "prefix": "la",
+    "body": "(?=${0})",
+    "description": "Positive lookahead"
+  }
+}

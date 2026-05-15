@@ -1,0 +1,32 @@
+{
+  "Class": {
+    "prefix": "class",
+    "body": ["class ${1:Name}", "\tdef initialize(${2:@field : String})", "\tend", "end"],
+    "description": "Class definition"
+  },
+  "Method": {
+    "prefix": "def",
+    "body": ["def ${1:name}(${2:args}) : ${3:Nil}", "\t${0}", "end"],
+    "description": "Method definition"
+  },
+  "Struct": {
+    "prefix": "struct",
+    "body": ["struct ${1:Name}", "\tproperty ${2:field} : ${3:String}",  "end"],
+    "description": "Struct definition"
+  },
+  "Each": {
+    "prefix": "each",
+    "body": "${1:array}.each do |${2:item}|\n\t${0}\nend",
+    "description": "each block"
+  },
+  "Puts": {
+    "prefix": "puts",
+    "body": "puts ${0}",
+    "description": "puts statement"
+  },
+  "Require": {
+    "prefix": "require",
+    "body": "require \"${0}\"",
+    "description": "Require statement"
+  }
+}

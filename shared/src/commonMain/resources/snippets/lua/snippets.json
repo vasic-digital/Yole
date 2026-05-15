@@ -1,0 +1,37 @@
+{
+  "Function": {
+    "prefix": "fun",
+    "body": ["local function ${1:name}(${2:args})", "\t${0}", "end"],
+    "description": "Local function"
+  },
+  "Local variable": {
+    "prefix": "local",
+    "body": "local ${1:name} = ${0}",
+    "description": "Local variable"
+  },
+  "For loop": {
+    "prefix": "for",
+    "body": ["for ${1:i} = ${2:1}, ${3:10} do", "\t${0}", "end"],
+    "description": "Numeric for loop"
+  },
+  "For-in": {
+    "prefix": "forin",
+    "body": ["for ${1:k}, ${2:v} in pairs(${3:table}) do", "\t${0}", "end"],
+    "description": "Generic for-in loop"
+  },
+  "If-else": {
+    "prefix": "if",
+    "body": ["if ${1:condition} then", "\t${2}", "else", "\t${0}", "end"],
+    "description": "If-else block"
+  },
+  "Require": {
+    "prefix": "req",
+    "body": "local ${1:name} = require('${2:module}')",
+    "description": "Require module"
+  },
+  "Print": {
+    "prefix": "print",
+    "body": "print(${0})",
+    "description": "print statement"
+  }
+}

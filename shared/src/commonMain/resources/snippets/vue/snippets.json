@@ -1,0 +1,47 @@
+{
+  "Single file component": {
+    "prefix": "sfc",
+    "body": [
+      "<template>",
+      "\t<div>",
+      "\t\t${0}",
+      "\t</div>",
+      "</template>",
+      "",
+      "<script setup>",
+      "import { ref } from 'vue';",
+      "",
+      "const ${1:count} = ref(${2:0});",
+      "</script>",
+      "",
+      "<style scoped>",
+      "</style>"
+    ],
+    "description": "Vue SFC boilerplate"
+  },
+  "Script setup": {
+    "prefix": "setup",
+    "body": ["<script setup>", "${0}", "</script>"],
+    "description": "Script setup block"
+  },
+  "Ref": {
+    "prefix": "ref",
+    "body": "const ${1:name} = ref(${0});",
+    "description": "Vue ref"
+  },
+  "Computed": {
+    "prefix": "computed",
+    "body": "const ${1:name} = computed(() => ${0});",
+    "description": "Computed property"
+  },
+  "Watch": {
+    "prefix": "watch",
+    "body": ["watch(${1:source}, (${2:newVal}) => {", "\t${0}", "});"],
+    "description": "Watch expression"
+  },
+  "Emit": {
+    "prefix": "emit",
+    "body": "const emit = defineEmits(['${0}']);",
+    "description": "defineEmits"
+  }
+}

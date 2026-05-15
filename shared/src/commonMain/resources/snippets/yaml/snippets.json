@@ -1,0 +1,32 @@
+{
+  "Key-value": {
+    "prefix": "kv",
+    "body": "${1:key}: ${0}",
+    "description": "Key-value pair"
+  },
+  "List item": {
+    "prefix": "li",
+    "body": "- ${0}",
+    "description": "List item"
+  },
+  "Anchored value": {
+    "prefix": "anchor",
+    "body": "&${1:name} ${0}",
+    "description": "YAML anchor"
+  },
+  "Alias": {
+    "prefix": "alias",
+    "body": "*${0:name}",
+    "description": "YAML alias"
+  },
+  "Multiline string": {
+    "prefix": "ml",
+    "body": "${1:key}: |",
+    "description": "Literal block scalar"
+  },
+  "Env var": {
+    "prefix": "env",
+    "body": "${1:key}: ${${2:ENV_VAR}}",
+    "description": "Environment variable reference"
+  }
+}
