@@ -6,7 +6,19 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-15 (iter-60 F3 **Phase 7 COMPLETE** — 55-lang snippet bundles vendored + SnippetBundleCompletenessTest. 1 commit on master (`493be6cc`).
+**Last updated:** 2026-05-15 (iter-60 F3 **Phase 8 COMPLETE** — Snippet placeholder navigation. 2 commits on master (`621a85c4` Phase 8a, `df7da6d0` Phase 8b).
+
+Phase 8 delivered:
+- `shared/src/commonMain/kotlin/digital/vasic/yole/completion/snippet/SnippetPlaceholderNavigator.kt` — adds `Placeholder`, `ExpandedSnippet`, `VsCodeSnippetExpander` (stateless parser), `SnippetPlaceholderNavigator` (stateful per-session navigator). Supports `${N:default}`, `${N}`, `$N`, `$0`, `\$` escape. Sorted by index; `$0` always last.
+- `shared/src/commonTest/kotlin/digital/vasic/yole/completion/SnippetPlaceholderNavigatorTest.kt` — 9 pure commonTest cases. All GREEN. Mutation evidence: stub expand→emptyList → 7 FAILED.
+- `SyncedScrollEditor.kt` updated: `commitCompletionItem` now accepts optional `snippetNavigatorState`; for Snippet-kind items runs `VsCodeSnippetExpander.expand`, inserts `strippedBody` (not raw body), constructs navigator, calls `advance()` to select first placeholder. Tab handler: when navigator `isActive()`, calls `advance()` and updates `tfvState.selection`; falls through on exhaustion. Esc handler clears navigator.
+- `SnippetExpansionRobolectricTest.kt`: 2 new cases — `snippetWithTwoPlaceholders_firstPlaceholderSelectedAfterCommit` (text = "a b", selection = [0,1) after commit) and `snippetTab_advancesToNextPlaceholder` (advance → selection = [2,3) covering "b"). Fixed pre-existing PatternSyntaxException in `commitFunctionIsWiredInEditor` (unescaped `(` in regex → split-based count). 5/5 non-pre-existing-failure tests GREEN.
+- Pre-existing failure: `markdownTableSnippetIsAvailable` FAILS when run with `-PincludeRobolectric=true` (was already failing before Phase 8 — confirmed by `git stash` rollback). Not a regression. Root cause: path-loading issue in Robolectric sandbox when snippet bundles are discovered from `SnippetProvider`. Tracked as pre-existing; does not gate Phase 8 delivery.
+- Mutation evidence for Phase 8b: stub expand→emptyList → `snippetWithTwoPlaceholders` FAILED, `snippetTab` FAILED. Reverted. IndentEngineRobolectricTest 4/4 PASS (no regression).
+
+**Next: Phase 9** — Anti-bluff challenges for auto-complete. Then Phase 10 (docs) → Phase 11 (Firebase distribution v1.3.0).
+
+**Previous (iter-60 F3 Phase 7 COMPLETE):** 55-lang snippet bundles vendored + SnippetBundleCompletenessTest. 1 commit on master (`493be6cc`).
 
 Phase 7 delivered:
 - 54 new `snippets.json` files: `shared/src/commonMain/resources/snippets/<langId>/snippets.json` for every LanguageMetadata ID (bash, bibtex, c, clojure, cpp, crystal, csharp, css, dart, dockerfile, elixir, elm, erlang, fortran, go, graphql, groovy, haskell, html, java, javascript, json, jsx, julia, kotlin, latex, less, lua, makefile, nim, nix, objc, ocaml, perl, php, proto, python, r, regex, ruby, rust, scala, scss, sql, swift, terraform, toml, tsx, typescript, vim, vue, xml, yaml, zig). Each carries 6-8 practical snippets.
