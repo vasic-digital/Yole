@@ -6,7 +6,19 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-15 (iter-60 F3 **Phase 9 COMPLETE** — 2 anti-bluff challenges + `qa-iter-60-gates` Makefile target + Robolectric classpath fix. 1 commit on master.
+**Last updated:** 2026-05-15 (iter-60 F3 **Phase 10 COMPLETE** — user-guide + architecture + snippet-coverage matrix + CHANGELOG bump 1.2.1 → 1.3.0. 1 commit on master.
+
+Phase 10 delivered:
+- `docs/features/auto-complete/user-guide.md` — end-user guide: what auto-complete does, trigger mechanics per platform, popup navigation, snippet placeholder Tab-stop behaviour, 55-language coverage reference, known v1 limitations (popup anchor, choice-list, $VARIABLE, user-defined snippets, Desktop/iOS/Web popup UI gap).
+- `docs/features/auto-complete/architecture.md` — contributor guide: pipeline ASCII diagram, provider interface + 3 v1 impls, how-to-add-provider walkthrough for Feature 4 (LSP), how-to-add-language-bundle, ranker boost table, per-platform notes (Android full / Desktop engine-only / iOS+Web deferred), anti-bluff invariants for both challenges, CONST-037 cross-platform block.
+- `docs/features/auto-complete/snippet-coverage-matrix.md` — generated from source tree: 55 rows × 4 columns (langId, bundled count, user-snippets wired, ranker disposition). 361 snippets total. 5 languages below the 6-snippet Phase 7 norm noted with reasoning (bibtex 4, dart 5, json 4, jsx 4, tsx 4).
+- `CHANGELOG.md` — iter-60 v1.3.0 entry added at top following iter-59 format: version bump, summary, Added / Behind-the-scenes / Known-gaps / Cross-platform-impact-summary sections.
+
+**Next: Phase 11** — Firebase distribution v1.3.0. Version bump in `androidApp/build.gradle.kts` (versionCode 121 → 130, versionName 1.2.1 → 1.3.0), `desktopApp/build.gradle.kts`, then APK + DMG build + Firebase upload.
+
+**After Phase 11:** Feature 4 — LSP integration.
+
+**Previous (iter-60 F3 Phase 9 COMPLETE):** 2 anti-bluff challenges + `qa-iter-60-gates` Makefile target + Robolectric classpath fix. 1 commit on master.
 
 Phase 9 delivered:
 - `yole-challenges/scripts/auto_complete_completeness_challenge.sh` — static layer (12 foundation files + 3 providers + engine references) + runtime layer (`:shared:desktopTest` filter `digital.vasic.yole.completion.*`, ≥50 PASSED, 0 FAILED). Both layers PASS: 65 PASSED, 0 FAILED.
@@ -18,8 +30,6 @@ Phase 9 delivered:
   - Result: all 6 `SnippetExpansionRobolectricTest` cases PASS (including `markdownTableSnippetIsAvailable`). Pre-existing `VersionConsistencyTests` failures (version mismatch 1.0.0 vs 1.2.1) remain; those are unrelated to Phase 9.
 - **Flakiness fix:** `CompletionTriggerTest.dismiss_thenLongerPrefixAfterShort_doesAutoReopen` was timing-sensitive under load. Fixed: `DEBOUNCE_SLACK_MS` increased from 50→150ms; `collectEvents` grace for test 6 increased to `TEST_DEBOUNCE_MS + 2 * DEBOUNCE_SLACK_MS`. Two consecutive full-suite runs PASS.
 - Plan deviation: APK/tarball packaging layer deferred (Phase 11/Firebase will exercise packaged APK).
-
-**Next: Phase 10** — Documentation + diagrams for auto-complete. Then Phase 11 (Firebase distribution v1.3.0).
 
 **Previous (iter-60 F3 Phase 8 COMPLETE):** Snippet placeholder navigation. 2 commits on master (`621a85c4` Phase 8a, `df7da6d0` Phase 8b).
 

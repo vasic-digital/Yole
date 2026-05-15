@@ -3,6 +3,56 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## iter-60 v1.3.0 — Auto-complete: token frequency + snippets + identifiers (2026-05-15)
+
+**Version:** 1.3.0 (versionCode 130 → dotted `0.0.0.1.30`)
+**Build status:** Android full pipeline shipped. Desktop/iOS/Web engine + snippets available in commonMain; popup UI deferred per design spec §10.
+
+iter-60 introduces auto-complete driven by three parallel providers: word frequency in the document, VS Code snippets bundled for 55 languages, and identifiers extracted from the file's outline. The pipeline is fully integrated on Android; the engine runs on all platforms.
+
+### Added
+
+- **`CompletionProvider` interface** (`shared/src/commonMain/.../completion/`) — universal contract for completion providers. Implementations are stateless, non-blocking, and gracefully degrade on failure.
+- **Three v1 providers:**
+  - `TokenFrequencyProvider` — words already in the document, ranked by occurrence count.
+  - `SnippetProvider` — bundled VS Code snippets for the file's language.
+  - `IdentifierProvider` — function/class/variable symbols from `OutlineExtractor`.
+- **`CompletionEngine`** — fans out to all providers concurrently via `channelFlow`, applies a 500 ms per-provider timeout, and emits progressively-richer results as each provider completes.
+- **`ScopeAwareRanker`** — table-driven score boost based on Tree-Sitter `surroundingScope` at the cursor (`member_access` → +2.0 Identifier, `type_annotation` → +1.5 Identifier, `string_literal` → −3.0 any).
+- **`CompletionRanker`** — merges per-provider results, applies ScopeAwareRanker boost, deduplicates by label, and sorts descending by score.
+- **`CompletionTrigger`** — 80 ms debounce on keystrokes; explicit Ctrl+Space / toolbar button signal. Prefix guard: ≥2 characters required for implicit trigger.
+- **`VsCodeSnippetParser` + `SnippetRegistry`** — parse and cache VS Code snippet JSON; expect/actual for resource loading per platform.
+- **`SnippetPlaceholderNavigator`** — Tab-stop navigation through `${N:default}` / `${N}` / `$N` / `$0` markers in accepted snippets.
+- **55 language snippet bundles** under `shared/src/commonMain/resources/snippets/<langId>/snippets.json` — 361 snippets total covering bash, c, cpp, csharp, css, dart, dockerfile, elixir, elm, erlang, fortran, go, graphql, groovy, haskell, html, java, javascript, json, jsx, julia, kotlin, latex, less, lua, makefile, markdown, nim, nix, objc, ocaml, perl, php, proto, python, r, regex, ruby, rust, scala, scss, sql, swift, terraform, toml, tsx, typescript, vim, vue, xml, yaml, zig (and more).
+- **Android editor UI** — `CompletionPopup` (floating LazyColumn, max 8 rows), `CompletionPopupState`, `CompletionToolbarButton` ("Suggest" wrench icon in toolbar). Full keyboard navigation (↑/↓/Enter/Tab/Esc) wired in `SyncedScrollEditor`.
+- **65+ unit + integration tests** in `commonTest` + `desktopTest` covering all providers, the engine, ranker, trigger, snippet parser, navigator, and parity.
+- **4 Robolectric tests** in `androidApp` covering popup visibility, item acceptance, snippet expansion, and Tab placeholder traversal.
+
+### Behind the scenes
+
+- **`auto_complete_completeness_challenge.sh`** — static (12 source files present, engine references all 3 providers) + runtime (≥50 completion tests PASSED, 0 FAILED). Wired into `qa-iter-60-gates` → `qa-all`.
+- **`snippet_library_bundle_challenge.sh`** — static (≥50 JSON bundles, each validates via `python3 -m json.tool`) + runtime (≥10 snippet tests PASSED). Wired into `qa-iter-60-gates`.
+- **`CompletionEngineParityTest`** — structural anti-bluff gate: fails if the production engine's provider list diverges from the expected set. Intended to catch "forgot to wire" for Feature 4 (LSP).
+- Robolectric classpath fix: `androidApp/build.gradle.kts` adds `commonMain/resources` to Android unit-test classpath so `SnippetRegistry` resolves bundles under Robolectric.
+
+### Known gaps (v1)
+
+- **Popup pixel-positioning** — anchored to bottom-left of editor Box, not below the cursor. Cursor-rect positioning via `TextLayoutResult` deferred to avoid structural risk with the iter-57 VisualTransformation length-guard. See `docs/KNOWN_DEFECTS.md`.
+- **`${N|a,b,c|}` snippet choice-list syntax** — parsed but not rendered; ignored in v1 popup.
+- **`$VARIABLE` substitution** — treated as literal text in v1.
+- **Desktop / iOS / Web popup UI** — engine and snippets available; popup composable not yet ported. See `docs/features/auto-complete/architecture.md` §6.
+- **User snippet directories** — not wired in v1. Tracked in design spec §11; planned for v2.
+- **iOS + Web snippet resources** — `SnippetRegistry.ios.kt` and `SnippetRegistry.wasmJs.kt` return null (NSBundle / fetch wiring pending).
+
+### Cross-platform impact summary (CONST-037)
+
+- **Android:** full pipeline + popup UI shipped end-to-end.
+- **Desktop (linux-x64 / windows-x64 / macos-arm64):** engine + providers + snippets run in commonMain and are exercised by `:shared:desktopTest`. Popup UI follow-up.
+- **iOS:** engine + snippets compile; NSBundle resource wiring and popup UI deferred (`#shared-iosmain-databasefactory-broken` carries forward from iter-57/iter-58).
+- **Web Wasm:** engine + snippets compile; fetch-based resource wiring and popup UI deferred (`#wasmjs-production-distribution-gap` carries forward from iter-57).
+
+---
+
 ## iter-59 v1.2.1 — Android DEV/DEBUG variant + green launcher icon (2026-05-15)
 
 **Version:** 1.2.1 (versionCode 121 → dotted `0.0.0.1.21`)
