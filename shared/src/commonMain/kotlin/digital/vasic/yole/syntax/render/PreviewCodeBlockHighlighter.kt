@@ -40,9 +40,11 @@
  *########################################################*/
 package digital.vasic.yole.syntax.render
 
+import digital.vasic.yole.language.special.MarkdownCodeFences
 import digital.vasic.yole.syntax.EnabledFormatGate
 import digital.vasic.yole.syntax.SyntaxHighlighter
 import digital.vasic.yole.syntax.Token
+import digital.vasic.yole.syntax.TokenizerEngine
 import digital.vasic.yole.syntax.grammar.ScopeMapper
 
 /**
@@ -98,7 +100,33 @@ object PreviewCodeBlockHighlighter {
      * block bytes are preserved — we never emit fake spans labeled as if
      * they were real grammar output.
      */
-    suspend fun rewrite(html: String, highlighter: SyntaxHighlighter): String {
+    suspend fun rewrite(html: String, highlighter: SyntaxHighlighter): String =
+        rewrite(html, highlighter, markdownEngine = null, markdownSubEngines = emptyMap())
+
+    /**
+     * iter-58 F2 Phase 8.3 overload: same as the 2-arg [rewrite] but, when
+     * a fenced code block declares `language-markdown` AND [markdownEngine]
+     * is supplied, delegates the block's body to
+     * [MarkdownCodeFences.tokenize] so any nested fenced sub-language
+     * code blocks inside that markdown body get sub-language scopes
+     * (e.g. a `\`\`\`kotlin` fence inside the markdown preview's body
+     * is highlighted with the kotlin grammar, not just as markdown text).
+     *
+     * For every other lang, behavior is identical to the 2-arg call —
+     * preserving iter-57's HTML-emission contract byte-for-byte. When
+     * [markdownEngine] is null OR [markdownSubEngines] is empty, the
+     * delegation path is a no-op fallback to the standard path.
+     *
+     * Anti-bluff (CONST-035): when [MarkdownCodeFences.tokenize] throws
+     * or returns an empty list, we honor the same fallback contract as
+     * the 2-arg path — the original block bytes are preserved verbatim.
+     */
+    suspend fun rewrite(
+        html: String,
+        highlighter: SyntaxHighlighter,
+        markdownEngine: TokenizerEngine?,
+        markdownSubEngines: Map<String, TokenizerEngine>,
+    ): String {
         val matches = codeBlockRegex.findAll(html).toList()
         if (matches.isEmpty()) return html
         val sb = StringBuilder(html.length + matches.size * 200)
@@ -110,7 +138,13 @@ object PreviewCodeBlockHighlighter {
             val rendered: String = if (lang != null && EnabledFormatGate.isEnabled(lang)) {
                 val decoded = unescapeHtml(rawHtmlBody)
                 try {
-                    val tokens = highlighter.tokens(decoded, lang)
+                    val tokens = tokensFor(
+                        lang = lang,
+                        body = decoded,
+                        highlighter = highlighter,
+                        markdownEngine = markdownEngine,
+                        markdownSubEngines = markdownSubEngines,
+                    )
                     if (tokens.isEmpty()) {
                         m.value
                     } else {
@@ -130,6 +164,32 @@ object PreviewCodeBlockHighlighter {
         }
         sb.append(html, cursor, html.length)
         return sb.toString()
+    }
+
+    /**
+     * Resolve tokens for a fenced-block body. When the block's [lang] is
+     * `markdown` AND a [markdownEngine] is supplied, the body itself may
+     * contain further fenced sub-language blocks — delegate to
+     * [MarkdownCodeFences.tokenize] so those nested fences pick up their
+     * sub-grammar scopes. Otherwise (non-markdown lang OR markdownEngine
+     * not supplied), fall through to the existing [SyntaxHighlighter]
+     * tokenize path which is the iter-57 behavior.
+     */
+    private suspend fun tokensFor(
+        lang: String,
+        body: String,
+        highlighter: SyntaxHighlighter,
+        markdownEngine: TokenizerEngine?,
+        markdownSubEngines: Map<String, TokenizerEngine>,
+    ): List<Token> {
+        if (lang == "markdown" && markdownEngine != null && markdownSubEngines.isNotEmpty()) {
+            return MarkdownCodeFences.tokenize(
+                text = body,
+                markdownEngine = markdownEngine,
+                subEnginesByLang = markdownSubEngines,
+            )
+        }
+        return highlighter.tokens(body, lang)
     }
 
     /**
