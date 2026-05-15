@@ -137,6 +137,10 @@ automation-screenshots/
 *.avi
 !website/**/*.mp4
 
+# iter-61 Phase 7 — LSP binary cache + staged bundles (option c storage)
+.lsp-binary-cache/
+shared/src/commonMain/resources/lsp-bundles/
+
 automation/node_modules/
 
 # NOTE (iter 31, 2026-05-12): the previous convention treated the
