@@ -1,0 +1,15 @@
+// SPDX-FileCopyrightText: 2026 Milos Vasic
+// SPDX-License-Identifier: Apache-2.0
+// iter-58 F2 Phase 6 fixture: Dart.
+
+class Greeter {
+  final String name;
+  const Greeter(this.name);
+
+  String greet() => 'Hello, $name!';
+}
+
+void main() {
+  final g = Greeter('Yole');
+  print(g.greet());
+}
