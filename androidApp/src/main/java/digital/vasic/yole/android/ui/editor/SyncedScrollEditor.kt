@@ -20,6 +20,15 @@
  * when highlighting is unavailable — graceful degradation, never bluff
  * fake tokens (CONST-035).
  *
+ * iter-58 Feature 2 Phase 4: editor affordances. Reads
+ * LocalLanguage.current and wires three handlers:
+ *   - Ctrl+/ (or Cmd+/) → CommentToggleAction.toggleCommentOnSelectedLines
+ *   - Enter            → IndentEngine.handleEnter
+ *   - onValueChange    → BracketAutoCompleter.applyBracketAutocomplete
+ * The public API still accepts a MutableState<String> for caller
+ * compatibility; internally the editor manages a TextFieldValue so
+ * selection-aware affordances have a real cursor + range to act on.
+ *
  * Anti-bluff covenants (CONST-035):
  *   (1) The iter-55 invariant: SyncedScrollEditor.kt declares EXACTLY
  *       ONE rememberScrollState() and both the gutter Column and
@@ -33,6 +42,11 @@
  *       VisualTransformation with `VisualTransformation.None`, or
  *       hardcoding the highlighter argument to null at the call site,
  *       MUST cause EditorHighlightingRobolectricTest to fail.
+ *   (3) iter-58 Phase 4 invariant: the BasicTextField's onValueChange
+ *       MUST pipe through applyBracketAutocomplete, and the modifier
+ *       MUST attach the commentToggle + indentEngine key handlers.
+ *       Stubbing those helpers to return-input is caught by the
+ *       three new Robolectric tests.
  *
  *########################################################*/
 package digital.vasic.yole.android.ui.editor
@@ -57,17 +71,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import digital.vasic.yole.language.LocalLanguage
 import digital.vasic.yole.syntax.EnabledFormatGate
 import digital.vasic.yole.syntax.SyntaxHighlighter
 import kotlinx.coroutines.delay
@@ -91,6 +109,28 @@ fun SyncedScrollEditor(
     langId: String? = null,
 ) {
     val sharedScroll = rememberScrollState()
+    val activeLanguage = LocalLanguage.current
+
+    // iter-58 Feature 2 Phase 4: maintain an internal TextFieldValue so
+    // affordances (comment-toggle, indent-on-Enter, bracket-autocomplete)
+    // can act on real selection ranges. The public API stays
+    // MutableState<String> — we keep them mirrored.
+    val tfvState = remember { mutableStateOf(TextFieldValue(textState.value, TextRange(textState.value.length))) }
+    // External callers may rewrite textState (e.g., undo/redo). Reconcile
+    // by re-seeding the TextFieldValue with the new text while preserving
+    // the cursor if it is still in range.
+    if (tfvState.value.text != textState.value) {
+        val newText = textState.value
+        val safeCursor = tfvState.value.selection.end.coerceIn(0, newText.length)
+        tfvState.value = TextFieldValue(newText, TextRange(safeCursor))
+    }
+
+    // iter-58: comment-toggle (Ctrl+/ or Cmd+/) and indent-on-Enter
+    // handlers, parameterized by the active LanguageFormat. They are
+    // remembered so the same handler instance is attached to the modifier
+    // across recompositions.
+    val commentToggleHandler = rememberCommentToggleAction(tfvState, activeLanguage)
+    val indentEngineHandler = rememberIndentEngineAction(tfvState, activeLanguage)
 
     // iter-57 Phase 9: per-recomposition highlighted AnnotatedString.
     // Tokenization runs in a LaunchedEffect with an 80ms debounce so
@@ -101,8 +141,8 @@ fun SyncedScrollEditor(
     val highlightedText = remember(langId) {
         mutableStateOf<AnnotatedString>(AnnotatedString(textState.value))
     }
-    LaunchedEffect(textState.value, langId, highlighter) {
-        val text = textState.value
+    LaunchedEffect(tfvState.value.text, langId, highlighter) {
+        val text = tfvState.value.text
         if (highlighter != null && langId != null && EnabledFormatGate.isEnabled(langId)) {
             delay(80) // debounce
             highlightedText.value = try {
@@ -117,7 +157,7 @@ fun SyncedScrollEditor(
 
     Row(modifier = modifier.fillMaxSize()) {
         if (showLineNumbers) {
-            val lines = textState.value.lines()
+            val lines = tfvState.value.text.lines()
             val gutterWidth = when {
                 lines.size >= 1000 -> 48.dp
                 lines.size >= 100 -> 40.dp
@@ -177,16 +217,46 @@ fun SyncedScrollEditor(
                 }
             }
             BasicTextField(
-                value = textState.value,
+                value = tfvState.value,
                 onValueChange = { newValue ->
-                    textState.value = newValue
-                    onTextChanged(newValue)
+                    // iter-58 Phase 4: bracket auto-completion is applied
+                    // BEFORE we propagate the value upward. This way
+                    // pasted text (delta > 1) is unaffected, but a single
+                    // typed opener triggers the closer.
+                    val oldValue = tfvState.value
+                    val transformed = applyBracketAutocomplete(oldValue, newValue, activeLanguage)
+                    tfvState.value = transformed
+                    if (transformed.text != textState.value) {
+                        textState.value = transformed.text
+                        onTextChanged(transformed.text)
+                    }
                 },
                 modifier = Modifier
                     .testTag("syncedScrollEditor.editor")
                     .fillMaxSize()
                     .verticalScroll(sharedScroll)
                     .padding(8.dp)
+                    .onPreviewKeyEvent { event ->
+                        // iter-58 Phase 4: try comment-toggle first
+                        // (Ctrl+/), then indent-on-Enter. Either handler
+                        // returns true to consume the key; otherwise we
+                        // let BasicTextField receive it as normal.
+                        if (commentToggleHandler(event)) {
+                            if (tfvState.value.text != textState.value) {
+                                textState.value = tfvState.value.text
+                                onTextChanged(tfvState.value.text)
+                            }
+                            true
+                        } else if (indentEngineHandler(event)) {
+                            if (tfvState.value.text != textState.value) {
+                                textState.value = tfvState.value.text
+                                onTextChanged(tfvState.value.text)
+                            }
+                            true
+                        } else {
+                            false
+                        }
+                    }
                     .let { m ->
                         if (semanticsLabel != null) {
                             m.semantics { contentDescription = semanticsLabel }
@@ -197,7 +267,7 @@ fun SyncedScrollEditor(
                 textStyle = textStyle,
                 visualTransformation = highlightingTransform,
             )
-            if (placeholder != null && textState.value.isEmpty()) {
+            if (placeholder != null && tfvState.value.text.isEmpty()) {
                 Text(
                     text = placeholder,
                     color = if (isDarkTheme) Color(0xFF666666) else Color(0xFF999999),

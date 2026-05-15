@@ -91,6 +91,8 @@ import digital.vasic.yole.ui.ScreenTransitions
 import digital.vasic.yole.ui.ListAnimations
 import digital.vasic.yole.ui.LoadingStateWrapper
 import digital.vasic.yole.ui.LoadingAnimations
+import digital.vasic.yole.language.LanguageRegistry
+import digital.vasic.yole.language.LocalLanguage
 import digital.vasic.yole.syntax.EnabledFormatGate
 import digital.vasic.yole.syntax.SyntaxHighlighter
 import digital.vasic.yole.syntax.TokenizerEngine
@@ -1585,31 +1587,41 @@ fun IdeEditorScreen(
         }
         val passedLangId = if (detectedLangId != "plaintext") detectedLangId else null
 
-        digital.vasic.yole.android.ui.editor.SyncedScrollEditor(
-            textState = textState,
-            showLineNumbers = showLineNumbers,
-            isDarkTheme = isDarkTheme,
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-            onTextChanged = { newText ->
-                val oldText = text
-                text = newText
-                onContentChanged(newText)
-                if (newText.length - oldText.length > 5 || oldText.length - newText.length > 5 ||
-                    newText.endsWith(" ") || newText.endsWith("\n")) {
-                    addToHistory(newText)
-                }
-            },
-            semanticsLabel = "Code editor for $fileName",
-            placeholder = "Start typing...",
-            textStyle = TextStyle(
-                fontFamily = FontFamily.Monospace,
-                fontSize = 14.sp,
-                lineHeight = 20.sp,
-                color = textColor,
-            ),
-            highlighter = highlighter,
-            langId = passedLangId,
-        )
+        // iter-58 Feature 2 Phase 4: resolve the active LanguageFormat from
+        // the detected lang id and provide it via LocalLanguage so the
+        // editor's affordance handlers (CommentToggleAction, IndentEngine,
+        // BracketAutoCompleter) can read it without a parameter.
+        val activeLanguage = remember(detectedLangId) {
+            LanguageRegistry.get(detectedLangId)
+        }
+
+        CompositionLocalProvider(LocalLanguage provides activeLanguage) {
+            digital.vasic.yole.android.ui.editor.SyncedScrollEditor(
+                textState = textState,
+                showLineNumbers = showLineNumbers,
+                isDarkTheme = isDarkTheme,
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                onTextChanged = { newText ->
+                    val oldText = text
+                    text = newText
+                    onContentChanged(newText)
+                    if (newText.length - oldText.length > 5 || oldText.length - newText.length > 5 ||
+                        newText.endsWith(" ") || newText.endsWith("\n")) {
+                        addToHistory(newText)
+                    }
+                },
+                semanticsLabel = "Code editor for $fileName",
+                placeholder = "Start typing...",
+                textStyle = TextStyle(
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    color = textColor,
+                ),
+                highlighter = highlighter,
+                langId = passedLangId,
+            )
+        }
     }
 }
 
