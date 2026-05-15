@@ -154,10 +154,10 @@ class CompletionEngineParityTest {
             )
         }
 
-        // Minimum sanity: 3 providers (Phase 3 delivered exactly 3).
+        // Minimum sanity: 4 providers (Phase 3 delivered 3; iter-61 Phase 5 adds LspCompletionProvider).
         assertTrue(
-            "CompletionEngine.default must wire at least 3 providers, found ${completionEngine.providers.size}",
-            completionEngine.providers.size >= 3,
+            "CompletionEngine.default must wire at least 4 providers, found ${completionEngine.providers.size}",
+            completionEngine.providers.size >= 4,
         )
     }
 }

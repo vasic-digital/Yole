@@ -2,6 +2,10 @@
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  * iter-60: auto-complete context snapshot.
+ * iter-61 Phase 5 deviation: added documentUri + workspaceRoot optional
+ * fields (default null). Plan did not anticipate document-URI threading;
+ * deviation tracked in docs/CONTINUATION.md. All existing call sites
+ * keep working — defaults preserve backward compatibility.
  *#######################################################*/
 package digital.vasic.yole.completion
 
@@ -16,6 +20,13 @@ package digital.vasic.yole.completion
  * @property prefixRange char range of [prefix] inside [text].
  * @property surroundingScope Tree-Sitter node-type at cursor, or null
  *   when Tree-Sitter is unavailable (graceful degradation).
+ * @property documentUri file:// URI of the open document, or null when
+ *   the editor does not know the path (e.g. unsaved scratch buffer).
+ *   Used by [LspCompletionProvider] to pass the correct URI to the LSP
+ *   server. Phase 6 of iter-61 will set this from IdeEditorScreen.
+ * @property workspaceRoot absolute path of the project root, or null to
+ *   let [LspCompletionProvider] fall back to the system tmp dir. Phase 6
+ *   of iter-61 will resolve this via [LspWorkspaceResolver].
  */
 data class CompletionContext(
     val text: String,
@@ -24,6 +35,8 @@ data class CompletionContext(
     val prefix: String,
     val prefixRange: IntRange,
     val surroundingScope: String? = null,
+    val documentUri: String? = null,
+    val workspaceRoot: String? = null,
 ) {
     companion object {
         /**

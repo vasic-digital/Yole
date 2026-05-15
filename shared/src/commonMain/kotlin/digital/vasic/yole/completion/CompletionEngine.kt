@@ -36,9 +36,12 @@
 package digital.vasic.yole.completion
 
 import digital.vasic.yole.completion.providers.IdentifierProvider
+import digital.vasic.yole.completion.providers.LspCompletionProvider
 import digital.vasic.yole.completion.providers.SnippetProvider
 import digital.vasic.yole.completion.providers.TokenFrequencyProvider
 import digital.vasic.yole.language.affordance.OutlineExtractor
+import digital.vasic.yole.lsp.LspServerHost
+import digital.vasic.yole.lsp.LspServerRegistry
 import digital.vasic.yole.syntax.TokenizerEngine
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -143,18 +146,28 @@ class CompletionEngine(
 
     companion object {
         /**
-         * Construct the production-default engine wired with all three Phase 3
-         * providers: [TokenFrequencyProvider], [SnippetProvider], [IdentifierProvider].
+         * Construct the production-default engine wired with all four providers:
+         * [TokenFrequencyProvider], [SnippetProvider], [IdentifierProvider], and
+         * [LspCompletionProvider] (added in iter-61 Phase 5).
          *
          * @param extractor pre-constructed [OutlineExtractor] (one per surface).
          * @param engine pre-initialised [TokenizerEngine] with the grammar loaded.
+         * @param lspHost optional [LspServerHost] for LSP-backed completions.
+         *   Defaults to a freshly-constructed host backed by [LspServerRegistry.default()].
+         *   Pass a pre-existing host (e.g. from IdeEditorScreen in Phase 6) to share
+         *   the per-langId server process across calls.
          */
-        fun default(extractor: OutlineExtractor, engine: TokenizerEngine): CompletionEngine =
+        fun default(
+            extractor: OutlineExtractor,
+            engine: TokenizerEngine,
+            lspHost: LspServerHost = LspServerHost(LspServerRegistry.default()),
+        ): CompletionEngine =
             CompletionEngine(
                 providers = listOf(
                     TokenFrequencyProvider(),
                     SnippetProvider(),
                     IdentifierProvider(extractor, engine),
+                    LspCompletionProvider(lspHost),
                 ),
             )
     }

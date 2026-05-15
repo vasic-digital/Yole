@@ -6,7 +6,19 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-61 **Phase 4 COMPLETE** — LspServerHost (LSP4J wiring + lazy spawn + idle shutdown + restart-on-crash). 8 files added/modified. 18 LSP tests total (15 prior + 3 new), all PASS. Mutation verified (CONST-035): stub `complete()` → non-empty list → `noSpec_complete_returnsEmptyList` FAILED. Revert confirmed all 3 PASS. Detekt clean. Committed to master. **Next: Phase 5** — LspCompletionProvider (wires LspServerHost into CompletionEngine). Plan at `docs/superpowers/plans/2026-05-15-lsp-plan.md` lines 1722+.
+**Last updated:** 2026-05-16 (iter-61 **Phase 5 COMPLETE** — LspCompletionProvider (4th provider in CompletionEngine). 10 files added/modified. 7 new tests + all prior 65 completion tests + 18 LSP tests = 90+ PASS. Mutation verified (CONST-035): stub `mapLspKindToItemKind→Word` → `mapKind_FunctionMapsToIdentifier` + `mapKind_SnippetMapsToSnippet` FAILED. Revert confirmed 7/7 PASS. Detekt clean. Committed to master. **Next: Phase 6** — IdeEditorScreen integration (pass documentUri + workspaceRoot into CompletionContext; wire LspServerHost.didOpen/didChange/didClose to editor lifecycle). Plan at `docs/superpowers/plans/2026-05-15-lsp-plan.md`.
+
+**iter-61 Phase 5 delivered:**
+- `shared/src/commonMain/kotlin/digital/vasic/yole/completion/CompletionContext.kt` — added `documentUri: String? = null` + `workspaceRoot: String? = null` optional fields (plan deviation; backward-compatible defaults). Documented as deviation in file header + CONTINUATION.md.
+- `shared/src/commonMain/kotlin/digital/vasic/yole/completion/providers/LspCompletionProvider.kt` — expect class implementing CompletionProvider. Constructor takes `LspServerHost`.
+- `shared/src/desktopMain/kotlin/digital/vasic/yole/completion/providers/LspCompletionProvider.desktop.kt` — JVM actual: delegates to host.complete(), maps LspCompletionLine → CompletionItem. Internal top-level fns `lspCursorCharToLineCol` + `mapLspKindToItemKind` exposed for direct testing.
+- `shared/src/androidMain/kotlin/digital/vasic/yole/completion/providers/LspCompletionProvider.android.kt` — JVM actual (same delegation; installer returns NotInstalled until Phase 8).
+- `shared/src/iosMain/kotlin/digital/vasic/yole/completion/providers/LspCompletionProvider.ios.kt` — honest stub → emptyList.
+- `shared/src/wasmJsMain/kotlin/digital/vasic/yole/completion/providers/LspCompletionProvider.wasmJs.kt` — honest stub → emptyList.
+- `shared/src/commonMain/kotlin/digital/vasic/yole/completion/CompletionEngine.kt` — `default()` now takes optional `lspHost` param + wires `LspCompletionProvider(lspHost)` as 4th provider.
+- `shared/src/desktopTest/kotlin/digital/vasic/yole/completion/providers/LspCompletionProviderTest.kt` — 7 tests: nullLangId_returnsEmpty, cursorCharToLineCol_singleLine, cursorCharToLineCol_multiLine, cursorCharToLineCol_startOfSecondLine, mapKind_unknownFallsBackToWord, mapKind_FunctionMapsToIdentifier, mapKind_SnippetMapsToSnippet.
+- `shared/src/desktopTest/kotlin/digital/vasic/yole/completion/CompletionEngineParityTest.kt` — bumped minimum provider count 3 → 4.
+- Plan deviation: `CompletionContext` field addition (`documentUri` + `workspaceRoot`) not in original plan — required to thread document URI to LSP server. Phase 6 of iter-61 will populate them from IdeEditorScreen. Integration tests requiring host substitution deferred to Phase 7 (RealServerSmokeTest) — LspServerHost is a non-open expect/actual class.
 
 **iter-61 Phase 4 delivered:**
 - `gradle/libs.versions.toml` — lsp4j version `1.0.0` + library entry `org.eclipse.lsp4j:org.eclipse.lsp4j`.
