@@ -43,6 +43,22 @@
  * (the user sees a working affordance whose backend is queued, not a
  * fake outline that pretends to fold but doesn't).
  *
+ * iter-60 Phase 6.4: auto-complete popup overlay. When non-null
+ * [completionTrigger] and [completionPopupState] are supplied:
+ *   - The BTF's onValueChange feeds trigger.onTextChanged after the
+ *     existing bracket-autocomplete propagation.
+ *   - A LaunchedEffect collects trigger.events, drives CompletionEngine
+ *     calls, and mutates the popupState.
+ *   - Ctrl+Space → trigger.onExplicitTrigger.
+ *   - Esc (when popup open) → trigger.onDismiss.
+ *   - Arrow-Down / Arrow-Up → popupState.moveSelection(±1).
+ *   - Enter/Tab (when popup open) → commit selected item.
+ *   - CompletionPopup renders as an overlay inside the editor Box.
+ *
+ * The VisualTransformation length-guard (iter-57) is preserved: the popup
+ * is a separate Popup composable and does NOT feed back into the BTF's
+ * VisualTransformation. Commit inserts text via onValueChange path.
+ *
  * Anti-bluff covenants (CONST-035):
  *   (1) The iter-55 invariant: SyncedScrollEditor.kt declares EXACTLY
  *       ONE rememberScrollState() and both the gutter Column and
@@ -106,12 +122,21 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
+import digital.vasic.yole.completion.CompletionItem
+import digital.vasic.yole.completion.trigger.CompletionTrigger
+import digital.vasic.yole.completion.trigger.TriggerEvent
 import digital.vasic.yole.language.LocalLanguage
 import digital.vasic.yole.language.affordance.FoldRange
 import digital.vasic.yole.syntax.EnabledFormatGate
 import digital.vasic.yole.syntax.SyntaxHighlighter
 import digital.vasic.yole.syntax.TokenizerEngine
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun SyncedScrollEditor(
@@ -131,6 +156,9 @@ fun SyncedScrollEditor(
     highlighter: SyntaxHighlighter? = null,
     langId: String? = null,
     tokenizerEngine: TokenizerEngine? = null,
+    completionTrigger: CompletionTrigger? = null,
+    completionPopupState: CompletionPopupState? = null,
+    completionEngine: digital.vasic.yole.completion.CompletionEngine? = null,
 ) {
     val sharedScroll = rememberScrollState()
     val activeLanguage = LocalLanguage.current
@@ -197,6 +225,40 @@ fun SyncedScrollEditor(
         remember { mutableStateOf<List<FoldRange>>(emptyList()) }
     }
     val foldRanges by foldRangesState
+
+    // iter-60 Phase 6.4: collect CompletionTrigger events and drive the
+    // popupState + engine calls. This LaunchedEffect is a no-op when
+    // completionTrigger or completionPopupState are null (existing callers
+    // unchanged). The flow collection runs on Main per LaunchedEffect
+    // semantics — safe to mutate Compose state directly.
+    val popupStateForEffect = completionPopupState
+    val triggerForEffect = completionTrigger
+    val engineForEffect = completionEngine
+    if (popupStateForEffect != null && triggerForEffect != null) {
+        LaunchedEffect(triggerForEffect) {
+            triggerForEffect.events.collect { event ->
+                when (event) {
+                    is TriggerEvent.Show -> {
+                        if (engineForEffect != null) {
+                            engineForEffect.complete(event.context).collectLatest { items ->
+                                popupStateForEffect.show(items, event.context.cursorChar)
+                            }
+                        } else {
+                            popupStateForEffect.hide()
+                        }
+                    }
+                    is TriggerEvent.Update -> {
+                        if (engineForEffect != null) {
+                            engineForEffect.complete(event.context).collectLatest { items ->
+                                popupStateForEffect.update(items)
+                            }
+                        }
+                    }
+                    TriggerEvent.Hide -> popupStateForEffect.hide()
+                }
+            }
+        }
+    }
 
     Row(modifier = modifier.fillMaxSize()) {
         if (showLineNumbers) {
@@ -291,6 +353,12 @@ fun SyncedScrollEditor(
                         textState.value = transformed.text
                         onTextChanged(transformed.text)
                     }
+                    // iter-60 Phase 6.4: feed completion trigger after
+                    // propagation so the trigger sees the post-bracket text.
+                    completionTrigger?.onTextChanged(
+                        transformed.text,
+                        transformed.selection.end,
+                    )
                 },
                 modifier = Modifier
                     .testTag("syncedScrollEditor.editor")
@@ -298,11 +366,50 @@ fun SyncedScrollEditor(
                     .verticalScroll(sharedScroll)
                     .padding(8.dp)
                     .onPreviewKeyEvent { event ->
-                        // iter-58 Phase 4: try comment-toggle first
-                        // (Ctrl+/), then indent-on-Enter. Either handler
-                        // returns true to consume the key; otherwise we
-                        // let BasicTextField receive it as normal.
-                        if (commentToggleHandler(event)) {
+                        // iter-60 Phase 6.4: completion keyboard handlers.
+                        // Checked FIRST so popup navigation takes priority
+                        // over the editor's own key handling.
+                        val ps = completionPopupState
+                        val trig = completionTrigger
+                        if (ps != null && trig != null && event.type == KeyEventType.KeyDown) {
+                            when {
+                                // Ctrl+Space — explicit trigger.
+                                event.isCtrlPressed && event.key == Key.Spacebar -> {
+                                    trig.onExplicitTrigger()
+                                    true
+                                }
+                                // Esc — dismiss popup if open.
+                                event.key == Key.Escape && ps.isOpen -> {
+                                    trig.onDismiss()
+                                    true
+                                }
+                                // Arrow-Down — move selection down (popup must be open).
+                                event.key == Key.DirectionDown && ps.isOpen -> {
+                                    ps.moveSelection(1)
+                                    true
+                                }
+                                // Arrow-Up — move selection up (popup must be open).
+                                event.key == Key.DirectionUp && ps.isOpen -> {
+                                    ps.moveSelection(-1)
+                                    true
+                                }
+                                // Enter or Tab — commit selected item.
+                                (event.key == Key.Enter || event.key == Key.Tab) && ps.isOpen -> {
+                                    val item = ps.items.getOrNull(ps.selectedIndex)
+                                    if (item != null) {
+                                        commitCompletionItem(item, tfvState, textState, onTextChanged, trig)
+                                    }
+                                    true
+                                }
+                                else -> false
+                            }
+                        } else if (
+                            // iter-58 Phase 4: try comment-toggle first
+                            // (Ctrl+/), then indent-on-Enter. Either handler
+                            // returns true to consume the key; otherwise we
+                            // let BasicTextField receive it as normal.
+                            commentToggleHandler(event)
+                        ) {
                             if (tfvState.value.text != textState.value) {
                                 textState.value = tfvState.value.text
                                 onTextChanged(tfvState.value.text)
@@ -337,6 +444,60 @@ fun SyncedScrollEditor(
                     modifier = Modifier.padding(8.dp),
                 )
             }
+            // iter-60 Phase 6.4: completion popup overlay. Rendered as a
+            // Popup so it floats above the keyboard and IME. The trigger
+            // and popupState are both hoisted by the caller (IdeEditorScreen)
+            // so the toolbar button can also call trigger.onExplicitTrigger.
+            val popupState = completionPopupState
+            val trigger = completionTrigger
+            if (popupState != null && trigger != null) {
+                CompletionPopup(
+                    state = popupState,
+                    isDarkTheme = isDarkTheme,
+                    onCommit = { item ->
+                        commitCompletionItem(item, tfvState, textState, onTextChanged, trigger)
+                    },
+                    onDismiss = { trigger.onDismiss() },
+                )
+            }
         }
     }
+}
+
+/**
+ * Insert [item].insertText into the editor, replacing the partial prefix
+ * captured by [item].range, then close the popup and reset the trigger.
+ *
+ * After insertion the cursor is placed at the end of the inserted text.
+ * Phase 8 (snippet placeholder navigation) will refine this for `${N:...}`
+ * markers; for now end-of-insert is the correct v1 behaviour.
+ *
+ * This function is internal to the editor package; it is extracted so both
+ * the onPreviewKeyEvent handler and the CompletionPopup click callback
+ * share the same implementation (DRY + single testable mutation surface).
+ *
+ * Anti-bluff anchor (CONST-035):
+ *   Stubbing this to a no-op → SnippetExpansionRobolectricTest FAILS
+ *   because the editor text remains unchanged after the commit.
+ */
+internal fun commitCompletionItem(
+    item: CompletionItem,
+    tfvState: androidx.compose.runtime.MutableState<TextFieldValue>,
+    textState: androidx.compose.runtime.MutableState<String>,
+    onTextChanged: (String) -> Unit,
+    trigger: CompletionTrigger,
+) {
+    val current = tfvState.value
+    val text = current.text
+    // Clamp the item's range to the actual text boundaries to guard against
+    // stale ranges (text may have changed between Show and commit).
+    val start = item.range.first.coerceIn(0, text.length)
+    val end = item.range.last.coerceIn(start, text.length)
+    val newText = text.substring(0, start) + item.insertText + text.substring(end)
+    val newCursor = start + item.insertText.length
+    val newValue = TextFieldValue(newText, TextRange(newCursor))
+    tfvState.value = newValue
+    textState.value = newText
+    onTextChanged(newText)
+    trigger.onDismiss()
 }
