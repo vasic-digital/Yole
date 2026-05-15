@@ -122,16 +122,21 @@ class TokenizerEngineJvmTest {
 
     @Test
     fun loadGrammarFailsForUnknownLang() = runBlocking<Unit> {
-        EnabledFormatGate.setEnabled(setOf("python")) // enabled but unbundled
+        // iter-58 F2 Phase 7 update: this test used to use "python" as the
+        // canonical unbundled lang. Phase 7 bundled python (and 46 other
+        // langs), so we pin against "jsx" — one of the 8 langs that
+        // remains unbundled today (no bonede artifact, see
+        // BonedeGrammarRegistry.unsupportedLangs).
+        EnabledFormatGate.setEnabled(setOf("jsx"))
         val engine = TokenizerEngine()
         engine.initialize().getOrThrow()
         try {
-            engine.loadGrammar("python")
+            engine.loadGrammar("jsx")
             error("expected IllegalArgumentException for unbundled grammar")
         } catch (e: IllegalArgumentException) {
             assertTrue(
-                "expected message mentioning python, got: ${e.message}",
-                e.message?.contains("python") == true,
+                "expected message mentioning jsx, got: ${e.message}",
+                e.message?.contains("jsx") == true,
             )
         }
     }

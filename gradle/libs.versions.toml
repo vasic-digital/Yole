@@ -62,8 +62,73 @@ smbj = "0.13.0"
 # Picked over io.github.tree-sitter:jtreesitter (requires JDK 23, incompatible
 # with Yole desktop jvmTarget=11) and com.itsaky.androidide.treesitter
 # (project archived 2024-10-18, no tree-sitter-markdown grammar published).
-tree-sitter = "0.22.6"
+# iter-58 F2 Phase 7: bumped core 0.22.6 -> 0.26.6 so the Phase-7-added
+# grammars built against tree-sitter ABI 15 (python, javascript, go,
+# rust, c, css, bash, php, julia and others) parse without segfaulting.
+# Verified compatible with the iter-57 markdown integration via re-run
+# of Feature2LanguageSmokeTest. The Yole-replacement NativeUtils on
+# Android remains source-compatible (loadLib(String) signature unchanged).
+tree-sitter = "0.26.6"
 tree-sitter-markdown = "0.7.1a"
+
+# iter-58 F2 Phase 7 — bonede Tree-Sitter language grammar artifacts.
+# Each JAR ships native binaries for 5 Desktop targets:
+#   aarch64-linux-gnu, aarch64-macos, x86_64-linux-gnu, x86_64-macos, x86_64-windows
+# Versions snapshot taken 2026-05-15 from Maven Central <latest> metadata.
+# Verified resolvable via tools/build-language-grammars.sh extract.
+# The 7 Yole langs NOT bundled here (jsx, xml, vim, less, crystal, groovy,
+# bibtex) have no published bonede artifact — documented in
+# docs/KNOWN_DEFECTS.md#f2-phase-7-no-bonede-artifact.
+ts-kotlin = "0.3.8.1"
+ts-java = "0.23.5"
+ts-python = "0.25.0"
+ts-javascript = "0.25.0"
+ts-typescript = "0.23.2"
+ts-go = "0.25.0"
+ts-rust = "0.24.0"
+ts-c = "0.24.1"
+ts-cpp = "0.23.4"
+ts-html = "0.23.2"
+ts-css = "0.25.0"
+ts-sql = "gh-pages-a"
+ts-json = "0.24.8"
+ts-tsx = "0.23.2"
+ts-yaml = "0.5.0a"
+ts-toml = "0.5.1a"
+ts-bash = "0.25.1"
+ts-ruby = "0.23.1"
+ts-php = "0.24.2"
+ts-swift = "0.5.0"
+ts-scala = "0.24.0"
+ts-dart = "master-a"
+ts-lua = "2.1.3a"
+ts-perl = "1.1.0"
+ts-haskell = "0.23.1"
+ts-ocaml = "0.23.2"
+ts-julia = "0.25.0"
+ts-r = "main-a"
+ts-elixir = "0.2.0"
+ts-erlang = "0.1.0a"
+ts-fortran = "master-a"
+ts-dockerfile = "0.2.0"
+ts-make = "main-a"
+ts-hcl = "1.1.0a"
+ts-regex = "1.0.0"
+ts-vue = "0.2.1a"
+ts-graphql = "master-a"
+ts-csharp = "0.23.1"
+ts-scss = "1.0.0a"
+ts-nix = "master-a"
+ts-zig = "main-a"
+ts-elm = "5.7.0a"
+ts-clojure = "0.0.12a"
+# ts-nim 0.6.0 segfaults on parse with bonede core 0.26.6 (and 0.24.4 +
+# 0.25.3 also crash) — see KNOWN_DEFECTS#f2-phase-7-nim-grammar-broken.
+# Held out of the dependency list until either bonede republishes a
+# compatible JAR or Yole builds from source.
+ts-objc = "main-a"
+ts-latex = "0.3.0a"
+ts-proto = "main-a"
 
 # Testing
 junit = "4.13.2"
@@ -186,6 +251,55 @@ smbj = { module = "com.hierynomus:smbj", version.ref = "smbj" }
 # Tree-Sitter (iter-57 Phase 5)
 tree-sitter = { module = "io.github.bonede:tree-sitter", version.ref = "tree-sitter" }
 tree-sitter-markdown = { module = "io.github.bonede:tree-sitter-markdown", version.ref = "tree-sitter-markdown" }
+
+# iter-58 F2 Phase 7 — bonede language grammar JARs (Desktop only).
+ts-kotlin = { module = "io.github.bonede:tree-sitter-kotlin", version.ref = "ts-kotlin" }
+ts-java = { module = "io.github.bonede:tree-sitter-java", version.ref = "ts-java" }
+ts-python = { module = "io.github.bonede:tree-sitter-python", version.ref = "ts-python" }
+ts-javascript = { module = "io.github.bonede:tree-sitter-javascript", version.ref = "ts-javascript" }
+ts-typescript = { module = "io.github.bonede:tree-sitter-typescript", version.ref = "ts-typescript" }
+ts-go = { module = "io.github.bonede:tree-sitter-go", version.ref = "ts-go" }
+ts-rust = { module = "io.github.bonede:tree-sitter-rust", version.ref = "ts-rust" }
+ts-c = { module = "io.github.bonede:tree-sitter-c", version.ref = "ts-c" }
+ts-cpp = { module = "io.github.bonede:tree-sitter-cpp", version.ref = "ts-cpp" }
+ts-html = { module = "io.github.bonede:tree-sitter-html", version.ref = "ts-html" }
+ts-css = { module = "io.github.bonede:tree-sitter-css", version.ref = "ts-css" }
+ts-sql = { module = "io.github.bonede:tree-sitter-sql", version.ref = "ts-sql" }
+ts-json = { module = "io.github.bonede:tree-sitter-json", version.ref = "ts-json" }
+ts-tsx = { module = "io.github.bonede:tree-sitter-tsx", version.ref = "ts-tsx" }
+ts-yaml = { module = "io.github.bonede:tree-sitter-yaml", version.ref = "ts-yaml" }
+ts-toml = { module = "io.github.bonede:tree-sitter-toml", version.ref = "ts-toml" }
+ts-bash = { module = "io.github.bonede:tree-sitter-bash", version.ref = "ts-bash" }
+ts-ruby = { module = "io.github.bonede:tree-sitter-ruby", version.ref = "ts-ruby" }
+ts-php = { module = "io.github.bonede:tree-sitter-php", version.ref = "ts-php" }
+ts-swift = { module = "io.github.bonede:tree-sitter-swift", version.ref = "ts-swift" }
+ts-scala = { module = "io.github.bonede:tree-sitter-scala", version.ref = "ts-scala" }
+ts-dart = { module = "io.github.bonede:tree-sitter-dart", version.ref = "ts-dart" }
+ts-lua = { module = "io.github.bonede:tree-sitter-lua", version.ref = "ts-lua" }
+ts-perl = { module = "io.github.bonede:tree-sitter-perl", version.ref = "ts-perl" }
+ts-haskell = { module = "io.github.bonede:tree-sitter-haskell", version.ref = "ts-haskell" }
+ts-ocaml = { module = "io.github.bonede:tree-sitter-ocaml", version.ref = "ts-ocaml" }
+ts-julia = { module = "io.github.bonede:tree-sitter-julia", version.ref = "ts-julia" }
+ts-r = { module = "io.github.bonede:tree-sitter-r", version.ref = "ts-r" }
+ts-elixir = { module = "io.github.bonede:tree-sitter-elixir", version.ref = "ts-elixir" }
+ts-erlang = { module = "io.github.bonede:tree-sitter-erlang", version.ref = "ts-erlang" }
+ts-fortran = { module = "io.github.bonede:tree-sitter-fortran", version.ref = "ts-fortran" }
+ts-dockerfile = { module = "io.github.bonede:tree-sitter-dockerfile", version.ref = "ts-dockerfile" }
+ts-make = { module = "io.github.bonede:tree-sitter-make", version.ref = "ts-make" }
+ts-hcl = { module = "io.github.bonede:tree-sitter-hcl", version.ref = "ts-hcl" }
+ts-regex = { module = "io.github.bonede:tree-sitter-regex", version.ref = "ts-regex" }
+ts-vue = { module = "io.github.bonede:tree-sitter-vue", version.ref = "ts-vue" }
+ts-graphql = { module = "io.github.bonede:tree-sitter-graphql", version.ref = "ts-graphql" }
+ts-csharp = { module = "io.github.bonede:tree-sitter-c-sharp", version.ref = "ts-csharp" }
+ts-scss = { module = "io.github.bonede:tree-sitter-scss", version.ref = "ts-scss" }
+ts-nix = { module = "io.github.bonede:tree-sitter-nix", version.ref = "ts-nix" }
+ts-zig = { module = "io.github.bonede:tree-sitter-zig", version.ref = "ts-zig" }
+ts-elm = { module = "io.github.bonede:tree-sitter-elm", version.ref = "ts-elm" }
+ts-clojure = { module = "io.github.bonede:tree-sitter-clojure", version.ref = "ts-clojure" }
+# ts-nim intentionally excluded — segfaults on parse (see KNOWN_DEFECTS).
+ts-objc = { module = "io.github.bonede:tree-sitter-objc", version.ref = "ts-objc" }
+ts-latex = { module = "io.github.bonede:tree-sitter-latex", version.ref = "ts-latex" }
+ts-proto = { module = "io.github.bonede:tree-sitter-proto", version.ref = "ts-proto" }
 
 # UI Libraries (Android)
 gene-rate = { module = "com.github.Pixplicity:gene-rate", version.ref = "gene-rate" }

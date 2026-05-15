@@ -894,6 +894,271 @@ filter is applied to them and all 5 test classes dispatch normally.
 
 ---
 
+## #f2-phase-6-grammar-bundling-gap — PARTIALLY RESOLVED iter-58 F2 Phase 7 (2026-05-15)
+
+**Update 2026-05-15:** Phase 7 closes this gap for **47 of 55 langs on
+Desktop (5 ABIs)**. The remaining surface is documented in 3 new tickets
+below: `#f2-phase-7-no-bonede-artifact`,
+`#f2-phase-7-nim-grammar-broken`, and
+`#f2-phase-7-android-ndk-bulk-build-pending`. Original entry retained
+for historical context.
+
+Real evidence that the gap is partially closed (CONST-035 anti-bluff):
+
+- `Feature2LanguageSmokeTest.realTokenizationForAllBundledLangs` is now
+  GREEN with positive per-lang token counts logged (markdown(24),
+  python(83), java(85), kotlin(54), cpp(92), rust(90), java(85), ...).
+- `BonedeGrammarSmokeTest.allBundledLangs_loadAndParse` is GREEN with
+  47/47 parse evidence.
+- `Feature2LanguageSmokeTest.unsupportedLangs_throwHonestly` is GREEN —
+  the 8-lang gap set throws explicitly rather than faking a grammar.
+
+Phase 7 delivery summary:
+
+| Platform | Coverage | Path |
+|----------|----------|------|
+| macOS-arm64 Desktop | 47/55 langs | bonede JARs (Gradle deps) |
+| macOS-x64 Desktop   | 47/55 langs | bonede JARs (Gradle deps) |
+| Linux-x64 Desktop   | 47/55 langs | bonede JARs (Gradle deps) |
+| Linux-aarch64 Desktop | 47/55 langs | bonede JARs (Gradle deps) |
+| Windows-x64 Desktop | 47/55 langs | bonede JARs (Gradle deps) |
+| Android (any ABI)   | 1/55 (markdown only) | iter-57 NDK build |
+| iOS arm64           | BLOCKED  | no Xcode in build env |
+
+This entry remains OPEN to track the residual Android NDK bulk-build
+work + the 8-lang gap set. Closes fully when 100% coverage lands on
+the 4 native platforms.
+
+---
+
+## #f2-phase-7-no-bonede-artifact — NEW iter-58 F2 Phase 7 (2026-05-15)
+
+**Symptom**
+7 of Yole's 55 declared languages have NO published
+`io.github.bonede:tree-sitter-<lang>` artifact on Maven Central as
+of the 2026-05-15 snapshot. They are:
+
+| Yole id | Why no bonede artifact |
+|---------|-----------------------|
+| jsx     | bonede ships `tree-sitter-javascript` (which IS the JSX grammar) but no separate `tree-sitter-jsx` artifact. Yole declares jsx as a distinct LanguageMetadata row. |
+| xml     | `tree-sitter-grammars/tree-sitter-xml` upstream exists but is not published as a bonede JAR. |
+| vim     | `neovim/tree-sitter-vim` upstream exists but is not published as a bonede JAR. |
+| less    | `mdovale/tree-sitter-less` upstream exists but is not published as a bonede JAR. |
+| crystal | `keidax/tree-sitter-crystal` upstream exists but is not published as a bonede JAR. |
+| groovy  | `Decodetalkers/tree-sitter-groovy` upstream exists but is not published as a bonede JAR. |
+| bibtex  | `latex-lsp/tree-sitter-bibtex` upstream exists but is not published as a bonede JAR. |
+
+**End-user impact**
+These 7 languages detect correctly (file extension routing in
+LanguageRegistry) and get the host-only affordance pipeline
+(CommentToggle / IndentEngine / BracketAuto via LanguageMetadata).
+But they do NOT get Tree-Sitter-based syntax highlighting,
+outline, or fold. The editor falls back gracefully.
+
+Concretely: jsx receives no separate highlighting today because
+Yole has no entry that aliases jsx → javascript at the engine
+level. xml / vim / less / crystal / groovy / bibtex render as
+plain text.
+
+**Anti-bluff disposition (CONST-035)**
+Honest. `BonedeGrammarRegistry.unsupportedLangs` enumerates the 8
+unsupported langs (these 7 + nim, see next ticket).
+`Feature2LanguageSmokeTest.unsupportedLangs_throwHonestly` asserts
+that calling `TokenizerEngine.loadGrammar(lang)` for any of them
+throws — proving the user does NOT see fake tokens.
+
+**Proper fix path**
+Two options, in order of preference:
+
+1. **Operator-side build-from-source via
+   `tools/build-language-grammars.sh android <lang>`** — clones the
+   upstream repo, runs `tree-sitter generate` (if needed), and
+   compiles the parser.c + scanner.c against the chosen toolchain.
+   For Desktop, the output `.dylib` / `.so` / `.dll` then needs a
+   custom Kotlin loader (the bonede `TreeSitter<Lang>` class scaffolding
+   is not available — Yole would have to call `tree_sitter_<lang>()`
+   via JNI directly). Estimated 1-2 hour effort per language.
+
+2. **Wait for upstream bonede to publish.** Submit an upstream PR
+   to bonede with the missing grammar. Lowest-effort path long-term
+   but operator-controlled. Verified bonede actively accepts new
+   grammars — 116 artifacts are currently published.
+
+For `jsx` specifically: a trivial alternative is to register
+`jsx → TreeSitterJavascript` in BonedeGrammarRegistry (the bonede
+tree-sitter-javascript JAR already handles JSX syntax). Phase 7
+intentionally did NOT do this because it would conflate the two
+LanguageMetadata identities; the alias decision is a Phase 8
+concern (when the broader scope mapper lands).
+
+**Blocker**
+Operator decision: time investment for build-from-source vs
+upstream PR cadence.
+
+**Exit criteria**
+1. Every Yole language id either has a bonede artifact OR
+   `tools/build-language-grammars.sh` builds it from source AND
+   the resulting binary is wired into the engine path.
+2. `BonedeGrammarRegistry.unsupportedLangs` shrinks accordingly.
+3. `Feature2LanguageSmokeTest.realTokenizationForAllBundledLangs`
+   asserts 55/55 instead of today's 47/47.
+
+---
+
+## #f2-phase-7-nim-grammar-broken — NEW iter-58 F2 Phase 7 (2026-05-15)
+
+**Symptom**
+`io.github.bonede:tree-sitter-nim:0.6.0` (and 0.5.0) loads
+successfully (`Class.forName(...).newInstance()` succeeds, returns
+a TSLanguage with `version() == 14`), but immediately segfaults
+the JVM with exit code 133 the moment `TSParser.parseString(...)`
+is called against it. No JVM error log (`hs_err_pid*.log`) is
+produced — the native code calls `_Exit(133)` directly, suggesting
+an internal `abort()` in the grammar's scanner.
+
+Reproduced against three different bonede core versions:
+- `io.github.bonede:tree-sitter:0.24.4` — segfault.
+- `io.github.bonede:tree-sitter:0.25.3` — segfault.
+- `io.github.bonede:tree-sitter:0.26.6` — segfault.
+
+Reproduced against the only two published nim JARs:
+- `tree-sitter-nim:0.5.0` — IncompatibleClassChangeError (older ABI).
+- `tree-sitter-nim:0.6.0` — segfault.
+
+Reproduced on host: macOS 15.4 / arm64 / OpenJDK 21.
+
+**End-user impact**
+Nim files (`.nim`, `.nims`, `.nimble`) detect correctly but
+receive no Tree-Sitter highlighting. Tested on operator host.
+Other 47 bundled grammars are unaffected.
+
+**Anti-bluff disposition (CONST-035)**
+Honest. `nim` is excluded from
+`shared/build.gradle.kts desktopMain` dependencies, excluded from
+`BonedeGrammarRegistry.classNames`, and listed in
+`BonedeGrammarRegistry.unsupportedLangs`.
+`BonedeGrammarSmokeTest.unsupportedLangs_throwHonestly` asserts
+that `loadGrammar("nim")` throws IllegalArgumentException —
+proving no fake tokens are emitted.
+
+**Proper fix path**
+1. Upstream report to bonede with this segfault repro.
+2. Build-from-source via
+   `tools/build-language-grammars.sh android nim`. Test whether
+   the upstream `alaviss/tree-sitter-nim` parser.c works against
+   tree-sitter core 0.26.6 directly. If yes, the bug is in
+   bonede's specific build — Yole can ship its own.
+
+**Blocker**
+None — operator-side investigation when convenient.
+
+**Exit criteria**
+`nim` moves from `unsupportedLangs` back to `classNames` in
+BonedeGrammarRegistry, AND
+`BonedeGrammarSmokeTest.allBundledLangs_loadAndParse` includes a
+`"nim" to "proc f() = discard"` snippet that parses successfully.
+
+---
+
+## #f2-phase-7-android-ndk-bulk-build-pending — NEW iter-58 F2 Phase 7 (2026-05-15)
+
+**Symptom**
+Android `TokenizerEngine.android.kt` still bundles ONLY the
+`markdown` grammar (the iter-57 path). The 47 bonede grammars
+bundled for Desktop in iter-58 Phase 7 are NOT available on
+Android because the bonede JARs ship glibc-linked `.so` files
+which Android's bionic linker rejects.
+
+The build pipeline for closing this gap is fully implemented in
+`tools/build-language-grammars.sh android <lang>...`. It clones
+the upstream `tree-sitter-<lang>` repo, runs `tree-sitter generate`
+(when the pre-generated parser.c is absent), and compiles parser.c
++ scanner.c against the Android NDK clang toolchain for each
+configured ABI (default arm64-v8a; opt-in via `NDK_ABIS` env for
+armeabi-v7a + x86_64). Output `libtree-sitter-<lang>.so` files go
+to `shared/native/<lang>/android-<abi>/` where AGP's jniLibs
+convention packages them into the APK.
+
+What remains:
+1. Run the build script for the 47 Yole-bundled langs × 3 ABIs
+   (= 141 NDK builds, ~5-15 minutes operator wall-clock).
+2. Extend the iter-57 `repackageBonedeJarsForAndroid` Gradle task
+   pattern to repackage the 47 additional JARs (currently it only
+   handles `tree-sitter-markdown`).
+3. Extend `TokenizerEngine.android.kt loadGrammar()` to use the
+   same `BonedeGrammarRegistry.classNameFor(lang)` reflection
+   pattern as the Desktop actual.
+
+**End-user impact**
+Android users still see plain text (no syntax highlighting) for
+all 46 non-markdown languages. The host-only affordance pipeline
+(comment toggle, indent, brackets) works for all 55 langs via
+LanguageMetadata — that's correct behavior, just not full feature.
+
+**Anti-bluff disposition (CONST-035)**
+Honest.
+`TokenizerEngine.android.kt loadGrammar()` throws
+IllegalArgumentException with an explicit message naming this
+ticket ("grammar `$lang` is not yet bundled for Android — only
+`markdown` ships an NDK-built .so today. See
+KNOWN_DEFECTS#f2-phase-7-android-ndk-bulk-build-pending."). The
+editor falls back to plain text per spec §4.
+
+**Blocker**
+Operator time to run the NDK builds + author the
+repackage-for-N-jars Gradle generalisation.
+
+**Exit criteria**
+1. `shared/native/<lang>/android-arm64-v8a/libtree-sitter-<lang>.so`
+   exists for all 47 bonede langs.
+2. The Gradle build task fan-out packages all 48 JARs (the iter-57
+   tree-sitter-markdown + 47 new) with their NativeUtils swapped.
+3. A new `:shared:androidUnitTest` analogue of
+   `Feature2LanguageSmokeTest.realTokenizationForAllBundledLangs`
+   asserts 47/47 langs parse on Android.
+
+---
+
+## #f2-phase-7-ios-xcode-required — NEW iter-58 F2 Phase 7 (2026-05-15)
+
+**Symptom**
+The Phase 7 iOS path is fully scaffolded in
+`tools/build-language-grammars.sh ios <lang>...`, but
+`xcrun --sdk iphoneos --show-sdk-path` returns
+`error: SDK "iphoneos" cannot be located` on the operator host
+(macOS 15.4 / Command-Line-Tools only). Xcode + the iOS SDK is
+required to compile parser.c into a static `libtree-sitter-<lang>.a`
+that Kotlin/Native can link via `tree-sitter.def`.
+
+**End-user impact**
+iOS gets no Tree-Sitter highlighting for any of the 55 languages
+including markdown. The iter-57 Phase 7 (iOS Tree-Sitter K/N
+engine) is itself blocked on a different defect
+(`#shared-iosmain-databasefactory-broken`) — when that unblocks,
+this one becomes the next gate.
+
+**Anti-bluff disposition (CONST-035)**
+Honest. iOS `TokenizerEngine.ios.kt` remains the iter-57
+NotImplementedError stub.
+
+**Proper fix path**
+1. Install Xcode + iOS SDK on a build host.
+2. Run `tools/build-language-grammars.sh ios markdown kotlin ...`.
+3. Wire the produced `.a` files into the Kotlin/Native cinterop
+   `tree-sitter.def` configuration (scaffold already in place).
+
+**Blocker**
+Operator-host Xcode installation. Also blocked downstream of
+`#shared-iosmain-databasefactory-broken` per iter-57 Phase 7.
+
+**Exit criteria**
+1. `shared/native/<lang>/ios-arm64-device/libtree-sitter-<lang>.a`
+   exists for the operator's chosen tier.
+2. `:shared:linkPodReleaseFrameworkIosArm64` succeeds with the
+   .a files declared in cinterop.
+
+---
+
 ## #f2-phase-6-grammar-bundling-gap — NEW iter-58 F2 Phase 6 (2026-05-15)
 
 **Symptom**

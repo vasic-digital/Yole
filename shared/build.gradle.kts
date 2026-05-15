@@ -203,6 +203,67 @@ kotlin {
                 // bytecode — compatible with Yole desktop jvmTarget=11.
                 implementation(libs.tree.sitter)
                 implementation(libs.tree.sitter.markdown)
+
+                // iter-58 F2 Phase 7 — 47 additional bonede grammar JARs.
+                // Each ships the same 5 Desktop ABI bundle as tree-sitter-
+                // markdown above. The bonede NativeUtils extracts at runtime;
+                // the Yole replacement NativeUtils landed in iter-57 handles
+                // both Android (System.loadLibrary) and Desktop (classpath
+                // extract + System.load) paths identically.
+                // Versions snapshot: 2026-05-15. Adding/removing entries
+                // here MUST be mirrored in:
+                //   - tools/build-language-grammars.sh BONEDE_ARTIFACT map
+                //   - GrammarLoader.desktop.kt / .android.kt class-name map
+                // Sum of these 47 JARs + the 2 above = ~115 MB Gradle cache.
+                // Each end-user platform pulls ONE arch out of the JAR, so
+                // shipped artifact bloat is ~22-25 MB per platform.
+                implementation(libs.ts.kotlin)
+                implementation(libs.ts.java)
+                implementation(libs.ts.python)
+                implementation(libs.ts.javascript)
+                implementation(libs.ts.typescript)
+                implementation(libs.ts.go)
+                implementation(libs.ts.rust)
+                implementation(libs.ts.c)
+                implementation(libs.ts.cpp)
+                implementation(libs.ts.html)
+                implementation(libs.ts.css)
+                implementation(libs.ts.sql)
+                implementation(libs.ts.json)
+                implementation(libs.ts.tsx)
+                implementation(libs.ts.yaml)
+                implementation(libs.ts.toml)
+                implementation(libs.ts.bash)
+                implementation(libs.ts.ruby)
+                implementation(libs.ts.php)
+                implementation(libs.ts.swift)
+                implementation(libs.ts.scala)
+                implementation(libs.ts.dart)
+                implementation(libs.ts.lua)
+                implementation(libs.ts.perl)
+                implementation(libs.ts.haskell)
+                implementation(libs.ts.ocaml)
+                implementation(libs.ts.julia)
+                implementation(libs.ts.r)
+                implementation(libs.ts.elixir)
+                implementation(libs.ts.erlang)
+                implementation(libs.ts.fortran)
+                implementation(libs.ts.dockerfile)
+                implementation(libs.ts.make)
+                implementation(libs.ts.hcl)
+                implementation(libs.ts.regex)
+                implementation(libs.ts.vue)
+                implementation(libs.ts.graphql)
+                implementation(libs.ts.csharp)
+                implementation(libs.ts.scss)
+                implementation(libs.ts.nix)
+                implementation(libs.ts.zig)
+                implementation(libs.ts.elm)
+                implementation(libs.ts.clojure)
+                // nim deliberately excluded — KNOWN_DEFECTS#f2-phase-7-nim-grammar-broken.
+                implementation(libs.ts.objc)
+                implementation(libs.ts.latex)
+                implementation(libs.ts.proto)
             }
         }
 

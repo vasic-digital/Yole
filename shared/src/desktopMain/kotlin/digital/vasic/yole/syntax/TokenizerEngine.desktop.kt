@@ -65,14 +65,56 @@ actual class TokenizerEngine actual constructor() {
         check(initialized.get()) { "TokenizerEngine.initialize() must be called first" }
         EnabledFormatGate.requireEnabled(lang)
         if (loadedGrammars.containsKey(lang)) return@withContext
-        val tsLang: TSLanguage = when (lang) {
-            "markdown" -> TreeSitterMarkdown()
-            else -> throw IllegalArgumentException(
-                "grammar `$lang` is not bundled in Phase 5 (markdown only)"
-            )
+
+        // iter-58 F2 Phase 7 — dynamic bonede grammar load via reflection.
+        // 48 bonede artifacts are wired in shared/build.gradle.kts so the
+        // classes are guaranteed on the desktopMain classpath; we use
+        // Class.forName(...).newInstance() rather than 48 static imports
+        // to keep the code data-driven and avoid a 48-line `when` block.
+        //
+        // The 7 unsupported langs (jsx, xml, vim, less, crystal, groovy,
+        // bibtex — see BonedeGrammarRegistry.unsupportedLangs) have no
+        // published bonede artifact. We throw rather than synthesise a
+        // stub grammar (CONST-035 anti-bluff).
+        val tsLang: TSLanguage = if (lang == "markdown") {
+            // Keep the explicit TreeSitterMarkdown() path the iter-57
+            // engine probed at initialize-time, byte-for-byte.
+            TreeSitterMarkdown()
+        } else {
+            val fqcn = BonedeGrammarRegistry.classNameFor(lang)
+                ?: throw IllegalArgumentException(
+                    "grammar `$lang` is not bundled — no bonede artifact " +
+                        "exists for this language (see " +
+                        "docs/KNOWN_DEFECTS.md#f2-phase-7-no-bonede-artifact)"
+                )
+            try {
+                Class.forName(fqcn)
+                    .getDeclaredConstructor()
+                    .newInstance() as TSLanguage
+            } catch (cnfe: ClassNotFoundException) {
+                throw IllegalStateException(
+                    "bonede grammar class `$fqcn` not on classpath — " +
+                        "verify libs.ts.$lang is declared in " +
+                        "shared/build.gradle.kts desktopMain dependencies",
+                    cnfe,
+                )
+            } catch (ite: java.lang.reflect.InvocationTargetException) {
+                // Native lib failed to load (wrong arch, missing .so/.dylib/.dll
+                // for current OS/arch in the JAR resources). Surface honestly.
+                throw IllegalStateException(
+                    "bonede grammar `$lang` failed to instantiate — " +
+                        "likely missing native binary for ${osArchTag()}: " +
+                        "${ite.targetException.message}",
+                    ite.targetException,
+                )
+            }
         }
         loadedGrammars[lang] = tsLang
     }
+
+    /** Diagnostic tag for IllegalStateException messages on init failure. */
+    private fun osArchTag(): String =
+        "${System.getProperty("os.name")}/${System.getProperty("os.arch")}"
 
     actual suspend fun tokenize(text: String, lang: String): List<Token> =
         withContext(Dispatchers.Default) {

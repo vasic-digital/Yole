@@ -82,12 +82,13 @@ actual class TokenizerEngine actual constructor() {
             check(TSParser.ts_parser_new() != 0L) {
                 "tree-sitter native library failed to allocate a parser on Android"
             }
-            // Sanity-check the grammar load too. `TreeSitterMarkdown.version()`
+            // Sanity-check the grammar load too. `TreeSitterMarkdown.abiVersion()`
+            // (was `version()` pre-0.26.6, renamed iter-58 F2 Phase 7 core bump)
             // is a public JNI method on TSLanguage and exercising it confirms
             // the .so really resolved on the device.
             val probeLang = TreeSitterMarkdown()
-            require(probeLang.version() > 0) {
-                "tree-sitter-markdown grammar version probe returned ${probeLang.version()}"
+            require(probeLang.abiVersion() > 0) {
+                "tree-sitter-markdown grammar abiVersion probe returned ${probeLang.abiVersion()}"
             }
             initialized.set(true)
         }
@@ -99,10 +100,33 @@ actual class TokenizerEngine actual constructor() {
         }
         EnabledFormatGate.requireEnabled(lang)
         if (loadedGrammars.containsKey(lang)) return@withContext
+
+        // iter-58 F2 Phase 7 — Android only ships `markdown` today.
+        //
+        // The bonede grammar JARs for the 47 other languages are NOT wired
+        // into the Android sourceSet because their bundled native binaries
+        // are all glibc-linked (linux-gnu) and would crash on Android
+        // bionic when System.loadLibrary tried to dlopen them.
+        //
+        // Closing this gap requires running the Android NDK build for
+        // each grammar's parser.c + scanner.c and packaging the resulting
+        // libtree-sitter-<lang>.so into <apk>/lib/<abi>/, then repackaging
+        // each bonede JAR to swap NativeUtils.class. The build pipeline
+        // for this is in tools/build-language-grammars.sh (`android`
+        // subcommand). Running it for all 48 langs × 3 ABIs (~144 builds)
+        // produces ~50-80 MB of .so files; that work is tracked as
+        // KNOWN_DEFECTS#f2-phase-7-android-ndk-bulk-build-pending.
+        //
+        // We throw rather than synthesise a stub grammar instance
+        // (CONST-035 anti-bluff). The Android editor falls back to the
+        // host-only affordance pipeline (comment toggle, indent, brackets)
+        // which works for all 55 langs via LanguageMetadata.
         val tsLang: TSLanguage = when (lang) {
             "markdown" -> TreeSitterMarkdown()
             else -> throw IllegalArgumentException(
-                "grammar `$lang` is not bundled in Phase 5 (markdown only)"
+                "grammar `$lang` is not yet bundled for Android — " +
+                    "only `markdown` ships an NDK-built .so today. " +
+                    "See KNOWN_DEFECTS#f2-phase-7-android-ndk-bulk-build-pending."
             )
         }
         loadedGrammars[lang] = tsLang

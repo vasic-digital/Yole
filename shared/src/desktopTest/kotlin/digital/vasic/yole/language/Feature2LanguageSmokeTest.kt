@@ -2,59 +2,65 @@
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  *
- * iter-58 F2 Phase 6: anti-bluff end-to-end smoke test.
+ * iter-58 F2 Phase 6 + Phase 7: anti-bluff end-to-end smoke test.
  *
  * Scope and honesty disclosure (CONST-035):
  *
- *   The original Phase 6 plan called for parametrized per-lang
- *   smoke tests: load fixture -> tokenize -> outline -> fold for
- *   each of the 55 languages, asserting >= 1 of each. BUT the
- *   desktop TokenizerEngine.desktop.kt currently only bundles the
- *   `markdown` Tree-Sitter grammar (per Phase 5 of Feature 1's plan
- *   -- the 55-grammar bundling matrix is tracked separately, not in
- *   F2 Phase 6 scope). Loading any other grammar throws
- *   `IllegalArgumentException` per the engine's own contract.
+ *   F2 Phase 6 shipped LanguageMetadata + .scm queries + fixtures
+ *   for 55 languages. Only the `markdown` Tree-Sitter grammar was
+ *   bundled at that time (iter-57 Phase 5), so the test ran a real
+ *   end-to-end pipeline for markdown and an "input-smoke" check
+ *   (fixture + .scm coherence) for the other 54.
  *
- *   Per CONST-035 ("never write a test that can pass without
- *   exercising the user-visible behavior it claims to verify"), we
- *   do NOT fake the smoke test by mocking the engine or stubbing
- *   out the affordance runners. Instead we:
+ *   F2 Phase 7 closes the bundling gap for 47 of 55 langs on
+ *   Desktop (macOS-arm64 / macOS-x64 / Linux-x64 / Linux-aarch64 /
+ *   Windows-x64) via 47 io.github.bonede:tree-sitter-<lang> Gradle
+ *   dependencies. The 8 langs NOT bundled today are:
+ *     - 7 with no bonede artifact: jsx, xml, vim, less, crystal,
+ *       groovy, bibtex
+ *     - 1 with a broken bonede artifact (segfaults on parse): nim
+ *   See docs/KNOWN_DEFECTS.md#f2-phase-7-no-bonede-artifact and
+ *       docs/KNOWN_DEFECTS.md#f2-phase-7-nim-grammar-broken.
  *
- *   (a) Run a REAL end-to-end smoke test for `markdown` (the one
- *       grammar actually bundled). This exercises the full pipeline:
+ *   This test now does THREE things:
+ *
+ *   (a) Real end-to-end smoke through the engine for `markdown`
+ *       (the iter-57 path). Exercises:
  *       TokenizerEngine -> ScmQueryLoader -> FoldQueryRunner +
- *       OutlineExtractor. If any of those layers regresses or is
- *       stubbed, this test FAILS for markdown.
+ *       OutlineExtractor.
  *
- *   (b) For the other 54 languages, run a deterministic INPUT
- *       smoke check: the lang's fixture is loadable, contains some
- *       text, and its `.scm` files are real upstream content
- *       (with @-captures OR `inherits:` directives OR upstream
- *       placeholder markers) OR an explicit Yole-authored stub.
- *       This is the most honest assertion possible without the
- *       grammar bundled. When the grammar matrix lands (tracked
- *       as a follow-up to #f2-phase-3-bonede-query-api-gap), this
- *       file is extended to run the real engine pipeline for all 55.
+ *   (b) Real engine tokenization for the 46 other bonede-bundled
+ *       langs (everything in BonedeGrammarRegistry.supportedLangs
+ *       minus markdown). Asserts >= 1 token per lang. Doesn't run
+ *       OutlineExtractor / FoldQueryRunner against them yet —
+ *       those depend on .scm query compatibility with the specific
+ *       bonede ABI version, which is a Phase 8 concern. The
+ *       BonedeGrammarSmokeTest covers the parse-only path directly
+ *       and exhaustively.
  *
- *   The DOCUMENTED gap is anti-bluff compliant: the test never
- *   asserts an end-user-visible outcome it cannot honestly verify.
+ *   (c) For the remaining 8 langs (the gap set), input-smoke
+ *       coherence check (unchanged from Phase 6): fixture
+ *       loadable + .scm files structurally valid. The end-user
+ *       feature gap is explicitly disclosed in the test report.
  *
  * Anti-bluff anchors:
  *   - Mutation: stub OutlineExtractor.outlineFor to return
- *     emptyList() -> the `markdownEndToEndProducesOutlineItems`
- *     test below FAILS (asserts >= 1 outline item from headings).
+ *     emptyList() -> `markdownEndToEndProducesOutlineItems` FAILS.
  *   - Mutation: stub FoldQueryRunner.foldRangesFor to return
- *     emptyList() -> the `markdownEndToEndProducesFoldRange` test
- *     FAILS (asserts >= 1 fold range).
+ *     emptyList() -> `markdownEndToEndProducesFoldRange` FAILS.
+ *   - Mutation: stub TokenizerEngine.tokenize to return emptyList()
+ *     -> both `realTokenizationForAllBundledLangs` and
+ *     `markdownEndToEndProducesTokens` FAIL.
  *   - Mutation: delete any lang's fixture or .scm file -> the
- *     per-lang `inputSmokeCheckForLanguage_<id>` parametrized hits
- *     FAIL with a descriptive message.
+ *     `inputSmokeCheckForAllLanguages` test FAILS with a
+ *     descriptive per-lang message.
  *
  *########################################################*/
 package digital.vasic.yole.language
 
 import digital.vasic.yole.language.affordance.FoldQueryRunner
 import digital.vasic.yole.language.affordance.OutlineExtractor
+import digital.vasic.yole.syntax.BonedeGrammarRegistry
 import digital.vasic.yole.syntax.EnabledFormatGate
 import digital.vasic.yole.syntax.TokenizerEngine
 import kotlinx.coroutines.runBlocking
@@ -70,7 +76,12 @@ class Feature2LanguageSmokeTest {
 
     @Before
     fun setUp() {
-        EnabledFormatGate.setEnabled(setOf("markdown"))
+        // Phase 7: open the gate to every bonede-bundled lang so the new
+        // realTokenizationForAllBundledLangs test below can exercise the
+        // real engine. Markdown-only tests below still pass because that
+        // ID is in the set.
+        val open = BonedeGrammarRegistry.supportedLangs + "markdown"
+        EnabledFormatGate.setEnabled(open)
         ScmQueryLoader.clearCacheForTest()
     }
 
@@ -132,6 +143,75 @@ class Feature2LanguageSmokeTest {
         assertTrue(
             "fold must produce >= 1 range for markdown fixture, got ${folds.size}",
             folds.isNotEmpty(),
+        )
+    }
+
+    // ================================================================
+    // PART A2: F2 Phase 7 — real engine tokenization for every lang
+    // whose bonede grammar is bundled today (47 langs incl. markdown).
+    // Uses the per-lang fixture as the input. Asserts >= 1 token per
+    // lang. The bonede grammar instantiation crash modes were proved
+    // out in BonedeGrammarSmokeTest with hand-crafted snippets; this
+    // test additionally proves the fixtures we ship are themselves
+    // parseable by the bundled grammars (the cross-cut Phase 6 ×
+    // Phase 7 anti-bluff anchor).
+    //
+    // Anti-bluff: when ANY bundled lang fails to tokenize its own
+    // fixture, this test fails with the lang name in the message —
+    // the user-visible feature is regressed.
+    // ================================================================
+
+    @Test
+    fun realTokenizationForAllBundledLangs() = runBlocking<Unit> {
+        val engine = TokenizerEngine()
+        engine.initialize().getOrThrow()
+
+        val failures = mutableListOf<String>()
+        val successes = mutableListOf<String>()
+
+        for (lang in BonedeGrammarRegistry.supportedLangs.sorted()) {
+            val fixture = loadFixtureForLang(lang)
+            if (fixture == null) {
+                failures += "$lang: no fixture file"
+                continue
+            }
+            try {
+                engine.loadGrammar(lang)
+                val tokens = engine.tokenize(fixture, lang)
+                if (tokens.isEmpty()) {
+                    failures += "$lang: tokenize returned 0 tokens for fixture"
+                } else {
+                    successes += "$lang(${tokens.size})"
+                }
+            } catch (t: Throwable) {
+                failures += "$lang: ${t.javaClass.simpleName}: ${t.message?.take(120)}"
+            }
+        }
+
+        val expected = BonedeGrammarRegistry.supportedLangs.size
+        val report = buildString {
+            appendLine(
+                "F2 Phase 7 real-engine smoke over fixtures: " +
+                    "${successes.size}/$expected langs produced >= 1 token.",
+            )
+            appendLine("  successes: ${successes.joinToString(", ")}")
+            if (failures.isNotEmpty()) {
+                appendLine("  failures:")
+                failures.forEach { appendLine("    - $it") }
+            }
+            appendLine(
+                "  gap-set (8 langs not bundled): " +
+                    BonedeGrammarRegistry.unsupportedLangs.sorted().joinToString(", "),
+            )
+        }
+        println(report)
+        if (failures.isNotEmpty()) {
+            fail(report)
+        }
+        assertTrue(
+            "expected ALL $expected bundled langs to tokenize their own fixtures; " +
+                "got ${successes.size}",
+            successes.size == expected,
         )
     }
 
