@@ -6,7 +6,21 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-62 **Phase 5 COMPLETE** — DiagnosticsGutter + InlineUnderline + ProblemsPanel + DiagnosticsPalette Android UI surfaces).
+**Last updated:** 2026-05-16 (iter-62 **Phase 6 COMPLETE** — HoverPopup + HoverTriggerDetector + HoverShortcut).
+
+Commit: `c6d92a24`
+
+Files added (Phase 6):
+- `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/hover/HoverPopup.kt` — `@Composable HoverPopup(blocks, anchorOffset, syntaxHighlighter?, onDismiss, modifier)`. Popup(TopStart + offset), LazyColumn max 400×300 dp, when-switch over all 5 HoverBlock variants. testTag: `hover-popup`.
+- `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/hover/HoverShortcut.kt` — `fun Modifier.hoverShortcut(onTrigger)`. Uses `onPreviewKeyEvent`; intercepts F1 KeyDown, calls onTrigger(), returns true; all other keys return false.
+- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/HoverTriggerDetector.kt` — pure-Kotlin class in commonMain. dwell path with guards (isCompletionPopupOpen + isIdentifierAt), explicit bypass, dismiss(). Fixed StackOverflow bug: lambda field `onExplicit` shadowed method name; resolved via `explicitCallback` alias.
+- `androidApp/src/test/kotlin/digital/vasic/yole/android/robolectric/HoverPopupRobolectricTest.kt` — 8 structural tests: testTag, LazyColumn, Popup alignment, all block types, italic/monospace, size constraints, empty-list guard. All 8 PASS.
+- `androidApp/src/test/kotlin/digital/vasic/yole/android/robolectric/HoverShortcutRobolectricTest.kt` — 5 structural tests: Key.F1, KeyEventType.KeyDown, onTrigger() call, consume, onPreviewKeyEvent. All 5 PASS.
+- `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/HoverTriggerDetectorTest.kt` — 6 tests with 30 ms dwellMillis (real-clock): dwell_dispatches_after_300ms, dwell_cancels_on_subsequent_move, dwell_skips_when_completion_popup_open, dwell_skips_when_not_identifier, explicit_bypasses_filters_and_dwell, dismiss_cancels_pending_dwell. All 6 PASS.
+
+Tests Phase 6: 13 new (8 Robolectric + 5 Robolectric + 6 desktopTest). Spot-checks: FoldGutterRobolectricTest (6 PASS), CompletionPopupRobolectricTest (8 PASS). Detekt: zero violations. Pre-commit hooks: scanner clean, anchor manifest valid.
+
+**Next: Phase 7 — HoverState + LspServerHost hover wiring + hover integration into SyncedScrollEditor (Phase 8 plan section).**
 
 Files added (Phase 5):
 - `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/diagnostics/DiagnosticsPalette.kt` — pure helper `severityVisuals(Severity, isDark): SeverityVisuals` with VS Code–inspired color palette. 4 severity → (color, icon) mappings.
