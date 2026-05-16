@@ -7,6 +7,125 @@ blocker. Anyone closing a ticket here must also remove the corresponding
 SKIP-OK exemption(s) from the affected test(s) so the regression guard is
 re-armed.
 
+## #iter-71-launcher-icon-missing-postmortem — FIXED 2026-05-17
+
+**Status:** FIXED in v1.9.1 (iter-71 emergency patch).
+
+**Symptom**
+Android launcher icon was absent (invisible) on all Android 8+ (API 26+)
+devices from v1.4.0 (iter-59) through v1.9.0 (iter-71). Users who installed
+the app saw no icon on their launcher grid — they could launch from the app
+drawer or settings but not from the launcher home screen.
+
+4+ tester builds were distributed with this defect:
+v1.4.0, v1.5.0, v1.6.0, v1.7.0, v1.8.0, v1.9.0 (versionCode 140–190).
+
+**Root cause**
+`mipmap-anydpi-v26/ic_launcher.xml` (the adaptive icon definition) was
+authored in iter-59 with `@mipmap/ic_launcher` as both the `foreground` and
+`monochrome` layers:
+
+```xml
+<foreground android:drawable="@mipmap/ic_launcher"/>   <!-- WRONG -->
+<monochrome android:drawable="@mipmap/ic_launcher"/>   <!-- WRONG -->
+```
+
+Android's adaptive-icon system (API 26+) expects a `@drawable/` vector for
+the foreground and monochrome layers — not a mipmap PNG. The system clips
+the foreground to the current launcher mask shape (circle, squircle, etc.).
+Using a full-density PNG as the foreground causes the icon to be clipped
+aggressively at the edges, often rendering as an invisible or very small
+artifact depending on the launcher.
+
+The `@mipmap/ic_launcher_round` was also absent from the Manifest
+(`android:roundIcon` attribute not declared), causing round-mask launchers
+(Google Pixel, Samsung One UI) to show no icon at all.
+
+**Why anti-bluff didn't catch it**
+Pre-iter-71 challenges and tests verified code paths execute and Kotlin tests
+pass. None opened the produced APK binary and verified the launcher icon
+resolves to actual displayable bytes on the target API level. This is a pure
+CONST-039 failure mode — metadata-only verification (source file exists, APK
+exists) is insufficient; the artifact must be opened and the icon chain
+verified end-to-end.
+
+**Fix (iter-71, 2026-05-17)**
+1. Created `androidApp/src/main/res/drawable/ic_launcher_foreground.xml` —
+   a proper 108dp × 108dp vector with the "Y" glyph centered in the 72dp
+   safe zone, per the adaptive-icon spec.
+2. Created `androidApp/src/debug/res/drawable/ic_launcher_foreground_dev.xml` —
+   same glyph for the DEV (debug green) variant.
+3. Rewrote `mipmap-anydpi-v26/ic_launcher.xml` (both main + debug) to
+   reference `@drawable/ic_launcher_foreground*` instead of `@mipmap/ic_launcher`.
+4. Created `mipmap-anydpi-v26/ic_launcher_round.xml` (both main + debug).
+5. Added `android:roundIcon="@mipmap/ic_launcher_round"` to AndroidManifest.xml.
+6. Added `androidApp/src/main/res/raw/keep.xml` to protect all icon assets
+   from future resource shrinker passes.
+7. Added ProGuard rules for R$ class preservation.
+8. New challenge: `yole-challenges/scripts/installable_app_icon_challenge.sh`
+   (3-layer verification: source-tree static + APK-open + vector integrity).
+9. Challenge wired into `make qa-all` via `qa-iter-71-gates`.
+10. CONST-039 updated with installable-asset evidence requirement.
+
+**Prevention**
+`make qa-all` now runs `installable_app_icon_challenge.sh` which opens the
+packaged APK and verifies: ≥5 `application-icon-*` entries in `aapt2 dump
+badging`, anydpi slots present for both `ic_launcher` and `ic_launcher_round`,
+`drawable/ic_launcher_foreground` in resource table, each icon file ≥100 bytes,
+and the vector XML has correct 108×108 viewport with a pathData element.
+
+**Tracker for proper branding artwork**
+`#iter-71-brand-vector-foreground-tracker` — the iter-71 fix uses a geometric
+"Y" approximation as the foreground vector. The design team should provide a
+proper brand SVG for conversion to a 108dp Android vector drawable. Until then
+the geometric approximation ships.
+
+**Tracker for Desktop DMG icon audit**
+`#iter-71-desktop-dmg-icon-audit-pending` — Desktop macOS .icns was not
+audited in iter-71 (no DMG present in releases/ at time of fix). A separate
+challenge for Desktop icon verification is deferred to the next iteration that
+produces a Desktop DMG.
+
+**Tracker for Desktop DMG .icns file format**
+`#iter-71-desktop-icns-format-defect` — audit of `Yole-Desktop-macos-arm64-1.9.0-Release-0.0.0.1.90.dmg`
+reveals `Yole.app/Contents/Resources/Yole.icns` is a 512×512 PNG file
+(magic bytes: `89 50 4E 47`, 60,940 bytes) not a proper multi-resolution
+`.icns` container (which should begin with `69 63 6E 73`). macOS accepts
+it in many contexts but the Finder may show a low-resolution icon at
+Retina display sizes. Fix: generate a proper `.icns` with `iconutil` from
+a 1024×1024 source. Tracked as a separate defect; not blocking the iter-71
+emergency patch.
+
+**Tracker for Web favicon audit**
+`#iter-71-web-favicon-audit-pending` — Wasm/Web bundle favicon audit deferred
+as no Web bundle existed at iter-71 patch time.
+
+## #iter-71-desktop-icns-format-defect — NEW iter-71 (2026-05-17)
+
+**Symptom**
+`Yole.app/Contents/Resources/Yole.icns` in the Desktop macOS DMG is a
+raw PNG file, not a proper multi-resolution ICNS container. The macOS
+Finder resolves it to a single 512×512 image regardless of display DPI,
+causing blurry icon rendering on Retina displays at 2× scale factor.
+
+**Root cause**
+The desktop build pipeline assigns a `.icns` extension to a PNG output
+from Compose Desktop's packaging step without converting it through
+`iconutil`. The Compose Desktop packaging documentation requires an
+`Info.plist` icon reference pointing to a proper `.icns` bundle.
+
+**Impact**
+Visual quality defect on macOS Retina displays. The icon is visible (unlike
+the Android adaptive icon regression) but may appear pixelated at large sizes
+(128dp in Finder sidebar, 512dp on Launchpad full-screen).
+
+**Fix**
+Generate a proper `.iconset/` directory at 1024×1024 and run `iconutil -c
+icns` before packaging. Track in the next Desktop packaging iteration.
+
+**Blocker**
+Requires a 1024×1024 source artwork file for the Yole brand mark.
+
 ## #iter59-firebase-tester-groups-empty — NEW iter-59 (2026-05-15)
 
 **Symptom**

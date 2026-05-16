@@ -446,6 +446,29 @@ without an explicit justification comment.
 **Skip-marker convention:** `// SKIP-OK: #<ticket>` (canonical),
 `// ANTI-BLUFF-EXEMPT: <reason>` (synonym).
 
+**Installable-asset evidence (iter-71 addendum, 2026-05-17):**
+
+For any user-distributable build artifact (APK, AAB, DMG, MSI, Wasm bundle),
+tests/challenges MUST extract the artifact and verify each user-visible asset
+is **present** and **non-degenerate**. "User-visible asset" includes:
+
+- Launcher icons (all densities AND adaptive-icon XML resolution where
+  applicable — minSdk≥26 means the adaptive path is the ONLY path used)
+- Splash screens declared in the manifest or platform packaging
+- App name strings as declared in the install metadata
+
+A PASS without this verification is bluff per the iter-71 postmortem.
+The `installable_app_icon_challenge.sh` is the reference implementation.
+
+**Forensic anchor — iter-71 postmortem (verbatim, 2026-05-17):**
+
+> "android app does not have a launcher icon anymore - the latest published
+> app tester build(s). how come app passed anti-bluff checks?"
+
+Root cause: pre-iter-71 challenges/tests verified code paths execute. None
+opened the produced APK to verify the launcher icon resolves to actual
+displayable bytes. Pure CONST-039 failure mode.
+
 **See also:** `HelixConstitution/Constitution.md` §11.4 (comprehensive
 per-evidence-type requirements), `HelixConstitution/CLAUDE.md`
 (session-level anti-bluff rules), `CLAUDE.md` and `AGENTS.md`

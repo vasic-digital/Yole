@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SPDX-FileCopyrightText: 2026 Milos Vasic
+  SPDX-License-Identifier: Apache-2.0
+
+  iter-71 EMERGENCY FIX: Adaptive-icon foreground for the DEV (debug) variant.
+
+  Same "Y" glyph as the release variant. The visual distinction between
+  DEV and release comes from the background color (@color/ic_launcher_background_dev
+  = pure green #FF00FF00), not from the foreground shape, so the same
+  glyph geometry is reused. The glyph uses white fill (#FFFFFFFF) which
+  contrasts clearly against the green background.
+
+  Canvas: 108dp × 108dp. Safe zone: 72dp × 72dp (18dp inset on all sides).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="
+          M 24,22
+          L 49,56
+          L 49,86
+          L 59,86
+          L 59,56
+          L 84,22
+          L 73,22
+          L 54,49
+          L 35,22
+          Z
+        "/>
+
+</vector>

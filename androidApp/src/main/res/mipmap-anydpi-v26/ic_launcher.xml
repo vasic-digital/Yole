@@ -1,13 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  iter-59: adaptive launcher icon for the release variant.
-  Background is the standard white per Material Design icon spec.
-  Foreground reuses @mipmap/ic_launcher (legacy raster) to avoid
-  re-authoring artwork in iter-59; the system clips it to the
-  current launcher mask.
+  SPDX-FileCopyrightText: 2026 Milos Vasic
+  SPDX-License-Identifier: Apache-2.0
+
+  iter-71 EMERGENCY FIX: Proper adaptive-icon definition for the release variant.
+
+  Background: @color/ic_launcher_background (white, #FFFFFFFF).
+  Foreground: @drawable/ic_launcher_foreground — a 108dp vector with the
+              "Y" glyph centered in the 72dp safe zone. Using a drawable
+              (not a mipmap) is required so the adaptive-icon system can
+              scale the layer at runtime without blurring a raster.
+  Monochrome: same drawable — Android 13+ themes the layer with a single
+              system color; must be a vector, not a raster.
+
+  Root cause that this fixes (iter-71 postmortem):
+    iter-59 used @mipmap/ic_launcher (a per-density PNG) as both the
+    foreground and monochrome layers. On API 26+ the launcher clips the
+    foreground to a mask shape; the PNG foreground was full-bleed and got
+    clipped at the edges, making the icon appear misshapen or invisible
+    depending on the device launcher. The monochrome PNG violated the
+    Android 13 API contract (must be a single-color vector).
 -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_background"/>
-    <foreground android:drawable="@mipmap/ic_launcher"/>
-    <monochrome android:drawable="@mipmap/ic_launcher"/>
+    <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+    <monochrome android:drawable="@drawable/ic_launcher_foreground"/>
 </adaptive-icon>

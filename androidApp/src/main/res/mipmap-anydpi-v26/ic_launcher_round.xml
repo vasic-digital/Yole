@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SPDX-FileCopyrightText: 2026 Milos Vasic
+  SPDX-License-Identifier: Apache-2.0
+
+  iter-71 EMERGENCY FIX: Round adaptive-icon for the release variant.
+
+  Identical to ic_launcher.xml — the round-mask variant uses the same
+  foreground vector and background color. Launchers that apply a circular
+  mask (e.g. Google Pixel launcher) use android:roundIcon; without this
+  file they would fall back to the square icon and apply the round mask
+  to it, which can produce visual clipping.
+
+  Declared in AndroidManifest.xml as android:roundIcon="@mipmap/ic_launcher_round".
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background"/>
+    <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+    <monochrome android:drawable="@drawable/ic_launcher_foreground"/>
+</adaptive-icon>

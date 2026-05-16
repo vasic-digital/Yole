@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SPDX-FileCopyrightText: 2026 Milos Vasic
+  SPDX-License-Identifier: Apache-2.0
+
+  iter-71 EMERGENCY FIX: Round adaptive-icon for the DEV (debug) variant.
+
+  Mirrors ic_launcher.xml for DEV. Round-mask launchers (e.g. Pixel) use
+  android:roundIcon; providing a dedicated round variant ensures the green
+  background is preserved under circular masking.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background_dev"/>
+    <foreground android:drawable="@drawable/ic_launcher_foreground_dev"/>
+    <monochrome android:drawable="@drawable/ic_launcher_foreground_dev"/>
+</adaptive-icon>

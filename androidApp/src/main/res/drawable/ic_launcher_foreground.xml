@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SPDX-FileCopyrightText: 2026 Milos Vasic
+  SPDX-License-Identifier: Apache-2.0
+
+  iter-71 EMERGENCY: Proper adaptive-icon foreground vector.
+
+  Canvas: 108dp × 108dp (required by the adaptive-icon spec).
+  Safe zone: 72dp × 72dp centered, i.e. 18dp inset on all sides.
+  The "Y" glyph is drawn to fit within the 72×72 safe zone
+  (viewport coords 18–90) so it is never clipped by any launcher mask.
+
+  Used by:
+    mipmap-anydpi-v26/ic_launcher.xml        (foreground + monochrome)
+    mipmap-anydpi-v26/ic_launcher_round.xml  (foreground + monochrome)
+
+  This file also serves the monochrome layer — Android 13+ renders it as
+  a single-color tinted shape, so the path must be filled with a solid
+  color (here #FFFFFFFF = white, tinted at runtime by the system).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!--
+      "Y" letterform centered in the 72dp safe zone (viewport 18..90).
+      Geometry:
+        The glyph spans x: 24..84, y: 22..86 (comfortably inside safe zone).
+        Two diagonal arms descend from top-left / top-right to a central stem,
+        then the stem drops straight down to the baseline.
+
+        Arm widths: 10 units
+        Stem width: 10 units centered at x=54
+        Top of arms: y=22
+        Join point (center): x=54, y=56
+        Baseline: y=86
+
+      Coordinates (clockwise outer outline, then inner cutout via moveto):
+        Left arm outer:  (24,22) → (54,56) left edge
+        Left arm inner:  (34,22) → (54,46) right edge of left arm
+        Right arm mirror, then stem down to baseline.
+    -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="
+          M 24,22
+          L 49,56
+          L 49,86
+          L 59,86
+          L 59,56
+          L 84,22
+          L 73,22
+          L 54,49
+          L 35,22
+          Z
+        "/>
+
+</vector>

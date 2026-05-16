@@ -34,3 +34,11 @@
 -dontwarn org.bouncycastle.**
 -dontwarn org.etsi.**
 -dontwarn org.w3c.dom.ElementTraversal
+
+# --- iter-71 EMERGENCY FIX: Launcher icon preservation ---
+# Keep R$ inner classes so the resource shrinker can resolve the adaptive
+# icon reference chain: @mipmap/ic_launcher → @drawable/ic_launcher_foreground.
+# Without this, enabling minification + shrinkResources in a future release
+# could re-introduce the iter-71 regression (adaptive icon XML stripped from APK).
+-keep public class * extends android.app.Application
+-keepclassmembers class **.R$* { public static <fields>; }

@@ -1,13 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  iter-59: adaptive launcher icon for the DEV (debug) variant.
-  Background is pure green (#00FF00) so the operator and testers can
-  visually distinguish the DEV-installed app from the production one
-  at a glance on the launcher grid. Foreground reuses the existing
-  legacy launcher PNG — the green clip mask makes it unmistakable.
+  SPDX-FileCopyrightText: 2026 Milos Vasic
+  SPDX-License-Identifier: Apache-2.0
+
+  iter-71 EMERGENCY FIX: Adaptive-icon for the DEV (debug) variant.
+
+  Background: @color/ic_launcher_background_dev (pure green #FF00FF00) —
+              provides immediate visual distinction from the production build
+              on the launcher grid. Mandated by iter-59.
+  Foreground: @drawable/ic_launcher_foreground_dev — same "Y" vector glyph
+              as the release variant, in white, contrasting against green.
+  Monochrome: same drawable — Android 13+ system-tinted single-color layer.
+
+  Root cause that this fixes (iter-71 postmortem): same as release variant —
+  @mipmap/ic_launcher (PNG) was used as foreground, violating the adaptive-icon
+  spec which requires a drawable layer that can be scaled by the system.
 -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_background_dev"/>
-    <foreground android:drawable="@mipmap/ic_launcher"/>
-    <monochrome android:drawable="@mipmap/ic_launcher"/>
+    <foreground android:drawable="@drawable/ic_launcher_foreground_dev"/>
+    <monochrome android:drawable="@drawable/ic_launcher_foreground_dev"/>
 </adaptive-icon>

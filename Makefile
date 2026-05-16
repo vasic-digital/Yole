@@ -390,8 +390,17 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates
 	bash automation/run-qa-all.sh --skip-unit --skip-build
+	@echo "-----------------------------------------------------------------------------------"
+
+# iter-71 gates: installable-asset anti-bluff challenge (CONST-039 + postmortem).
+# Verifies the packaged Android APK contains a correctly structured launcher icon
+# that the end user sees after install. Catches the iter-59 → v1.9.0 regression
+# where the adaptive foreground used a mipmap PNG instead of a drawable vector.
+qa-iter-71-gates:
+	@echo "=== iter-71 gates: installable-asset icon anti-bluff suite ==="
+	bash yole-challenges/scripts/installable_app_icon_challenge.sh
 	@echo "-----------------------------------------------------------------------------------"
 
 # iter-64 gates: 2 Import-from anti-bluff challenges (CONST-035 + CONST-037).

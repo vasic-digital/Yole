@@ -3,6 +3,36 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## v1.9.1 — iter-71 EMERGENCY: Android launcher icon fix (2026-05-17)
+
+**Version:** 1.9.1 (versionCode 191 → dotted `0.0.0.1.91`)
+**Type:** Emergency patch — critical user-visible defect on Android 8+ devices.
+
+### What was broken
+
+Android launcher icon was **absent** (invisible) on all Android 8+ (API 26+) devices
+from v1.4.0 (iter-59) through v1.9.0. The app installed but users saw no icon on their
+launcher home screen. 4+ tester builds were distributed with this defect.
+
+### Root cause
+
+`mipmap-anydpi-v26/ic_launcher.xml` used `@mipmap/ic_launcher` (a PNG) as the
+`foreground` and `monochrome` adaptive icon layers. Android 8+ clips the foreground to
+a mask shape; a mipmap PNG used this way renders as invisible or severely distorted.
+`ic_launcher_round` was also absent from AndroidManifest.xml.
+
+### Fix
+
+Proper `@drawable/ic_launcher_foreground` vector (108dp × 108dp, "Y" glyph in 72dp
+safe zone), round variant added, `android:roundIcon` declared in Manifest, R8
+keep.xml added. Same fix applied to DEV (debug) variant.
+
+New `installable_app_icon_challenge.sh` — 3-layer anti-bluff gate that opens the
+packaged APK and verifies the full icon chain. Wired into `make qa-all`.
+HelixConstitution §11.4.38 + CONST-039 extended with installable-asset evidence rule.
+
+---
+
 ## v1.9.0 — iter-67 Container infrastructure activation: multi-platform build (2026-05-17)
 
 **Version:** 1.9.0 (versionCode 190 → dotted `0.0.0.1.90`)

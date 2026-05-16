@@ -372,6 +372,13 @@ is Yole's agent-level summary; read HelixConstitution for the full canonical tex
 - **E2E / HelixQA on-device** — screen recording OR screenshot stream OR log capturing feature from cold-launch to completion
 - **Challenges** — per-test PASS/FAIL lines + log artefact path; RUNTIME layer mandatory
 
+**Installable-asset evidence (iter-71 addendum):** For any user-distributable
+build artifact (APK, AAB, DMG, MSI, Wasm bundle), tests/challenges MUST open
+the artifact and verify each user-visible asset is present + non-degenerate.
+This includes launcher icons (all densities AND adaptive-icon XML resolution
+on minSdk≥26), splash screens, and app name strings. A PASS without opening
+the artifact is bluff. See `yole-challenges/scripts/installable_app_icon_challenge.sh`.
+
 **When editing submodule governance:** phrase this rule GENERICALLY per CONST-038.
 Do NOT hardcode Yole-specific platform names (Android/Desktop/iOS/Web) into
 shared submodule governance documents.

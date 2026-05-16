@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SPDX-FileCopyrightText: 2026 Milos Vasic
+  SPDX-License-Identifier: Apache-2.0
+
+  iter-71 EMERGENCY FIX: Resource shrinker keep-list.
+
+  Explicitly prevents the R8/AGP resource shrinker from stripping launcher
+  icon assets when shrinkResources = true is enabled in the future.
+
+  Root cause: in iter-59 the adaptive-icon XML was stripped from the APK
+  in some shrinker configurations because the shrinker traversed only the
+  PNG resolution of @mipmap/ic_launcher. With the correct foreground vector
+  at @drawable/ic_launcher_foreground, the keep-list below ensures ALL
+  layers of the adaptive icon survive shrinker passes.
+
+  See docs/KNOWN_DEFECTS.md #iter-71-launcher-icon-missing-postmortem.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@mipmap/ic_launcher,@mipmap/ic_launcher_round,@drawable/ic_launcher_foreground,@color/ic_launcher_background"/>
