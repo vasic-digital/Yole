@@ -317,10 +317,34 @@ if [[ -f "$KLS_ARCHIVE" ]]; then
   fi
 fi
 
+# ── gopls — Go install (requires Go toolchain on build host) ─────────────────
+# iter-62 Phase 9: gopls has no upstream pre-built binary; it must be compiled
+# from source via 'go install'. Skip-safe if Go is not in PATH.
+log "--- gopls (darwin/arm64 via go install) ---"
+if command -v go >/dev/null 2>&1; then
+    log "==> Staging gopls via go install (darwin/arm64)"
+    GO_BIN="$(go env GOPATH)/bin"
+    GOOS=darwin GOARCH=arm64 go install golang.org/x/tools/gopls@latest
+    # Locate built binary (may be in GOPATH/bin/gopls or GOPATH/bin/darwin_arm64/gopls)
+    GOPLS_SRC=""
+    if [ -f "${GO_BIN}/gopls" ]; then GOPLS_SRC="${GO_BIN}/gopls"
+    elif [ -f "${GO_BIN}/darwin_arm64/gopls" ]; then GOPLS_SRC="${GO_BIN}/darwin_arm64/gopls"
+    fi
+    if [ -n "${GOPLS_SRC}" ]; then
+        mkdir -p "${CACHE_DIR}/go/macos-arm64"
+        cp "${GOPLS_SRC}" "${CACHE_DIR}/go/macos-arm64/gopls"
+        log "[OK] gopls staged at .lsp-binary-cache/go/macos-arm64/gopls"
+    else
+        log "[WARN] go install succeeded but binary not found at expected paths"
+    fi
+else
+    log "[SKIP-OK: #iter-62-gopls-no-go-toolchain — Go not in PATH; gopls staging deferred]"
+fi
+
 # ── SKIP summary ──────────────────────────────────────────────────────────────
 log ""
 log "=== SKIP summary (no action taken) ==="
-log "  gopls         — no upstream pre-built binary; needs 'go install'; see #lsp-gopls-binary"
+log "  gopls         — staged via 'go install' above if Go toolchain present; see #iter-62-gopls-no-go-toolchain"
 log "  pyright       — Node.js bundle; deferred to lsp-node-runtime DFM (Phase 8)"
 log "  typescript-ls — Node.js bundle; deferred to lsp-node-runtime DFM (Phase 8)"
 log "  bash-ls       — Node.js bundle; deferred to lsp-node-runtime DFM (Phase 8)"
