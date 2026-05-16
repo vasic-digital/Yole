@@ -6,9 +6,29 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-62 **Phase 6 COMPLETE** — HoverPopup + HoverTriggerDetector + HoverShortcut).
+**Last updated:** 2026-05-16 (iter-62 **Phase 7 COMPLETE** — GoToDefinitionAction + DefinitionLocationChooser + EditorNavigationStack).
 
-Commit: `c6d92a24`
+Commit: TBD (pending commit below)
+
+Files added (Phase 7):
+- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/EditorNavigationStack.kt` — `data class NavEntry(uri, cursorOffset)` + `class EditorNavigationStack(maxEntries=100)`: push (consecutive-dup suppression, cap eviction), pop, peek, canGoBack, clear.
+- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/LspDefinitionRequester.kt` — single-method interface `suspend fun definition(langId, documentUri, line, character): List<DefinitionLocation>`. Introduced for testability (documented plan deviation).
+- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/GoToDefinitionAction.kt` — `object GoToDefinitionAction { suspend fun goToDefinition(...) }`. Routes: 0 results → onToast; 1 result → stack.push + onOpenFileAt; N results → onChoose. Takes LspDefinitionRequester (not LspServerHost directly).
+- `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/navigation/DefinitionLocationChooser.kt` — `@Composable DefinitionLocationChooser(locations, onSelected, onDismiss, modifier)`. Material3 ModalBottomSheet, LazyColumn with itemsIndexed, testTag("def-chooser") + testTag("def-row-$index"), Cancel row. Private `DefinitionLocationRow` composable.
+- `shared/src/commonTest/kotlin/digital/vasic/yole/lsp/EditorNavigationStackTests.kt` — 6 tests: empty_pop_returns_null, push_then_pop_returns_same_entry, cap_drops_oldest, consecutive_duplicate_suppressed, non_consecutive_duplicate_allowed, canGoBack_reflects_state. All 6 PASS (confirmed via XML).
+- `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/GoToDefinitionActionTests.kt` — 3 tests: zero_results_emits_toast, one_result_pushes_and_opens, multi_results_invokes_chooser. FakeLspDefinitionRequester inline test double. All 3 PASS (confirmed via XML).
+- `androidApp/src/test/kotlin/digital/vasic/yole/android/robolectric/DefinitionLocationChooserRobolectricTest.kt` — 5 structural tests: rendersAllLocations (def-chooser + def-row-$index + LazyColumn + itemsIndexed), clickRow_invokesOnSelected (onSelected(location) call site + clickable wiring), chooserUsesModalBottomSheet, chooserHasCancelRow, rowDerivesFilenameFromUri, chooserHasExperimentalAnnotation. All compile and run GREEN (pre-existing suite: 38 tests, 2 pre-existing failures unchanged).
+
+Tests Phase 7: 6 commonTest + 3 desktopTest + 5 Robolectric = 14 new tests. Mutation evidence:
+- EditorNavigationStack: stub pop() → always null → push_then_pop_returns_same_entry + canGoBack_reflects_state FAIL. Revert → 6/6 PASS.
+- GoToDefinitionAction: stub requester → emptyList() always → one_result_pushes_and_opens + multi_results_invokes_chooser FAIL. Revert → 3/3 PASS.
+- DefinitionLocationChooser: structural assertions verify onClick wiring + testTag anchors. Stub onclick to no-op → clickRow_invokesOnSelected FAIL.
+
+Plan deviation: `LspDefinitionRequester` interface added (CONST-035 / testability). GoToDefinitionAction takes this interface instead of LspServerHost directly because LspServerHost is a non-open expect class that cannot be subclassed/mocked in commonTest without MockK (JVM-only). Production Phase 8 wires `LspDefinitionRequester { override suspend fun definition(...) = host.definition(...) }`. Documented in commit body.
+
+Detekt: zero violations. Pre-existing Android failures (VersionConsistencyTests, FileBrowserSaveFunctionalityTests) unchanged — not introduced by Phase 7.
+
+**Next: Phase 8 — Wire GoToDefinitionAction + DefinitionLocationChooser into IdeEditorScreen (YoleApp.kt / SyncedScrollEditor integration).**
 
 Files added (Phase 6):
 - `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/hover/HoverPopup.kt` — `@Composable HoverPopup(blocks, anchorOffset, syntaxHighlighter?, onDismiss, modifier)`. Popup(TopStart + offset), LazyColumn max 400×300 dp, when-switch over all 5 HoverBlock variants. testTag: `hover-popup`.
@@ -19,8 +39,6 @@ Files added (Phase 6):
 - `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/HoverTriggerDetectorTest.kt` — 6 tests with 30 ms dwellMillis (real-clock): dwell_dispatches_after_300ms, dwell_cancels_on_subsequent_move, dwell_skips_when_completion_popup_open, dwell_skips_when_not_identifier, explicit_bypasses_filters_and_dwell, dismiss_cancels_pending_dwell. All 6 PASS.
 
 Tests Phase 6: 13 new (8 Robolectric + 5 Robolectric + 6 desktopTest). Spot-checks: FoldGutterRobolectricTest (6 PASS), CompletionPopupRobolectricTest (8 PASS). Detekt: zero violations. Pre-commit hooks: scanner clean, anchor manifest valid.
-
-**Next: Phase 7 — HoverState + LspServerHost hover wiring + hover integration into SyncedScrollEditor (Phase 8 plan section).**
 
 Files added (Phase 5):
 - `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/diagnostics/DiagnosticsPalette.kt` — pure helper `severityVisuals(Severity, isDark): SeverityVisuals` with VS Code–inspired color palette. 4 severity → (color, icon) mappings.
