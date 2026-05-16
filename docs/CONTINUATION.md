@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-63 **Phase 13 COMPLETE** — Firebase distribution v1.6.0; iter-63 COMPLETE).
+**Last updated:** 2026-05-16 (iter-64 **Phase 2 COMPLETE** — Conversion helpers: HeadingDetector + CodeBlockDetector + TableConverter + ImageExtractor + LinkPreserver; 15 tests PASS; mutation evidence confirmed per class).
 
 ## Section 52 — iter-63 Phase 13: Firebase distribution v1.6.0
 
@@ -37,6 +37,45 @@ Feature 4 LSP arc is fully closed: iter-61 (hosting + completion) + iter-62 (dia
 ### Next: iter-64 — Feature 5: Document format import
 
 Per task #12 / #79: import from external document formats (docx + pdf + rtf + html + odt + epub → markdown). Start with Phase 0 deep research.
+
+## Section 53 — iter-64 Phase 2: Conversion helpers
+
+**Status:** COMPLETE.
+
+**Branch:** master. **Last commit:** `feat(iter-64): Phase 2 — Conversion helpers (HeadingDetector + CodeBlockDetector + TableConverter + ImageExtractor + LinkPreserver)`.
+
+### What was added
+
+All 5 helpers in `shared/src/commonMain/kotlin/digital/vasic/yole/import_/conversion/`:
+- `HeadingDetector.kt` — font-size rank → H1-H6 or null (body text)
+- `CodeBlockDetector.kt` — monospace font whitelist (11 fonts, case-insensitive contains)
+- `TableConverter.kt` — row list → GFM Markdown table with `|` escaping
+- `ImageExtractor.kt` — `ExtractedImage` data class + `fromBytes()` with jpg→jpeg normalisation
+- `LinkPreserver.kt` — text+URL → Markdown inline link with `]`/`\` text escaping and `)` URL percent-encoding
+
+All 5 test classes in `shared/src/commonTest/kotlin/digital/vasic/yole/import_/conversion/`:
+15 tests total: 4 + 3 + 3 + 2 + 3.
+
+### Mutation evidence (stub → FAIL)
+
+| Class | Stub | FAIL count |
+|---|---|---|
+| HeadingDetector | `return null` always | 3 FAIL (H1, middle rank, clamp; null test PASS — expected) |
+| CodeBlockDetector | `return false` always | 2 FAIL (known fonts, case-insensitive; proportional PASS — expected) |
+| TableConverter | `return ""` always | 2 FAIL (2×2 table, pipe escape; empty PASS — expected) |
+| ImageExtractor | skip normalisation | 1 FAIL (jpg→jpeg; construction PASS — bytes still preserved) |
+| LinkPreserver | `return text` always | 3 FAIL (all 3 tests) |
+
+### Cross-platform impact
+
+- Android: no change — commonMain-only objects, no platform actuals touched.
+- Desktop: no change — same.
+- iOS: no change — same.
+- Web: no change — same.
+
+### Next
+
+iter-64 Phase 3 — per plan §2.7+ (platform-specific importer implementations).
 
 ---
 
