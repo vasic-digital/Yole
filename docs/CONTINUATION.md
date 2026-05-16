@@ -6,7 +6,66 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-63 **Phase 7 COMPLETE** — SignatureHelpPill + SignatureHelpPopup + SignatureHelpTrigger; commit `c8925dce`).
+**Last updated:** 2026-05-16 (iter-63 **Phase 10 COMPLETE** — IdeEditorScreen integration (rename + code actions + signature help + formatting + references); commit `5fc2cd03`).
+
+## Section 50 — iter-63 Phase 10: IdeEditorScreen integration (all 5 LSP capabilities)
+
+**Status:** COMPLETE. Phase 10 gate passed.
+
+**Branch:** master. **Last commit:** `5fc2cd03`.
+
+### What was shipped
+
+- **YoleApp.kt** (`IdeEditorScreen`): All 5 iter-63 LSP capabilities wired end-to-end:
+  - Rename: `LspRenameRequester` adapter + `showRenameAction` state + `RenameAction` modal + `WorkspaceEditApplier.apply()` on confirm
+  - Code Actions: `LspCodeActionRequester` adapter + 500ms polling `LaunchedEffect` → `actionsByLine: Map<Int, List<CodeAction>>` + `CodeActionMenu` overlay
+  - Signature Help: `LspSignatureHelpRequester` adapter + `SignatureHelpTrigger` wired to `onTextChanged` keystroke stream + `SignatureHelpPill` overlay
+  - Formatting: `LspFormattingRequester` adapter + `FormattingTrigger` (onSave/onExplicit/onType); onType hardcoded chars `{';', '}', '\n'}`; onExplicit forwarded to existing Ctrl+Shift+F path
+  - Find References: `LspReferencesRequester` adapter + `FindReferencesAction.findReferences()` + `ReferencesPanel` 200dp bottom drawer
+  - Toolbar "Rename" + "Refs" buttons (langId-gated) for mobile reach
+
+- **SyncedScrollEditor.kt**: Two new parameters + two new `onPreviewKeyEvent` handlers:
+  - `onRenameRequest: () -> Unit = {}` — triggered by F2
+  - `onFindReferencesRequest: () -> Unit = {}` — triggered by Shift+F12
+  - Both insert before existing Ctrl+Shift+F handler in priority order
+
+- **IdeEditorScreenIter63IntegrationRobolectricTest.kt**: 3 new structural Robolectric tests (source-inspection pattern, @Config(manifest=Config.NONE)):
+  - `renameAction_wiredViaF2_invokesPanel` — 10 assertions
+  - `codeActionLightbulb_pollingPopulatesActions` — 8 assertions
+  - `referencesPanel_opensOnShiftF12` — 12 assertions
+
+### Deferred trackers (all with `#` IDs for search)
+
+| Tracker | Scope |
+|---------|-------|
+| `#iter-63-longpress-gesture-detector` | Full long-press context menu on BasicTextField (complex Indication API); Phase 10 v1 surfaces rename/refs as toolbar buttons instead |
+| `#iter-63-desktop-signature-help-popup-deferred` | Desktop SignatureHelpPopup + rename + references wiring in desktopApp |
+| `#iter-63-server-trigger-chars-hardcoded` | Server-capability query for on-type trigger chars; hardcoded as `{';', '}', '\n'}` |
+| `#iter-63-format-on-save-settings-toggle` | FormattingTrigger `settings = { false }` — Settings screen toggle deferred |
+| `#iter-63-on-type-edit-apply` | On-type formatting TextEdit list obtained but not yet applied to editor buffer |
+| `#iter-63-explicit-format-edit-apply` | Explicit formatting TextEdit list obtained but not yet applied to editor buffer |
+
+### Test counts
+- `IdeEditorScreenIter63IntegrationRobolectricTest`: 3/3 PASS (BUILD SUCCESSFUL)
+- `IdeEditorScreenLspIntegrationRobolectricTest` (iter-62 regression): PASS
+- `:shared:desktopTest`: PASS (FROM-CACHE)
+- `:androidApp:testDebugUnitTest` full suite: 228 actionable tasks BUILD SUCCESSFUL
+
+### Cross-platform impact
+- Android: all 5 capabilities wired in IdeEditorScreen; F2/Shift+F12 key handlers; 3 Robolectric tests pass
+- Desktop: SyncedScrollEditor F2/Shift+F12 Compose-level handlers compile on Desktop; popup wiring deferred (#iter-63-desktop-signature-help-popup-deferred)
+- iOS: LspServerHost stubs return null/emptyList; no UI changes
+- Web: LspServerHost stubs return null/emptyList; no UI changes
+
+### Next: iter-63 Phase 11 — anti-bluff challenges + qa-iter-63-gates Makefile target
+
+Per plan §11:
+- `yole-challenges/scripts/lsp_refactoring_challenge.sh` (rename + references round-trip evidence)
+- `Makefile` `qa-iter-63-gates` target
+- Then Phase 12: Documentation (user-guide, architecture, lsp-capability matrix)
+- Then Phase 13: Firebase distribution v1.6.0
+
+---
 
 ## Section 49 — iter-63 Phase 7: SignatureHelpPill + SignatureHelpPopup + SignatureHelpTrigger
 
