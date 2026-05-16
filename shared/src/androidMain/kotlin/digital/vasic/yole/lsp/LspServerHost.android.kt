@@ -28,6 +28,14 @@
  *   - signatureHelp(): 300ms timeout; placeholder mapping (Phase 3 finalizes).
  *   - formatting(): 1000ms timeout; placeholder TextEdit list mapping.
  *   - references(): 2000ms timeout; reuses Location→DefinitionLocation mapping.
+ *
+ * iter-63 Phase 3 additions (mirror of Desktop):
+ *   - mapLspWorkspaceEditToYoleAndroid: finalized with documentChanges support.
+ *   - mapLspCodeActionAndroid: extracted helper for Either<Command, CodeAction>.
+ *   - mapLspTextEditsAndroid: batch TextEdit mapping with real LspRangeMapping offsets.
+ *   - mapLspTextEditWithDocAndroid: single TextEdit using docText for range resolution.
+ *   - mapLspSignatureHelpToYoleAndroid: finalized (unchanged from Phase 2 logic).
+ *   - formatting() wired to pass docTexts[uri] for real range mapping.
  *#######################################################*/
 package digital.vasic.yole.lsp
 
@@ -61,6 +69,9 @@ import org.eclipse.lsp4j.DidCloseTextDocumentParams
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
 import org.eclipse.lsp4j.DocumentFormattingParams
 import org.eclipse.lsp4j.FormattingOptions
+import org.eclipse.lsp4j.ResourceOperation
+import org.eclipse.lsp4j.SnippetTextEdit
+import org.eclipse.lsp4j.TextDocumentEdit
 import org.eclipse.lsp4j.HoverParams
 import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.InitializedParams
@@ -293,28 +304,8 @@ actual class LspServerHost actual constructor(
                 )
                 val raw = server.languageServer.textDocumentService.codeAction(params)
                     .get(1000, TimeUnit.MILLISECONDS)
-                raw.orEmpty().mapNotNull { either ->
-                    when {
-                        either.isLeft -> {
-                            val cmd: Command = either.left
-                            CodeAction(
-                                title = cmd.title ?: "",
-                                kind = null,
-                                edit = null,
-                                command = cmd.command,
-                            )
-                        }
-                        else -> {
-                            val lspAction = either.right
-                            CodeAction(
-                                title = lspAction.title ?: "",
-                                kind = lspAction.kind,
-                                edit = lspAction.edit?.let { mapLspWorkspaceEditToYoleAndroid(it) },
-                                command = lspAction.command?.command,
-                            )
-                        }
-                    }
-                }
+                // Phase 3: delegate to extracted mapLspCodeActionAndroid helper (CONST-035).
+                raw.orEmpty().map { either -> mapLspCodeActionAndroid(either) }
             }
         } catch (e: CancellationException) {
             throw e
@@ -361,7 +352,8 @@ actual class LspServerHost actual constructor(
                 val params = DocumentFormattingParams(TextDocumentIdentifier(uri), options)
                 val raw = server.languageServer.textDocumentService.formatting(params)
                     .get(1000, TimeUnit.MILLISECONDS)
-                raw.orEmpty().map { lspEdit -> TextEdit(range = 0..0, newText = lspEdit.newText ?: "") }
+                val docText = server.docTexts[uri] ?: ""
+                mapLspTextEditsAndroid(raw.orEmpty(), docText)
             }
         } catch (e: CancellationException) {
             throw e
@@ -591,12 +583,44 @@ internal fun mapLspCodeEither(code: Either<String, Int>?): String? = when {
 }
 
 // ---------------------------------------------------------------------------
-// iter-63 Phase 2 mapping helpers (Android mirror of Desktop variants).
-// Suffixed to avoid duplicate-function conflict if both source sets are merged
-// in a single classpath (e.g. during shared unit-test compilation).
+// iter-63 Phase 3 mapping helpers (Android mirror of Desktop variants).
+// Suffixed -Android to avoid duplicate-function conflict if both source sets
+// are merged in a single classpath (e.g. during shared unit-test compilation).
+// All are internal top-level for androidUnitTest testability (CONST-035).
 // ---------------------------------------------------------------------------
 
+/**
+ * Map an LSP4J [org.eclipse.lsp4j.WorkspaceEdit] to Yole's [WorkspaceEdit].
+ *
+ * Prefers `documentChanges` (modern, LSP 3.18) over `changes` (legacy)
+ * when both fields are present. Only [TextDocumentEdit] entries are mapped;
+ * [ResourceOperation] entries (file-level ops) are skipped.
+ *
+ * Mutation: swap preference → documentChanges_preferredOver_changes FAILS.
+ */
 internal fun mapLspWorkspaceEditToYoleAndroid(lspEdit: org.eclipse.lsp4j.WorkspaceEdit): WorkspaceEdit {
+    val docChanges = lspEdit.documentChanges
+    if (!docChanges.isNullOrEmpty()) {
+        val mapped = mutableMapOf<String, List<TextEdit>>()
+        for (either in docChanges) {
+            if (either.isLeft) {
+                // TextDocumentEdit — carries uri + list of Either<TextEdit, SnippetTextEdit>
+                val tde: TextDocumentEdit = either.left
+                val uri = tde.textDocument?.uri ?: continue
+                // LSP4J 1.0.0: edits is List<Either<TextEdit, SnippetTextEdit>>.
+                val edits = tde.edits.orEmpty().map { editEither ->
+                    if (editEither.isLeft) {
+                        TextEdit(range = 0..0, newText = editEither.left.newText ?: "")
+                    } else {
+                        val snip = editEither.right
+                        TextEdit(range = 0..0, newText = snip.snippet?.value ?: "")
+                    }
+                }
+                mapped[uri] = edits
+            }
+        }
+        return WorkspaceEdit(changes = mapped)
+    }
     val rawChanges = lspEdit.changes.orEmpty()
     val mapped = rawChanges.mapValues { (_, edits) ->
         edits.orEmpty().map { TextEdit(range = 0..0, newText = it.newText ?: "") }
@@ -604,6 +628,69 @@ internal fun mapLspWorkspaceEditToYoleAndroid(lspEdit: org.eclipse.lsp4j.Workspa
     return WorkspaceEdit(changes = mapped)
 }
 
+/**
+ * Map an LSP4J `Either<Command, CodeAction>` entry to Yole's [CodeAction].
+ *
+ * Mutation: return CodeAction("WRONG",null,null,null) → commandEither FAILS.
+ */
+internal fun mapLspCodeActionAndroid(
+    either: Either<Command, org.eclipse.lsp4j.CodeAction>,
+): CodeAction = when {
+    either.isLeft -> {
+        val cmd: Command = either.left
+        CodeAction(
+            title = cmd.title ?: "",
+            kind = null,
+            edit = null,
+            command = cmd.command,
+        )
+    }
+    else -> {
+        val lspAction = either.right
+        CodeAction(
+            title = lspAction.title ?: "",
+            kind = lspAction.kind,
+            edit = lspAction.edit?.let { mapLspWorkspaceEditToYoleAndroid(it) },
+            command = lspAction.command?.command,
+        )
+    }
+}
+
+/**
+ * Map a single LSP4J [org.eclipse.lsp4j.TextEdit] with real offset resolution.
+ *
+ * Mutation: return 0..0 → real-offset tests FAIL.
+ */
+internal fun mapLspTextEditWithDocAndroid(lspEdit: LspTextEdit, docText: String): TextEdit {
+    val startOffset = LspRangeMapping.lineColToOffset(
+        docText,
+        lspEdit.range?.start?.line ?: 0,
+        lspEdit.range?.start?.character ?: 0,
+    )
+    val endOffset = LspRangeMapping.lineColToOffset(
+        docText,
+        lspEdit.range?.end?.line ?: 0,
+        lspEdit.range?.end?.character ?: 0,
+    )
+    return TextEdit(range = startOffset..endOffset, newText = lspEdit.newText ?: "")
+}
+
+/**
+ * Map a batch of LSP4J [org.eclipse.lsp4j.TextEdit]s with real offset resolution.
+ *
+ * Mutation: return emptyList() → single-edit and multi-edit tests FAIL.
+ */
+internal fun mapLspTextEditsAndroid(lspEdits: List<LspTextEdit>, docText: String): List<TextEdit> =
+    lspEdits.map { mapLspTextEditWithDocAndroid(it, docText) }
+
+/**
+ * Map an LSP4J [org.eclipse.lsp4j.SignatureHelp] to Yole's [SignatureHelp].
+ *
+ * [org.eclipse.lsp4j.SignatureInformation.documentation] is
+ * `Either<String, MarkupContent>` — plain string (left) or markdown (right).
+ *
+ * Mutation: return null always → stringDocumentation_isExtracted FAILS.
+ */
 internal fun mapLspSignatureHelpToYoleAndroid(lspHelp: org.eclipse.lsp4j.SignatureHelp): SignatureHelp? {
     val sigs = lspHelp.signatures.orEmpty()
     if (sigs.isEmpty()) return null
