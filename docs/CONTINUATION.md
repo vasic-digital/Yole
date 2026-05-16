@@ -8,7 +8,7 @@
 
 **Last updated:** 2026-05-16 (iter-62 **Phase 7 COMPLETE** — GoToDefinitionAction + DefinitionLocationChooser + EditorNavigationStack).
 
-Commit: TBD (pending commit below)
+Commit: `1c5b04cf`
 
 Files added (Phase 7):
 - `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/EditorNavigationStack.kt` — `data class NavEntry(uri, cursorOffset)` + `class EditorNavigationStack(maxEntries=100)`: push (consecutive-dup suppression, cap eviction), pop, peek, canGoBack, clear.
