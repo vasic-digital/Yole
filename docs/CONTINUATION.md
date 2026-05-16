@@ -6,7 +6,36 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-63 **Phase 2 COMPLETE** — LspServerHost +rename +codeActions +signatureHelp +formatting +references: expect class + 4 platform actuals/stubs + 2 new data files + 5 degradation tests; commit TBD).
+**Last updated:** 2026-05-16 (iter-63 **Phase 6 COMPLETE** — CodeActionLightbulb + CodeActionMenu + CodeActionInvoker + SyncedScrollEditor 3rd gutter column; commit `1dcc4b1f`).
+
+## Section 48 — iter-63 Phase 6: CodeActionLightbulb + Menu + Invoker (3rd gutter column)
+
+**Status:** COMPLETE. Phase 6 gate passed.
+
+**Branch:** master. **Last commit:** `1dcc4b1f`.
+
+### What was shipped
+
+- `androidApp/.../codeaction/CodeActionLightbulb.kt` — per-line amber icon gutter column; testTag root "code-action-lightbulb", per-icon "lightbulb-line-N".
+- `androidApp/.../codeaction/CodeActionMenu.kt` — DropdownMenu anchored to lightbulb tap; testTag "code-action-menu", items "code-action-item-N".
+- `androidApp/.../codeaction/CodeActionInvoker.kt` — suspend dispatcher: edit→WorkspaceEditApplier+onEdit; command→onCommand; neither→no-op.
+- `SyncedScrollEditor.kt` modified — new params `actionsByLine` + `onCodeActionLineTap`; gutter order `[diagnostic-dot][lightbulb][fold-chevron]`.
+- `CodeActionLightbulbRobolectricTest.kt` — 4 structural tests with CONST-035 mutation guards, all PASS.
+
+### Regression spot-check
+- FoldGutterRobolectricTest: PASS
+- DiagnosticsGutterTest: PASS
+- RenamePreviewPanelRobolectricTest: PASS
+
+### Next: Phase 7 — Signature help: pill (mobile) + popup (desktop)
+
+Per plan §7.1–7.5:
+- `SignatureHelpPill.kt` — mobile inline Surface chip above cursor line.
+- `SignatureHelpPopup.kt` — desktop Popup tooltip.
+- `SignatureHelpTrigger.kt` — `(` and `,` keystroke detector + debounce.
+- Robolectric tests for both surfaces.
+
+---
 
 ## Section 47 — iter-63 Phase 2: LspServerHost extended with 5 LSP refactoring capability methods
 
