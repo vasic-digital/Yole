@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-64 **Phase 4 COMPLETE** — HtmlImporter (jsoup 1.17.2 + flexmark-html2md-converter 0.64.8): expect class + Desktop/Android JVM actuals + iOS/Wasm stubs + 5 desktopTest tests PASS; mutation guard confirmed; `SETEXT_HEADINGS=false` set so converter produces ATX `#` headings).
+**Last updated:** 2026-05-16 (iter-64 **Phase 5 COMPLETE** — RtfImporter (javax.swing.text.rtf.RTFEditorKit): expect class + Desktop JVM actual (full) + Android honest stub (#iter-64-android-rtf-no-swing) + iOS/Wasm stubs + 4 desktopTest tests PASS; mutation guard confirmed).
 
 ## Section 52 — iter-63 Phase 13: Firebase distribution v1.6.0
 
@@ -203,7 +203,65 @@ Inline stub (`object : DocumentImporter`) always returns `Result.failure(ImportE
 
 ### Next
 
-iter-64 Phase 5 — RtfImporter (Apache POI HSMF or javax.swing.text.rtf fallback).
+iter-64 Phase 5 — RtfImporter. ← **DONE; see Section 56 below.**
+
+---
+
+## Section 56 — iter-64 Phase 5: RtfImporter (javax.swing.text.rtf.RTFEditorKit)
+
+**Status:** COMPLETE.
+
+**Branch:** master. **Last commit:** `feat(iter-64): Phase 5 — RtfImporter (javax.swing.text.rtf)`.
+
+### What was added
+
+**No new library dependencies.** `javax.swing.text.rtf.RTFEditorKit` is part of the Java SE standard library, available on the Desktop JVM without additional classpath entries.
+
+**Source files:**
+- `shared/src/commonMain/kotlin/digital/vasic/yole/import_/RtfImporter.kt` — `expect class RtfImporter() : DocumentImporter`, `supportedExtensions = setOf("rtf")`
+- `shared/src/desktopMain/kotlin/digital/vasic/yole/import_/RtfImporter.desktop.kt` — full JVM actual
+- `shared/src/androidMain/kotlin/digital/vasic/yole/import_/RtfImporter.android.kt` — honest stub; `ImportError.NotSupported("rtf", "Android")`; tracker `#iter-64-android-rtf-no-swing`
+- `shared/src/iosMain/kotlin/digital/vasic/yole/import_/RtfImporter.ios.kt` — honest stub; `ImportError.NotSupported("rtf", "iOS")`
+- `shared/src/wasmJsMain/kotlin/digital/vasic/yole/import_/RtfImporter.wasmJs.kt` — honest stub; `ImportError.NotSupported("rtf", "Web")`
+- `shared/src/desktopTest/kotlin/digital/vasic/yole/import_/RtfImporterTest.kt` — 4 desktopTest tests
+
+### JVM implementation highlights
+
+- `RTFEditorKit().createDefaultDocument()` + `kit.read(ByteArrayInputStream(bytes), doc, 0)` — standard Java SE RTF parsing
+- RTF header validation: bytes must start with `{\rtf` — otherwise `IllegalArgumentException` is thrown (becomes `ImportError.Malformed`)
+- Element tree walk: `doc.defaultRootElement` → paragraphs → leaf elements; `doc.getText(start, end - start)` extracts text; sentinel `\n` leaves skipped
+- `StyleConstants.isBold(attrs)` / `StyleConstants.isItalic(attrs)` → `**text**` / `*text*` / `***text***` Markdown markers
+- `CancellationException` rethrown; all other exceptions → `ImportError.Malformed`
+
+### Android compat decision
+
+`javax.swing.text.rtf.RTFEditorKit` is **Java SE only** — absent from Android SDK. Confirmed by inspection: Android's `java.*` subset does not include `java.awt`, `javax.swing`, or `javax.swing.text.rtf`. The Android actual returns `ImportError.NotSupported("rtf", "Android")` with tracker comment `#iter-64-android-rtf-no-swing`. Long-term path: integrate a pure-Kotlin Android-safe RTF tokeniser once one reaches the Yole quality bar.
+
+### Test coverage (desktopTest — RtfImporterTest.kt)
+
+| Test | Assertion |
+|---|---|
+| `converts plain and bold text to markdown` | RTF `{\rtf1\ansi Hello \b bold\b0  world.}` → markdown contains `Hello`, `world`, `**bold**` |
+| `mutation guard - stub returning failure…` | Inline stub always fails; asserts `isFailure` |
+| `reports rtf as supported extension` | `supportedExtensions` contains `"rtf"` |
+| `returns Malformed for garbage bytes` | 64 garbage bytes (not starting with `{\rtf`) → `Result.failure(ImportError.Malformed)` |
+
+4 tests, 4 PASS, 0 FAIL.
+
+### Mutation evidence
+
+Primary test calls `RtfImporter()` directly and asserts `isSuccess` + content. Mutation guard test uses inline stub returning `Result.failure` → confirms `isFailure`, proving the primary test cannot PASS against a no-op importer.
+
+### Cross-platform impact
+
+- Android: honest stub `#iter-64-android-rtf-no-swing`; javax.swing absent from Android SDK.
+- Desktop: full JVM actual; no new deps; RTFEditorKit is Java SE standard library.
+- iOS: honest stub; `ImportError.NotSupported("rtf", "iOS")`.
+- Web: honest stub; `ImportError.NotSupported("rtf", "Web")`.
+
+### Next
+
+iter-64 Phase 6 — OdtImporter (per plan §6).
 
 ---
 
