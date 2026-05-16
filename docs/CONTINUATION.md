@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-62 **Phase 11 COMPLETE** — Firebase distribution v1.5.0: Android Release + DEV distributed; Desktop macOS-arm64 DMG staged; iter-62 COMPLETE).
+**Last updated:** 2026-05-16 (iter-63 **Phase 1 COMPLETE** — WorkspaceEdit + TextEdit + WorkspaceEditApplier: 3 commonMain types + 9 commonTest tests; commit `20a451da`).
 
 ---
 
@@ -3735,6 +3735,47 @@ If this section needs further updates (different test target, new host
 introduction, regression observed), agents resuming should append a
 dated subsection rather than overwrite — historical verification
 records are evidence per CONST-035.
+
+---
+
+## Section 47 — iter-63 Phase 1: WorkspaceEdit + TextEdit + WorkspaceEditApplier
+
+**Status:** COMPLETE. Commit `20a451da`.
+
+**Branch:** master.
+
+### What was shipped
+
+Three commonMain types forming the LSP refactoring substrate:
+
+| File | Type | Purpose |
+|------|------|---------|
+| `lsp/TextEdit.kt` | `data class` | Single character-range replacement with `apply(text)` + range clamping |
+| `lsp/WorkspaceEdit.kt` | `data class` | Multi-file edit aggregate; `isEmpty` helper |
+| `lsp/WorkspaceEditApplier.kt` | `object` | Applies a `WorkspaceEdit` to a URI→source map; validates non-overlapping ranges; skips unknown URIs |
+
+Test file: `commonTest/kotlin/digital/vasic/yole/lsp/WorkspaceEditPhase1Tests.kt`
+- `TextEditTests` — 3 tests
+- `WorkspaceEditTests` — 2 tests
+- `WorkspaceEditApplierTests` — 4 tests
+- **Total: 9 tests, all PASS** (`BUILD SUCCESSFUL` `:shared:desktopTest`)
+
+### Mutation evidence (CONST-035)
+
+| Mutation | Tests that FAIL |
+|----------|----------------|
+| `TextEdit.apply` stubbed to identity | 3/3 TextEdit tests |
+| `WorkspaceEdit.isEmpty` forced false | 1/1 (`isEmpty_trueWhen_noEdits`) |
+| `WorkspaceEditApplier.apply` returns sources unchanged | 3/4 (singleFile, multiFile, conflict; nonExistentUri undetectable by design) |
+
+### Next: Phase 2
+
+Per plan `docs/superpowers/plans/2026-05-16-lsp-4c-plan.md §Phase 2`:
+- Extend `LspServerHost` expect class with 5 suspend methods: `rename`, `codeActions`, `signatureHelp`, `formatting`, `references`.
+- Forward-declare `CodeAction.kt` + `SignatureHelp.kt` data classes.
+- iOS + Wasm stub bodies.
+- Desktop + Android JVM bodies with LSP4J wiring + `withTimeout`.
+- 5 degradation tests in `LspServerHostTest.kt`.
 
 ---
 
