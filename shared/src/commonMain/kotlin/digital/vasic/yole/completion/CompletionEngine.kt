@@ -93,7 +93,6 @@ class CompletionEngine(
         // Accumulate per-provider results as they arrive. Each provider
         // writes its own slot; the merger reads all slots on each write.
         val accumulated = mutableListOf<List<CompletionItem>>()
-        val lock = Any()
 
         // Channel to receive (providerIndex, results) pairs from each launched coroutine.
         // We use a rendez-vous channel so each send blocks until the collector processes it.
@@ -126,13 +125,14 @@ class CompletionEngine(
         }
 
         // Collect exactly providers.size messages, emitting after each.
+        // resultsChannel.receive() is called sequentially on the channelFlow
+        // dispatcher — no concurrent access to `accumulated`, so no lock needed.
+        // (synchronized is JVM-only; channelFlow's single-collector invariant
+        // guarantees the repeat loop body is never re-entered concurrently.)
         repeat(providers.size) {
             val result = resultsChannel.receive()
-            val merged: List<CompletionItem>
-            synchronized(lock) {
-                accumulated.add(result)
-                merged = CompletionRanker.merge(accumulated, ctx.surroundingScope)
-            }
+            accumulated.add(result)
+            val merged = CompletionRanker.merge(accumulated, ctx.surroundingScope)
             if (merged.isNotEmpty()) {
                 send(merged)
             }

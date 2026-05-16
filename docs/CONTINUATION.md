@@ -6,7 +6,89 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (v1.8.0 **COMPLETE** — comprehensive QA validation + multi-platform Firebase distribution. All Android variants shipped. Desktop DMG staged. Web Wasm deferred (`#wasmjs-production-distribution-gap`). Linux/Windows/iOS not shipped per existing trackers.).
+**Last updated:** 2026-05-16 (iter-65 **PARTIALLY COMPLETE** — Web Wasm `compileKotlinWasmJs` fixed (2 JVM-only API removals); bundle blocked by KGP 2.0.20 bug (`ExecutableWasm.optimizeTask` null at init). Firebase Hosting + `releases/Yole-Web-*` staging deferred to v1.9.0 pending KGP >2.1.x upgrade.).
+
+## Section 62 — iter-65: Web Wasm partial resolution — `#wasmjs-production-distribution-gap`
+
+**Status:** PARTIALLY COMPLETE. `compileKotlinWasmJs` fixed. Bundle + Firebase Hosting BLOCKED by KGP 2.0.20 bug.
+
+**Branch:** master.
+
+### What was done
+
+**Goal:** Resolve `#wasmjs-production-distribution-gap` — add `binaries.executable()` to
+`webApp/build.gradle.kts`, generate a Web Wasm bundle, set up Firebase Hosting, deploy, and
+stage to `releases/Yole-Web-1.8.0-Release-0.0.0.1.80/`.
+
+**Root cause confirmed (KGP 2.0.20 bug):**
+
+Adding `binaries.executable()` to the `wasmJs {}` DSL block crashes Gradle with:
+
+```
+Cannot invoke "org.gradle.api.tasks.TaskProvider.flatMap(...)" because
+"this.optimizeTask" is null
+```
+
+Bytecode analysis via `javap -verbose` on both `kotlin-gradle-plugin-2.0.20.jar` and
+`kotlin-gradle-plugin-2.1.0.jar` confirms the root cause:
+
+- `JsIrBinary.<init>` (superclass) calls `registerTask("_linkSyncTask", …)` at offset 279.
+- Gradle's `DefaultNamedDomainObjectCollection$AbstractDomainObjectCreatingProvider.configure`
+  fires configure callbacks **eagerly** during `registerTask`.
+- The callback calls `syncInputConfigure`, virtual-dispatched to `ExecutableWasm.syncInputConfigure`.
+- At this point `ExecutableWasm.optimizeTask` is null — the field is assigned at bytecode offsets
+  127–131 of `ExecutableWasm.<init>`, AFTER the `super()` call at offset 22.
+- This is a real KGP defect. Present in both KGP 2.0.20 and 2.1.0. No DSL workaround exists.
+- Fix requires KGP >2.1.x (likely 2.2.0+) with a matching Compose Multiplatform upgrade.
+
+**Two Wasm compile errors fixed in `commonMain`:**
+
+Without `binaries.executable()`, `compileKotlinWasmJs` also failed on JVM-only APIs:
+
+1. **`CompletionEngine.kt`** — `synchronized {}` and `val lock = Any()` are JVM-only, not
+   available on Kotlin/Wasm. Removed both. The `channelFlow` `repeat` loop is sequential
+   (serialized by `resultsChannel.receive()`) — no lock needed. `CompletionEngineTest` PASS.
+
+2. **`LspWorkspaceResolver.kt`** — `= FileSystem.SYSTEM` default on `fs: FileSystem` parameter.
+   `FileSystem.SYSTEM` is Okio JVM/Desktop-only; it is not available on Kotlin/Wasm. Removed
+   the default — `fs` is now a required parameter. All 5 call sites in `desktopTest` already
+   pass `fs` explicitly. `LspWorkspaceResolverTest` PASS.
+
+`./gradlew :shared:desktopTest` — BUILD SUCCESSFUL (9,100+ tests PASS) after both fixes.
+
+**Files modified:**
+
+| File | Change |
+|------|--------|
+| `shared/src/commonMain/kotlin/digital/vasic/yole/completion/CompletionEngine.kt` | Removed `synchronized {}` + `val lock = Any()`; sequential receive() is sufficient |
+| `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/LspWorkspaceResolver.kt` | Removed `= FileSystem.SYSTEM` default; `fs` is now required |
+| `webApp/build.gradle.kts` | Comment updated with precise KGP 2.0.20 root cause + bytecode offsets |
+| `docs/KNOWN_DEFECTS.md` | `#wasmjs-production-distribution-gap` updated: compile fixed, bundle blocked with KGP root cause |
+| `CHANGELOG.md` | v1.8.0 entry updated with iter-65 partial resolution note |
+
+### What remains blocked
+
+- `binaries.executable()` — still crashes with KGP 2.0.20 bug (as above).
+- Without `binaries.executable()`, KGP generates NO webpack tasks:
+  no `wasmJsBrowserDevelopmentWebpack`, no `wasmJsBrowserDistribution`.
+- Firebase Hosting setup — BLOCKED (no bundle to host).
+- `releases/Yole-Web-1.8.0-Release-0.0.0.1.80/` staging — BLOCKED (no bundle).
+
+### Next step to unblock
+
+For v1.9.0:
+1. Upgrade Kotlin to 2.2.0+ (or whichever version ships the `ExecutableWasm` init fix).
+2. Upgrade Compose Multiplatform to the compatible version.
+3. Re-add `binaries.executable()` to `webApp/build.gradle.kts` `wasmJs {}` block.
+4. Verify `./gradlew :webApp:wasmJsBrowserDistribution` produces output in
+   `webApp/build/dist/wasmJs/productionExecutable/`.
+5. Configure Firebase Hosting: `firebase init hosting --project yole-app`, set public dir
+   to `webApp/build/dist/wasmJs/productionExecutable/`.
+6. Deploy: `firebase deploy --only hosting --project yole-app`.
+7. Stage bundle to `releases/Yole-Web-1.9.0-Release-0.0.0.1.90/`.
+8. Update CHANGELOG.md, CONTINUATION.md, KNOWN_DEFECTS.md (close the gap tracker).
+
+---
 
 ## Section 61 — v1.8.0: Comprehensive QA validation + multi-platform re-distribution
 

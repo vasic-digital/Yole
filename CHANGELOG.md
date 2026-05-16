@@ -6,9 +6,32 @@
 ## v1.8.0 — Comprehensive QA validation + multi-platform re-distribution (2026-05-16)
 
 **Version:** 1.8.0 (versionCode 180 → dotted `0.0.0.1.80`)
-**Build status:** Android Release + Debug/DEV distributed via Firebase App Distribution. Desktop macOS-arm64 DMG built and staged. Web Wasm production distribution deferred (`#wasmjs-production-distribution-gap`). Linux/Windows/iOS not shipped (see per-platform disposition).
+**Build status:** Android Release + Debug/DEV distributed via Firebase App Distribution. Desktop macOS-arm64 DMG built and staged. Web Wasm production distribution BLOCKED by KGP 2.0.20 bug (see iter-65 update below). Linux/Windows/iOS not shipped (see per-platform disposition).
 
 v1.8.0 is a re-distribution release following comprehensive QA re-validation. The entire test suite was rerun after a stale-test fix (tests that passed without actually exercising user-visible behavior). All 9,137 JVM tests, 152 Go packages, 18 challenges, and 8 iteration gates GREEN.
+
+### iter-65 Web Wasm partial resolution (2026-05-16)
+
+`compileKotlinWasmJs` for `:shared` now BUILD SUCCESSFUL after two Wasm
+compile fixes:
+
+1. **`CompletionEngine.kt`** — removed JVM-only `synchronized {}` /
+   `val lock = Any()`. The `channelFlow` `repeat` loop serializes via
+   `resultsChannel.receive()` — no lock needed. All `CompletionEngineTest`
+   tests PASS.
+
+2. **`LspWorkspaceResolver.kt`** — removed `= FileSystem.SYSTEM` default
+   on the `fs` parameter (`FileSystem.SYSTEM` is Okio JVM/Desktop-only,
+   unavailable on Wasm). Made `fs` a required parameter. All
+   `LspWorkspaceResolverTest` tests PASS.
+
+Web Wasm production bundle (`:webApp:wasmJsBrowserDistribution`) remains
+BLOCKED by a confirmed KGP 2.0.20 bug: `ExecutableWasm.syncInputConfigure`
+is called (via Gradle eager configure) before the `ExecutableWasm`
+constructor sets `optimizeTask`, causing `"this.optimizeTask" is null`.
+The bug is present in both KGP 2.0.20 and 2.1.0 (verified via `javap`
+bytecode analysis). Firebase Hosting setup and `releases/Yole-Web-*`
+staging remain blocked. Fix path: upgrade KGP beyond 2.1.x.
 
 ### QA Validation Summary
 
@@ -23,7 +46,7 @@ v1.8.0 is a re-distribution release following comprehensive QA re-validation. Th
 - **Android Release:** Firebase release id `4hvq67pf8vmqg`, app `1:578988389676:android:d61715a0a84a42c65d2889` — distributed to all 3 testers (SUCCESS)
 - **Android DEV (debug, `.dev` package):** Firebase release id `69g7porgq5fq0`, app `1:578988389676:android:5a3d47a9fb23b6465d2889` — distributed to all 3 testers (SUCCESS)
 - **Desktop macOS-arm64:** `Yole-Desktop-macos-arm64-1.8.0-Release-0.0.0.1.80.dmg` (524 MB) — staged locally; no Firebase Desktop product category (pre-existing gap, same as iter-58 through iter-64)
-- **Web Wasm:** DEFERRED — `#wasmjs-production-distribution-gap`; `binaries.executable()` not set in `webApp/build.gradle.kts`, `:webApp:wasmJsBrowserDistribution` task not generated; Firebase Hosting not configured
+- **Web Wasm:** BLOCKED — `#wasmjs-production-distribution-gap`; `binaries.executable()` crashes with KGP 2.0.20 bug; `:webApp:wasmJsBrowserDistribution` task not generated; Firebase Hosting not configured; `compileKotlinWasmJs` now succeeds (iter-65 fix)
 - **Linux .deb:** SKIPPED by Gradle on macOS host (cross-platform packaging not supported without Linux host)
 - **Windows .msi:** SKIPPED by Gradle on macOS host (requires Windows host)
 - **iOS:** BUILD FAILED — `linkPodReleaseFrameworkIosArm64` task not found; blocked by `#shared-iosmain-databasefactory-broken`
@@ -32,7 +55,7 @@ v1.8.0 is a re-distribution release following comprehensive QA re-validation. Th
 
 | Tracker | Description |
 |---------|-------------|
-| `#wasmjs-production-distribution-gap` | Web Wasm production bundle requires `binaries.executable()` + firebase.json hosting setup |
+| `#wasmjs-production-distribution-gap` | KGP 2.0.20 bug blocks `binaries.executable()`; `compileKotlinWasmJs` fixed (iter-65); bundle + hosting pending KGP >2.1.x upgrade |
 | `#crossbuild-linux-windows-infra` | Linux/Windows builds require matching host OS or cross-compilation setup |
 | `#shared-iosmain-databasefactory-broken` | iOS framework link fails; iOS has never shipped |
 

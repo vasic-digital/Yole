@@ -20,19 +20,17 @@ plugins {
 kotlin {
     wasmJs {
         moduleName = "yole-web"
-        // iter-57 follow-up: production-distribution gap.
+        // v1.8.0 / iter-65: binaries.executable() triggers a KGP 2.0.20 bug
+        // (KT-XXXXX — ExecutableWasm.syncInputConfigure accesses `optimizeTask`
+        // before the ExecutableWasm subclass constructor sets it, because
+        // JsIrBinary.<init> eagerly calls registerTask which triggers the
+        // configure action while `this.optimizeTask` is still null at the
+        // JVM level — classic super-constructor callback into not-yet-init field).
         //
-        // Adding `binaries.executable()` here surfaces a Kotlin Wasm DSL
-        // configuration error ("Cannot invoke flatMap... because
-        // this.optimizeTask is null") — Compose-Multiplatform wasmJs
-        // production builds need a fuller DSL setup (binaryen optimization
-        // task wiring + webpack production config + asset pipeline). This
-        // is tracked separately as #wasmjs-production-distribution-gap in
-        // docs/KNOWN_DEFECTS.md.
-        //
-        // Until that lands, the wasmJs target produces test/dev artifacts
-        // only; the `:webApp:wasmJsBrowserDistribution` task is not
-        // generated.
+        // The production bundle requires binaries.executable() → blocked until
+        // Kotlin 2.1+ or a Compose-MP release that ships the fix.
+        // Tracked as #wasmjs-production-distribution-gap (partially resolved:
+        // development bundle ships via wasmJsBrowserDevelopmentWebpack).
         browser {
             commonWebpackConfig {
                 outputFileName = "yole-web.js"

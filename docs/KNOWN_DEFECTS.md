@@ -384,7 +384,60 @@ when the grammar matrix lands in Phase 6.
 
 ---
 
-## #wasmjs-production-distribution-gap — NEW iter-57 follow-up 2026-05-15
+## #wasmjs-production-distribution-gap — PARTIALLY RESOLVED iter-65 2026-05-16
+
+**Update 2026-05-16 (iter-65):**
+
+Root cause confirmed via bytecode analysis of KGP 2.0.20 and 2.1.0 jars.
+The crash is a class-initialization order bug in `ExecutableWasm`:
+
+- `JsIrBinary.<init>` (superclass) calls `registerTask("_linkSyncTask", …)`
+  at bytecode offset 279 of `JsBinaries.kt`.
+- Gradle's `DefaultNamedDomainObjectCollection$AbstractDomainObjectCreatingProvider.configure`
+  fires the configure callback **eagerly** during registration.
+- That callback calls `syncInputConfigure`, which is virtual-dispatched to
+  `ExecutableWasm.syncInputConfigure`. At this point `this.optimizeTask`
+  is null because `ExecutableWasm.<init>` has not progressed past the
+  `super()` call (the `optimizeTask` field is set at bytecode offsets
+  127–131, AFTER `super()` at offset 22).
+- This is a real KGP defect present in both KGP 2.0.20 and 2.1.0.
+
+The bug cannot be worked around by any DSL-level configuration in
+`webApp/build.gradle.kts`. A fix requires a KGP version beyond 2.1.0
+(with a compatible Compose Multiplatform upgrade).
+
+**What was fixed in iter-65:**
+
+Two `commonMain` files used JVM-only APIs, preventing `compileKotlinWasmJs`
+from succeeding even if the bundle task were available:
+
+1. `CompletionEngine.kt` — removed `synchronized {}` / `val lock = Any()`
+   (JVM-only). The `channelFlow` `repeat` loop is sequential via
+   `resultsChannel.receive()`, so no lock is needed. All `CompletionEngineTest`
+   tests PASS.
+
+2. `LspWorkspaceResolver.kt` — removed `= FileSystem.SYSTEM` default on
+   the `fs` parameter (`FileSystem.SYSTEM` is Okio JVM/Desktop-only,
+   unavailable on Wasm). Made `fs` a required parameter. All
+   `LspWorkspaceResolverTest` tests PASS.
+
+`./gradlew :shared:compileKotlinWasmJs` now BUILD SUCCESSFUL.
+
+**Remaining gap:**
+
+`binaries.executable()` still cannot be called (KGP 2.0.20 bug above).
+Without it, KGP does not generate `wasmJsBrowserDevelopmentWebpack`,
+`wasmJsBrowserDistribution`, or any webpack tasks. Firebase Hosting
+setup and `releases/Yole-Web-*` staging are blocked until this is
+resolved.
+
+**Fix path:**
+
+Upgrade Kotlin beyond 2.1.x (e.g., 2.2.0+) with a matching Compose
+Multiplatform release that ships the `ExecutableWasm` constructor fix.
+Tracked for v1.9.0 infrastructure session.
+
+**Original entry (historical context):**
 
 **Symptom** — adding `binaries.executable()` to `webApp/build.gradle.kts`
 wasmJs block surfaces:
@@ -401,11 +454,6 @@ incompletely configured.
 **Impact** — `:webApp:wasmJsBrowserDistribution` task is not generated;
 Phase 14 cannot produce a web distribution artifact. Dev mode (Karma)
 works; production bundling does not.
-
-**Fix path** — research Compose-MP 1.7.x's current wasmJs production
-configuration recommendation; may need explicit `applyBinaryen()`,
-`webpack.config.d/` overrides, or a Kotlin/Wasm version bump. Tracked
-for the next infrastructure-focused session.
 
 ---
 

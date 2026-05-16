@@ -51,15 +51,18 @@ object LspWorkspaceResolver {
      * @param file   Path to the file being edited.
      * @param markers File/directory names that indicate a project root when found
      *               in a directory (e.g., `"Cargo.toml"`, `"go.mod"`).
-     * @param fs     FileSystem to use for existence checks. Defaults to
-     *               [FileSystem.SYSTEM]; injectable for unit tests.
+     * @param fs     FileSystem to use for existence checks. Required — pass
+     *               [okio.FileSystem.SYSTEM] on JVM/Desktop/Android or a
+     *               [okio.fakefilesystem.FakeFileSystem] in tests. No default
+     *               is provided because [FileSystem.SYSTEM] is unavailable on
+     *               Kotlin/Wasm (no system filesystem abstraction in Okio Wasm).
      * @return The closest ancestor directory containing any of [markers], or
      *         [file.parent] if no marker is found within [MAX_LEVELS] levels.
      */
     fun resolve(
         file: Path,
         markers: List<String>,
-        fs: FileSystem = FileSystem.SYSTEM,
+        fs: FileSystem,
     ): Path {
         var current: Path = file.parent ?: return file
         var depth = 0
