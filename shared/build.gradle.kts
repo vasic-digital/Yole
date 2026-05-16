@@ -143,6 +143,7 @@ kotlin {
                 implementation(libs.sshj)   // SFTP via SSH
                 implementation(libs.smbj)   // SMB/CIFS
                 implementation(libs.lsp4j)  // iter-61 Phase 4: Eclipse LSP4J JSON-RPC
+                implementation(libs.flexmark.core)  // iter-62 Phase 4: HoverMarkdownRenderer Flexmark walker
 
                 // Tree-Sitter (iter-57 Phase 5 — Android NDK fix landed
                 // post-Phase 13, ticket #android-tree-sitter-ndk-so-missing):
@@ -198,6 +199,7 @@ kotlin {
                 implementation(libs.sshj)   // SFTP via SSH
                 implementation(libs.smbj)   // SMB/CIFS
                 implementation(libs.lsp4j)  // iter-61 Phase 4: Eclipse LSP4J JSON-RPC
+                implementation(libs.flexmark.core)  // iter-62 Phase 4: HoverMarkdownRenderer Flexmark walker
 
                 // Tree-Sitter (iter-57 Phase 5). JAR bundles native binaries
                 // for x86_64-linux, aarch64-linux, x86_64-macos, aarch64-macos,

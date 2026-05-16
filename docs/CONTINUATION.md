@@ -6,27 +6,27 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-62 **Phase 3 COMPLETE** — LspRangeMapping pure helper + HoverInfoMappingTest + docTexts cache wired into publishDiagnostics).
+**Last updated:** 2026-05-16 (iter-62 **Phase 4 COMPLETE** — HoverMarkdownRenderer Flexmark walker → HoverBlock sealed hierarchy).
 
-Files added:
-- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/LspRangeMapping.kt` — `object LspRangeMapping { fun lineColToOffset(text, line, col) }` — pure commonMain helper.
-- `shared/src/commonTest/kotlin/digital/vasic/yole/lsp/LspRangeMappingTest.kt` — 5 tests: line0_col0_returns0, line0_col3_returns3, line1_col0_skipsFirstLine, line1_col2_returnsAbsoluteOffset, outOfBounds_clampsToEnd.
-- `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/HoverInfoMappingTest.kt` — 3 tests: markupContent_right_returnsValue, markedStringList_left_wrapsLanguageInFences, null_input_returnsNull.
+Files added (Phase 4):
+- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/HoverBlock.kt` — sealed class hierarchy: Paragraph, Heading, CodeBlock, InlineCodeSpan, FallbackText.
+- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/HoverMarkdownRenderer.kt` — `expect object HoverMarkdownRenderer { fun render(markdown): List<HoverBlock> }`.
+- `shared/src/desktopMain/kotlin/digital/vasic/yole/lsp/HoverMarkdownRenderer.desktop.kt` — JVM actual: Flexmark Parser singleton walker emitting HoverBlock variants.
+- `shared/src/androidMain/kotlin/digital/vasic/yole/lsp/HoverMarkdownRenderer.android.kt` — Android JVM actual: identical Flexmark walker.
+- `shared/src/iosMain/kotlin/digital/vasic/yole/lsp/HoverMarkdownRenderer.ios.kt` — iOS stub: FallbackText(markdown) if non-empty, emptyList() if empty.
+- `shared/src/wasmJsMain/kotlin/digital/vasic/yole/lsp/HoverMarkdownRenderer.wasmJs.kt` — Wasm stub: same as iOS.
+- `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/HoverMarkdownRendererTest.kt` — 8 tests: emptyInput_returnsEmpty, paragraph_returnsSingleParagraph, heading_extractsLevelAndText (fixed plan typo HoverBlock.render → HoverMarkdownRenderer.render), fencedCodeBlock_extractsLangAndCode, indentedCodeBlock_noLang, unsupportedBlock_becomesFallback, mixedContent_orderedCorrectly, rustAnalyzerStyle_signatureBlock.
 
-Files modified:
-- `shared/src/desktopMain/kotlin/digital/vasic/yole/lsp/LspServerHost.desktop.kt` — `RunningServer` gains `docTexts: MutableMap<String, String>`; `didOpen`/`didChange`/`didClose` update cache; `buildFakeClient(langId)` now resolves `servers[langId]?.docTexts` at publish time + uses `LspRangeMapping.lineColToOffset` for real `start..end` ranges; `acquireOrNull` passes `langId` to `buildFakeClient`.
-- `shared/src/androidMain/kotlin/digital/vasic/yole/lsp/LspServerHost.android.kt` — same changes as Desktop (mirror, CONST-038).
+Files modified (Phase 4):
+- `shared/build.gradle.kts` — `libs.flexmark.core` added to both `desktopMain` and `androidMain` source set dependencies.
 
-Tests: 45/45 PASS in `digital.vasic.yole.lsp.*` desktopTest suite (+8 new: 5 LspRangeMappingTest + 3 HoverInfoMappingTest). Mutation-verified (CONST-035):
-- `LspRangeMapping`: stub `return 0` → 4/5 FAIL (line0_col0 passes coincidentally). Revert → 5/5 PASS.
-- `mapHoverContentsToMarkdown`: stub `return null` → 2/3 FAIL (null_input passes coincidentally). Revert → 3/3 PASS.
-Detekt: zero violations.
+Tests: 53/53 PASS in `digital.vasic.yole.lsp.*` desktopTest suite (+8 new Phase 4 HoverMarkdownRendererTest). Mutation-verified (CONST-035): stub render() → FallbackText(markdown) → 6/8 FAIL (paragraph, heading, fencedCodeBlock, indentedCodeBlock, mixedContent, rustAnalyzerStyle). Revert → 8/8 PASS. Detekt: zero violations.
 
-Design decision (documented in LspRangeMapping.kt KDoc): `DefinitionLocation.range` intentionally stays `0..0` — target file text is not in `docTexts`; Phase 7 `openFileAt` resolves it post-file-open.
+Plan deviation: test 3 had an intentional typo (`HoverBlock.render` instead of `HoverMarkdownRenderer.render`). Fixed as directed in plan note.
 
-**Previous: Phase 2 COMPLETE** — LspServerHost.hover/definition + publishDiagnostics wired to DiagnosticsCache. Internal helpers: `mapHoverContentsToMarkdown`, `mapLspDefinitionsToList`, `mapLspSeverity`, `mapLspMessageEither`, `mapLspCodeEither`.
+**Previous Phase 3 COMPLETE:** LspRangeMapping pure helper + HoverInfoMappingTest + docTexts cache wired into publishDiagnostics.
 
-**Next: Phase 4 — DiagnosticsOverlay UI (squiggle underlines in IdeEditorScreen) + HoverTooltip UI.**
+**Next: Phase 5 — DiagnosticsGutter + InlineUnderline + ProblemsPanel.**
 
 **Previous: iter-62 Phase 1 COMPLETE** — Diagnostic + Severity + DiagnosticsCache. Files: `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/Diagnostic.kt`, `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/DiagnosticsCache.kt`, `shared/src/commonTest/kotlin/digital/vasic/yole/lsp/DiagnosticTest.kt`, `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/DiagnosticsCacheTest.kt`. Tests: 3 commonTest (DiagnosticTest) + 5 desktopTest (DiagnosticsCacheTest) = 8 total, all PASS.
 
