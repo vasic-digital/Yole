@@ -1,16 +1,22 @@
 /*#######################################################
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
- * iter-61 Phase 4 / iter-62 Phase 2: LspServerHost behavioral-degradation tests.
+ * iter-61 Phase 4 / iter-62 Phase 2 / iter-63 Phase 2: LspServerHost behavioral-degradation tests.
  *
- * These 5 tests verify the contract of LspServerHost without requiring a
- * real LSP binary subprocess (those arrive in Phase 7). They exercise the
- * orchestration logic: Mutex-guarded map, honest degradation, and idempotent
- * shutdown.
+ * These 10 tests verify the contract of LspServerHost without requiring a
+ * real LSP binary subprocess. They exercise the orchestration logic:
+ * Mutex-guarded map, honest degradation, and idempotent shutdown.
  *
  * iter-62 Phase 2 adds 2 tests:
  *   - noSpec_hover_returnsNull: hover on unknown langId returns null.
  *   - noSpec_definition_returnsEmpty: definition on unknown langId returns emptyList.
+ *
+ * iter-63 Phase 2 adds 5 tests:
+ *   - noSpec_rename_returnsNull
+ *   - noSpec_codeActions_returnsEmpty
+ *   - noSpec_signatureHelp_returnsNull
+ *   - noSpec_formatting_returnsEmpty
+ *   - noSpec_references_returnsEmpty
  *
  * Approach: behavioral-degradation, NOT full fake-LSP-server harness.
  * Deferred to Phase 7's RealServerSmokeTest.
@@ -20,7 +26,16 @@
  *   2. Stub hover() to return HoverInfo("fake", null) → noSpec_hover_returnsNull FAILS.
  *   3. Stub definition() to return listOf(DefinitionLocation("x",0..0))
  *      → noSpec_definition_returnsEmpty FAILS.
- *   4. Revert; confirm all 5 tests PASS.
+ *   4. Stub rename() to return WorkspaceEdit() → noSpec_rename_returnsNull FAILS.
+ *   5. Stub codeActions() to return listOf(CodeAction("x",null,null,null))
+ *      → noSpec_codeActions_returnsEmpty FAILS.
+ *   6. Stub signatureHelp() to return SignatureHelp(emptyList(),0,0)
+ *      → noSpec_signatureHelp_returnsNull FAILS.
+ *   7. Stub formatting() to return listOf(TextEdit(0..0,"x"))
+ *      → noSpec_formatting_returnsEmpty FAILS.
+ *   8. Stub references() to return listOf(DefinitionLocation("x",0..0))
+ *      → noSpec_references_returnsEmpty FAILS.
+ *   9. Revert; confirm all 10 tests PASS.
  *
  * Cross-platform impact (CONST-037):
  *   - Desktop: JVM actual tested here.
@@ -130,6 +145,98 @@ class LspServerHostTest {
         val result = host.definition(
             langId = "nonexistent-lang-xyz",
             documentUri = "file:///tmp/test.nonexistent-lang-xyz",
+            line = 0,
+            character = 5,
+        )
+        assertTrue(result.isEmpty(), "Expected emptyList for unknown langId, got $result")
+    }
+
+    /**
+     * When the registry has no spec for a given langId, rename() MUST return null
+     * — never throw, never return a non-null WorkspaceEdit.
+     *
+     * Mutation: stub rename() to return WorkspaceEdit() → this test FAILS.
+     */
+    @Test
+    fun noSpec_rename_returnsNull() = runBlocking<Unit> {
+        val host = LspServerHost(registry = LspServerRegistry.default())
+        val result = host.rename(
+            langId = "nonexistent-lang-xyz",
+            uri = "file:///tmp/test.nonexistent-lang-xyz",
+            line = 0,
+            character = 5,
+            newName = "newSymbol",
+        )
+        assertTrue(result == null, "Expected null for unknown langId, got $result")
+    }
+
+    /**
+     * When the registry has no spec for a given langId, codeActions() MUST return
+     * an empty list — never throw, never return a non-empty list.
+     *
+     * Mutation: stub codeActions() to return listOf(CodeAction("x",null,null,null))
+     * → this test FAILS.
+     */
+    @Test
+    fun noSpec_codeActions_returnsEmpty() = runBlocking<Unit> {
+        val host = LspServerHost(registry = LspServerRegistry.default())
+        val result = host.codeActions(
+            langId = "nonexistent-lang-xyz",
+            uri = "file:///tmp/test.nonexistent-lang-xyz",
+            range = 0..10,
+        )
+        assertTrue(result.isEmpty(), "Expected emptyList for unknown langId, got $result")
+    }
+
+    /**
+     * When the registry has no spec for a given langId, signatureHelp() MUST return
+     * null — never throw, never return a non-null SignatureHelp.
+     *
+     * Mutation: stub signatureHelp() to return SignatureHelp(emptyList(),0,0)
+     * → this test FAILS.
+     */
+    @Test
+    fun noSpec_signatureHelp_returnsNull() = runBlocking<Unit> {
+        val host = LspServerHost(registry = LspServerRegistry.default())
+        val result = host.signatureHelp(
+            langId = "nonexistent-lang-xyz",
+            uri = "file:///tmp/test.nonexistent-lang-xyz",
+            line = 0,
+            character = 5,
+        )
+        assertTrue(result == null, "Expected null for unknown langId, got $result")
+    }
+
+    /**
+     * When the registry has no spec for a given langId, formatting() MUST return
+     * an empty list — never throw, never return a non-empty list.
+     *
+     * Mutation: stub formatting() to return listOf(TextEdit(0..0,"x"))
+     * → this test FAILS.
+     */
+    @Test
+    fun noSpec_formatting_returnsEmpty() = runBlocking<Unit> {
+        val host = LspServerHost(registry = LspServerRegistry.default())
+        val result = host.formatting(
+            langId = "nonexistent-lang-xyz",
+            uri = "file:///tmp/test.nonexistent-lang-xyz",
+        )
+        assertTrue(result.isEmpty(), "Expected emptyList for unknown langId, got $result")
+    }
+
+    /**
+     * When the registry has no spec for a given langId, references() MUST return
+     * an empty list — never throw, never return a non-empty list.
+     *
+     * Mutation: stub references() to return listOf(DefinitionLocation("x",0..0))
+     * → this test FAILS.
+     */
+    @Test
+    fun noSpec_references_returnsEmpty() = runBlocking<Unit> {
+        val host = LspServerHost(registry = LspServerRegistry.default())
+        val result = host.references(
+            langId = "nonexistent-lang-xyz",
+            uri = "file:///tmp/test.nonexistent-lang-xyz",
             line = 0,
             character = 5,
         )

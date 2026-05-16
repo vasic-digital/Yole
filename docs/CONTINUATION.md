@@ -6,7 +6,42 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-63 **Phase 1 COMPLETE** — WorkspaceEdit + TextEdit + WorkspaceEditApplier: 3 commonMain types + 9 commonTest tests; commit `20a451da`).
+**Last updated:** 2026-05-16 (iter-63 **Phase 2 COMPLETE** — LspServerHost +rename +codeActions +signatureHelp +formatting +references: expect class + 4 platform actuals/stubs + 2 new data files + 5 degradation tests; commit TBD).
+
+## Section 47 — iter-63 Phase 2: LspServerHost extended with 5 LSP refactoring capability methods
+
+**Status:** COMPLETE. Phase 2 gate passed.
+
+**Branch:** master. **Last commit:** Phase 2 commit (see git log).
+
+### What was shipped
+
+Added 5 new suspend methods to `LspServerHost` and implemented them across all 4 platforms:
+
+| Method | Timeout | iOS/Wasm | Desktop/Android |
+|--------|---------|----------|-----------------|
+| `rename(...)` | 2000ms | null | LSP4J `textDocument/rename` → `mapLspWorkspaceEditToYole` |
+| `codeActions(...)` | 1000ms | emptyList | LSP4J `textDocument/codeAction` → handles `Either<Command, CodeAction>` |
+| `signatureHelp(...)` | 300ms | null | LSP4J `textDocument/signatureHelp` → `mapLspSignatureHelpToYole` |
+| `formatting(...)` | 1000ms | emptyList | LSP4J `textDocument/formatting` → `TextEdit` list |
+| `references(...)` | 2000ms | emptyList | LSP4J `textDocument/references` → `DefinitionLocation` list |
+
+Forward-declared data classes added:
+- `CodeAction.kt` — `data class CodeAction(title, kind?, edit?, command?)`
+- `SignatureHelp.kt` — `ParameterInformation`, `SignatureInformation`, `SignatureHelp`
+
+5 new degradation tests in `LspServerHostTest`:
+- `noSpec_rename_returnsNull` — mutation: return WorkspaceEdit() → FAILS
+- `noSpec_codeActions_returnsEmpty` — mutation: return non-empty → FAILS
+- `noSpec_signatureHelp_returnsNull` — mutation: return SignatureHelp(emptyList(),0,0) → FAILS
+- `noSpec_formatting_returnsEmpty` — mutation: return non-empty → FAILS
+- `noSpec_references_returnsEmpty` — mutation: return non-empty → FAILS
+
+Total `LspServerHostTest` count: 10 tests (5 from iter-61/62 + 5 new). All PASS.
+
+### Next: Phase 3 — CodeAction + SignatureHelp + ReferenceLocation LSP4J mapping
+
+Phase 3 finalizes mapping helpers (`mapLspCodeAction`, `mapLspSignatureHelp`, `mapLspTextEdits` with real range conversion via `LspRangeMapping.lineColToOffset`). Per plan §3.1–3.8.
 
 ---
 

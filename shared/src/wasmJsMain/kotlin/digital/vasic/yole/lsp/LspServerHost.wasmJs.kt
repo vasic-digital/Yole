@@ -1,13 +1,18 @@
 /*#######################################################
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
- * iter-61 Phase 4 / iter-62 Phase 2: LspServerHost — Web/Wasm honest stub.
+ * iter-61 Phase 4 / iter-62 Phase 2 / iter-63 Phase 2: LspServerHost — Web/Wasm honest stub.
  *
  * Native binaries cannot run inside a browser Wasm sandbox. All LSP
  * methods degrade honestly:
- *   - complete()    → LspCompletionResult(emptyList())
- *   - hover()       → null
- *   - definition()  → emptyList()
+ *   - complete()       → LspCompletionResult(emptyList())
+ *   - hover()          → null
+ *   - definition()     → emptyList()
+ *   - rename()         → null
+ *   - codeActions()    → emptyList()
+ *   - signatureHelp()  → null
+ *   - formatting()     → emptyList()
+ *   - references()     → emptyList()
  * per CONST-035 honest-degradation policy.
  *
  * diagnosticsCache stays empty (no publishDiagnostics source in Wasm).
@@ -50,6 +55,42 @@ actual class LspServerHost actual constructor(
         documentUri: String,
         line: Int,
         character: Int,
+    ): List<DefinitionLocation> = emptyList()
+
+    actual suspend fun rename(
+        langId: String,
+        uri: String,
+        line: Int,
+        character: Int,
+        newName: String,
+    ): WorkspaceEdit? = null
+
+    actual suspend fun codeActions(
+        langId: String,
+        uri: String,
+        range: IntRange,
+    ): List<CodeAction> = emptyList()
+
+    actual suspend fun signatureHelp(
+        langId: String,
+        uri: String,
+        line: Int,
+        character: Int,
+    ): SignatureHelp? = null
+
+    actual suspend fun formatting(
+        langId: String,
+        uri: String,
+        indentSize: Int,
+        useSpaces: Boolean,
+    ): List<TextEdit> = emptyList()
+
+    actual suspend fun references(
+        langId: String,
+        uri: String,
+        line: Int,
+        character: Int,
+        includeDeclaration: Boolean,
     ): List<DefinitionLocation> = emptyList()
 
     actual suspend fun didOpen(langId: String, uri: String, text: String, version: Int) {}

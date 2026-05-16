@@ -1,7 +1,7 @@
 /*#######################################################
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
- * iter-61 Phase 4 / iter-62 Phase 2: LspServerHost — Android (JVM) actual.
+ * iter-61 Phase 4 / iter-62 Phase 2 / iter-63 Phase 2: LspServerHost — Android (JVM) actual.
  *
  * Body is identical to the Desktop actual. Both targets run on the JVM
  * so LSP4J's ProcessBuilder-based Launcher works on both.
@@ -21,6 +21,13 @@
  *   - RunningServer.docTexts: caches latest document text per URI.
  *   - didOpen / didChange / didClose update docTexts.
  *   - publishDiagnostics uses LspRangeMapping.lineColToOffset for real ranges.
+ *
+ * iter-63 Phase 2 additions (mirror of Desktop):
+ *   - rename(): 2000ms timeout; placeholder mapping (Phase 3 finalizes).
+ *   - codeActions(): 1000ms timeout; handles Either<Command, CodeAction> union.
+ *   - signatureHelp(): 300ms timeout; placeholder mapping (Phase 3 finalizes).
+ *   - formatting(): 1000ms timeout; placeholder TextEdit list mapping.
+ *   - references(): 2000ms timeout; reuses Location→DefinitionLocation mapping.
  *#######################################################*/
 package digital.vasic.yole.lsp
 
@@ -39,6 +46,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import org.eclipse.lsp4j.ClientCapabilities
+import org.eclipse.lsp4j.CodeActionContext
+import org.eclipse.lsp4j.CodeActionParams
+import org.eclipse.lsp4j.Command
 import org.eclipse.lsp4j.CompletionCapabilities
 import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.CompletionItemCapabilities
@@ -49,6 +59,8 @@ import org.eclipse.lsp4j.DiagnosticSeverity
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import org.eclipse.lsp4j.DidCloseTextDocumentParams
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
+import org.eclipse.lsp4j.DocumentFormattingParams
+import org.eclipse.lsp4j.FormattingOptions
 import org.eclipse.lsp4j.HoverParams
 import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.InitializedParams
@@ -59,11 +71,17 @@ import org.eclipse.lsp4j.MessageActionItem
 import org.eclipse.lsp4j.MessageParams
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.PublishDiagnosticsParams
+import org.eclipse.lsp4j.Range
+import org.eclipse.lsp4j.ReferenceContext
+import org.eclipse.lsp4j.ReferenceParams
+import org.eclipse.lsp4j.RenameParams
 import org.eclipse.lsp4j.ShowMessageRequestParams
+import org.eclipse.lsp4j.SignatureHelpParams
 import org.eclipse.lsp4j.TextDocumentClientCapabilities
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent
 import org.eclipse.lsp4j.TextDocumentIdentifier
 import org.eclipse.lsp4j.TextDocumentItem
+import org.eclipse.lsp4j.TextEdit as LspTextEdit
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.jsonrpc.messages.Either
@@ -222,6 +240,158 @@ actual class LspServerHost actual constructor(
                     server.languageServer.textDocumentService.definition(params)
                         .get(1000, TimeUnit.MILLISECONDS) as? Either<MutableList<Location>, MutableList<LocationLink>>
                 mapLspDefinitionsToList(raw)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: TimeoutException) {
+            emptyList()
+        } catch (_: Throwable) {
+            emptyList()
+        }
+    }
+
+    actual suspend fun rename(
+        langId: String,
+        uri: String,
+        line: Int,
+        character: Int,
+        newName: String,
+    ): WorkspaceEdit? {
+        val server = mutex.withLock { servers[langId] } ?: return null
+        return try {
+            withTimeout(2000L) {
+                val params = RenameParams(TextDocumentIdentifier(uri), Position(line, character), newName)
+                val raw = server.languageServer.textDocumentService.rename(params)
+                    .get(2000, TimeUnit.MILLISECONDS)
+                raw?.let { mapLspWorkspaceEditToYoleAndroid(it) }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: TimeoutException) {
+            null
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    actual suspend fun codeActions(
+        langId: String,
+        uri: String,
+        range: IntRange,
+    ): List<CodeAction> {
+        val server = mutex.withLock { servers[langId] } ?: return emptyList()
+        return try {
+            withTimeout(1000L) {
+                val lspRange = Range(
+                    Position(0, range.first),
+                    Position(0, range.last + 1),
+                )
+                val params = CodeActionParams(
+                    TextDocumentIdentifier(uri),
+                    lspRange,
+                    CodeActionContext(emptyList()),
+                )
+                val raw = server.languageServer.textDocumentService.codeAction(params)
+                    .get(1000, TimeUnit.MILLISECONDS)
+                raw.orEmpty().mapNotNull { either ->
+                    when {
+                        either.isLeft -> {
+                            val cmd: Command = either.left
+                            CodeAction(
+                                title = cmd.title ?: "",
+                                kind = null,
+                                edit = null,
+                                command = cmd.command,
+                            )
+                        }
+                        else -> {
+                            val lspAction = either.right
+                            CodeAction(
+                                title = lspAction.title ?: "",
+                                kind = lspAction.kind,
+                                edit = lspAction.edit?.let { mapLspWorkspaceEditToYoleAndroid(it) },
+                                command = lspAction.command?.command,
+                            )
+                        }
+                    }
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: TimeoutException) {
+            emptyList()
+        } catch (_: Throwable) {
+            emptyList()
+        }
+    }
+
+    actual suspend fun signatureHelp(
+        langId: String,
+        uri: String,
+        line: Int,
+        character: Int,
+    ): SignatureHelp? {
+        val server = mutex.withLock { servers[langId] } ?: return null
+        return try {
+            withTimeout(300L) {
+                val params = SignatureHelpParams(TextDocumentIdentifier(uri), Position(line, character))
+                val raw = server.languageServer.textDocumentService.signatureHelp(params)
+                    .get(300, TimeUnit.MILLISECONDS)
+                raw?.let { mapLspSignatureHelpToYoleAndroid(it) }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: TimeoutException) {
+            null
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    actual suspend fun formatting(
+        langId: String,
+        uri: String,
+        indentSize: Int,
+        useSpaces: Boolean,
+    ): List<TextEdit> {
+        val server = mutex.withLock { servers[langId] } ?: return emptyList()
+        return try {
+            withTimeout(1000L) {
+                val options = FormattingOptions(indentSize, useSpaces)
+                val params = DocumentFormattingParams(TextDocumentIdentifier(uri), options)
+                val raw = server.languageServer.textDocumentService.formatting(params)
+                    .get(1000, TimeUnit.MILLISECONDS)
+                raw.orEmpty().map { lspEdit -> TextEdit(range = 0..0, newText = lspEdit.newText ?: "") }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: TimeoutException) {
+            emptyList()
+        } catch (_: Throwable) {
+            emptyList()
+        }
+    }
+
+    actual suspend fun references(
+        langId: String,
+        uri: String,
+        line: Int,
+        character: Int,
+        includeDeclaration: Boolean,
+    ): List<DefinitionLocation> {
+        val server = mutex.withLock { servers[langId] } ?: return emptyList()
+        return try {
+            withTimeout(2000L) {
+                val params = ReferenceParams(
+                    TextDocumentIdentifier(uri),
+                    Position(line, character),
+                    ReferenceContext(includeDeclaration),
+                )
+                val raw = server.languageServer.textDocumentService.references(params)
+                    .get(2000, TimeUnit.MILLISECONDS)
+                raw.orEmpty().map { loc ->
+                    DefinitionLocation(uri = loc.uri ?: "", range = 0..0)
+                }
             }
         } catch (e: CancellationException) {
             throw e
@@ -418,4 +588,61 @@ internal fun mapLspCodeEither(code: Either<String, Int>?): String? = when {
     code == null -> null
     code.isLeft -> code.left
     else -> code.right?.toString()
+}
+
+// ---------------------------------------------------------------------------
+// iter-63 Phase 2 mapping helpers (Android mirror of Desktop variants).
+// Suffixed to avoid duplicate-function conflict if both source sets are merged
+// in a single classpath (e.g. during shared unit-test compilation).
+// ---------------------------------------------------------------------------
+
+internal fun mapLspWorkspaceEditToYoleAndroid(lspEdit: org.eclipse.lsp4j.WorkspaceEdit): WorkspaceEdit {
+    val rawChanges = lspEdit.changes.orEmpty()
+    val mapped = rawChanges.mapValues { (_, edits) ->
+        edits.orEmpty().map { TextEdit(range = 0..0, newText = it.newText ?: "") }
+    }
+    return WorkspaceEdit(changes = mapped)
+}
+
+internal fun mapLspSignatureHelpToYoleAndroid(lspHelp: org.eclipse.lsp4j.SignatureHelp): SignatureHelp? {
+    val sigs = lspHelp.signatures.orEmpty()
+    if (sigs.isEmpty()) return null
+    val mapped = sigs.map { lspSig ->
+        SignatureInformation(
+            label = lspSig.label ?: "",
+            documentation = when {
+                lspSig.documentation == null -> null
+                lspSig.documentation.isLeft -> lspSig.documentation.left
+                else -> lspSig.documentation.right?.value
+            },
+            parameters = lspSig.parameters.orEmpty().map { lspParam ->
+                ParameterInformation(
+                    label = when {
+                        lspParam.label == null -> ""
+                        lspParam.label.isLeft -> lspParam.label.left ?: ""
+                        else -> {
+                            val tuple = lspParam.label.right
+                            lspSig.label?.let { s ->
+                                try {
+                                    val start = (tuple?.first as? Number)?.toInt() ?: 0
+                                    val end = (tuple?.second as? Number)?.toInt() ?: s.length
+                                    s.substring(start.coerceIn(0, s.length), end.coerceIn(0, s.length))
+                                } catch (_: Throwable) { "" }
+                            } ?: ""
+                        }
+                    },
+                    documentation = when {
+                        lspParam.documentation == null -> null
+                        lspParam.documentation.isLeft -> lspParam.documentation.left
+                        else -> lspParam.documentation.right?.value
+                    },
+                )
+            },
+        )
+    }
+    return SignatureHelp(
+        signatures = mapped,
+        activeSignature = lspHelp.activeSignature ?: 0,
+        activeParameter = lspHelp.activeParameter ?: 0,
+    )
 }

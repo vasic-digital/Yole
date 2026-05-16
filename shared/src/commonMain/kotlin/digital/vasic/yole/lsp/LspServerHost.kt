@@ -12,6 +12,13 @@
  *   - definition(): returns List<DefinitionLocation> (empty on timeout/error/no-spec).
  *   - diagnosticsCache: DiagnosticsCache populated by publishDiagnostics.
  *
+ * iter-63 Phase 2 additions:
+ *   - rename(): returns WorkspaceEdit? (null on timeout/error/no-spec). 2s timeout.
+ *   - codeActions(): returns List<CodeAction> (empty on timeout/error/no-spec). 1s timeout.
+ *   - signatureHelp(): returns SignatureHelp? (null on timeout/error/no-spec). 300ms timeout.
+ *   - formatting(): returns List<TextEdit> (empty on timeout/error/no-spec). 1s timeout.
+ *   - references(): returns List<DefinitionLocation> (empty on timeout/error/no-spec). 2s timeout.
+ *
  * Mutation procedure (CONST-035):
  *   1. In the JVM actual, stub complete() to always return
  *      LspCompletionResult(listOf(LspCompletionLine("__stub__","__stub__","Text",null,null))).
@@ -21,14 +28,19 @@
  *   4. Revert; confirm all LspServerHostTest tests PASS.
  *   5. Stub hover() to return HoverInfo("fake", null) → noSpec_hover_returnsNull FAILS.
  *   6. Stub definition() to return listOf(DefinitionLocation("x",0..0)) → noSpec_definition_returnsEmpty FAILS.
- *   7. Revert; confirm all 5 tests PASS.
+ *   7. Stub rename() to return WorkspaceEdit() → noSpec_rename_returnsNull FAILS.
+ *   8. Stub codeActions() to return listOf(CodeAction("x",null,null,null)) → noSpec_codeActions_returnsEmpty FAILS.
+ *   9. Stub signatureHelp() to return SignatureHelp(emptyList(),0,0) → noSpec_signatureHelp_returnsNull FAILS.
+ *  10. Stub formatting() to return listOf(TextEdit(0..0,"x")) → noSpec_formatting_returnsEmpty FAILS.
+ *  11. Stub references() to return listOf(DefinitionLocation("x",0..0)) → noSpec_references_returnsEmpty FAILS.
+ *  12. Revert; confirm all 10 tests PASS.
  *
  * Cross-platform impact (CONST-037):
  *   - Desktop:  JVM actual — LSP4J ProcessBuilder wiring (this phase).
  *   - Android:  JVM actual — identical body to Desktop (this phase).
- *   - iOS:      Honest stub — hover returns null, definition returns emptyList.
+ *   - iOS:      Honest stub — all 5 new methods return null/emptyList.
  *               App Store sandbox prohibits spawning subprocesses.
- *   - Web/Wasm: Honest stub — hover returns null, definition returns emptyList.
+ *   - Web/Wasm: Honest stub — all 5 new methods return null/emptyList.
  *               Native binaries cannot run inside a browser Wasm sandbox.
  *
  * Submodules: not touched (CONST-038). LSP4J consumed as Maven artifact.
@@ -130,6 +142,82 @@ expect class LspServerHost(
         documentUri: String,
         line: Int,
         character: Int,
+    ): List<DefinitionLocation>
+
+    /**
+     * Request a workspace-wide rename of the symbol at the given position.
+     *
+     * Returns a [WorkspaceEdit] on success, or `null` on timeout (2000 ms),
+     * no spec, server down, or any error — honest degradation per CONST-035.
+     *
+     * @param newName Replacement identifier the user supplied.
+     */
+    suspend fun rename(
+        langId: String,
+        uri: String,
+        line: Int,
+        character: Int,
+        newName: String,
+    ): WorkspaceEdit?
+
+    /**
+     * Request code actions available at the given document range.
+     *
+     * Returns a list of [CodeAction] on success, or an empty list on
+     * timeout (1000 ms), no spec, server down, or any error — honest degradation
+     * per CONST-035.
+     */
+    suspend fun codeActions(
+        langId: String,
+        uri: String,
+        range: IntRange,
+    ): List<CodeAction>
+
+    /**
+     * Request signature help at the given position (called on '(' or ',').
+     *
+     * Returns [SignatureHelp] on success, or `null` on timeout (300 ms),
+     * no spec, server down, or any error — honest degradation per CONST-035.
+     */
+    suspend fun signatureHelp(
+        langId: String,
+        uri: String,
+        line: Int,
+        character: Int,
+    ): SignatureHelp?
+
+    /**
+     * Request full-document formatting edits.
+     *
+     * Returns a list of [TextEdit] on success, or an empty list on timeout
+     * (1000 ms), no spec, server down, or any error — honest degradation
+     * per CONST-035.
+     *
+     * @param indentSize Number of spaces (or tab-width) per indent level.
+     * @param useSpaces  True → spaces, false → tabs.
+     */
+    suspend fun formatting(
+        langId: String,
+        uri: String,
+        indentSize: Int = 4,
+        useSpaces: Boolean = true,
+    ): List<TextEdit>
+
+    /**
+     * Request all reference locations for the symbol at the given position.
+     *
+     * Returns a list of [DefinitionLocation] on success, or an empty list on
+     * timeout (2000 ms), no spec, server down, or any error — honest degradation
+     * per CONST-035.
+     *
+     * @param includeDeclaration Whether to include the symbol's own declaration.
+     */
+    suspend fun references(
+        langId: String,
+        uri: String,
+        line: Int,
+        character: Int,
+        includeDeclaration: Boolean = true,
     ): List<DefinitionLocation>
 
     /**
