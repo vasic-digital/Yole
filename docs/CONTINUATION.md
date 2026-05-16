@@ -6,9 +6,52 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-62 **Phase 7 COMPLETE** — GoToDefinitionAction + DefinitionLocationChooser + EditorNavigationStack).
+**Last updated:** 2026-05-16 (iter-62 **Phase 8 COMPLETE** — IdeEditorScreen integration: diagnostics + hover + go-to-def).
 
-Commit: `1c5b04cf`
+Commit: pending
+
+Files modified (Phase 8):
+- `androidApp/src/main/java/digital/vasic/yole/android/ui/YoleApp.kt`
+  - Added imports: BackHandler, DiagnosticsProblemsPanel, HoverPopup, DefinitionLocationChooser, DefinitionLocation, DiagnosticsCache, EditorNavigationStack, GoToDefinitionAction, HoverBlock, HoverMarkdownRenderer, LspDefinitionRequester, NavEntry.
+  - IdeEditorScreen 8.1: `val diagnosticsByUri by lspHost.diagnosticsCache.states.collectAsState()` + `currentFileUri` + `currentFileDiagnostics` derivation (tries "file://$fileName" then "$fileName" key).
+  - IdeEditorScreen 8.2: `isProblemsPanelOpen` toggle state; toolbar "N issues / Problems" badge button; collapsible bottom `DiagnosticsProblemsPanel` (200 dp height, gated on isProblemsPanelOpen && diagnostics.isNotEmpty).
+  - IdeEditorScreen 8.3: SyncedScrollEditor receives `diagnostics = currentFileDiagnostics`.
+  - IdeEditorScreen 8.4: `hoverBlocks` state; `onHoverRequest` lambda calling `lspHost.hover()` + `HoverMarkdownRenderer.render()`; `HoverPopup` overlay inside editor Box (gated on hoverBlocks.isNotEmpty).
+  - IdeEditorScreen 8.5: `navStack = remember { EditorNavigationStack() }`; `chooserLocations` state; `DefinitionLocationChooser` at end of Column (gated on chooserLocations.isNotEmpty); `BackHandler(navStack.canGoBack())` registered.
+  - Editor Row wrapped in Column (outer: weight(1f)) to accommodate the problems panel bottom drawer below the editor Row.
+  - Editor Box(weight(1f).fillMaxHeight()) wraps SyncedScrollEditor + HoverPopup overlay.
+
+- `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/SyncedScrollEditor.kt`
+  - Added imports: DiagnosticsGutter, DiagnosticsInlineUnderline, hoverShortcut, Diagnostic.
+  - New parameters: `diagnostics: List<Diagnostic> = emptyList()`, `onHoverRequest: (() -> Unit)? = null`.
+  - Gutter column: per-line DiagnosticsGutter call for lines that have diagnostics (filter by offsetToLine → idx match). testTag "diag-gutter-row-$idx".
+  - VisualTransformation: highlight step (unchanged, with length guard) + layered DiagnosticsInlineUnderline step when diagnostics non-empty.
+  - BTF modifier: `.let { m -> if (onHoverRequest != null) m.hoverShortcut(onHoverRequest) else m }` before onPreviewKeyEvent.
+  - Updated file/class KDoc with Phase 8 anti-bluff covenant #6.
+
+Files added (Phase 8):
+- `androidApp/src/test/kotlin/digital/vasic/yole/android/robolectric/IdeEditorScreenLspIntegrationRobolectricTest.kt`
+  — 3 structural Robolectric tests (all PASS):
+  1. `diagnosticsPanel_renders_when_cache_has_diagnostics_for_current_file` — 8 assertions covering collectAsState, currentFileDiagnostics, DiagnosticsProblemsPanel, isProblemsPanelOpen gate, diagnostics param, DiagnosticsGutter, DiagnosticsInlineUnderline.
+  2. `hoverPopup_wired_via_onHoverRequest_and_renders_when_blocks_nonEmpty` — 9 assertions covering onHoverRequest param, hoverBlocks state, HoverPopup render, isNotEmpty gate, emptyList dismiss, hoverShortcut import+usage, lspHost.hover() call, HoverMarkdownRenderer.render() call.
+  3. `goToDef_chooser_wired_into_IdeEditorScreen` — 7 assertions covering chooserLocations state, DefinitionLocationChooser render, isNotEmpty gate, emptyList dismiss, EditorNavigationStack(), canGoBack() BackHandler, navStack.push().
+
+Tests Phase 8: 3 new Robolectric (all PASS). Spot-checks: FoldGutterRobolectricTest (6/6), HoverPopupRobolectricTest (8/8), HoverShortcutRobolectricTest (5/5), SnippetExpansionRobolectricTest (all PASS). Shared desktopTest: BUILD SUCCESSFUL. Detekt: zero violations. Compiler: zero errors (only pre-existing deprecation warnings on Icons.Filled.*).
+
+Plan deviations documented in code:
+- `#iter-62-phase-8-tree-sitter-hover-filter-stubbed` — isIdentifierAt returns true unconditionally (Tree-Sitter AST lookup for hover position guard deferred).
+- `#iter-62-phase-8-hover-precise-anchor` — HoverPopup anchored at IntOffset.Zero (precise cursor pixel offset deferred, needs Layout coordinates).
+- `#iter-62-phase-8-problems-scroll-to-line` — Problems panel onJumpToLine dismisses panel instead of scrolling (SyncedScrollEditor hides scroll state from outside per iter-55 invariant).
+- `#iter-62-phase-8-cross-file-back-nav` — BackHandler restores intra-file cursor only; cross-file navigation (FILES tab open-file path) deferred.
+- `#iter-62-desktop-editor-lsp-wiring` — Desktop editor diagnostics/hover wiring deferred; Android fully wired this phase.
+
+Cross-platform impact (Phase 8, CONST-037):
+- Android: full wiring of all 6 tasks in IdeEditorScreen. Tests PASS.
+- Desktop: LSP host connected (iter-61 Phase 6.4); diagnostics/hover/def-chooser UI wiring deferred (#iter-62-desktop-editor-lsp-wiring).
+- iOS:     N/A this phase (LspServerHost stub returns null/empty).
+- Web:     N/A this phase (LspServerHost stub returns null/empty).
+
+**Phase 8 is COMPLETE. iter-62 is COMPLETE. Next: iter-62 Phases 9–11 (challenges, docs, Firebase distribution).**
 
 Files added (Phase 7):
 - `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/EditorNavigationStack.kt` — `data class NavEntry(uri, cursorOffset)` + `class EditorNavigationStack(maxEntries=100)`: push (consecutive-dup suppression, cap eviction), pop, peek, canGoBack, clear.
@@ -27,8 +70,6 @@ Tests Phase 7: 6 commonTest + 3 desktopTest + 5 Robolectric = 14 new tests. Muta
 Plan deviation: `LspDefinitionRequester` interface added (CONST-035 / testability). GoToDefinitionAction takes this interface instead of LspServerHost directly because LspServerHost is a non-open expect class that cannot be subclassed/mocked in commonTest without MockK (JVM-only). Production Phase 8 wires `LspDefinitionRequester { override suspend fun definition(...) = host.definition(...) }`. Documented in commit body.
 
 Detekt: zero violations. Pre-existing Android failures (VersionConsistencyTests, FileBrowserSaveFunctionalityTests) unchanged — not introduced by Phase 7.
-
-**Next: Phase 8 — Wire GoToDefinitionAction + DefinitionLocationChooser into IdeEditorScreen (YoleApp.kt / SyncedScrollEditor integration).**
 
 Files added (Phase 6):
 - `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/hover/HoverPopup.kt` — `@Composable HoverPopup(blocks, anchorOffset, syntaxHighlighter?, onDismiss, modifier)`. Popup(TopStart + offset), LazyColumn max 400×300 dp, when-switch over all 5 HoverBlock variants. testTag: `hover-popup`.

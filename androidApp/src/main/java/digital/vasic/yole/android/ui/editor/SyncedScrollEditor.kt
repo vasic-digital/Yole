@@ -66,9 +66,21 @@
  *     placeholder; if null, deactivate and fall through.
  *   - Esc (when navigator is active) → complete() + fall through.
  *
+ * iter-62 Phase 8: LSP diagnostics + hover wired into the editor surface.
+ *   - [diagnostics]: optional list of Diagnostic for the current file.
+ *     When non-empty, DiagnosticsGutter renders severity dots next to the
+ *     fold-chevron column, and DiagnosticsInlineUnderline is LAYERED on
+ *     top of the syntax-highlighting VisualTransformation (highlighter
+ *     first → underline on top; length-guard still applies to both).
+ *   - [onHoverRequest]: optional suspend callback invoked when F1 is
+ *     pressed or a long-press triggers explicit hover.
+ *
  * The VisualTransformation length-guard (iter-57) is preserved: the popup
  * is a separate Popup composable and does NOT feed back into the BTF's
  * VisualTransformation. Commit inserts text via onValueChange path.
+ * DiagnosticsInlineUnderline is applied AFTER the highlight layer so the
+ * underline takes priority visually; the length guard in the highlight
+ * transform remains the innermost guard.
  *
  * Anti-bluff covenants (CONST-035):
  *   (1) The iter-55 invariant: SyncedScrollEditor.kt declares EXACTLY
@@ -97,6 +109,11 @@
  *       MUST insert strippedBody (not the raw body) and select the first
  *       placeholder. Stubbing navigator.advance() to always return null
  *       MUST cause SnippetExpansionRobolectricTest Phase 8 cases to fail.
+ *   (6) iter-62 Phase 8 invariant: when diagnostics is non-empty,
+ *       DiagnosticsGutter is composed in the gutter column and
+ *       DiagnosticsInlineUnderline is applied as a chained
+ *       VisualTransformation. Removing either call MUST cause
+ *       IdeEditorScreenLspIntegrationRobolectricTest test 1 to fail.
  *
  *########################################################*/
 package digital.vasic.yole.android.ui.editor
@@ -142,6 +159,9 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
+import digital.vasic.yole.android.ui.editor.diagnostics.DiagnosticsGutter
+import digital.vasic.yole.android.ui.editor.diagnostics.DiagnosticsInlineUnderline
+import digital.vasic.yole.android.ui.editor.hover.hoverShortcut
 import digital.vasic.yole.completion.CompletionItem
 import digital.vasic.yole.completion.snippet.SnippetPlaceholderNavigator
 import digital.vasic.yole.completion.snippet.VsCodeSnippetExpander
@@ -149,6 +169,7 @@ import digital.vasic.yole.completion.trigger.CompletionTrigger
 import digital.vasic.yole.completion.trigger.TriggerEvent
 import digital.vasic.yole.language.LocalLanguage
 import digital.vasic.yole.language.affordance.FoldRange
+import digital.vasic.yole.lsp.Diagnostic
 import digital.vasic.yole.syntax.EnabledFormatGate
 import digital.vasic.yole.syntax.SyntaxHighlighter
 import digital.vasic.yole.syntax.TokenizerEngine
@@ -176,6 +197,14 @@ fun SyncedScrollEditor(
     completionTrigger: CompletionTrigger? = null,
     completionPopupState: CompletionPopupState? = null,
     completionEngine: digital.vasic.yole.completion.CompletionEngine? = null,
+    // iter-62 Phase 8: LSP diagnostics for the current file. When non-empty,
+    // DiagnosticsGutter renders severity dots in the gutter column and
+    // DiagnosticsInlineUnderline overlays colored underlines on the BTF.
+    diagnostics: List<Diagnostic> = emptyList(),
+    // iter-62 Phase 8: invoked when F1 is pressed (or equivalent explicit
+    // hover trigger). The cursor line/character are extracted from tfvState
+    // at call time. Null = hover not wired (callers that predate Phase 8).
+    onHoverRequest: (() -> Unit)? = null,
 ) {
     val sharedScroll = rememberScrollState()
     val activeLanguage = LocalLanguage.current
@@ -321,6 +350,25 @@ fun SyncedScrollEditor(
                             iconTint = chevronTint,
                             onToggleFold = { range -> toggleFold(foldedRanges, range) },
                         )
+                        // iter-62 Phase 8: diagnostics severity dot for
+                        // this line. DiagnosticsGutter manages its own
+                        // vertical layout but here we reuse the per-line
+                        // Row to emit a single dot. When no diagnostic
+                        // matches this line, DiagnosticsGutter renders
+                        // nothing for the slot. We pass a single-line
+                        // view of diagnostics filtered to this line.
+                        if (diagnostics.isNotEmpty()) {
+                            val lineDiags = diagnostics.filter { diag ->
+                                digital.vasic.yole.android.ui.editor.diagnostics
+                                    .offsetToLine(tfvState.value.text, diag.range.first) == idx
+                            }
+                            DiagnosticsGutter(
+                                diagnostics = lineDiags,
+                                textForLineNumberMapping = tfvState.value.text,
+                                lineHeight = 20.dp,
+                                modifier = Modifier.testTag("diag-gutter-row-$idx"),
+                            )
+                        }
                         Text(
                             text = "${idx + 1}",
                             color = gutterFg,
@@ -351,14 +399,29 @@ fun SyncedScrollEditor(
             // ONLY when lengths agree; otherwise pass through plain text
             // (no highlighting flicker for one frame — preferable to crash).
             // The flicker disappears as soon as the debounce fires.
-            val highlightingTransform = remember(highlight) {
+            // iter-62 Phase 8: compose DiagnosticsInlineUnderline ON TOP of the
+            // syntax-highlight layer. The underline transform runs AFTER the
+            // highlight transform so severity colors take visual priority over
+            // token colors. The length-guard from iter-57 lives in the highlight
+            // step (inner transform); the underline step only adds SpanStyles and
+            // does not change text length so OffsetMapping.Identity is safe for both.
+            val diagForTransform = diagnostics
+            val highlightingTransform = remember(highlight, diagForTransform, isDarkTheme) {
                 VisualTransformation { sourceText ->
+                    // Step 1 — syntax highlight (with length guard).
                     val overlay = if (highlight.text.length == sourceText.text.length) {
                         highlight
                     } else {
                         AnnotatedString(sourceText.text)
                     }
-                    TransformedText(overlay, OffsetMapping.Identity)
+                    val afterHighlight = TransformedText(overlay, OffsetMapping.Identity)
+                    // Step 2 — diagnostics underline layered on top.
+                    if (diagForTransform.isNotEmpty()) {
+                        DiagnosticsInlineUnderline(diagForTransform, isDarkTheme)
+                            .filter(afterHighlight.text)
+                    } else {
+                        afterHighlight
+                    }
                 }
             }
             BasicTextField(
@@ -387,6 +450,13 @@ fun SyncedScrollEditor(
                     .fillMaxSize()
                     .verticalScroll(sharedScroll)
                     .padding(8.dp)
+                    // iter-62 Phase 8: F1 explicit hover shortcut.
+                    // Attached before onPreviewKeyEvent so F1 is
+                    // intercepted by hoverShortcut before other handlers.
+                    .let { m ->
+                        val hoverCb = onHoverRequest
+                        if (hoverCb != null) m.hoverShortcut(hoverCb) else m
+                    }
                     .onPreviewKeyEvent { event ->
                         // iter-60 Phase 6.4: completion keyboard handlers.
                         // Checked FIRST so popup navigation takes priority

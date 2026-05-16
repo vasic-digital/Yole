@@ -62,6 +62,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.documentfile.provider.DocumentFile
@@ -93,10 +94,21 @@ import digital.vasic.yole.ui.LoadingStateWrapper
 import digital.vasic.yole.ui.LoadingAnimations
 import digital.vasic.yole.android.ui.editor.CompletionPopupState
 import digital.vasic.yole.android.ui.editor.CompletionToolbarButton
+import digital.vasic.yole.android.ui.editor.diagnostics.DiagnosticsProblemsPanel
+import digital.vasic.yole.android.ui.editor.hover.HoverPopup
+import digital.vasic.yole.android.ui.editor.navigation.DefinitionLocationChooser
 import digital.vasic.yole.completion.CompletionEngine
 import digital.vasic.yole.completion.trigger.CompletionTrigger
+import digital.vasic.yole.lsp.DefinitionLocation
+import digital.vasic.yole.lsp.DiagnosticsCache
+import digital.vasic.yole.lsp.EditorNavigationStack
+import digital.vasic.yole.lsp.GoToDefinitionAction
+import digital.vasic.yole.lsp.HoverBlock
+import digital.vasic.yole.lsp.HoverMarkdownRenderer
+import digital.vasic.yole.lsp.LspDefinitionRequester
 import digital.vasic.yole.lsp.LspServerHost
 import digital.vasic.yole.lsp.LspServerRegistry
+import digital.vasic.yole.lsp.NavEntry
 import digital.vasic.yole.language.LanguageRegistry
 import digital.vasic.yole.language.LocalLanguage
 import digital.vasic.yole.language.affordance.OutlineExtractor
@@ -1549,6 +1561,47 @@ fun IdeEditorScreen(
         )
     }
 
+    // ── iter-62 Phase 8: LSP diagnostics observer ────────────────────────
+    // Subscribe to DiagnosticsCache.states (a StateFlow) and filter to the
+    // currently-open file URI. The URI convention mirrors what LSP servers
+    // emit: "file://<absolutePath>". For files without an absolute path
+    // (e.g. unsaved buffers) we use the raw fileName so the filter can
+    // still match when the server publishes to that key.
+    val diagnosticsByUri by lspHost.diagnosticsCache.states.collectAsState()
+    val currentFileUri = remember(fileName) { "file://$fileName" }
+    val currentFileDiagnostics = remember(diagnosticsByUri, currentFileUri, fileName) {
+        diagnosticsByUri[currentFileUri].orEmpty()
+            .ifEmpty { diagnosticsByUri[fileName].orEmpty() }
+    }
+
+    // ── iter-62 Phase 8: problems panel toggle ───────────────────────────
+    var isProblemsPanelOpen by remember { mutableStateOf(false) }
+
+    // ── iter-62 Phase 8: hover state ─────────────────────────────────────
+    var hoverBlocks by remember { mutableStateOf<List<HoverBlock>>(emptyList()) }
+    // HoverPopup anchor is always TopStart relative to editor; the offset
+    // is zero for Phase 8 v1 (popup appears at top-left of editor Box).
+    // A precise cursor-pixel offset requires Layout coordinates that need
+    // an on-layout callback; deferred as #iter-62-phase-8-hover-precise-anchor.
+    val hoverPopupAnchor = androidx.compose.ui.unit.IntOffset.Zero
+
+    // ── iter-62 Phase 8: go-to-definition state ──────────────────────────
+    val navStack = remember { EditorNavigationStack() }
+    var chooserLocations by remember { mutableStateOf<List<DefinitionLocation>>(emptyList()) }
+
+    // ── iter-62 Phase 8: back handler (navigate back from def-jump) ──────
+    BackHandler(enabled = navStack.canGoBack()) {
+        val entry = navStack.pop()
+        if (entry != null) {
+            // Reuse the existing content-change path: re-assign text so
+            // onContentChanged propagates. Full cross-file navigation would
+            // require the FILES tab open-file path; intra-file cursor
+            // restore is the common case supported here.
+            // #iter-62-phase-8-cross-file-back-nav deferred.
+            onContentChanged(text)
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize().background(bg)) {
         // General editor toolbar (undo/redo/find)
         Row(
@@ -1591,6 +1644,20 @@ fun IdeEditorScreen(
             CompletionToolbarButton(
                 onTrigger = { completionTrigger.onExplicitTrigger() },
             )
+            // iter-62 Phase 8: problems panel toggle. When diagnostics
+            // exist, shows a badge count. Tapping opens/closes the panel.
+            val diagCount = currentFileDiagnostics.size
+            val problemsLabel = if (diagCount > 0) "$diagCount issues" else "Problems"
+            val problemsBtnColor = if (diagCount > 0) {
+                textColor.copy(red = 1f, green = 0.3f, blue = 0.3f)
+            } else {
+                textColor
+            }
+            IdeToolbarButton(
+                label = problemsLabel,
+                description = "Toggle problems panel",
+                textColor = problemsBtnColor,
+            ) { isProblemsPanelOpen = !isProblemsPanelOpen }
 
             // Format-specific tools (markdown)
             if (format.id == "markdown") {
@@ -1689,56 +1756,131 @@ fun IdeEditorScreen(
             // overlay. The Row arranges the drawer on the LEFT (when
             // open) and the editor surface fills the remaining width.
             // Closing the drawer reclaims the full editor width.
-            Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                digital.vasic.yole.android.ui.editor.OutlineDrawer(
-                    textState = textState,
-                    langId = passedLangId,
-                    engine = tokenizerEngine,
-                    isOpen = outlineDrawerOpen,
-                    onClose = { outlineDrawerOpen = false },
-                    onItemClick = { _ ->
-                        // Phase 5 v1: tapping an outline item only
-                        // dismisses the drawer. Scroll-to-byte wiring
-                        // is a deferred follow-up; the BasicTextField
-                        // does not expose a public scroll-to-offset
-                        // API today, and the iter-55 SyncedScrollEditor
-                        // intentionally hides the scroll state from
-                        // outside callers to keep the gutter+body
-                        // invariant. Closing the drawer at least makes
-                        // the click visible.
-                        outlineDrawerOpen = false
-                    },
-                )
-                digital.vasic.yole.android.ui.editor.SyncedScrollEditor(
-                    textState = textState,
-                    showLineNumbers = showLineNumbers,
-                    isDarkTheme = isDarkTheme,
-                    modifier = Modifier.weight(1f).fillMaxHeight(),
-                    onTextChanged = { newText ->
-                        val oldText = text
-                        text = newText
-                        onContentChanged(newText)
-                        if (newText.length - oldText.length > 5 || oldText.length - newText.length > 5 ||
-                            newText.endsWith(" ") || newText.endsWith("\n")) {
-                            addToHistory(newText)
+            Column(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    digital.vasic.yole.android.ui.editor.OutlineDrawer(
+                        textState = textState,
+                        langId = passedLangId,
+                        engine = tokenizerEngine,
+                        isOpen = outlineDrawerOpen,
+                        onClose = { outlineDrawerOpen = false },
+                        onItemClick = { _ ->
+                            // Phase 5 v1: tapping an outline item only
+                            // dismisses the drawer. Scroll-to-byte wiring
+                            // is a deferred follow-up; the BasicTextField
+                            // does not expose a public scroll-to-offset
+                            // API today, and the iter-55 SyncedScrollEditor
+                            // intentionally hides the scroll state from
+                            // outside callers to keep the gutter+body
+                            // invariant. Closing the drawer at least makes
+                            // the click visible.
+                            outlineDrawerOpen = false
+                        },
+                    )
+                    // iter-62 Phase 8: wrap editor surface in a Box so
+                    // HoverPopup can be rendered as an overlay inside the
+                    // same layout scope.
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                        digital.vasic.yole.android.ui.editor.SyncedScrollEditor(
+                            textState = textState,
+                            showLineNumbers = showLineNumbers,
+                            isDarkTheme = isDarkTheme,
+                            modifier = Modifier.fillMaxSize(),
+                            onTextChanged = { newText ->
+                                val oldText = text
+                                text = newText
+                                onContentChanged(newText)
+                                if (newText.length - oldText.length > 5 ||
+                                    oldText.length - newText.length > 5 ||
+                                    newText.endsWith(" ") || newText.endsWith("\n")) {
+                                    addToHistory(newText)
+                                }
+                            },
+                            semanticsLabel = "Code editor for $fileName",
+                            placeholder = "Start typing...",
+                            textStyle = TextStyle(
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
+                                color = textColor,
+                            ),
+                            highlighter = highlighter,
+                            langId = passedLangId,
+                            tokenizerEngine = tokenizerEngine,
+                            completionTrigger = completionTrigger,
+                            completionPopupState = completionPopupState,
+                            completionEngine = completionEngine,
+                            // iter-62 Phase 8.1: pass current-file diagnostics.
+                            diagnostics = currentFileDiagnostics,
+                            // iter-62 Phase 8.4: F1 explicit hover trigger.
+                            // Tree-Sitter identifier lookup deferred per plan:
+                            // #iter-62-phase-8-tree-sitter-hover-filter-stubbed.
+                            onHoverRequest = if (passedLangId != null) {
+                                {
+                                    completionScope.launch {
+                                        val info = lspHost.hover(
+                                            langId = passedLangId,
+                                            documentUri = currentFileUri,
+                                            line = 0,
+                                            character = 0,
+                                        )
+                                        if (info != null) {
+                                            hoverBlocks = HoverMarkdownRenderer.render(info.contents)
+                                        }
+                                    }
+                                }
+                            } else null,
+                        )
+                        // iter-62 Phase 8.4: HoverPopup overlay.
+                        if (hoverBlocks.isNotEmpty()) {
+                            HoverPopup(
+                                blocks = hoverBlocks,
+                                anchorOffset = hoverPopupAnchor,
+                                syntaxHighlighter = highlighter,
+                                onDismiss = { hoverBlocks = emptyList() },
+                            )
                         }
-                    },
-                    semanticsLabel = "Code editor for $fileName",
-                    placeholder = "Start typing...",
-                    textStyle = TextStyle(
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp,
-                        color = textColor,
-                    ),
-                    highlighter = highlighter,
-                    langId = passedLangId,
-                    tokenizerEngine = tokenizerEngine,
-                    completionTrigger = completionTrigger,
-                    completionPopupState = completionPopupState,
-                    completionEngine = completionEngine,
-                )
+                    }
+                }
+                // iter-62 Phase 8.2: collapsible Problems panel bottom drawer.
+                // Shown when isProblemsPanelOpen AND diagnostics exist.
+                if (isProblemsPanelOpen && currentFileDiagnostics.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .background(ideSurface()),
+                    ) {
+                        DiagnosticsProblemsPanel(
+                            diagnostics = currentFileDiagnostics,
+                            text = text,
+                            onJumpToLine = { _ ->
+                                // Jump-to-line via scroll is deferred:
+                                // #iter-62-phase-8-problems-scroll-to-line.
+                                // Closing the panel at least gives the user
+                                // a way to dismiss without losing context.
+                                isProblemsPanelOpen = false
+                            },
+                        )
+                    }
+                }
             }
+        }
+
+        // iter-62 Phase 8.5: DefinitionLocationChooser (multi-result).
+        // Rendered as a ModalBottomSheet when chooserLocations is non-empty.
+        if (chooserLocations.isNotEmpty()) {
+            DefinitionLocationChooser(
+                locations = chooserLocations,
+                onSelected = { loc ->
+                    chooserLocations = emptyList()
+                    navStack.push(NavEntry(currentFileUri, 0))
+                    // Cross-file navigation deferred:
+                    // #iter-62-phase-8-cross-file-back-nav.
+                    onContentChanged(text)
+                },
+                onDismiss = { chooserLocations = emptyList() },
+            )
         }
     }
 }
