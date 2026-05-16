@@ -1341,6 +1341,93 @@ when the grammar matrix lands.
 
 ---
 
+## #iter-68-iosapp-ui-kn-api-errors — NEW iter-68 (2026-05-17)
+
+**Status:** OPEN
+**Scope:** `iosApp/src/iosMain/kotlin/digital/vasic/yole/ios/`
+**Root cause:** `IOSBackgroundSync.kt` and `IOSDocumentProvider.kt` contain
+64 K/N API compilation errors — wrong parameter names for
+`registerForTaskWithIdentifier`, missing `error:` argument in
+`submitTaskRequest`, `isDiscretionary` treated as function instead of
+property, `UTType` unresolved, `UIDocumentBrowserViewController.Configuration`
+type mismatch. These are in the `iosApp` UI layer, separate from the
+`shared/iosMain` K/N errors resolved in iter-68.
+**Impact:** `iosApp` framework cannot be linked; iOS IPA distribution is
+blocked. The `shared/iosMain` KMP library now compiles clean (all fixes
+from iter-68 applied); only the app UI layer is broken.
+**Fix path:** Fix K/N API calls in `IOSBackgroundSync.kt` and
+`IOSDocumentProvider.kt` to match the K/N-bridged Apple SDK signatures.
+**Iteration target:** iter-69
+
+---
+
+## #iter-69-ios-sqlite-cinterop — NEW iter-68 (2026-05-17)
+
+**Status:** OPEN
+**Scope:** `shared/src/iosMain/kotlin/digital/vasic/yole/database/`
+**Root cause:** `IosSQLiteDatabase.kt` references `cnames.structs.sqlite3`
+which requires a SQLite cinterop `.def` file registered in `shared/build.gradle.kts`.
+No `.def` file exists. The original implementation is preserved as comments in
+`IosSQLiteDatabase.kt`.
+**Impact:** iOS uses an in-memory stub `DatabaseFactory` (no persistence).
+**Fix path:** Add `sqlite3.def` cinterop definition + register it in
+`shared/build.gradle.kts`; restore `IosSQLiteDatabase.kt` implementation.
+**Iteration target:** iter-69
+
+---
+
+## #iter-69-android-room-database — NEW iter-68 (2026-05-17)
+
+**Status:** OPEN
+**Scope:** `shared/src/androidMain/kotlin/digital/vasic/yole/database/`
+**Root cause:** Android uses an in-memory stub `DatabaseFactory` — Room or
+SQLite integration was deferred.
+**Fix path:** Implement Room-backed `DatabaseFactory` for Android.
+**Iteration target:** iter-69
+
+---
+
+## #iter-69-desktop-sqlite-database — NEW iter-68 (2026-05-17)
+
+**Status:** OPEN
+**Scope:** `shared/src/desktopMain/kotlin/digital/vasic/yole/database/`
+**Root cause:** Desktop uses an in-memory stub `DatabaseFactory` — SQLite
+integration was deferred.
+**Fix path:** Implement SQLite (via Okio / JDBC) `DatabaseFactory` for Desktop.
+**Iteration target:** iter-69
+
+---
+
+## #iter-69-web-indexeddb-database — NEW iter-68 (2026-05-17)
+
+**Status:** OPEN
+**Scope:** `shared/src/wasmJsMain/kotlin/digital/vasic/yole/database/`
+**Root cause:** Web (Wasm) uses an in-memory stub `DatabaseFactory` — IndexedDB
+integration was deferred.
+**Fix path:** Implement IndexedDB-backed `DatabaseFactory` for Wasm.
+**Iteration target:** iter-69
+
+---
+
+## #iter-69-linux-container-deb-build — NEW iter-68 (2026-05-17)
+
+**Status:** OPEN
+**Scope:** Linux distribution, `Containers/pkg/crossbuild/`
+**Root cause:** Compose Desktop `packageDeb` (via `jpackage`) produces a binary
+that targets the JVM running Gradle, not a cross-compiled binary. On the macOS
+host, even inside a `linux/arm64` container, `packageDeb` needs access to
+Compose Desktop packaging tools that require native Linux execution. The
+`linux_container.Containerfile` (iter-67) successfully provisions a JDK17 +
+Gradle container; the packaging step fails because `packageDeb` internally
+invokes a macOS `jpackage` from the host JDK.
+**Fix path:** Run the full Gradle build (`:desktopApp:packageDeb`) on a native
+Linux host (VM or remote machine) using the iter-67 container image.
+Alternatively: explore Compose Desktop cross-compilation support in Compose
+MP releases newer than 1.7.3.
+**Iteration target:** iter-69
+
+---
+
 ## How CONST-035 catches stubs like these
 
 This document exists because of the very pattern CONST-035 forbids:

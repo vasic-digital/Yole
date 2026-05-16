@@ -3,14 +3,9 @@
  * SPDX-FileCopyrightText: 2025 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  *
- * iOS actual for DatabaseFactory.
- *
- * STATUS: In-memory stub only. Full native SQLite via cinterop is
- * scaffolded in IosSQLiteDatabase.kt but cannot be wired without a
- * SQLite cinterop `.def` file (tracked: #iter-69-ios-sqlite-cinterop).
- *
- * The stub lets :shared:compileKotlinIosArm64 succeed so iOS builds
- * proceed while the cinterop layer is being completed.
+ * Web Wasm actual for DatabaseFactory.
+ * Full IndexedDB implementation is tracked under iter-69.
+ * This stub lets :shared:compileKotlinWasmJs succeed.
  *
  *########################################################*/
 
@@ -20,15 +15,15 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
 /**
- * iOS stub — in-memory only. Persistent SQLite via cinterop is tracked as
- * #iter-69-ios-sqlite-cinterop.
+ * Web Wasm stub — in-memory only. IndexedDB integration is tracked as
+ * #iter-69-web-indexeddb-database.
  */
 actual object DatabaseFactory {
 
     actual suspend fun createDatabase(
         name: String,
         dispatcher: CoroutineDispatcher
-    ): DatabaseInterface = IosInMemoryDatabase(dispatcher)
+    ): DatabaseInterface = WasmInMemoryDatabase()
 
     actual fun databaseExists(name: String): Boolean = false
 
@@ -39,7 +34,7 @@ actual object DatabaseFactory {
     actual fun getAvailableSpace(name: String): Long? = null
 
     actual fun getPlatformConfig(): DatabasePlatformConfig = DatabasePlatformConfig(
-        platform = DatabasePlatform.IOS_SQLITE,
+        platform = DatabasePlatform.WEB_INDEXEDDB,
         supportsTransactions = false,
         supportsForeignKeys = false,
         supportsEncryption = false,
@@ -48,10 +43,8 @@ actual object DatabaseFactory {
     )
 }
 
-/** Minimal in-memory implementation until cinterop SQLite lands. */
-private class IosInMemoryDatabase(
-    private val dispatcher: CoroutineDispatcher
-) : CommonDatabase() {
+/** Minimal in-memory implementation until IndexedDB bridge lands. */
+private class WasmInMemoryDatabase : CommonDatabase() {
 
     override suspend fun doInitialize() = Unit
     override suspend fun doClose() = Unit
@@ -62,8 +55,8 @@ private class IosInMemoryDatabase(
         storage: digital.vasic.yole.network.common.NetworkStorage
     ): Result<Unit> = Result.failure(
         UnsupportedOperationException(
-            "iOS database stub — insertStorage not yet implemented. " +
-                "Tracked: #iter-69-ios-sqlite-cinterop"
+            "Wasm database stub — insertStorage not yet implemented. " +
+                "Tracked: #iter-69-web-indexeddb-database"
         )
     )
 

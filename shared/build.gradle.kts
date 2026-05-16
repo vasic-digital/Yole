@@ -336,6 +336,8 @@ kotlin {
             dependencies {
                 // iOS-specific dependencies (inherited from commonMain)
                 implementation(libs.kotlinx.coroutines.core)
+                // Ktor Darwin engine for native iOS HTTP networking
+                implementation(libs.ktor.client.darwin)
                 // Native SQLite for iOS - Using platform-specific implementation
                 // implementation("co.touchlab:sqliter:1.3.1")
             }

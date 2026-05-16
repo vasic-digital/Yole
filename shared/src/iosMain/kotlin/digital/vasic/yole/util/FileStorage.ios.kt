@@ -9,7 +9,7 @@
  *########################################################*/
 package digital.vasic.yole.util
 
-actual class FileHandle(uri: String) {
+actual class FileHandle actual constructor(uri: String) {
     actual val uri: String = uri
 }
 

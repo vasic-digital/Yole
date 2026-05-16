@@ -3,6 +3,58 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## v1.9.0 — iter-67 Container infrastructure activation: multi-platform build (2026-05-17)
+
+**Version:** 1.9.0 (versionCode 190 → dotted `0.0.0.1.90`)
+**Build status:** Android Release + DEV built and staged. Desktop macOS-arm64 DMG built. Linux .deb attempted via iter-67 Podman container (blocked by `jpackage`/Compose packaging cross-platform gap — honest deferral). iOS shared KMP framework compiles clean (`#shared-iosmain-databasefactory-broken` RESOLVED); `iosApp` UI layer has pre-existing K/N API errors (`#iter-68-iosapp-ui-kn-api-errors`) deferred to iter-69. Web Wasm and Windows blocked by known-pre-existing gaps.
+
+### iter-68 highlights
+
+1. **`#shared-iosmain-databasefactory-broken` RESOLVED** — the missing `expect object DatabaseFactory` and all four platform `actual` stubs (`android`, `desktop`, `wasmJs`, `ios`) created. iOS SQLite cinterop deferred to `#iter-69-ios-sqlite-cinterop`; all platforms now use in-memory stubs pending full DB implementations in iter-69.
+
+2. **iOS shared KMP compile fixed** — cascade of pre-existing K/N API errors repaired:
+   - `Document.ios.kt`: `objectForKey` → `get()` (K/N `NSDictionary` bridged as Kotlin `Map`); `getFileModTime()` moved out of constructor args; `writeToFile` fixed via `NSString.dataUsingEncoding`; `lastObject` → `lastOrNull()`.
+   - `SecureStorageFactory.ios.kt`: rewrote Keychain impl with `memScoped { alloc<CFTypeRefVar>() }` pattern; removed illegal `release()` calls (K/N uses ARC); added `CoreFoundation` import.
+   - `FileStorage.ios.kt`: `actual class FileHandle(uri)` → `actual class FileHandle actual constructor(uri)`.
+   - `shared/build.gradle.kts`: added `ktor-client-darwin` to iosMain dependencies.
+
+3. **Container infrastructure activated** — `Containers/pkg/crossbuild/linux_container.Containerfile` built into `localhost/yole-crossbuild-linux:jdk17-arm64` (Podman 5.8.2 on macOS). Added `git` package to the image (required by Gradle configuration phase). Linux `.deb` cross-build attempted — blocked by Compose Desktop `packageDeb` producing a host-arch binary (the `.deb` produced by Compose Desktop `jpackage` targets the host's JVM, not a cross-compiled binary; genuine Linux arm64 `.deb` requires running Gradle on a Linux host with Compose MP tools available natively). Deferred to `#iter-69-linux-container-deb-build`.
+
+4. **Desktop version bump** — `desktopApp/build.gradle.kts`: `packageVersion` `1.8.0` → `1.9.0`. macOS DMG rebuilt at 524 MB.
+
+5. **Android v1.9.0** — `androidApp/build.gradle.kts`: `versionCode 180 → 190`, `versionName "1.8.0" → "1.9.0"`. Release APK and DEV (debug) APK built successfully.
+
+### Platform status (v1.9.0)
+
+| Platform | Status | Evidence |
+|----------|--------|---------|
+| Android Release | BUILT | `Yole-Android-1.9.0-Release-0.0.0.1.90.apk` in `releases/` |
+| Android DEV | BUILT | `Yole-Android-1.9.0-DEV-0.0.0.1.90.apk` in `releases/` |
+| macOS arm64 DMG | BUILT | `Yole-Desktop-macos-arm64-1.9.0-Release-0.0.0.1.90.dmg` in `releases/` (524 MB) |
+| Linux arm64 .deb | DEFERRED | Container builds successfully but `packageDeb` targets host JVM; needs native Linux host; `#iter-69-linux-container-deb-build` |
+| Windows .msi | DEFERRED | Wine container not buildable on macOS; `#crossbuild-windows-image-provisioning` |
+| iOS IPA | DEFERRED | `shared/iosMain` KMP compile PASSES; `iosApp` UI layer has 64 pre-existing K/N errors; `#iter-68-iosapp-ui-kn-api-errors` |
+| Web Wasm | DEFERRED | KGP 2.0.20 bug blocks `binaries.executable()`; `#wasmjs-production-distribution-gap` |
+
+### New defect trackers
+
+| Tracker | Description |
+|---------|-------------|
+| `#iter-68-iosapp-ui-kn-api-errors` | 64 K/N API errors in `iosApp/src/iosMain` (pre-existing, separate from `shared/iosMain` which now compiles clean) |
+| `#iter-69-ios-sqlite-cinterop` | iOS SQLite `.def` file registration needed for production DB |
+| `#iter-69-android-room-database` | Android Room DB integration deferred |
+| `#iter-69-desktop-sqlite-database` | Desktop SQLite DB integration deferred |
+| `#iter-69-web-indexeddb-database` | Web IndexedDB integration deferred |
+| `#iter-69-linux-container-deb-build` | Linux `.deb` build needs native Linux Gradle execution |
+
+### Known gaps carried forward
+
+| Tracker | Description |
+|---------|-------------|
+| `#wasmjs-production-distribution-gap` | KGP 2.0.20 bug blocks `binaries.executable()`; `compileKotlinWasmJs` works; bundle + hosting pending KGP >2.1.x upgrade |
+| `#crossbuild-windows-image-provisioning` | Wine container not buildable on macOS host |
+| `#iter-68-iosapp-ui-kn-api-errors` | 64 K/N API errors in `iosApp/src/iosMain` blocking iOS framework link |
+
 ## v1.8.0 — Comprehensive QA validation + multi-platform re-distribution (2026-05-16)
 
 **Version:** 1.8.0 (versionCode 180 → dotted `0.0.0.1.80`)

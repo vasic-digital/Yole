@@ -7,6 +7,8 @@
  * Platform-specific file operations for iOS
  *
  *########################################################*/
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+
 package digital.vasic.yole.model
 
 import platform.Foundation.*
@@ -29,7 +31,8 @@ actual fun Document.getFileModTime(): Long {
     return try {
         val fileManager = NSFileManager.defaultManager
         val attributes = fileManager.attributesOfItemAtPath(path, null)
-        val modDate = attributes?.objectForKey(NSFileModificationDate) as? NSDate
+        // NSDictionary is bridged as Map<Any?, Any?> in K/N; use get() not objectForKey()
+        val modDate = attributes?.get(NSFileModificationDate) as? NSDate
         modDate?.timeIntervalSince1970?.times(1000)?.toLong() ?: -1L
     } catch (e: Exception) {
         -1L
@@ -43,7 +46,7 @@ actual fun Document.getFileSize(): Long {
     return try {
         val fileManager = NSFileManager.defaultManager
         val attributes = fileManager.attributesOfItemAtPath(path, null)
-        val fileSize = attributes?.objectForKey(NSFileSize) as? NSNumber
+        val fileSize = attributes?.get(NSFileSize) as? NSNumber
         fileSize?.longValue ?: -1L
     } catch (e: Exception) {
         -1L
@@ -69,10 +72,10 @@ actual fun createDocument(path: String): Document? {
     return try {
         val fileManager = NSFileManager.defaultManager
         if (!fileManager.fileExistsAtPath(path)) return null
-        
+
         val url = NSURL.fileURLWithPath(path)
         val fileName = url.lastPathComponent ?: ""
-        
+
         val extension = if (fileName.contains(".")) {
             fileName.substringAfterLast(".", "")
         } else {
@@ -83,12 +86,19 @@ actual fun createDocument(path: String): Document? {
         } else {
             fileName
         }
-        
+
+        // Compute mod time from file attributes before constructing the Document
+        val modTime = run {
+            val attrs = fileManager.attributesOfItemAtPath(path, null)
+            val modDate = attrs?.get(NSFileModificationDate) as? NSDate
+            modDate?.timeIntervalSince1970?.times(1000)?.toLong() ?: -1L
+        }
+
         Document(
             path = path,
             title = title,
             extension = extension,
-            modTime = getFileModTime(),
+            modTime = modTime,
             touchTime = currentTimeMillis()
         ).apply {
             detectFormatByExtension()
@@ -111,7 +121,10 @@ fun Document.readContent(): String? {
 
 fun Document.writeContent(content: String): Boolean {
     return try {
-        content.writeToFile(path, atomically = true, encoding = NSUTF8StringEncoding, error = null)
+        // Encode to UTF-8 bytes and write via NSData
+        val data = (content as NSString).dataUsingEncoding(NSUTF8StringEncoding)
+            ?: return false
+        data.writeToFile(path, atomically = true)
     } catch (e: Exception) {
         false
     }
@@ -122,8 +135,9 @@ fun Document.writeContent(content: String): Boolean {
  */
 fun getDocumentsDirectory(): String {
     val fileManager = NSFileManager.defaultManager
+    // URLsForDirectory returns List<NSURL> in K/N (bridged from NSArray)
     val urls = fileManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask)
-    val documentsURL = urls.lastObject as? NSURL
+    val documentsURL = urls.lastOrNull() as? NSURL
     return documentsURL?.path ?: ""
 }
 
@@ -133,12 +147,12 @@ fun getDocumentsDirectory(): String {
 fun getYoleDocumentsDirectory(): String {
     val documents = getDocumentsDirectory()
     val yoleDir = documents + "/Yole"
-    
+
     // Create if doesn't exist
     val fileManager = NSFileManager.defaultManager
     if (!fileManager.fileExistsAtPath(yoleDir)) {
         fileManager.createDirectoryAtPath(yoleDir, withIntermediateDirectories = true, attributes = null, error = null)
     }
-    
+
     return yoleDir
 }

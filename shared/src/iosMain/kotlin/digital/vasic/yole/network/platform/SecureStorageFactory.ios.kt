@@ -4,13 +4,16 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * iOS implementation of SecureStorageFactory
- * Uses iOS Keychain Services for secure credential storage
+ * Uses iOS Keychain Services for secure credential storage.
  *
  *########################################################*/
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+
 package digital.vasic.yole.network.platform
 
 import platform.Foundation.*
 import platform.Security.*
+import platform.CoreFoundation.*
 import kotlinx.cinterop.*
 
 /**
@@ -19,182 +22,139 @@ import kotlinx.cinterop.*
  */
 actual object SecureStorageFactory {
 
-    /**
-     * Create a new iOS secure storage instance backed by Keychain.
-     */
-    actual suspend fun create(): Result<SecureStorage> {
-        return try {
-            val secureStorage = IosKeychainSecureStorage()
-            Result.success(secureStorage)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    actual suspend fun create(): Result<SecureStorage> = runCatching {
+        IosKeychainSecureStorage()
     }
 
-    /**
-     * Check if secure storage is available on iOS.
-     * Keychain is always available on iOS.
-     */
     actual suspend fun isAvailable(): Boolean = true
 }
 
 /**
  * iOS Keychain-backed SecureStorage implementation.
+ *
+ * Uses Keychain Services API (SecItemAdd / SecItemCopyMatching /
+ * SecItemDelete) via K/N interop. The Keychain query dictionaries are
+ * built as Kotlin `Map<Any?, Any?>` and bridged to `CFDictionaryRef`
+ * via the `@Suppress("UNCHECKED_CAST")` convention required by K/N.
  */
+@Suppress("UNCHECKED_CAST")
 private class IosKeychainSecureStorage : SecureStorage {
 
     private val serviceName = "digital.vasic.yole"
 
-    override suspend fun store(key: String, value: String): Result<Unit> {
-        return try {
-            // Delete existing entry first
-            delete(key)
+    override suspend fun store(key: String, value: String): Result<Unit> = runCatching {
+        // Remove any stale entry first
+        delete(key)
 
-            val data = (value as NSString).dataUsingEncoding(NSUTF8StringEncoding)
-                ?: return Result.failure(Exception("Failed to encode value"))
+        val data = (value as NSString).dataUsingEncoding(NSUTF8StringEncoding)
+            ?: error("Failed to encode value to NSData")
 
-            val query = mapOf<Any?, Any?>(
-                kSecClass to kSecClassGenericPassword,
-                kSecAttrService to serviceName,
-                kSecAttrAccount to key,
-                kSecValueData to data
-            )
+        val query = cfDictOf(
+            kSecClass to kSecClassGenericPassword,
+            kSecAttrService to (serviceName as NSString),
+            kSecAttrAccount to (key as NSString),
+            kSecValueData to data
+        )
 
-            @Suppress("UNCHECKED_CAST")
-            val status = SecItemAdd(query as CFDictionaryRef, null)
-            if (status == errSecSuccess) {
-                Result.success(Unit)
-            } else {
-                Result.failure(Exception("Keychain store failed with status: $status"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        val status = SecItemAdd(query, null)
+        // K/N manages CF object lifetimes via ARC — no manual release needed
+        check(status == errSecSuccess) { "Keychain store failed: $status" }
     }
 
-    override suspend fun retrieve(key: String): Result<String?> {
-        return try {
-            val query = mapOf<Any?, Any?>(
-                kSecClass to kSecClassGenericPassword,
-                kSecAttrService to serviceName,
-                kSecAttrAccount to key,
-                kSecReturnData to true,
-                kSecMatchLimit to kSecMatchLimitOne
-            )
+    override suspend fun retrieve(key: String): Result<String?> = runCatching {
+        val query = cfDictOf(
+            kSecClass to kSecClassGenericPassword,
+            kSecAttrService to (serviceName as NSString),
+            kSecAttrAccount to (key as NSString),
+            kSecReturnData to kCFBooleanTrue,
+            kSecMatchLimit to kSecMatchLimitOne
+        )
 
-            memScoped {
-                val result = alloc<ObjCObjectVar<Any?>>()
-                @Suppress("UNCHECKED_CAST")
-                val status = SecItemCopyMatching(query as CFDictionaryRef, result.ptr)
-
-                if (status == errSecSuccess) {
-                    val data = result.value as? NSData
-                    val value = data?.let {
+        val result: String? = memScoped {
+            val resultPtr = alloc<CFTypeRefVar>()
+            val status = SecItemCopyMatching(query, resultPtr.ptr)
+            // K/N manages CF object lifetimes via ARC — no manual release needed
+            when (status) {
+                errSecSuccess -> {
+                    val data = resultPtr.value as? NSData
+                    data?.let {
                         NSString.create(data = it, encoding = NSUTF8StringEncoding) as? String
                     }
-                    Result.success(value)
-                } else if (status == errSecItemNotFound) {
-                    Result.success(null)
-                } else {
-                    Result.failure(Exception("Keychain retrieve failed with status: $status"))
                 }
+                errSecItemNotFound -> null
+                else -> error("Keychain retrieve failed: $status")
             }
-        } catch (e: Exception) {
-            Result.failure(e)
+        }
+        result
+    }
+
+    override suspend fun delete(key: String): Result<Unit> = runCatching {
+        val query = cfDictOf(
+            kSecClass to kSecClassGenericPassword,
+            kSecAttrService to (serviceName as NSString),
+            kSecAttrAccount to (key as NSString)
+        )
+        val status = SecItemDelete(query)
+        // K/N manages CF object lifetimes via ARC — no manual release needed
+        check(status == errSecSuccess || status == errSecItemNotFound) {
+            "Keychain delete failed: $status"
         }
     }
 
-    override suspend fun delete(key: String): Result<Unit> {
-        return try {
-            val query = mapOf<Any?, Any?>(
-                kSecClass to kSecClassGenericPassword,
-                kSecAttrService to serviceName,
-                kSecAttrAccount to key
-            )
+    override suspend fun contains(key: String): Result<Boolean> = runCatching {
+        val query = cfDictOf(
+            kSecClass to kSecClassGenericPassword,
+            kSecAttrService to (serviceName as NSString),
+            kSecAttrAccount to (key as NSString),
+            kSecReturnData to kCFBooleanFalse
+        )
+        val status = SecItemCopyMatching(query, null)
+        // K/N manages CF object lifetimes via ARC — no manual release needed
+        status == errSecSuccess
+    }
 
-            @Suppress("UNCHECKED_CAST")
-            val status = SecItemDelete(query as CFDictionaryRef)
-            if (status == errSecSuccess || status == errSecItemNotFound) {
-                Result.success(Unit)
-            } else {
-                Result.failure(Exception("Keychain delete failed with status: $status"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
+    override suspend fun clear(): Result<Unit> = runCatching {
+        val query = cfDictOf(
+            kSecClass to kSecClassGenericPassword,
+            kSecAttrService to (serviceName as NSString)
+        )
+        val status = SecItemDelete(query)
+        // K/N manages CF object lifetimes via ARC — no manual release needed
+        check(status == errSecSuccess || status == errSecItemNotFound) {
+            "Keychain clear failed: $status"
         }
     }
 
-    override suspend fun contains(key: String): Result<Boolean> {
-        return try {
-            val query = mapOf<Any?, Any?>(
-                kSecClass to kSecClassGenericPassword,
-                kSecAttrService to serviceName,
-                kSecAttrAccount to key,
-                kSecReturnData to false
-            )
+    override suspend fun isSecure(): Result<Boolean> = Result.success(true)
 
-            @Suppress("UNCHECKED_CAST")
-            val status = SecItemCopyMatching(query as CFDictionaryRef, null)
-            Result.success(status == errSecSuccess)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+    override suspend fun listKeys(): Result<List<String>> = runCatching {
+        val query = cfDictOf(
+            kSecClass to kSecClassGenericPassword,
+            kSecAttrService to (serviceName as NSString),
+            kSecReturnAttributes to kCFBooleanTrue,
+            kSecMatchLimit to kSecMatchLimitAll
+        )
 
-    override suspend fun clear(): Result<Unit> {
-        return try {
-            val query = mapOf<Any?, Any?>(
-                kSecClass to kSecClassGenericPassword,
-                kSecAttrService to serviceName
-            )
-
-            @Suppress("UNCHECKED_CAST")
-            val status = SecItemDelete(query as CFDictionaryRef)
-            if (status == errSecSuccess || status == errSecItemNotFound) {
-                Result.success(Unit)
-            } else {
-                Result.failure(Exception("Keychain clear failed with status: $status"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun isSecure(): Result<Boolean> {
-        return try {
-            // iOS Keychain Services provides hardware-backed encryption
-            Result.success(true)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun listKeys(): Result<List<String>> {
-        return try {
-            val query = mapOf<Any?, Any?>(
-                kSecClass to kSecClassGenericPassword,
-                kSecAttrService to serviceName,
-                kSecReturnAttributes to true,
-                kSecMatchLimit to kSecMatchLimitAll
-            )
-
-            memScoped {
-                val result = alloc<ObjCObjectVar<Any?>>()
-                @Suppress("UNCHECKED_CAST")
-                val status = SecItemCopyMatching(query as CFDictionaryRef, result.ptr)
-
-                if (status == errSecSuccess) {
-                    val items = result.value as? List<Map<Any?, Any?>> ?: emptyList()
-                    val keys = items.mapNotNull { it[kSecAttrAccount] as? String }
-                    Result.success(keys)
-                } else if (status == errSecItemNotFound) {
-                    Result.success(emptyList())
-                } else {
-                    Result.failure(Exception("Keychain getAllKeys failed with status: $status"))
+        val keys: List<String> = memScoped {
+            val resultPtr = alloc<CFTypeRefVar>()
+            val status = SecItemCopyMatching(query, resultPtr.ptr)
+            // K/N manages CF object lifetimes via ARC — no manual release needed
+            when (status) {
+                errSecSuccess -> {
+                    @Suppress("UNCHECKED_CAST")
+                    val items = resultPtr.value as? List<Map<Any?, Any?>> ?: emptyList()
+                    items.mapNotNull { it[kSecAttrAccount] as? String }
                 }
+                errSecItemNotFound -> emptyList()
+                else -> error("Keychain getAllKeys failed: $status")
             }
-        } catch (e: Exception) {
-            Result.failure(e)
         }
+        keys
+    }
+
+    /** Build a CFDictionaryRef from a vararg list of key-value pairs. */
+    private fun cfDictOf(vararg pairs: Pair<Any?, Any?>): CFDictionaryRef {
+        val map = mapOf(*pairs) as Map<Any?, Any?>
+        return map as CFDictionaryRef
     }
 }

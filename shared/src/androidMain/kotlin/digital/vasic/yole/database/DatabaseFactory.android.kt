@@ -3,14 +3,11 @@
  * SPDX-FileCopyrightText: 2025 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  *
- * iOS actual for DatabaseFactory.
- *
- * STATUS: In-memory stub only. Full native SQLite via cinterop is
- * scaffolded in IosSQLiteDatabase.kt but cannot be wired without a
- * SQLite cinterop `.def` file (tracked: #iter-69-ios-sqlite-cinterop).
- *
- * The stub lets :shared:compileKotlinIosArm64 succeed so iOS builds
- * proceed while the cinterop layer is being completed.
+ * Android actual for DatabaseFactory.
+ * Full Room/SQLite implementation is tracked under iter-69.
+ * This stub lets :shared:compileKotlinAndroid succeed so the
+ * rest of the app can build and run on Android while the database
+ * layer is being completed.
  *
  *########################################################*/
 
@@ -20,15 +17,16 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
 /**
- * iOS stub — in-memory only. Persistent SQLite via cinterop is tracked as
- * #iter-69-ios-sqlite-cinterop.
+ * Android stub — returns an in-memory database backed by the
+ * [CommonDatabase] default implementations. Persistent Room
+ * integration is tracked as #iter-69-android-room-database.
  */
 actual object DatabaseFactory {
 
     actual suspend fun createDatabase(
         name: String,
         dispatcher: CoroutineDispatcher
-    ): DatabaseInterface = IosInMemoryDatabase(dispatcher)
+    ): DatabaseInterface = AndroidInMemoryDatabase(dispatcher)
 
     actual fun databaseExists(name: String): Boolean = false
 
@@ -39,7 +37,7 @@ actual object DatabaseFactory {
     actual fun getAvailableSpace(name: String): Long? = null
 
     actual fun getPlatformConfig(): DatabasePlatformConfig = DatabasePlatformConfig(
-        platform = DatabasePlatform.IOS_SQLITE,
+        platform = DatabasePlatform.IN_MEMORY,
         supportsTransactions = false,
         supportsForeignKeys = false,
         supportsEncryption = false,
@@ -48,8 +46,8 @@ actual object DatabaseFactory {
     )
 }
 
-/** Minimal in-memory implementation until cinterop SQLite lands. */
-private class IosInMemoryDatabase(
+/** Minimal in-memory implementation used until Room integration lands. */
+private class AndroidInMemoryDatabase(
     private val dispatcher: CoroutineDispatcher
 ) : CommonDatabase() {
 
@@ -62,8 +60,8 @@ private class IosInMemoryDatabase(
         storage: digital.vasic.yole.network.common.NetworkStorage
     ): Result<Unit> = Result.failure(
         UnsupportedOperationException(
-            "iOS database stub — insertStorage not yet implemented. " +
-                "Tracked: #iter-69-ios-sqlite-cinterop"
+            "Android database stub — insertStorage not yet implemented. " +
+                "Tracked: #iter-69-android-room-database"
         )
     )
 

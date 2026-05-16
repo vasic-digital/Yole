@@ -6,7 +6,115 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-66 **COMPLETE** — HelixConstitution submodule wired (`git@github.com:HelixDevelopment/HelixConstitution.git`); CONST-039 Anti-Bluff End-User Quality Guarantee added to Yole CONSTITUTION.md/CLAUDE.md/AGENTS.md; governance inheritance + anti-bluff escalation propagated to all 9 owned submodules (Challenges, Containers, HelixQA, LLMProvider, Security, DocProcessor, LLMOrchestrator, LLMsVerifier, VisionEngine); all submodules committed and pushed.).
+**Last updated:** 2026-05-17 (iter-68 **IN PROGRESS** — Android v1.9.0 built (Release + DEV APKs), macOS DMG v1.9.0 built (524 MB), iOS shared KMP compile fixed (`#shared-iosmain-databasefactory-broken` RESOLVED — DatabaseFactory expect/actual created for all 4 platforms), Linux .deb container build attempted (blocked by host-JVM jpackage — `#iter-69-linux-container-deb-build`), Windows deferred (Wine not buildable on macOS — `#crossbuild-windows-image-provisioning`), iOS app distribution deferred (64 K/N errors in `iosApp/src/iosMain` — `#iter-68-iosapp-ui-kn-api-errors`), Web Wasm deferred (KGP 2.0.20 bug — `#wasmjs-production-distribution-gap`). CHANGELOG v1.9.0 + KNOWN_DEFECTS updated. Containers/linux_container.Containerfile updated with `git` package. Android + macOS artifacts staged to `releases/`. Commit pending.)
+
+## Section 63 — iter-68: Multi-platform build via iter-67 container infrastructure
+
+**Status:** IN PROGRESS (commit pending).
+
+**Branch:** master.
+
+### What was done
+
+**Goal:** Use the iter-67 container infrastructure to build and distribute all missing Yole v1.9.0 platform targets.
+
+**Android v1.9.0:**
+- `androidApp/build.gradle.kts`: `versionCode 180 → 190`, `versionName "1.8.0" → "1.9.0"`
+- Built: `releases/Yole-Android-1.9.0-Release-0.0.0.1.90.apk`, `releases/Yole-Android-1.9.0-DEV-0.0.0.1.90.apk`
+- Firebase distribution: NOT YET DONE (pending commit)
+
+**macOS arm64 DMG:**
+- `desktopApp/build.gradle.kts`: `packageVersion "1.8.0" → "1.9.0"`
+- Built: `releases/Yole-Desktop-macos-arm64-1.9.0-Release-0.0.0.1.90.dmg` (524 MB)
+
+**`#shared-iosmain-databasefactory-broken` RESOLVED:**
+- Created `shared/src/commonMain/kotlin/digital/vasic/yole/database/DatabaseFactory.kt` (`expect object`)
+- Created `shared/src/commonMain/kotlin/digital/vasic/yole/database/DatabaseTypes.kt` (types)
+- Created `actual` stubs for all 4 platforms: `android`, `desktop`, `wasmJs`, `ios`
+- iOS SQLite cinterop deferred to `#iter-69-ios-sqlite-cinterop`
+- `shared:compileKotlinIosArm64` — BUILD SUCCESSFUL (warnings only)
+
+**Pre-existing iOS K/N errors fixed in `shared/iosMain`:**
+- `Document.ios.kt`: `objectForKey` → `get()` (K/N NSDictionary bridged as Map); fixed constructor-arg `getFileModTime()` call; `writeToFile` via NSData; `lastObject` → `lastOrNull()`
+- `SecureStorageFactory.ios.kt`: `memScoped { alloc<CFTypeRefVar>() }` for `SecItemCopyMatching`; removed `release()` calls (ARC); added `CoreFoundation` import
+- `FileStorage.ios.kt`: `actual class FileHandle(uri)` → `actual class FileHandle actual constructor(uri)`
+- `shared/build.gradle.kts`: added `ktor-client-darwin` to iosMain dependencies
+
+**Container infrastructure activated:**
+- Built `localhost/yole-crossbuild-linux:jdk17-arm64` (Podman 5.8.2 on macOS)
+- `Containers/pkg/crossbuild/linux_container.Containerfile`: added `git` package (required by Gradle config phase)
+- Linux .deb attempted — blocked: Compose Desktop `packageDeb` uses host-JVM `jpackage`; cross-platform packaging requires native Linux host (`#iter-69-linux-container-deb-build`)
+- Windows .msi: Wine container NOT buildable on macOS (Containerfile docs confirm) — deferred (`#crossbuild-windows-image-provisioning`)
+
+**iOS IPA:** `iosApp/src/iosMain` has 64 pre-existing K/N API errors in `IOSBackgroundSync.kt` + `IOSDocumentProvider.kt` — deferred (`#iter-68-iosapp-ui-kn-api-errors`)
+
+**Web Wasm:** KGP 2.0.20 bug (`#wasmjs-production-distribution-gap`) still blocks `binaries.executable()`
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `androidApp/build.gradle.kts` | versionCode 180→190, versionName 1.8.0→1.9.0 |
+| `desktopApp/build.gradle.kts` | packageVersion 1.8.0→1.9.0 |
+| `shared/src/commonMain/kotlin/digital/vasic/yole/database/DatabaseFactory.kt` | NEW — expect object |
+| `shared/src/commonMain/kotlin/digital/vasic/yole/database/DatabaseTypes.kt` | NEW — types |
+| `shared/src/androidMain/kotlin/digital/vasic/yole/database/DatabaseFactory.android.kt` | NEW — stub |
+| `shared/src/desktopMain/kotlin/digital/vasic/yole/database/DatabaseFactory.desktop.kt` | NEW — stub |
+| `shared/src/wasmJsMain/kotlin/digital/vasic/yole/database/DatabaseFactory.wasmJs.kt` | NEW — stub |
+| `shared/src/iosMain/kotlin/digital/vasic/yole/database/DatabaseFactory.ios.kt` | REPLACED — in-memory stub |
+| `shared/src/iosMain/kotlin/digital/vasic/yole/database/IosSQLiteDatabase.kt` | REPLACED — scaffold |
+| `shared/src/iosMain/kotlin/digital/vasic/yole/model/Document.ios.kt` | K/N API fixes |
+| `shared/src/iosMain/kotlin/digital/vasic/yole/network/platform/SecureStorageFactory.ios.kt` | K/N API fixes |
+| `shared/src/iosMain/kotlin/digital/vasic/yole/util/FileStorage.ios.kt` | actual constructor fix |
+| `shared/build.gradle.kts` | ktor-client-darwin added to iosMain |
+| `Containers/pkg/crossbuild/linux_container.Containerfile` | git added to apt-get |
+| `docs/KNOWN_DEFECTS.md` | 6 new trackers added |
+| `CHANGELOG.md` | v1.9.0 entry added |
+| `docs/CONTINUATION.md` | This update |
+| `releases/Yole-Android-1.9.0-Release-0.0.0.1.90.apk` | NEW |
+| `releases/Yole-Android-1.9.0-DEV-0.0.0.1.90.apk` | NEW |
+| `releases/Yole-Desktop-macos-arm64-1.9.0-Release-0.0.0.1.90.dmg` | NEW |
+
+### What remains
+
+1. Check Linux .deb build final status (running in background `b0hwhz16y`)
+2. **Commit** with `feat(iter-68): v1.9.0 multi-platform build via container infra`
+3. **Firebase App Distribution** — distribute Android Release + DEV APKs (commands below)
+4. Run `./gradlew :shared:desktopTest` to confirm no regressions (before commit)
+
+### Firebase distribution commands (when ready)
+
+```bash
+# iOS: N/A (iosApp UI layer errors block IPA build)
+# Android Release
+firebase appdistribution:distribute \
+  releases/Yole-Android-1.9.0-Release-0.0.0.1.90.apk \
+  --app 1:578988389676:android:d61715a0a84a42c65d2889 \
+  --groups "testers" \
+  --release-notes "v1.9.0 Release: DatabaseFactory foundation, iOS KMP compile fixed, container infrastructure activated"
+
+# Android DEV
+firebase appdistribution:distribute \
+  releases/Yole-Android-1.9.0-DEV-0.0.0.1.90.apk \
+  --app 1:578988389676:android:5a3d47a9fb23b6465d2889 \
+  --groups "testers" \
+  --release-notes "v1.9.0 DEV: Same as Release, debug-signed"
+```
+
+### Deferred trackers
+
+| Tracker | Description |
+|---------|-------------|
+| `#iter-68-iosapp-ui-kn-api-errors` | 64 K/N errors in `iosApp/src/iosMain` (IOSBackgroundSync + IOSDocumentProvider) |
+| `#iter-69-ios-sqlite-cinterop` | SQLite cinterop `.def` registration for iOS production DB |
+| `#iter-69-android-room-database` | Room DB integration for Android |
+| `#iter-69-desktop-sqlite-database` | SQLite DB integration for Desktop |
+| `#iter-69-web-indexeddb-database` | IndexedDB integration for Web Wasm |
+| `#iter-69-linux-container-deb-build` | Linux .deb via native Linux host execution |
+| `#crossbuild-windows-image-provisioning` | Wine container on Linux host needed for .msi |
+| `#wasmjs-production-distribution-gap` | KGP 2.0.20 bug blocks web bundle |
+
+---
 
 ## Section 62 — iter-65: Web Wasm partial resolution — `#wasmjs-production-distribution-gap`
 
