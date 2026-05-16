@@ -6,25 +6,27 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-62 **Phase 2 COMPLETE** — LspServerHost.hover/definition + publishDiagnostics wired to DiagnosticsCache.
+**Last updated:** 2026-05-16 (iter-62 **Phase 3 COMPLETE** — LspRangeMapping pure helper + HoverInfoMappingTest + docTexts cache wired into publishDiagnostics).
 
 Files added:
-- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/HoverInfo.kt` — data class `HoverInfo(contents: String, range: IntRange? = null)`
-- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/DefinitionLocation.kt` — data class `DefinitionLocation(uri: String, range: IntRange)`
+- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/LspRangeMapping.kt` — `object LspRangeMapping { fun lineColToOffset(text, line, col) }` — pure commonMain helper.
+- `shared/src/commonTest/kotlin/digital/vasic/yole/lsp/LspRangeMappingTest.kt` — 5 tests: line0_col0_returns0, line0_col3_returns3, line1_col0_skipsFirstLine, line1_col2_returnsAbsoluteOffset, outOfBounds_clampsToEnd.
+- `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/HoverInfoMappingTest.kt` — 3 tests: markupContent_right_returnsValue, markedStringList_left_wrapsLanguageInFences, null_input_returnsNull.
 
 Files modified:
-- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/LspServerHost.kt` — expect class extended with `hover()`, `definition()`, `diagnosticsCache`.
-- `shared/src/desktopMain/kotlin/digital/vasic/yole/lsp/LspServerHost.desktop.kt` — JVM actual: hover(500ms), definition(1000ms), diagnosticsCache field, publishDiagnostics wired. Internal helpers: `mapHoverContentsToMarkdown`, `mapLspDefinitionsToList`, `mapLspSeverity`, `mapLspMessageEither`, `mapLspCodeEither`.
-- `shared/src/androidMain/kotlin/digital/vasic/yole/lsp/LspServerHost.android.kt` — same JVM actual body + helpers (duplicated per CONST-038 no-shared-JVM-set constraint).
-- `shared/src/iosMain/kotlin/digital/vasic/yole/lsp/LspServerHost.ios.kt` — stub: hover→null, definition→emptyList, diagnosticsCache=DiagnosticsCache().
-- `shared/src/wasmJsMain/kotlin/digital/vasic/yole/lsp/LspServerHost.wasmJs.kt` — stub: hover→null, definition→emptyList, diagnosticsCache=DiagnosticsCache().
-- `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/LspServerHostTest.kt` — 2 new degradation tests: `noSpec_hover_returnsNull`, `noSpec_definition_returnsEmpty`.
+- `shared/src/desktopMain/kotlin/digital/vasic/yole/lsp/LspServerHost.desktop.kt` — `RunningServer` gains `docTexts: MutableMap<String, String>`; `didOpen`/`didChange`/`didClose` update cache; `buildFakeClient(langId)` now resolves `servers[langId]?.docTexts` at publish time + uses `LspRangeMapping.lineColToOffset` for real `start..end` ranges; `acquireOrNull` passes `langId` to `buildFakeClient`.
+- `shared/src/androidMain/kotlin/digital/vasic/yole/lsp/LspServerHost.android.kt` — same changes as Desktop (mirror, CONST-038).
 
-Tests: 5/5 LspServerHostTest PASS + all 29 LSP suite tests PASS. Mutation-verified (CONST-035): stub hover→HoverInfo("fake",null) → noSpec_hover_returnsNull FAILS; stub definition→listOf(DefinitionLocation("x",0..0)) → noSpec_definition_returnsEmpty FAILS. Revert → 5/5 PASS. Detekt clean.
+Tests: 45/45 PASS in `digital.vasic.yole.lsp.*` desktopTest suite (+8 new: 5 LspRangeMappingTest + 3 HoverInfoMappingTest). Mutation-verified (CONST-035):
+- `LspRangeMapping`: stub `return 0` → 4/5 FAIL (line0_col0 passes coincidentally). Revert → 5/5 PASS.
+- `mapHoverContentsToMarkdown`: stub `return null` → 2/3 FAIL (null_input passes coincidentally). Revert → 3/3 PASS.
+Detekt: zero violations.
 
-Type deviation from plan: LSP4J 1.0.0 uses `Diagnostic.message: Either<String, MarkupContent>` (not plain String) and `Diagnostic.code: Either<String, Int>` (not `Either<String, Number>`). Helpers `mapLspMessageEither` / `mapLspCodeEither` use the correct types. Phase 0 §3 note about Hover.contents `Either<List<Either<String, MarkedString>>, MarkupContent>` was correct.
+Design decision (documented in LspRangeMapping.kt KDoc): `DefinitionLocation.range` intentionally stays `0..0` — target file text is not in `docTexts`; Phase 7 `openFileAt` resolves it post-file-open.
 
-**Next: Phase 3 — HoverInfo + DefinitionLocation LSP4J mapping finalization (LspRangeMapping); range = 0..0 placeholders replaced with accurate line/col offsets.**
+**Previous: Phase 2 COMPLETE** — LspServerHost.hover/definition + publishDiagnostics wired to DiagnosticsCache. Internal helpers: `mapHoverContentsToMarkdown`, `mapLspDefinitionsToList`, `mapLspSeverity`, `mapLspMessageEither`, `mapLspCodeEither`.
+
+**Next: Phase 4 — DiagnosticsOverlay UI (squiggle underlines in IdeEditorScreen) + HoverTooltip UI.**
 
 **Previous: iter-62 Phase 1 COMPLETE** — Diagnostic + Severity + DiagnosticsCache. Files: `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/Diagnostic.kt`, `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/DiagnosticsCache.kt`, `shared/src/commonTest/kotlin/digital/vasic/yole/lsp/DiagnosticTest.kt`, `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/DiagnosticsCacheTest.kt`. Tests: 3 commonTest (DiagnosticTest) + 5 desktopTest (DiagnosticsCacheTest) = 8 total, all PASS.
 

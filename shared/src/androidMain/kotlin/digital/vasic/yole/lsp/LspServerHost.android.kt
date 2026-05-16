@@ -16,6 +16,11 @@
  * guard surfaces this honestly: getOrElse { return@withLock null } means
  * complete()/hover()/definition() return their honest-degradation values —
  * non-LSP completions (token + snippet providers) remain unaffected.
+ *
+ * iter-62 Phase 3 additions (mirror of Desktop):
+ *   - RunningServer.docTexts: caches latest document text per URI.
+ *   - didOpen / didChange / didClose update docTexts.
+ *   - publishDiagnostics uses LspRangeMapping.lineColToOffset for real ranges.
  *#######################################################*/
 package digital.vasic.yole.lsp
 
@@ -138,6 +143,7 @@ actual class LspServerHost actual constructor(
                 ),
             )
             server.openDocs.add(uri)
+            server.docTexts[uri] = text // Phase 3: cache for range mapping
             server.lastActivity = System.currentTimeMillis()
         } catch (e: CancellationException) {
             throw e
@@ -155,6 +161,7 @@ actual class LspServerHost actual constructor(
                     listOf(TextDocumentContentChangeEvent(fullText)),
                 ),
             )
+            server.docTexts[uri] = fullText // Phase 3: keep cache in sync
             server.lastActivity = System.currentTimeMillis()
         } catch (e: CancellationException) {
             throw e
@@ -169,6 +176,7 @@ actual class LspServerHost actual constructor(
                 DidCloseTextDocumentParams(TextDocumentIdentifier(uri)),
             )
             server.openDocs.remove(uri)
+            server.docTexts.remove(uri) // Phase 3: evict cached text
             server.lastActivity = System.currentTimeMillis()
         } catch (e: CancellationException) {
             throw e
@@ -247,7 +255,7 @@ actual class LspServerHost actual constructor(
                 val process = ProcessBuilder(
                     listOf(path.toString()) + spec.args,
                 ).redirectErrorStream(false).start()
-                val client = buildFakeClient()
+                val client = buildFakeClient(langId) // Phase 3: pass langId for docTexts lookup
                 val launcher = Launcher.createLauncher(
                     client,
                     LanguageServer::class.java,
@@ -283,14 +291,28 @@ actual class LspServerHost actual constructor(
             }
         }
 
-    private fun buildFakeClient(): LanguageClient = object : LanguageClient {
+    private fun buildFakeClient(langId: String): LanguageClient = object : LanguageClient {
         override fun telemetryEvent(o: Any?) {}
         override fun publishDiagnostics(p: PublishDiagnosticsParams?) {
             p ?: return
+            // Phase 3: look up the doc text at publish time so LspRangeMapping can
+            // resolve LSP (line, col) → absolute char offset. Best-effort: if the
+            // server hasn't seen the document yet, range collapses to 0..0.
+            val text = servers[langId]?.docTexts?.get(p.uri) ?: ""
             val mapped = p.diagnostics.orEmpty().map { lspDiag ->
+                val start = LspRangeMapping.lineColToOffset(
+                    text,
+                    lspDiag.range.start.line,
+                    lspDiag.range.start.character,
+                )
+                val end = LspRangeMapping.lineColToOffset(
+                    text,
+                    lspDiag.range.end.line,
+                    lspDiag.range.end.character,
+                )
                 Diagnostic(
                     severity = mapLspSeverity(lspDiag.severity),
-                    range = 0..0, // Phase 3 finalizes via LspRangeMapping + cached docTexts
+                    range = start..end,
                     message = mapLspMessageEither(lspDiag.message),
                     source = lspDiag.source,
                     code = mapLspCodeEither(lspDiag.code),
@@ -340,6 +362,7 @@ actual class LspServerHost actual constructor(
         val languageServer: LanguageServer,
         @Volatile var lastActivity: Long,
         val openDocs: MutableSet<String> = mutableSetOf(),
+        val docTexts: MutableMap<String, String> = mutableMapOf(), // Phase 3: per-URI text cache for LspRangeMapping
     )
 }
 
