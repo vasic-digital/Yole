@@ -233,6 +233,12 @@ fun SyncedScrollEditor(
     // When non-default, pressing Ctrl+Shift+F invokes this callback so the
     // caller (IdeEditorScreen) can call FormattingTrigger.onExplicit().
     onExplicitFormat: () -> Unit = {},
+    // iter-63 Phase 10: F2 rename shortcut. Default no-op.
+    // When non-default, pressing F2 raises the RenameAction dialog.
+    onRenameRequest: () -> Unit = {},
+    // iter-63 Phase 10: Shift+F12 find-references shortcut. Default no-op.
+    // When non-default, pressing Shift+F12 invokes FindReferencesAction.
+    onFindReferencesRequest: () -> Unit = {},
 ) {
     val sharedScroll = rememberScrollState()
     val activeLanguage = LocalLanguage.current
@@ -498,13 +504,28 @@ fun SyncedScrollEditor(
                         if (hoverCb != null) m.hoverShortcut(hoverCb) else m
                     }
                     .onPreviewKeyEvent { event ->
-                        // iter-63 Phase 8: Ctrl+Shift+F — explicit format shortcut.
-                        // Checked BEFORE completion popup handlers so the shortcut
-                        // fires even when the popup is open.
+                        // iter-63 Phase 10: F2 — rename shortcut.
+                        // Checked FIRST so rename fires before any other handler.
                         if (event.type == KeyEventType.KeyDown &&
+                            !event.isCtrlPressed && !event.isShiftPressed &&
+                            event.key == Key.F2
+                        ) {
+                            onRenameRequest()
+                            true
+                        } else if (event.type == KeyEventType.KeyDown &&
+                            event.isShiftPressed && !event.isCtrlPressed &&
+                            event.key == Key.F12
+                        ) {
+                            // iter-63 Phase 10: Shift+F12 — find-references shortcut.
+                            onFindReferencesRequest()
+                            true
+                        } else if (event.type == KeyEventType.KeyDown &&
                             event.isCtrlPressed && event.isShiftPressed &&
                             event.key == Key.F
                         ) {
+                            // iter-63 Phase 8: Ctrl+Shift+F — explicit format shortcut.
+                            // Checked BEFORE completion popup handlers so the shortcut
+                            // fires even when the popup is open.
                             onExplicitFormat()
                             true
                         } else {

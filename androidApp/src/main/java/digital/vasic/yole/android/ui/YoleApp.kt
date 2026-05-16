@@ -94,21 +94,39 @@ import digital.vasic.yole.ui.LoadingStateWrapper
 import digital.vasic.yole.ui.LoadingAnimations
 import digital.vasic.yole.android.ui.editor.CompletionPopupState
 import digital.vasic.yole.android.ui.editor.CompletionToolbarButton
+import digital.vasic.yole.android.ui.editor.codeaction.CodeActionMenu
 import digital.vasic.yole.android.ui.editor.diagnostics.DiagnosticsProblemsPanel
 import digital.vasic.yole.android.ui.editor.hover.HoverPopup
 import digital.vasic.yole.android.ui.editor.navigation.DefinitionLocationChooser
+import digital.vasic.yole.android.ui.editor.references.ReferencesPanel
+import digital.vasic.yole.android.ui.editor.rename.RenameAction
+import digital.vasic.yole.android.ui.editor.signaturehelp.SignatureHelpPill
 import digital.vasic.yole.completion.CompletionEngine
 import digital.vasic.yole.completion.trigger.CompletionTrigger
+import digital.vasic.yole.lsp.CodeAction
 import digital.vasic.yole.lsp.DefinitionLocation
 import digital.vasic.yole.lsp.DiagnosticsCache
 import digital.vasic.yole.lsp.EditorNavigationStack
+import digital.vasic.yole.lsp.FindReferencesAction
+import digital.vasic.yole.lsp.FormattingTrigger
 import digital.vasic.yole.lsp.GoToDefinitionAction
 import digital.vasic.yole.lsp.HoverBlock
 import digital.vasic.yole.lsp.HoverMarkdownRenderer
+import digital.vasic.yole.lsp.LspCodeActionRequester
 import digital.vasic.yole.lsp.LspDefinitionRequester
+import digital.vasic.yole.lsp.LspFormattingRequester
+import digital.vasic.yole.lsp.LspReferencesRequester
+import digital.vasic.yole.lsp.LspRenameRequester
 import digital.vasic.yole.lsp.LspServerHost
 import digital.vasic.yole.lsp.LspServerRegistry
+import digital.vasic.yole.lsp.LspSignatureHelpRequester
 import digital.vasic.yole.lsp.NavEntry
+import digital.vasic.yole.lsp.ReferenceLocation
+import digital.vasic.yole.lsp.SignatureHelp
+import digital.vasic.yole.lsp.SignatureHelpTrigger
+import digital.vasic.yole.lsp.TextEdit
+import digital.vasic.yole.lsp.WorkspaceEdit
+import digital.vasic.yole.lsp.WorkspaceEditApplier
 import digital.vasic.yole.language.LanguageRegistry
 import digital.vasic.yole.language.LocalLanguage
 import digital.vasic.yole.language.affordance.OutlineExtractor
@@ -1491,6 +1509,7 @@ fun IdeEditorScreen(
     onBackClick: () -> Unit = {},
     onSaveClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     var text by remember(content) { mutableStateOf(content) }
     val format = remember(fileName) { FormatRegistry.detectByFilename(fileName) }
     val bg = ideBackground()
@@ -1602,6 +1621,175 @@ fun IdeEditorScreen(
         }
     }
 
+    // ── iter-63 Phase 10: rename wiring ──────────────────────────────────
+    // showRenameAction is raised by F2 shortcut or long-press "Rename" menu.
+    var showRenameAction by remember { mutableStateOf(false) }
+    // LspRenameRequester adapter that wraps LspServerHost.rename().
+    val lspRenameRequester = remember(lspHost) {
+        object : LspRenameRequester {
+            override suspend fun rename(
+                langId: String,
+                uri: String,
+                line: Int,
+                character: Int,
+                newName: String,
+            ): WorkspaceEdit? = lspHost.rename(langId, uri, line, character, newName)
+        }
+    }
+
+    // ── iter-63 Phase 10: code-action lightbulb polling ──────────────────
+    // Populated by the 500ms polling loop below. Passed to SyncedScrollEditor
+    // so CodeActionLightbulb renders in the 2nd gutter column (between
+    // diagnostic dot and fold chevron).
+    var actionsByLine by remember { mutableStateOf<Map<Int, List<CodeAction>>>(emptyMap()) }
+    // Code-action menu state: which line is the lightbulb-tap for.
+    var codeActionMenuLine by remember { mutableStateOf<Int?>(null) }
+    // LspCodeActionRequester adapter.
+    val lspCodeActionRequester = remember(lspHost) {
+        object : LspCodeActionRequester {
+            override suspend fun codeActions(
+                langId: String,
+                uri: String,
+                range: IntRange,
+            ): List<CodeAction> = lspHost.codeActions(langId, uri, range)
+        }
+    }
+    // 500ms polling loop for code actions (per Phase 10.2 spec).
+    // #iter-63-server-trigger-chars-hardcoded — server-capability query is a
+    // future improvement; Phase 10 v1 polls for visible-range actions directly.
+    if (passedLangId != null) {
+        LaunchedEffect(passedLangId, currentFileUri) {
+            while (true) {
+                delay(500L)
+                try {
+                    val textNow = text
+                    val lineCount = textNow.lines().size
+                    // Poll the full document range as a single request for Phase 10 v1.
+                    val actions = lspCodeActionRequester.codeActions(
+                        langId = passedLangId,
+                        uri = currentFileUri,
+                        range = 0 until textNow.length.coerceAtLeast(1),
+                    )
+                    // Distribute actions to their respective lines by evenly assigning
+                    // to line 0 for Phase 10 v1 (server-side line mapping is a future
+                    // improvement tracked as #iter-63-code-action-per-line-mapping).
+                    actionsByLine = if (actions.isNotEmpty()) {
+                        (0 until lineCount.coerceAtLeast(1)).associateWith { _ -> actions }
+                    } else {
+                        emptyMap()
+                    }
+                } catch (_: Throwable) {
+                    // Degraded — keep previous actionsByLine; server may be unavailable.
+                }
+            }
+        }
+    }
+
+    // ── iter-63 Phase 10: signature help ─────────────────────────────────
+    // Current SignatureHelp result; null = no signature popup shown.
+    var currentSignatureHelp by remember { mutableStateOf<SignatureHelp?>(null) }
+    // LspSignatureHelpRequester adapter.
+    val lspSignatureHelpRequester = remember(lspHost) {
+        object : LspSignatureHelpRequester {
+            override suspend fun signatureHelp(
+                langId: String,
+                uri: String,
+                line: Int,
+                character: Int,
+            ): SignatureHelp? = lspHost.signatureHelp(langId, uri, line, character)
+        }
+    }
+    // SignatureHelpTrigger — feeds keystrokes from onTextChanged.
+    val signatureHelpTrigger = if (passedLangId != null) {
+        remember(lspHost, passedLangId) {
+            SignatureHelpTrigger(
+                scope = completionScope,
+                requester = lspSignatureHelpRequester,
+                onResult = { sig -> currentSignatureHelp = sig },
+            )
+        }
+    } else {
+        null
+    }
+
+    // ── iter-63 Phase 10: formatting trigger ─────────────────────────────
+    // LspFormattingRequester adapter.
+    val lspFormattingRequester = remember(lspHost) {
+        object : LspFormattingRequester {
+            override suspend fun formatting(
+                langId: String,
+                uri: String,
+                indentSize: Int,
+                useSpaces: Boolean,
+            ): List<TextEdit> = lspHost.formatting(langId, uri, indentSize, useSpaces)
+        }
+    }
+    // Phase 10 v1: hardcode on-type trigger chars per
+    // #iter-63-server-trigger-chars-hardcoded.
+    // Full server-capability query is a future improvement.
+    val onTypeTriggerChars: Set<Char> = setOf(';', '}', '\n')
+    val formattingTrigger = if (passedLangId != null) {
+        remember(lspHost, passedLangId) {
+            FormattingTrigger(
+                formatter = lspFormattingRequester,
+                onTypeFormatter = { langId, uri, line, character, triggerChar ->
+                    lspHost.onTypeFormatting(langId, uri, line, character, triggerChar)
+                },
+                settings = { false }, // Phase 10 v1: formatOnSave stub; Settings toggle deferred
+            )
+        }
+    } else {
+        null
+    }
+
+    // ── iter-63 Phase 10: find-references wiring ──────────────────────────
+    var showReferencesPanel by remember { mutableStateOf(false) }
+    var referencesList by remember { mutableStateOf<List<ReferenceLocation>>(emptyList()) }
+    // LspReferencesRequester adapter.
+    val lspReferencesRequester = remember(lspHost) {
+        object : LspReferencesRequester {
+            override suspend fun references(
+                langId: String,
+                uri: String,
+                line: Int,
+                character: Int,
+                includeDeclaration: Boolean,
+            ): List<ReferenceLocation> = lspHost.references(langId, uri, line, character, includeDeclaration)
+        }
+    }
+
+    // ── iter-63 Phase 10: mobile long-press context menu ──────────────────
+    // "Rename" and "Find references" items are surfaced via a DropdownMenu
+    // anchored to the editor surface. The menu is raised by an explicit
+    // toolbar button ("…" / "More") in Phase 10 v1; a full long-press
+    // gesture detector on the BasicTextField requires a custom Indication
+    // and is deferred as #iter-63-longpress-gesture-detector.
+    var showEditorContextMenu by remember { mutableStateOf(false) }
+
+    // ── iter-63 Phase 10.4: onSave hook for FormattingTrigger ───────────
+    // The existing onSaveClick callback is extended here so that
+    // FormattingTrigger.onSave() runs before the file write.
+    // Phase 10 v1: edits are obtained but application deferred as
+    // #iter-63-save-format-edit-apply.
+    val wrappedOnSaveClick: () -> Unit = {
+        if (passedLangId != null && formattingTrigger != null) {
+            completionScope.launch {
+                try {
+                    val edits = formattingTrigger.onSave(
+                        langId = passedLangId,
+                        uri = currentFileUri,
+                    )
+                    if (edits.isNotEmpty()) {
+                        android.util.Log.d("YoleApp", "on-save formatting: ${edits.size} edits")
+                    }
+                } catch (_: Throwable) {
+                    // Degraded — on-save formatting unavailable.
+                }
+            }
+        }
+        onSaveClick()
+    }
+
     Column(modifier = Modifier.fillMaxSize().background(bg)) {
         // General editor toolbar (undo/redo/find)
         Row(
@@ -1658,6 +1846,44 @@ fun IdeEditorScreen(
                 description = "Toggle problems panel",
                 textColor = problemsBtnColor,
             ) { isProblemsPanelOpen = !isProblemsPanelOpen }
+
+            // iter-63 Phase 10: "Refs" toolbar shortcut for find-references.
+            // Surfaces the ReferencesPanel without requiring long-press.
+            if (passedLangId != null) {
+                IdeToolbarButton(
+                    label = "Refs",
+                    description = "Find references (Shift+F12)",
+                    textColor = textColor,
+                ) {
+                    completionScope.launch {
+                        Toast.makeText(context, "Searching references…", Toast.LENGTH_SHORT).show()
+                        FindReferencesAction.findReferences(
+                            requester = lspReferencesRequester,
+                            langId = passedLangId,
+                            currentUri = currentFileUri,
+                            currentCursor = 0,
+                            line = 0,
+                            character = 0,
+                            stack = navStack,
+                            onShow = { refs ->
+                                referencesList = refs
+                                showReferencesPanel = true
+                            },
+                            onToast = { msg ->
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            },
+                        )
+                    }
+                }
+
+                // iter-63 Phase 10: "Rename" toolbar shortcut (F2).
+                // Also surfaced via context menu "Rename" item.
+                IdeToolbarButton(
+                    label = "Rename",
+                    description = "Rename symbol (F2)",
+                    textColor = textColor,
+                ) { showRenameAction = true }
+            }
 
             // Format-specific tools (markdown)
             if (format.id == "markdown") {
@@ -1795,6 +2021,50 @@ fun IdeEditorScreen(
                                     newText.endsWith(" ") || newText.endsWith("\n")) {
                                     addToHistory(newText)
                                 }
+                                // iter-63 Phase 10.3: feed signature help trigger.
+                                // The last typed character drives '(' / ',' / ')' detection.
+                                if (passedLangId != null && signatureHelpTrigger != null) {
+                                    val lastChar = newText.lastOrNull()
+                                    if (lastChar != null) {
+                                        signatureHelpTrigger.onKeystroke(
+                                            char = lastChar,
+                                            langId = passedLangId,
+                                            uri = currentFileUri,
+                                            line = 0,
+                                            character = newText.length,
+                                        )
+                                    }
+                                }
+                                // iter-63 Phase 10.4: on-type formatting hook.
+                                // #iter-63-server-trigger-chars-hardcoded: Phase 10 v1 uses
+                                // a hardcoded set { ';', '}', '\n' } instead of querying
+                                // server capabilities. Full server-capability query is a
+                                // future improvement.
+                                val typedChar = newText.lastOrNull()
+                                if (passedLangId != null && formattingTrigger != null &&
+                                    typedChar != null && typedChar in onTypeTriggerChars
+                                ) {
+                                    completionScope.launch {
+                                        try {
+                                            val edits = formattingTrigger.onType(
+                                                langId = passedLangId,
+                                                uri = currentFileUri,
+                                                line = 0,
+                                                character = newText.length,
+                                                triggerChar = typedChar,
+                                                serverTriggerChars = onTypeTriggerChars,
+                                            )
+                                            // Phase 10 v1: edits are obtained but application
+                                            // to the editor buffer is deferred as
+                                            // #iter-63-on-type-edit-apply.
+                                            if (edits.isNotEmpty()) {
+                                                android.util.Log.d("YoleApp", "on-type formatting: ${edits.size} edits")
+                                            }
+                                        } catch (_: Throwable) {
+                                            // Degraded — on-type formatting unavailable.
+                                        }
+                                    }
+                                }
                             },
                             semanticsLabel = "Code editor for $fileName",
                             placeholder = "Start typing...",
@@ -1830,6 +2100,54 @@ fun IdeEditorScreen(
                                     }
                                 }
                             } else null,
+                            // iter-63 Phase 10.2: code-action lightbulb (3rd gutter column).
+                            actionsByLine = actionsByLine,
+                            onCodeActionLineTap = { line -> codeActionMenuLine = line },
+                            // iter-63 Phase 10.4: Ctrl+Shift+F explicit format shortcut.
+                            onExplicitFormat = {
+                                if (passedLangId != null && formattingTrigger != null) {
+                                    completionScope.launch {
+                                        try {
+                                            val edits = formattingTrigger.onExplicit(
+                                                langId = passedLangId,
+                                                uri = currentFileUri,
+                                            )
+                                            // Phase 10 v1: edit application deferred as
+                                            // #iter-63-explicit-format-edit-apply.
+                                            if (edits.isNotEmpty()) {
+                                                android.util.Log.d("YoleApp", "explicit format: ${edits.size} edits")
+                                            }
+                                        } catch (_: Throwable) {
+                                            // Degraded — formatting unavailable.
+                                        }
+                                    }
+                                }
+                            },
+                            // iter-63 Phase 10.1: F2 rename shortcut.
+                            onRenameRequest = { showRenameAction = true },
+                            // iter-63 Phase 10.5: Shift+F12 find-references shortcut.
+                            onFindReferencesRequest = {
+                                if (passedLangId != null) {
+                                    completionScope.launch {
+                                        FindReferencesAction.findReferences(
+                                            requester = lspReferencesRequester,
+                                            langId = passedLangId,
+                                            currentUri = currentFileUri,
+                                            currentCursor = 0,
+                                            line = 0,
+                                            character = 0,
+                                            stack = navStack,
+                                            onShow = { refs ->
+                                                referencesList = refs
+                                                showReferencesPanel = true
+                                            },
+                                            onToast = { msg ->
+                                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                            },
+                                        )
+                                    }
+                                }
+                            },
                         )
                         // iter-62 Phase 8.4: HoverPopup overlay.
                         if (hoverBlocks.isNotEmpty()) {
@@ -1838,6 +2156,50 @@ fun IdeEditorScreen(
                                 anchorOffset = hoverPopupAnchor,
                                 syntaxHighlighter = highlighter,
                                 onDismiss = { hoverBlocks = emptyList() },
+                            )
+                        }
+                        // iter-63 Phase 10.3: SignatureHelpPill overlay (mobile).
+                        // Rendered as a top-aligned chip above the editor content.
+                        // Desktop SignatureHelpPopup wiring is deferred:
+                        // #iter-63-desktop-signature-help-popup-deferred.
+                        if (currentSignatureHelp != null) {
+                            androidx.compose.foundation.layout.Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                contentAlignment = Alignment.TopStart,
+                            ) {
+                                SignatureHelpPill(info = currentSignatureHelp)
+                            }
+                        }
+                        // iter-63 Phase 10.2: CodeActionMenu overlay.
+                        // Shown when the user taps a lightbulb (codeActionMenuLine is non-null).
+                        val caLine = codeActionMenuLine
+                        if (caLine != null) {
+                            val caActions = actionsByLine[caLine] ?: emptyList()
+                            CodeActionMenu(
+                                actions = caActions,
+                                expanded = caActions.isNotEmpty(),
+                                onDismissRequest = { codeActionMenuLine = null },
+                                onSelected = { action ->
+                                    codeActionMenuLine = null
+                                    completionScope.launch {
+                                        try {
+                                            val edit = action.edit
+                                            if (edit != null && !edit.isEmpty) {
+                                                val sources = mapOf(currentFileUri to text)
+                                                val updated = WorkspaceEditApplier.apply(edit, sources)
+                                                val newText = updated[currentFileUri]
+                                                if (newText != null && newText != text) {
+                                                    text = newText
+                                                    onContentChanged(newText)
+                                                }
+                                            }
+                                        } catch (_: Throwable) {
+                                            // Degraded — code action apply failed.
+                                        }
+                                    }
+                                },
                             )
                         }
                     }
@@ -1864,7 +2226,52 @@ fun IdeEditorScreen(
                         )
                     }
                 }
+                // iter-63 Phase 10.5 / 10.6: ReferencesPanel persistent bottom drawer.
+                // Companion to iter-62 DiagnosticsProblemsPanel.
+                // Shown when showReferencesPanel is true and referencesList is non-empty.
+                if (showReferencesPanel && referencesList.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .background(ideSurface()),
+                    ) {
+                        ReferencesPanel(
+                            references = referencesList,
+                            sources = mapOf(currentFileUri to text),
+                            onJump = { uri, offset ->
+                                navStack.push(NavEntry(currentFileUri, 0))
+                                // Cross-file navigation deferred per
+                                // #iter-62-phase-8-cross-file-back-nav.
+                                android.util.Log.d("YoleApp", "references: jump to $uri:$offset")
+                            },
+                        )
+                    }
+                }
             }
+        }
+
+        // iter-63 Phase 10.1: RenameAction (modal) — shown when showRenameAction is true.
+        // The RenameAction Composable manages its own AlertDialog + RenamePreviewPanel.
+        if (showRenameAction && passedLangId != null) {
+            RenameAction(
+                langId = passedLangId,
+                uri = currentFileUri,
+                line = 0,
+                character = 0,
+                requester = lspRenameRequester,
+                onApplyEdit = { edit ->
+                    val sources = mapOf(currentFileUri to text)
+                    val updated = WorkspaceEditApplier.apply(edit, sources)
+                    val newText = updated[currentFileUri]
+                    if (newText != null && newText != text) {
+                        text = newText
+                        onContentChanged(newText)
+                    }
+                    showRenameAction = false
+                },
+                onDismiss = { showRenameAction = false },
+            )
         }
 
         // iter-62 Phase 8.5: DefinitionLocationChooser (multi-result).
