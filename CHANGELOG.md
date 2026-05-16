@@ -3,6 +3,57 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## iter-61 v1.4.0 — LSP integration: type-aware completions via language servers (2026-05-16)
+
+**Version:** 1.4.0 (versionCode 140 → dotted `0.0.0.1.40`)
+**Build status:** Desktop macOS-arm64 full pipeline shipped (8 LSP servers bundled). Android LSP infrastructure present; Settings UX shows the v1 disclaimer — native Android binaries pending. Desktop Linux/Windows code-ready, distribution gated. iOS + Web stubs return empty list.
+
+iter-61 wires Language Server Protocol (LSP) support into the existing auto-complete pipeline as the fourth completion provider. Opening a supported source file on Desktop macOS-arm64 silently spawns the matching language server in the background; type-aware, project-aware completions flow into the same popup already known from iter-60.
+
+### Added
+
+- **`LspServerSpec` + `LspServerRegistry`** (`shared/src/commonMain/.../lsp/`) — typed data class for server configuration + registry of 15 bundled language server descriptors. Backed by 15 `server.json` files under `shared/src/commonMain/resources/lsp-servers/<langId>/`.
+- **15 `server.json` files** — bash (bash-language-server), c (clangd), cpp (clangd), elixir (elixir-ls), go (gopls), haskell (haskell-language-server-wrapper), java (jdtls), kotlin (kotlin-language-server), lua (lua-language-server), markdown (marksman), python (pyright-langserver), rust (rust-analyzer), typescript (typescript-language-server), yaml (yaml-language-server), zig (zls).
+- **`LspWorkspaceResolver`** — okio-based walk-up resolver that finds the project root by matching project markers listed in `server.json` (e.g., `Cargo.toml`, `go.mod`, `tsconfig.json`). Max 20 directory levels.
+- **`LspServerInstaller`** — per-platform `expect/actual` that resolves the staged binary path. Desktop actual reads from `lsp-bundles/<langId>/<exe>` on the classpath. Android actual returns `NotInstalled` in v1.
+- **`LspServerHost`** — per-platform `expect/actual` owning one server process per language ID. JVM actual: `ProcessBuilder` spawn + LSP4J 1.0.0 JSON-RPC + 30 s init timeout + 500 ms completion timeout + 5-minute idle shutdown ticker + `Mutex` serialisation. `ServerState` sealed class: `Idle / Starting / Ready / Error`.
+- **`LspCompletionProvider`** — fourth `CompletionProvider` implementation (expect/actual). Desktop + Android JVM: delegates to `LspServerHost`; iOS + Wasm: honest `emptyList()` stubs. `id = "lsp"`.
+- **`CompletionContext`** extended — `documentUri: String?` and `workspaceRoot: String?` optional fields added (backward-compatible defaults) to thread document URI and workspace root to the LSP server.
+- **`CompletionEngine.default()`** extended — accepts optional `lspHost: LspServerHost?`; wires `LspCompletionProvider` as the fourth provider when non-null.
+- **LSP4J 1.0.0** dependency added to `androidMain` + `desktopMain` in `shared/build.gradle.kts`.
+- **`lspBundleStage` Gradle task** — copies `.lsp-binary-cache/<langId>/macos-arm64/<exe>` into `processedResources/desktop/main/lsp-bundles/<langId>/` at build time. Wired into `desktopProcessResources`. Equivalent `lspBundleStageTest` wired into `desktopTestProcessResources`.
+- **8 LSP server binaries staged for Desktop macOS-arm64** under `.lsp-binary-cache/`: rust-analyzer, clangd (shared by c+cpp), haskell-language-server-wrapper, jdtls bundle, kotlin-language-server, lua-language-server, marksman, zls.
+- **`LspSettingsScreen`** (`androidApp/.../settings/LspSettingsScreen.kt`) — Compose screen accessible from Settings → Language Servers. Lists all 15 bundled servers; all show "Not available on Android (v1)" status row with `testTag`-addressable nodes.
+- **Editor wiring** — `IdeEditorScreen` passes `LspServerHost` to `CompletionEngine.default()` so LSP completions are live in the editor on Desktop.
+- **`RealServerSmokeTest`** (`desktopTest`) — end-to-end test: exercises full classpath path (`lspBundleStage` → `LspServerInstaller` → `LspServerHost.acquireOrNull` → `emitState(Ready)`) using marksman binary. Mutation-killable.
+- **2 Robolectric tests** for `LspSettingsScreen` — `rendersScreenWithAllLangs` + `allRowsShowNotAvailableInV1`.
+
+### Behind the scenes
+
+- **`lsp_binary_acquisition_challenge.sh`** — static (≥15 `server.json` files; ≥8 `.lsp-binary-cache/<langId>/macos-arm64/` dirs present) + runtime (`LspServerRegistryTest` + `LspWorkspaceResolverTest` ≥10 PASSED). Wired into `qa-iter-61-gates` → `qa-all`.
+- **`lsp_completion_provider_challenge.sh`** — static (expect + 4 platform actuals present; `CompletionEngineParityTest` references ≥4 providers) + runtime (`LspCompletionProviderTest` + `CompletionEngineParityTest` ≥8 PASSED, 0 FAILED). Wired into `qa-iter-61-gates`.
+- **`CompletionEngineParityTest` bumped** — minimum provider count 3 → 4. Fails if `LspCompletionProvider` is accidentally unwired.
+
+### Known gaps (v1)
+
+- **`#crossbuild-android-ndk-lsp`** — Android native LSP binaries not cross-compiled. Android Settings UX shows the v1 disclaimer. JVM-bundle (jdtls, kotlin-language-server) and Node-bundle (pyright, typescript, bash, yaml) servers pending runtime DFMs.
+- **`#crossbuild-linux-windows-infra`** (LSP) — Desktop Linux/Windows code ready; binary distribution gated on cross-build infrastructure.
+- **`#iter-61-jdtls-project-build-deps-online`** — jdtls downloads ~150 MB of Maven/Gradle build dependencies on first project open. Requires internet connection; bundled-dependencies mode planned for follow-up.
+- **`#wasmjs-production-distribution-gap`** — Web Wasm LSP deferred; native subprocess not possible in browser sandbox.
+- **iOS hard-block** — App Store Review Guideline 2.5.2 prohibits subprocess execution. `LspCompletionProvider.ios.kt` returns `emptyList()` indefinitely.
+- **go (`gopls`) not staged** — binary acquisition script had a gap for gopls; will be added in a follow-up alongside other native-binary servers.
+- **Diagnostics / hover / go-to-definition not in v1** — LSP-driven inline diagnostics, hover tooltips, and navigation land in iter-62 (Feature 4b).
+
+### Cross-platform impact summary (CONST-037)
+
+- **Android:** LSP infrastructure (LspServerHost, LspCompletionProvider, LspSettingsScreen) shipped. Settings UX shows the v1 honest disclaimer for all 15 servers. No completions yet.
+- **Desktop macOS-arm64:** full pipeline shipped end-to-end. 8 servers bundled and wired into editor.
+- **Desktop Linux / Windows:** code identical to macOS; binary distribution gated on `#crossbuild-linux-windows-infra`.
+- **iOS:** honest `emptyList()` stubs; hard-blocked by App Store §2.5.2.
+- **Web (Wasm):** honest `emptyList()` stubs; native subprocess not possible in-browser.
+
+---
+
 ## iter-60 v1.3.0 — Auto-complete: token frequency + snippets + identifiers (2026-05-15)
 
 **Version:** 1.3.0 (versionCode 130 → dotted `0.0.0.1.30`)

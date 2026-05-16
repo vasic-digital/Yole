@@ -6,7 +6,9 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-61 **Phase 8 COMPLETE** — Gradle binary bridge + LspSettingsScreen + Android stub UX. `:androidApp:testDebugUnitTest --tests "LspSettingsScreenRobolectricTest"` PASS (2 tests). `:androidApp:testDebugUnitTest --tests "*completion*"` PASS (no iter-60 regression). `:shared:lspBundleStage` BUILD SUCCESSFUL — 8 binary paths staged. Detekt clean. Committed and pushed to master. **iter-61 Phase 8 DONE.**
+**Last updated:** 2026-05-16 (iter-61 **Phase 10 COMPLETE** — Documentation deliverables. `docs/features/lsp/user-guide.md` (5 sections), `docs/features/lsp/architecture.md` (10 sections + ASCII pipeline diagram), `docs/features/lsp/lsp-coverage-matrix.md` (15 langs × 6 columns, generated from source tree + Phase 7 cache), `CHANGELOG.md` iter-61 v1.4.0 entry added. Committed. **Next: iter-61 Phase 11 — Firebase distribution v1.4.0** (version bump 1.3.0 → 1.4.0, build APK + DMG, distribute to Firebase).
+
+**Previous: Phase 8 COMPLETE** — Gradle binary bridge + LspSettingsScreen + Android stub UX. `:androidApp:testDebugUnitTest --tests "LspSettingsScreenRobolectricTest"` PASS (2 tests). `:androidApp:testDebugUnitTest --tests "*completion*"` PASS (no iter-60 regression). `:shared:lspBundleStage` BUILD SUCCESSFUL — 8 binary paths staged. Detekt clean. Committed and pushed to master. **iter-61 Phase 8 DONE.**
 
 **iter-61 Phase 8 delivered:**
 - `shared/build.gradle.kts` — `lspBundleStage` Sync task (stages `.lsp-binary-cache/<langId>/macos-arm64/<exe>` → `processedResources/desktop/main/lsp-bundles/<langId>/<exe>`) + `lspBundleStageTest` (same into test resources) + wired both into `desktopProcessResources` / `desktopTestProcessResources` via `dependsOn`. Verified: binaries staged (rust-analyzer, marksman, clangd×2, lua-language-server, zls, haskell-language-server-wrapper, jdtls bundle, kotlin-language-server bundle).
