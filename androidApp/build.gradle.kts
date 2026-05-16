@@ -17,16 +17,38 @@ plugins {
     alias(libs.plugins.firebase.crashlytics)
 }
 
+// iter-64 Phase 15: pdfbox-android pulls in org.bouncycastle:bcprov-jdk15to18:1.72
+// while the SSH/SFTP stack depends on org.bouncycastle:bcprov-jdk18on:1.75 —
+// the two are identical in API but different artifact coordinates, causing
+// checkDuplicateClasses to fail. Force resolution to the newer jdk18on family
+// so only one set of BouncyCastle classes lands in the APK.
+configurations.all {
+    resolutionStrategy {
+        eachDependency {
+            if (requested.group == "org.bouncycastle") {
+                when (requested.name) {
+                    "bcprov-jdk15to18" -> useTarget("org.bouncycastle:bcprov-jdk18on:1.75")
+                    "bcpkix-jdk15to18" -> useTarget("org.bouncycastle:bcpkix-jdk18on:1.75")
+                    "bcutil-jdk15to18" -> useTarget("org.bouncycastle:bcutil-jdk18on:1.75")
+                }
+            }
+        }
+    }
+}
+
 android {
     namespace = "digital.vasic.yole.android"
     compileSdk = 35
 
     defaultConfig {
         applicationId = "digital.vasic.yole.android"
-        minSdk = 24
+        // iter-64 Phase 15: Apache POI 5.x uses MethodHandle.invoke (Java 9+ bytecode)
+        // which D8 rejects below API 26. POI requires Android 8+ (API 26) per upstream.
+        // Raised from 24 to 26; API 26 covers ~92%+ of active Android devices (Dec 2025).
+        minSdk = 26
         targetSdk = 35
-        versionCode = 160
-        versionName = "1.6.0"
+        versionCode = 170
+        versionName = "1.7.0"
 
         // iter-64 Phase 3: Apache POI pushes the method count past the 64k
         // dex limit. multiDexEnabled = true activates AndroidX MultiDex so
@@ -91,6 +113,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        // iter-64 Phase 15: Enable desugaring for Java 8+ API backport (e.g. java.time).
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -188,6 +212,9 @@ tasks.withType<Test>().configureEach {
 dependencies {
     implementation(project(":shared"))
     implementation(project(":commons"))
+
+    // iter-64 Phase 15: core library desugaring for Apache POI MethodHandle.invoke API.
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 
     // Compose
     implementation(libs.compose.runtime)

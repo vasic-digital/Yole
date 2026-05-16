@@ -51,9 +51,18 @@ iter-64 closes the 5-feature mandate opened in iter-57. Document format import i
 | `#iter-64-odt-android-list-nesting` | ODT Android path does not preserve nested list indentation |
 | `#iter-64-epub-metadata` | EPUB title, author, cover image, publisher dropped; spine text only |
 
+### Distribution (Phase 15) — 5-feature mandate COMPLETE
+
+- Android Release: Firebase release id `4fkj95dq37f40`, app `1:578988389676:android:d61715a0a84a42c65d2889` — distributed to all 3 testers (SUCCESS)
+- Android DEV (debug, `.dev` package): Firebase release id `3vip0r0gin5k0`, app `1:578988389676:android:5a3d47a9fb23b6465d2889` — distributed to all 3 testers (SUCCESS)
+- Desktop macOS-arm64 DMG: `Yole-Desktop-macos-arm64-1.7.0-Release-0.0.0.1.70.dmg` (524 MB, includes all 6 importers + 8 LSP binaries + iter-64 document import feature) — staged locally, no Firebase Desktop product
+- Tester group: `--testers` (email list direct), NOT `--groups`. DEV distributed via direct firebase CLI (app `1:578988389676:android:5a3d47a9fb23b6465d2889`).
+- Build fix: `minSdk` raised 24→26 (Apache POI 5.x uses MethodHandle.invoke, Android API 26+ required). BouncyCastle jdk15to18↔jdk18on conflict resolved via `configurations.all` resolution strategy. `isCoreLibraryDesugaringEnabled = true` added.
+- **5-feature mandate shipped:** syntax highlighting (iter-57) + source-code files (iter-58) + auto-complete (iter-60) + LSP integration (iter-61/62/63) + document import (iter-64). All 5 features distributed to testers.
+
 ### Cross-platform impact (CONST-037)
 
-- **Android:** All 6 importers wired; RTF returns `NotSupported`; share intent + FILES button. `multiDexEnabled = true`. POI keep rules preemptive.
+- **Android:** All 6 importers wired; RTF returns `NotSupported`; share intent + FILES button. `multiDexEnabled = true`. POI keep rules preemptive. minSdk raised to 26.
 - **Desktop:** All 6 importers wired; full JVM (PDFBox 3.x, ODFDOM, RTFEditorKit). Drag-and-drop + FILES button + File menu.
 - **iOS:** All 6 importers return `ImportError.NotSupported` — architectural block (no JVM). No UI changes.
 - **Web/Wasm:** All 6 importers return `ImportError.NotSupported` — architectural block (no JVM). No UI changes.
