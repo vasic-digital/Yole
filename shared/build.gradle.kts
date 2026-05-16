@@ -162,6 +162,13 @@ kotlin {
                 implementation(libs.jsoup)
                 implementation(libs.flexmark.html2md.converter)
 
+                // iter-64 Phase 7: PdfImporter — pdfbox-android (2.0.27 API).
+                // com.tom-roush:pdfbox-android is an Android-safe port of PDFBox 2.0.x:
+                // it replaces AWT with Android Bitmap APIs and ships no Swing/AWT deps.
+                // Uses PDDocument.load(InputStream) (2.x API; differs from 3.x Loader.loadPDF).
+                // APK size impact: ~5–7 MB dex + resources; multiDex already enabled.
+                implementation(libs.pdfbox.android.lib)
+
                 // Tree-Sitter (iter-57 Phase 5 — Android NDK fix landed
                 // post-Phase 13, ticket #android-tree-sitter-ndk-so-missing):
                 //
@@ -230,6 +237,12 @@ kotlin {
                 // Desktop JVM ships a compatible XML stack; Xerces transitive deps are fine here.
                 // NOT added to androidMain (Xerces conflicts with Android's built-in XML parser).
                 implementation(libs.odfdom.java)
+
+                // iter-64 Phase 7: PdfImporter — PDFBox 3.0.7 (upstream, JVM-only).
+                // Uses Loader.loadPDF(byte[]) API (3.x entry point).
+                // Apache-2.0 licensed. Bundles FontBox and commons-logging.
+                // Desktop JVM only — Android uses pdfbox-android 2.0.27 (separate artifact + API).
+                implementation(libs.pdfbox.jvm)
 
                 // Tree-Sitter (iter-57 Phase 5). JAR bundles native binaries
                 // for x86_64-linux, aarch64-linux, x86_64-macos, aarch64-macos,

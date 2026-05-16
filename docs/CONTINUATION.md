@@ -339,7 +339,94 @@ Primary test synthesises ODT bytes via ODFDOM's own API (TextHElement + TextPEle
 
 ### Next
 
-iter-64 Phase 7 — PdfImporter (per plan §7).
+iter-64 Phase 7 — PdfImporter (per plan §7). ← **DONE; see Section 58 below.**
+
+---
+
+## Section 58 — iter-64 Phase 7: PdfImporter (PDFBox 3.0.7 Desktop / pdfbox-android 2.0.27 Android)
+
+**Status:** COMPLETE.
+
+**Branch:** master. **Last commit:** `feat(iter-64): Phase 7 — PdfImporter (PDFBox 3.0 Desktop + 2.0.27 Android)`.
+
+### What was added
+
+**Dependencies (per-platform split):**
+- `gradle/libs.versions.toml`: two separate version entries:
+  - `pdfbox = "3.0.7"` — upstream Apache PDFBox for Desktop JVM
+  - `pdfbox-android = "2.0.27.0"` — Android community port
+  - Catalog entries: `pdfbox-jvm` (`org.apache.pdfbox:pdfbox:3.0.7`) and `pdfbox-android-lib` (`com.tom-roush:pdfbox-android:2.0.27.0`)
+- `shared/build.gradle.kts`:
+  - `desktopMain`: `implementation(libs.pdfbox.jvm)` (PDFBox 3.0.7)
+  - `androidMain`: `implementation(libs.pdfbox.android.lib)` (pdfbox-android 2.0.27.0)
+
+**Source files:**
+- `shared/src/commonMain/kotlin/digital/vasic/yole/import_/PdfImporter.kt` — `expect class PdfImporter() : DocumentImporter`, `supportedExtensions = setOf("pdf")`
+- `shared/src/desktopMain/kotlin/digital/vasic/yole/import_/PdfImporter.desktop.kt` — PDFBox 3.x actual
+- `shared/src/androidMain/kotlin/digital/vasic/yole/import_/PdfImporter.android.kt` — pdfbox-android 2.x actual
+- `shared/src/iosMain/kotlin/digital/vasic/yole/import_/PdfImporter.ios.kt` — `ImportError.NotSupported("pdf", "iOS")`
+- `shared/src/wasmJsMain/kotlin/digital/vasic/yole/import_/PdfImporter.wasmJs.kt` — `ImportError.NotSupported("pdf", "Web")`
+- `shared/src/desktopTest/kotlin/digital/vasic/yole/import_/PdfImporterTest.kt` — 4 desktopTest tests
+
+### Desktop JVM implementation (PDFBox 3.0.7)
+
+- Entry point: `Loader.loadPDF(bytes)` (3.x API; 2.x uses `PDDocument.load(InputStream)`)
+- Custom `RunCollector : PDFTextStripper()` — overrides `writeString(text, positions)` to capture `(text, fontSize, fontName)` per run as a side-effect of `writeText(doc, writer)`
+- Font-size histogram: frequency weighted by character count; mode = body-text size
+- `sortedDescending().distinct()` sizes → `HeadingDetector.headingLevelByFontSize`
+- Monospace font detection → `CodeBlockDetector.isMonospaceRun(fontName)` → fenced code blocks
+- Image extraction: `PDImageXObject.image` → `javax.imageio.ImageIO.write()` → `ImageExtractor.fromBytes()`
+- Low-confidence heading warning when size delta < 1.5pt and single-word
+- `CancellationException` always rethrown
+
+### Android JVM implementation (pdfbox-android 2.0.27.0)
+
+API divergence from 3.x (documented in source):
+- Entry point: `PDDocument.load(ByteArrayInputStream(bytes))` (2.x; `Loader` does not exist in 2.x)
+- `PDFBoxResourceLoader.init(null)` — Android-specific init for bundled CMaps
+- `PDImageXObject.image` returns `android.graphics.Bitmap` (not `BufferedImage`) → `Bitmap.compress(PNG)` for byte extraction
+- `com.tom_roush.pdfbox.text.PDFTextStripper` (2.x package) vs `org.apache.pdfbox.text.PDFTextStripper` (3.x)
+- Same heading-detection + emit logic otherwise identical
+
+### Test coverage (desktopTest — PdfImporterTest.kt)
+
+| Test | Assertion |
+|---|---|
+| `maps large-font title to heading and body text to paragraph` | Synthesises PDF via PDFBox 3.x (Helvetica-Bold pt 24 "Title" + Helvetica pt 12 "Body text"); asserts markdown heading + "Body text" plain text; `sourceFormat == "pdf"` |
+| `mutation guard - stub returning failure…` | Inline stub always fails; asserts `isFailure` |
+| `reports pdf as supported extension` | `supportedExtensions` contains `"pdf"` |
+| `returns Malformed for garbage bytes` | 64 garbage bytes → `Result.failure(ImportError.Malformed)` |
+
+4 tests, 4 PASS, 0 FAIL. Detekt: zero new violations. BUILD SUCCESSFUL.
+
+### Synthesis strategy
+
+PDF bytes synthesised in-test via PDFBox 3.x `PDPageContentStream` API (`setFont` + `showText`). This produces a structurally valid PDF whose text is extractable by `PDFTextStripper`, exercising the full import pipeline end-to-end. No pre-generated fixture file needed.
+
+### Mutation evidence
+
+Primary test synthesises real PDF bytes and asserts `isSuccess` + heading/body content. Mutation guard test uses inline stub returning `Result.failure` → confirms `isFailure`. If production code returns `Result.failure(...)`, the primary test fails on `assertTrue(result.isSuccess)`.
+
+### APK size impact note
+
+- pdfbox-android 2.0.27.0: approximately 5–7 MB of dex + resources added to the Android APK. Android `multiDexEnabled = true` was already set by Phase 3 (POI). No additional multidex configuration required.
+- Desktop: PDFBox 3.0.7 (~2 MB JAR + FontBox + commons-logging). Desktop app size increased accordingly; acceptable.
+
+### Cross-platform impact
+
+- Android: full implementation via pdfbox-android 2.0.27.0; `PDDocument.load(InputStream)` 2.x API; `Bitmap` image path.
+- Desktop: full implementation via Apache PDFBox 3.0.7; `Loader.loadPDF(byte[])` 3.x API; `BufferedImage` image path.
+- iOS: honest stub; `ImportError.NotSupported("pdf", "iOS")`. Long-term: PDFKit integration via Kotlin/Native interop.
+- Web: honest stub; `ImportError.NotSupported("pdf", "Web")`. Long-term: pdf.js via Kotlin/Wasm JS interop.
+
+### Plan deviations
+
+1. **Synthesis vs fixture** (plan §6 noted both): PDF synthesised programmatically in-test using PDFBox 3.x `PDPageContentStream`. No pre-generated fixture file committed. Reason: PDFBox is already on the desktopTest classpath; in-test synthesis is self-documenting and avoids binary blob tracking.
+2. **`PDFBoxResourceLoader.init(null)`**: Android actual calls `init(null)` instead of `init(context)`. `null` is acceptable when CMaps are bundled inside the JAR (not Android assets) — which is the case for pdfbox-android 2.0.27.0. Runtime on a real device will require passing a valid `Context`; the production call site (not yet wired) must supply one.
+
+### Next
+
+iter-64 Phase 8 — EpubImporter (per plan §8).
 
 ---
 

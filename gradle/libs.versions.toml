@@ -72,6 +72,22 @@ jsoup = "1.17.2"
 # Desktop-only dependency; Android uses raw ZipInputStream + XmlPullParser path.
 odfdom = "1.0.0-BETA1"
 
+# Apache PDFBox (iter-64 Phase 7) — PDF import.
+# Two version lines required because the Android community port (com.tom-roush:pdfbox-android)
+# tracks PDFBox 2.0.x API surface while Desktop JVM uses the upstream 3.0.x API.
+#
+# pdfbox (Desktop JVM): org.apache.pdfbox:pdfbox 3.0.7 — stable release 2024-11-12.
+#   Java 8+ compatible. Apache-2.0 licensed.
+#   Uses Loader.loadPDF(byte[]) API (3.x entry point replacing PDDocument.load).
+#   Bundles FontBox and commons-logging; no Xerces dependency.
+#
+# pdfbox-android: com.tom-roush:pdfbox-android 2.0.27.0 — tracks PDFBox 2.0.27.
+#   Android-safe: replaces AWT with Android Bitmap APIs, no Swing/AWT deps.
+#   Apache-2.0 licensed. Uses PDDocument.load(InputStream) (2.x API).
+#   Available on Maven Central. Verified 2026-05-16.
+pdfbox = "3.0.7"
+pdfbox-android = "2.0.27.0"
+
 # Apache POI (iter-64 Phase 3) — OOXML lite variant for .docx import.
 # poi-ooxml-lite ships only the XWPF/XSSF APIs; excludes the heavy XML
 # processing chain that poi-ooxml pulls in. ~6 MB vs ~15 MB on the classpath.
@@ -293,6 +309,12 @@ poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
 
 # Apache ODFDOM (iter-64 Phase 6) — ODF toolkit for .odt import on Desktop JVM.
 odfdom-java = { module = "org.odftoolkit:odfdom-java", version.ref = "odfdom" }
+
+# Apache PDFBox (iter-64 Phase 7) — PDF import with per-platform version split.
+# pdfbox-jvm:     Desktop JVM — PDFBox 3.0.7 upstream, Loader.loadPDF API.
+# pdfbox-android: Android JVM — pdfbox-android 2.0.27.0, PDDocument.load API.
+pdfbox-jvm = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
+pdfbox-android-lib = { module = "com.tom-roush:pdfbox-android", version.ref = "pdfbox-android" }
 
 # LSP4J (iter-61 Phase 4)
 lsp4j = { module = "org.eclipse.lsp4j:org.eclipse.lsp4j", version.ref = "lsp4j" }
