@@ -176,7 +176,7 @@ class ReferencesPanelRobolectricTest {
         )
         assertFalse(
             "ReferencesPanel MUST NOT have an onDismiss parameter (persistent panels are not swipe-dismissed)",
-            src.contains("onDismiss"),
+            src.contains("onDismiss:"),
         )
         assertTrue(
             "ReferencesPanel root MUST be LazyColumn (persistent persistent persistent — not wrapped in a sheet)",

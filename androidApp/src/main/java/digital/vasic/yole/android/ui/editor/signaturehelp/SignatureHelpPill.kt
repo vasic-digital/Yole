@@ -130,9 +130,14 @@ internal fun resolveActiveParamSpan(label: String, activeParam: Int): IntRange? 
     for (i in 0 until activeParam) {
         cursor += params[i].length + 1 // +1 for the comma separator
     }
-    val tokenStart = cursor
-    val tokenEnd = cursor + params[activeParam].length
-    return tokenStart until tokenEnd
+    // Skip any leading whitespace inserted by comma separation.
+    val rawToken = params[activeParam]
+    val leadingSpaces = rawToken.length - rawToken.trimStart().length
+    val tokenStart = cursor + leadingSpaces
+    // Return an inclusive..exclusive range compatible with String.substring(start, end).
+    // The caller uses substring(span.first, span.last) so span.last must be exclusive.
+    val tokenEnd = cursor + rawToken.length
+    return tokenStart..tokenEnd
 }
 
 /**
