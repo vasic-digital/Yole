@@ -64,6 +64,14 @@ jsoup = "1.17.2"
 # classpath; zero additional transitive cost beyond the module JAR (~200 KB).
 # Artifact: com.vladsch.flexmark:flexmark-html2md-converter:0.64.8.
 
+# Apache ODFDOM (iter-64 Phase 6) — ODF toolkit for .odt import on Desktop JVM.
+# 1.0.0-BETA1 is the latest release on Maven Central (2026-05-16).
+# Apache-2.0 licensed. Pulls in Xerces2 (xml-apis + xercesImpl) — safe on Desktop
+# JVM which ships a separate XML stack; EXCLUDED from Android where the platform
+# ships its own Xerces-compatible XML parser (XmlPullParser / org.xml.sax).
+# Desktop-only dependency; Android uses raw ZipInputStream + XmlPullParser path.
+odfdom = "1.0.0-BETA1"
+
 # Apache POI (iter-64 Phase 3) — OOXML lite variant for .docx import.
 # poi-ooxml-lite ships only the XWPF/XSSF APIs; excludes the heavy XML
 # processing chain that poi-ooxml pulls in. ~6 MB vs ~15 MB on the classpath.
@@ -282,6 +290,9 @@ flexmark-html2md-converter = { module = "com.vladsch.flexmark:flexmark-html2md-c
 # stax:stax-api excluded at the dependency site (Android ships javax.xml.stream).
 poi-ooxml-lite = { module = "org.apache.poi:poi-ooxml-lite", version.ref = "poi" }
 poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
+
+# Apache ODFDOM (iter-64 Phase 6) — ODF toolkit for .odt import on Desktop JVM.
+odfdom-java = { module = "org.odftoolkit:odfdom-java", version.ref = "odfdom" }
 
 # LSP4J (iter-61 Phase 4)
 lsp4j = { module = "org.eclipse.lsp4j:org.eclipse.lsp4j", version.ref = "lsp4j" }

@@ -226,6 +226,11 @@ kotlin {
                 implementation(libs.jsoup)
                 implementation(libs.flexmark.html2md.converter)
 
+                // iter-64 Phase 6: OdtImporter — Apache ODFDOM for .odt import.
+                // Desktop JVM ships a compatible XML stack; Xerces transitive deps are fine here.
+                // NOT added to androidMain (Xerces conflicts with Android's built-in XML parser).
+                implementation(libs.odfdom.java)
+
                 // Tree-Sitter (iter-57 Phase 5). JAR bundles native binaries
                 // for x86_64-linux, aarch64-linux, x86_64-macos, aarch64-macos,
                 // x86_64-windows (verified by inspecting the JAR). JDK 11

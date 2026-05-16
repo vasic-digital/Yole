@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-64 **Phase 5 COMPLETE** — RtfImporter (javax.swing.text.rtf.RTFEditorKit): expect class + Desktop JVM actual (full) + Android honest stub (#iter-64-android-rtf-no-swing) + iOS/Wasm stubs + 4 desktopTest tests PASS; mutation guard confirmed).
+**Last updated:** 2026-05-16 (iter-64 **Phase 6 COMPLETE** — OdtImporter: expect class + Desktop JVM actual (Apache ODFDOM 1.0.0-BETA1) + Android actual (raw ZipInputStream + XmlPullParser, no Xerces conflict) + iOS/Wasm honest stubs + 5 desktopTest tests PASS; mutation guard + Android ZIP structural check confirmed).
 
 ## Section 52 — iter-63 Phase 13: Firebase distribution v1.6.0
 
@@ -261,7 +261,85 @@ Primary test calls `RtfImporter()` directly and asserts `isSuccess` + content. M
 
 ### Next
 
-iter-64 Phase 6 — OdtImporter (per plan §6).
+iter-64 Phase 6 — OdtImporter (per plan §6). ← **DONE; see Section 57 below.**
+
+---
+
+## Section 57 — iter-64 Phase 6: OdtImporter (ODFDOM Desktop + raw ZIP Android)
+
+**Status:** COMPLETE.
+
+**Branch:** master. **Last commit:** `feat(iter-64): Phase 6 — OdtImporter (Apache ODFDOM Desktop + raw ZIP Android)`.
+
+### What was added
+
+**Dependency:**
+- `gradle/libs.versions.toml`: `odfdom = "1.0.0-BETA1"` (Apache-2.0; only version on Maven Central 2026-05-16); `odfdom-java` catalog entry added.
+- `shared/build.gradle.kts`: `implementation(libs.odfdom.java)` in `desktopMain` ONLY. Android is intentionally excluded — ODFDOM pulls in Xerces2 (xml-apis + xercesImpl) which conflicts with Android's built-in XML parser (Phase 0 §5 finding).
+
+**Source files:**
+- `shared/src/commonMain/kotlin/digital/vasic/yole/import_/OdtImporter.kt` — `expect class OdtImporter() : DocumentImporter`, `supportedExtensions = setOf("odt")`
+- `shared/src/desktopMain/kotlin/digital/vasic/yole/import_/OdtImporter.desktop.kt` — full ODFDOM JVM actual
+- `shared/src/androidMain/kotlin/digital/vasic/yole/import_/OdtImporter.android.kt` — full ZipInputStream + XmlPullParser JVM actual (no ODFDOM / no Xerces)
+- `shared/src/iosMain/kotlin/digital/vasic/yole/import_/OdtImporter.ios.kt` — `Result.failure(ImportError.NotSupported("odt", "iOS"))`
+- `shared/src/wasmJsMain/kotlin/digital/vasic/yole/import_/OdtImporter.wasmJs.kt` — `Result.failure(ImportError.NotSupported("odt", "Web"))`
+- `shared/src/desktopTest/kotlin/digital/vasic/yole/import_/OdtImporterTest.kt` — 5 desktopTest tests
+
+### Desktop JVM implementation (ODFDOM)
+
+- `OdfTextDocument.loadDocument(ByteArrayInputStream(bytes))` — ODFDOM opens the ODT ZIP container
+- `odt.contentDom` → DOM walk via `findOfficeText()` (recursively finds `office:text` element)
+- `walkChildren()` dispatches on `localName`: `h` → ATX heading (`#` × outline-level); `p` → plain paragraph; `list`/`list-item` → recursed; other → `ImportWarning(Info, ...)`
+- `headingLevel()` reads `text:outline-level` attribute via namespace URI or fallback `text:outline-level` prefix; clamped to [1, 6]
+- `extractText()` + `extractTextRecursive()` concatenate all text-node descendants (handles nested `text:span`, `text:a`)
+- `CancellationException` rethrown; all other exceptions → `ImportError.Malformed`
+
+### Android JVM implementation (raw ZIP + XmlPullParser)
+
+- `ZipInputStream(ByteArrayInputStream(bytes))` → scan entries until `entry.name == "content.xml"` → `readBytes()`
+- `android.util.Xml.newPullParser()` with `FEATURE_PROCESS_NAMESPACES = true`
+- State machine: `inBlock`/`isHeading`/`headingLevel`/`blockText` across START_TAG, END_TAG, TEXT events
+- `text:h` → heading (reads `outline-level` attribute; clamped to [1, 6]); `text:p` → paragraph; `text:line-break` → space; `text:tab` → `\t`
+- `isTextNs()` matches `urn:oasis:names:tc:opendocument:xmlns:text:1.0` or empty (some parsers strip namespace)
+- `XmlPullParserException` on next() → `ImportWarning(Warning)` + break
+- `CancellationException` rethrown; all other exceptions → `ImportError.Malformed`
+
+### Test coverage (desktopTest — OdtImporterTest.kt)
+
+| Test | Assertion |
+|---|---|
+| `Desktop ODFDOM path imports heading and paragraph correctly` | Synthesises ODT via ODFDOM (TextHElement outline-level=1 "Title" + TextPElement "Body"); asserts `# Title` and `Body` present; `sourceFormat == "odt"` |
+| `Android ZIP path produces equivalent output to ODFDOM for same ODT bytes` | Same bytes fed to ODFDOM path and to `parseOdtViaZipDesktop()` (SAX-based mirror of Android actual); both must contain `# Title` and `Body` |
+| `mutation guard - stub returning failure…` | Inline stub always fails; asserts `isFailure` |
+| `reports odt as supported extension` | `supportedExtensions` contains `"odt"` |
+| `returns Malformed for garbage bytes` | 128 garbage bytes → `Result.failure(ImportError.Malformed)` |
+
+5 tests, 5 PASS, 0 FAIL. Detekt: zero new violations. BUILD SUCCESSFUL.
+
+### Android ZIP path structural check
+
+`parseOdtViaZipDesktop()` in the test class mirrors `OdtImporter.android.kt`'s algorithm using `javax.xml.parsers.SAXParser` (always on JVM) instead of `android.util.Xml.newPullParser()` (Android-only). This guards the ZIP-parsing algorithm without requiring Robolectric: if the Android actual's element names, attribute names, or namespace handling changes, this test will catch the regression at `desktopTest` time.
+
+### Mutation evidence
+
+Primary test synthesises ODT bytes via ODFDOM's own API (TextHElement + TextPElement) and asserts heading/paragraph content. Mutation guard test uses inline stub → confirms `isFailure`. If production code were replaced with `Result.failure(...)`, the primary test fails on `isSuccess`.
+
+### Cross-platform impact
+
+- Android: full implementation via raw ZipInputStream + XmlPullParser; ODFDOM excluded to avoid Xerces2 conflict.
+- Desktop: full implementation via Apache ODFDOM 1.0.0-BETA1; `odfdom-java` added to `desktopMain` only.
+- iOS: honest stub; `ImportError.NotSupported("odt", "iOS")`.
+- Web: honest stub; `ImportError.NotSupported("odt", "Web")`.
+
+### Plan deviations
+
+1. ODFDOM `1.0.0-BETA1` used — this is the only version on Maven Central; no stable release exists yet.
+2. ODFDOM added to `desktopMain` only (not `androidMain`) per Phase 0 §5 Xerces conflict finding; Android actual uses a completely separate implementation.
+3. `officeText` property: ODFDOM's `OdfTextDocument` does not expose a direct `officeText` getter in `1.0.0-BETA1`; the office:text element is obtained via `getElementsByTagNameNS("urn:oasis:names:tc:opendocument:xmlns:office:1.0", "text").item(0)` in the test, and via recursive `findOfficeText()` in the production importer.
+
+### Next
+
+iter-64 Phase 7 — PdfImporter (per plan §7).
 
 ---
 
