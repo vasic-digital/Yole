@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-17 (iter-68 **IN PROGRESS** — Android v1.9.0 built (Release + DEV APKs), macOS DMG v1.9.0 built (524 MB), iOS shared KMP compile fixed (`#shared-iosmain-databasefactory-broken` RESOLVED — DatabaseFactory expect/actual created for all 4 platforms), Linux .deb container build attempted (blocked by host-JVM jpackage — `#iter-69-linux-container-deb-build`), Windows deferred (Wine not buildable on macOS — `#crossbuild-windows-image-provisioning`), iOS app distribution deferred (64 K/N errors in `iosApp/src/iosMain` — `#iter-68-iosapp-ui-kn-api-errors`), Web Wasm deferred (KGP 2.0.20 bug — `#wasmjs-production-distribution-gap`). CHANGELOG v1.9.0 + KNOWN_DEFECTS updated. Containers/linux_container.Containerfile updated with `git` package. Android + macOS artifacts staged to `releases/`. Commit pending.)
+**Last updated:** 2026-05-17 (iter-68 **COMPLETE** — Android v1.9.0 distributed via Firebase (Release: `40pt827oeu6io`, DEV: `2u186sbhg99mg`), macOS DMG 524MB built, iOS shared KMP compile fixed (`#shared-iosmain-databasefactory-broken` RESOLVED), Linux/Windows/iOS-app/Web deferred with honest trackers. commit `53037b1e` pushed to origin master.)
 
 ## Section 63 — iter-68: Multi-platform build via iter-67 container infrastructure
 
@@ -75,12 +75,15 @@
 | `releases/Yole-Android-1.9.0-DEV-0.0.0.1.90.apk` | NEW |
 | `releases/Yole-Desktop-macos-arm64-1.9.0-Release-0.0.0.1.90.dmg` | NEW |
 
-### What remains
+### Status: COMPLETE
 
-1. Check Linux .deb build final status (running in background `b0hwhz16y`)
-2. **Commit** with `feat(iter-68): v1.9.0 multi-platform build via container infra`
-3. **Firebase App Distribution** — distribute Android Release + DEV APKs (commands below)
-4. Run `./gradlew :shared:desktopTest` to confirm no regressions (before commit)
+**Commit:** `53037b1e` — pushed to `origin/master`
+
+**Firebase distribution:**
+- Android Release: Firebase release `40pt827oeu6io`, app `1:578988389676:android:d61715a0a84a42c65d2889`
+- Android DEV: Firebase release `2u186sbhg99mg`, app `1:578988389676:android:5a3d47a9fb23b6465d2889`
+
+**Tests:** `./gradlew :shared:desktopTest` — BUILD SUCCESSFUL (all 9100+ tests PASS, 7m 18s)
 
 ### Firebase distribution commands (when ready)
 

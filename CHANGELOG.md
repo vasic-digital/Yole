@@ -28,8 +28,8 @@
 
 | Platform | Status | Evidence |
 |----------|--------|---------|
-| Android Release | BUILT | `Yole-Android-1.9.0-Release-0.0.0.1.90.apk` in `releases/` |
-| Android DEV | BUILT | `Yole-Android-1.9.0-DEV-0.0.0.1.90.apk` in `releases/` |
+| Android Release | DISTRIBUTED | Firebase release `40pt827oeu6io` (app `d61715a0a84a42c65d2889`); `Yole-Android-1.9.0-Release-0.0.0.1.90.apk` in `releases/` |
+| Android DEV | DISTRIBUTED | Firebase release `2u186sbhg99mg` (app `5a3d47a9fb23b6465d2889`); `Yole-Android-1.9.0-DEV-0.0.0.1.90.apk` in `releases/` |
 | macOS arm64 DMG | BUILT | `Yole-Desktop-macos-arm64-1.9.0-Release-0.0.0.1.90.dmg` in `releases/` (524 MB) |
 | Linux arm64 .deb | DEFERRED | Container builds successfully but `packageDeb` targets host JVM; needs native Linux host; `#iter-69-linux-container-deb-build` |
 | Windows .msi | DEFERRED | Wine container not buildable on macOS; `#crossbuild-windows-image-provisioning` |
