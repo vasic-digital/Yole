@@ -73,7 +73,9 @@ application-icon-65534:'res/BW.xml'
 
 **Web favicon:** No Web Wasm bundle exists — deferred as `#iter-71-web-favicon-audit-pending`.
 
-**Firebase distribution:** Pending — Firebase CLI distribution command below.
+**Firebase distribution:** COMPLETE.
+- Android Release v1.9.1: Firebase release `57m3dl3vuqk1g`, app `1:578988389676:android:d61715a0a84a42c65d2889`
+- Android DEV v1.9.1: Firebase release `3mah00jjj7np0`, app `1:578988389676:android:5a3d47a9fb23b6465d2889`
 
 ### Firebase distribution (v1.9.1)
 
