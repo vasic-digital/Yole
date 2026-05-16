@@ -6,15 +6,15 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-62 **Phase 10 COMPLETE** — documentation deliverables: user-guide + architecture + CHANGELOG + CONTINUATION).
+**Last updated:** 2026-05-16 (iter-62 **Phase 11 COMPLETE** — Firebase distribution v1.5.0: Android Release + DEV distributed; Desktop macOS-arm64 DMG staged; iter-62 COMPLETE).
 
 ---
 
 ## Section 46 — iter-62: LSP capability expansion (diagnostics + hover + go-to-definition)
 
-**Status:** Phase 10 COMPLETE. Phase 11 (Firebase distribution v1.5.0) is NEXT.
+**Status:** ALL PHASES COMPLETE. iter-62 is COMPLETE and shipped.
 
-**Branch:** master. **Last commit:** see git log; Phase 10 docs commit is the most recent.
+**Branch:** master. **Last commit:** Phase 11 Firebase distribution commit (see git log).
 
 ### What was shipped (Phases 0–9)
 
@@ -52,14 +52,19 @@ Files added/modified:
 - `CHANGELOG.md` — iter-62 v1.5.0 entry added above v1.4.0 entry (~90 lines).
 - `docs/CONTINUATION.md` — THIS update (Section 46).
 
-### Phase 11 — NEXT (Firebase distribution v1.5.0)
+### Phase 11 — COMPLETE (Firebase distribution v1.5.0)
 
-To resume Phase 11:
-1. Bump `versionCode` 140 → 150 and `versionName` "1.4.0" → "1.5.0" in `androidApp/build.gradle.kts` and `desktopApp/build.gradle.kts`.
-2. Build release artifacts: `./gradlew :androidApp:assembleRelease`, `./gradlew :androidApp:assembleDebug`, `./gradlew :desktopApp:packageDmg`.
-3. Stage artifacts in `releases/` with the naming convention: `Yole-Android-1.5.0-Release-0.0.0.1.50.apk`, `Yole-Android-1.5.0-Debug-0.0.0.1.50.apk`, `Yole-Desktop-macos-arm64-1.5.0-Release-0.0.0.1.50.dmg`.
-4. Distribute via Firebase App Distribution using `--testers` (not `--groups` — avoids the iter-59 404 pattern).
-5. Update CHANGELOG.md distribution block and CONTINUATION.md.
+Completed 2026-05-16:
+- Version bumped: `versionCode` 140 → 150, `versionName` "1.4.0" → "1.5.0" in `androidApp/build.gradle.kts` and `desktopApp/build.gradle.kts`.
+- Artifacts built and staged in `releases/`:
+  - `Yole-Android-1.5.0-Release-0.0.0.1.50.apk` (29 MB)
+  - `Yole-Android-1.5.0-Debug-0.0.0.1.50.apk` (36 MB, package `digital.vasic.yole.android.dev`, label "Yole DEV")
+  - `Yole-Desktop-macos-arm64-1.5.0-Release-0.0.0.1.50.dmg` (485 MB, includes 8 LSP binaries + iter-62 capability code)
+- Firebase App Distribution results:
+  - Android Release: release id `4ib2nckdfb8ig`, app `1:578988389676:android:d61715a0a84a42c65d2889` — SUCCESS
+  - Android DEV: release id `5bah9s9ujgnb8`, app `1:578988389676:android:5a3d47a9fb23b6465d2889` — SUCCESS (direct firebase CLI invocation; distribute.sh hardcodes release app ID)
+  - Desktop DMG: staged locally; no Firebase Desktop product category
+- Tester group: `--testers` (email list direct), NOT `--groups`.
 
 ### KNOWN_DEFECTS additions from iter-62
 

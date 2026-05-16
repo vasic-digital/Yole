@@ -6,7 +6,13 @@
 ## iter-62 v1.5.0 — LSP capability expansion: diagnostics + hover + go-to-definition (2026-05-16)
 
 **Version:** 1.5.0 (versionCode 150 → dotted `0.0.0.1.50`)
-**Build status:** Android editor fully wired — diagnostics render, hover popup works, go-to-definition navigates. Desktop LSP host has all new methods implemented; Desktop editor UI wiring deferred. iOS + Web stubs return null/empty. Distribution at Phase 11.
+**Build status:** Android editor fully wired — diagnostics render, hover popup works, go-to-definition navigates. Desktop LSP host has all new methods implemented; Desktop editor UI wiring deferred. iOS + Web stubs return null/empty.
+
+**Distribution (Phase 11):**
+- Android Release: Firebase release id `4ib2nckdfb8ig`, app `1:578988389676:android:d61715a0a84a42c65d2889` — distributed to all 3 testers (SUCCESS)
+- Android DEV (debug, `.dev` package): Firebase release id `5bah9s9ujgnb8`, app `1:578988389676:android:5a3d47a9fb23b6465d2889` — distributed to all 3 testers (SUCCESS)
+- Desktop macOS-arm64 DMG: `Yole-Desktop-macos-arm64-1.5.0-Release-0.0.0.1.50.dmg` (485 MB, includes 8 LSP binaries + iter-62 LSP capability code) — staged locally, no Firebase Desktop product
+- Tester group: `--testers` (email list direct), NOT `--groups` (avoids iter-59 404 pattern). DEV distributed via direct firebase CLI (distribute.sh hardcodes release app ID).
 
 iter-62 expands the LSP integration shipped in iter-61 with three new user-visible capabilities: real-time inline diagnostics (gutter dots + underlines + Problems panel), hover documentation popups driven by Markdown-formatted language-server responses, and go-to-definition navigation with a multi-result bottom-sheet chooser and back-navigation stack. All capabilities are fully wired on Android.
 
