@@ -8,6 +8,12 @@
 **Version:** 1.4.0 (versionCode 140 → dotted `0.0.0.1.40`)
 **Build status:** Desktop macOS-arm64 full pipeline shipped (8 LSP servers bundled). Android LSP infrastructure present; Settings UX shows the v1 disclaimer — native Android binaries pending. Desktop Linux/Windows code-ready, distribution gated. iOS + Web stubs return empty list.
 
+**Distribution (Phase 11):**
+- Android Release: Firebase release id `4a8aeso45bqs8`, app `1:578988389676:android:d61715a0a84a42c65d2889` — distributed to all 3 testers (SUCCESS)
+- Android DEV (debug, `.dev` package): Firebase release id `3gs4270pq6478`, app `1:578988389676:android:5a3d47a9fb23b6465d2889` — distributed to all 3 testers (SUCCESS)
+- Desktop macOS-arm64 DMG: `Yole-Desktop-macos-arm64-1.4.0-Release-0.0.0.1.40.dmg` (484 MB, includes 8 LSP binaries) — staged locally, no Firebase Desktop product
+- Tester group: `--testers` (email list direct), NOT `--groups` (avoids iter-59 404 pattern)
+
 iter-61 wires Language Server Protocol (LSP) support into the existing auto-complete pipeline as the fourth completion provider. Opening a supported source file on Desktop macOS-arm64 silently spawns the matching language server in the background; type-aware, project-aware completions flow into the same popup already known from iter-60.
 
 ### Added

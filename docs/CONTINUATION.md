@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-61 **Phase 10 COMPLETE** — Documentation deliverables. `docs/features/lsp/user-guide.md` (5 sections), `docs/features/lsp/architecture.md` (10 sections + ASCII pipeline diagram), `docs/features/lsp/lsp-coverage-matrix.md` (15 langs × 6 columns, generated from source tree + Phase 7 cache), `CHANGELOG.md` iter-61 v1.4.0 entry added. Committed. **Next: iter-61 Phase 11 — Firebase distribution v1.4.0** (version bump 1.3.0 → 1.4.0, build APK + DMG, distribute to Firebase).
+**Last updated:** 2026-05-16 (iter-61 **Phase 11 COMPLETE** — Firebase distribution v1.4.0. Version bumped 1.3.0 → 1.4.0 (versionCode 130 → 140, dotted `0.0.0.1.40`) in `androidApp/build.gradle.kts` + `desktopApp/build.gradle.kts`. Artifacts built + staged (`releases/`): `Yole-Android-1.4.0-Release-0.0.0.1.40.apk` (29 MB), `Yole-Android-1.4.0-Debug-0.0.0.1.40.apk` (35 MB), `Yole-Desktop-macos-arm64-1.4.0-Release-0.0.0.1.40.dmg` (484 MB — includes 8 LSP binaries). Firebase: Android Release release id `4a8aeso45bqs8` (all 3 testers SUCCESS); Android DEV release id `3gs4270pq6478` (all 3 testers SUCCESS). **iter-61 COMPLETE. Next: iter-62 (Feature 4b) — LSP diagnostics / hover / go-to-definition.**
 
 **Previous: Phase 8 COMPLETE** — Gradle binary bridge + LspSettingsScreen + Android stub UX. `:androidApp:testDebugUnitTest --tests "LspSettingsScreenRobolectricTest"` PASS (2 tests). `:androidApp:testDebugUnitTest --tests "*completion*"` PASS (no iter-60 regression). `:shared:lspBundleStage` BUILD SUCCESSFUL — 8 binary paths staged. Detekt clean. Committed and pushed to master. **iter-61 Phase 8 DONE.**
 
