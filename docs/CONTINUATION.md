@@ -6,7 +6,71 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-62 **Phase 8 COMPLETE** — IdeEditorScreen integration: diagnostics + hover + go-to-def).
+**Last updated:** 2026-05-16 (iter-62 **Phase 10 COMPLETE** — documentation deliverables: user-guide + architecture + CHANGELOG + CONTINUATION).
+
+---
+
+## Section 46 — iter-62: LSP capability expansion (diagnostics + hover + go-to-definition)
+
+**Status:** Phase 10 COMPLETE. Phase 11 (Firebase distribution v1.5.0) is NEXT.
+
+**Branch:** master. **Last commit:** see git log; Phase 10 docs commit is the most recent.
+
+### What was shipped (Phases 0–9)
+
+iter-62 expanded the iter-61 LSP host with three new capabilities:
+
+1. **Real-time diagnostics** — `publishDiagnostics` server push → `DiagnosticsCache` StateFlow → three Android editor surfaces (gutter dots, inline underlines, Problems panel bottom drawer).
+2. **Hover documentation** — `textDocument/hover` request → raw Markdown → `HoverMarkdownRenderer` (Flexmark) → `List<HoverBlock>` → `HoverPopup` Compose overlay. Triggered by 300 ms mouse dwell (Desktop) or F1 / long-press menu (Android).
+3. **Go-to-definition** — `textDocument/definition` request → `GoToDefinitionAction` routing (0 → toast; 1 → navigate; N → `DefinitionLocationChooser` bottom sheet) + `EditorNavigationStack` (back nav, 100-entry cap).
+
+All three capabilities are **fully wired on Android**. Desktop LSP host methods are implemented; Desktop editor UI wiring is deferred (`#iter-62-desktop-editor-lsp-wiring`). iOS and Wasm are stubbed (null/empty).
+
+### Active deferral trackers from Phase 8
+
+| Tracker | Description |
+|---|---|
+| `#iter-62-phase-8-tree-sitter-hover-filter-stubbed` | `isIdentifierAt` always returns true; Tree-Sitter AST position lookup deferred |
+| `#iter-62-phase-8-hover-precise-anchor` | HoverPopup at IntOffset.Zero; cursor-pixel anchor deferred |
+| `#iter-62-phase-8-problems-scroll-to-line` | Problems panel row tap dismisses panel; scroll-to-line deferred |
+| `#iter-62-phase-8-cross-file-back-nav` | Back nav restores intra-file cursor only; cross-file deferred |
+| `#iter-62-desktop-editor-lsp-wiring` | Desktop IdeEditorScreen not yet wired with diag/hover/def composables |
+| `#iter-62-jdt-uri-scheme-unsupported` | jdtls `jdt://` URIs show toast instead of navigating (KNOWN_DEFECTS) |
+| `#iter-62-gopls-no-go-toolchain` | gopls requires Go toolchain on PATH; SKIP-OK in challenge |
+
+### Phase 9 anti-bluff challenges
+
+Two new challenges added to `yole-challenges/scripts/` and wired into `qa-iter-62-gates` → `qa-all`:
+- `lsp_diagnostics_challenge.sh` — 7 static files + ≥20 runtime test PASS assertions.
+- `lsp_hover_definition_challenge.sh` — static signatures + ≥23 runtime test PASS assertions.
+
+### Phase 10 deliverables (THIS PHASE — COMPLETE)
+
+Files added/modified:
+- `docs/features/lsp-4b/user-guide.md` — NEW (~180 lines): end-user guide for diagnostics, hover, go-to-def. Honest about all 7 deferral trackers.
+- `docs/features/lsp-4b/architecture.md` — NEW (~280 lines): contributor guide — pipeline diagram, component map, "how to add a new LSP capability" template (5 steps), diagnostic observer pattern, Markdown→Compose extension guide, per-platform notes, anti-bluff invariants, package layout, CONST-037 block.
+- `CHANGELOG.md` — iter-62 v1.5.0 entry added above v1.4.0 entry (~90 lines).
+- `docs/CONTINUATION.md` — THIS update (Section 46).
+
+### Phase 11 — NEXT (Firebase distribution v1.5.0)
+
+To resume Phase 11:
+1. Bump `versionCode` 140 → 150 and `versionName` "1.4.0" → "1.5.0" in `androidApp/build.gradle.kts` and `desktopApp/build.gradle.kts`.
+2. Build release artifacts: `./gradlew :androidApp:assembleRelease`, `./gradlew :androidApp:assembleDebug`, `./gradlew :desktopApp:packageDmg`.
+3. Stage artifacts in `releases/` with the naming convention: `Yole-Android-1.5.0-Release-0.0.0.1.50.apk`, `Yole-Android-1.5.0-Debug-0.0.0.1.50.apk`, `Yole-Desktop-macos-arm64-1.5.0-Release-0.0.0.1.50.dmg`.
+4. Distribute via Firebase App Distribution using `--testers` (not `--groups` — avoids the iter-59 404 pattern).
+5. Update CHANGELOG.md distribution block and CONTINUATION.md.
+
+### KNOWN_DEFECTS additions from iter-62
+
+- `#iter-62-jdt-uri-scheme-unsupported` — jdtls `jdt://` URI scheme not resolvable by Yole's file system layer. Toast shown on attempt. Fix requires a virtual file system adapter for jdtls.
+
+Carry-forward from iter-61:
+- `#iter-61-jdtls-project-build-deps-online` — jdtls downloads ~150 MB on first project open. Still open.
+
+---
+
+**Previous last-updated line (Phase 8):** 2026-05-16 (iter-62 Phase 8 COMPLETE — IdeEditorScreen integration: diagnostics + hover + go-to-def).
 
 Commit: pending
 

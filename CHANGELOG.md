@@ -3,6 +3,67 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## iter-62 v1.5.0 — LSP capability expansion: diagnostics + hover + go-to-definition (2026-05-16)
+
+**Version:** 1.5.0 (versionCode 150 → dotted `0.0.0.1.50`)
+**Build status:** Android editor fully wired — diagnostics render, hover popup works, go-to-definition navigates. Desktop LSP host has all new methods implemented; Desktop editor UI wiring deferred. iOS + Web stubs return null/empty. Distribution at Phase 11.
+
+iter-62 expands the LSP integration shipped in iter-61 with three new user-visible capabilities: real-time inline diagnostics (gutter dots + underlines + Problems panel), hover documentation popups driven by Markdown-formatted language-server responses, and go-to-definition navigation with a multi-result bottom-sheet chooser and back-navigation stack. All capabilities are fully wired on Android.
+
+### Added
+
+- **`Diagnostic` + `Severity`** (`shared/src/commonMain/.../lsp/Diagnostic.kt`) — `Diagnostic(severity, message, range: IntRange)` data class + `Severity` enum (Error, Warning, Information, Hint). Pure commonMain; no LSP4J import.
+- **`DiagnosticsCache`** (`shared/src/commonMain/.../lsp/DiagnosticsCache.kt`) — thread-safe `StateFlow<Map<String, List<Diagnostic>>>` observer hub. Updated by `publishDiagnostics` server push from `LspServerHost`. UI observes via `collectAsState()` — no polling.
+- **`publishDiagnostics` callback** — wired into the LSP4J client in `LspServerHost.desktop.kt` and `LspServerHost.android.kt`. Maps LSP4J `PublishDiagnosticsParams` ranges → `Diagnostic(range)` via `LspRangeMapping` + `docTexts` cache.
+- **`LspRangeMapping`** (`shared/src/commonMain/.../lsp/LspRangeMapping.kt`) — pure helper: converts LSP line/character positions to `IntRange` character offsets using the cached document text. Tested in isolation.
+- **`LspServerHost.hover()`** — new suspend method on the expect class + Desktop/Android JVM actual. Sends `textDocument/hover` request; returns raw Markdown string from `MarkupContent.value`, or `null` if the server returns nothing.
+- **`LspServerHost.definition()`** — new suspend method. Sends `textDocument/definition`; returns `List<DefinitionLocation>` (uri, line, character).
+- **`HoverBlock`** sealed class hierarchy (`shared/.../lsp/HoverBlock.kt`) — `Paragraph`, `Heading`, `CodeBlock`, `InlineCodeSpan`, `FallbackText`. Covers the Markdown block types commonly returned by language servers.
+- **`HoverMarkdownRenderer`** — `expect object` with Desktop + Android JVM actuals using Flexmark 0.64.8 AST walker. iOS + Wasm stubs return `FallbackText`. Converts raw Markdown to `List<HoverBlock>`.
+- **`HoverTriggerDetector`** (`shared/.../lsp/HoverTriggerDetector.kt`) — pure Kotlin 300 ms dwell timer. Guards: completion-popup-open (skip), isIdentifierAt (stubbed v1 → always true; see known gaps). Explicit bypass (F1 / long-press menu) skips both guards and dwell.
+- **`EditorNavigationStack`** (`shared/.../lsp/EditorNavigationStack.kt`) — `NavEntry(uri, cursorOffset)` stack with max-100 cap, consecutive-duplicate suppression, `push / pop / canGoBack / clear`.
+- **`LspDefinitionRequester`** interface + **`GoToDefinitionAction`** object — testability interface decoupling `GoToDefinitionAction` from the non-open `LspServerHost` expect class. Routes 0 results → toast; 1 result → stack push + navigate; N results → bottom-sheet chooser.
+- **`DiagnosticsPalette`** (`androidApp/.../diagnostics/DiagnosticsPalette.kt`) — VS Code–inspired severity color + icon mapping for light and dark palettes.
+- **`DiagnosticsGutter`** (`androidApp/.../diagnostics/DiagnosticsGutter.kt`) — Composable; renders 8 dp colored dot per gutter row with diagnostics; highest-severity wins per line. testTags: `diagnostics-gutter`, `diag-line-<lineNum>`.
+- **`DiagnosticsInlineUnderline`** (`androidApp/.../diagnostics/DiagnosticsInlineUnderline.kt`) — `VisualTransformation` applying straight colored underlines per diagnostic `IntRange`. Identity `OffsetMapping`. Clamps out-of-bounds ranges.
+- **`DiagnosticsProblemsPanel`** (`androidApp/.../diagnostics/DiagnosticsProblemsPanel.kt`) — collapsible bottom `LazyColumn` ~200 dp; sorted by `range.first`; severity icon + 1-based line + message. testTags: `problems-panel`, `problems-row-<index>`.
+- **`HoverPopup`** (`androidApp/.../hover/HoverPopup.kt`) — `Popup(alignment=TopStart)` Compose overlay inside the editor `Box`; `LazyColumn` max 400×300 dp; renders all `HoverBlock` variants; dismissed on empty block list. testTag: `hover-popup`.
+- **`HoverShortcut`** (`androidApp/.../hover/HoverShortcut.kt`) — `Modifier.hoverShortcut(onTrigger)`: intercepts F1 `KeyDown` via `onPreviewKeyEvent`, calls `onTrigger()`, returns `true` (consumed).
+- **`DefinitionLocationChooser`** (`androidApp/.../navigation/DefinitionLocationChooser.kt`) — `ModalBottomSheet` LazyColumn listing N candidate definition locations; `itemsIndexed`; testTags `def-chooser` + `def-row-$index`; Cancel row.
+- **`IdeEditorScreen` integration** — Android editor wired with: `diagnosticsCache.states.collectAsState()` → `currentFileDiagnostics`; toolbar badge toggling `isProblemsPanelOpen`; `DiagnosticsProblemsPanel` bottom drawer; `SyncedScrollEditor` receives `diagnostics` param; `HoverPopup` overlay inside editor `Box`; `EditorNavigationStack` + `DefinitionLocationChooser` + `BackHandler` for go-to-definition.
+- **`SyncedScrollEditor` extended** — new `diagnostics: List<Diagnostic>` param wires `DiagnosticsGutter` per-line and `DiagnosticsInlineUnderline` VisualTransformation; new `onHoverRequest` param wires `hoverShortcut` modifier.
+- **Flexmark dependency** added to `androidMain` and `desktopMain` in `shared/build.gradle.kts` (was already on classpath via test; now explicit production dependency).
+
+### Behind the scenes
+
+- **Phase 0** deep web research (`docs/features/lsp-4b/research-report.md`) — surveyed LSP diagnostic/hover/definition protocol, Compose VisualTransformation patterns, gutter rendering approaches, Markdown-to-Compose options.
+- **`lsp_diagnostics_challenge.sh`** — static (7 source files present; `publishDiagnostics` call site in Desktop actual) + runtime (`DiagnosticsCacheTest` + 4 Robolectric test classes ≥ 20 PASSED, 0 FAILED). Wired into `qa-iter-62-gates` → `qa-all`.
+- **`lsp_hover_definition_challenge.sh`** — static (HoverMarkdownRenderer expect + 4 actuals; `hover()` + `definition()` in Desktop actual; 4 key source files present; 300 ms dwell constant) + runtime (4 test classes ≥ 23 PASSED, 0 FAILED). Wired into `qa-iter-62-gates`.
+- **gopls staged** — `gopls` binary added to `.lsp-binary-cache/go/macos-arm64/gopls` during Phase 9. Smoke test gated by `// SKIP-OK: #iter-62-gopls-no-go-toolchain` (env dependency: Go toolchain required at runtime).
+- **Mutation verification** (CONST-035) — all structural tests killed by stubs; details in CONTINUATION.md Phase notes.
+
+### Known gaps (v1.5.0)
+
+- **`#iter-62-phase-8-tree-sitter-hover-filter-stubbed`** — `isIdentifierAt` returns `true` unconditionally. Hover fires for any cursor position. Tree-Sitter AST position lookup deferred.
+- **`#iter-62-phase-8-hover-precise-anchor`** — `HoverPopup` anchored at `IntOffset.Zero` (upper-left of editor area). Precise cursor-pixel offset deferred.
+- **`#iter-62-phase-8-problems-scroll-to-line`** — Problems panel row tap dismisses panel instead of scrolling editor to the diagnostic line. `SyncedScrollEditor` scroll state is intentionally encapsulated (iter-55 invariant); threading mechanism deferred.
+- **`#iter-62-phase-8-cross-file-back-nav`** — Back navigation restores intra-file cursor only. Cross-file back (reopening originating file) deferred.
+- **`#iter-62-jdt-uri-scheme-unsupported`** — `jdt://` URIs returned by jdtls for Java standard library definitions show a toast instead of navigating. See `docs/KNOWN_DEFECTS.md`.
+- **`#iter-62-desktop-editor-lsp-wiring`** — Desktop `IdeEditorScreen` does not yet render diagnostics / hover / go-to-definition composables. LSP host methods implemented; UI wiring deferred.
+- **`#iter-62-gopls-no-go-toolchain`** — gopls requires a Go toolchain on `PATH` at server startup; documented as skip-OK environment dependency.
+- **`#crossbuild-android-ndk-lsp`** — Android LSP binaries not yet cross-compiled; UI is fully wired.
+- **`#crossbuild-linux-windows-infra`** (LSP) — Desktop Linux/Windows code identical to macOS; binary distribution gated.
+
+### Cross-platform impact summary (CONST-037)
+
+- **Android:** Full UI wiring of all three capabilities. Tests PASS.
+- **Desktop macOS-arm64:** LSP host methods implemented (`hover`, `definition`, `publishDiagnostics`). Editor UI wiring deferred (`#iter-62-desktop-editor-lsp-wiring`).
+- **Desktop Linux / Windows:** Same JVM code; binary distribution gated on `#crossbuild-linux-windows-infra`.
+- **iOS:** All new `LspServerHost` methods stubbed (null/emptyList/no-op). Hard-blocked by App Store §2.5.2.
+- **Web (Wasm):** All new `LspServerHost` methods stubbed. Native subprocess not possible in browser sandbox.
+
+---
+
 ## iter-61 v1.4.0 — LSP integration: type-aware completions via language servers (2026-05-16)
 
 **Version:** 1.4.0 (versionCode 140 → dotted `0.0.0.1.40`)
