@@ -390,8 +390,15 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates
 	bash automation/run-qa-all.sh --skip-unit --skip-build
+	@echo "-----------------------------------------------------------------------------------"
+
+# iter-64 gates: 2 Import-from anti-bluff challenges (CONST-035 + CONST-037).
+qa-iter-64-gates:
+	@echo "=== iter-64 gates: Import-from completeness + fixture-bundle anti-bluff suite ==="
+	bash yole-challenges/scripts/import_from_completeness_challenge.sh
+	bash yole-challenges/scripts/import_from_fixture_bundle_challenge.sh
 	@echo "-----------------------------------------------------------------------------------"
 
 # iter-63 gates: 2 LSP refactoring-capabilities anti-bluff challenges (CONST-035 + CONST-037).

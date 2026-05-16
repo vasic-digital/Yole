@@ -120,8 +120,9 @@ class ImportShareIntentHandlerRobolectricTest {
         val expected = "%PDF-1.4 stub".toByteArray(Charsets.UTF_8)
         val uri = stubContentUri(contentUri("test.pdf"), expected)
 
-        val intent = Intent(Intent.ACTION_VIEW, uri).apply {
-            type = "application/pdf"
+        // NOTE: setType() clears intent.data on Android; use setDataAndType to preserve both.
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/pdf")
         }
 
         val bytes = ImportShareIntentHandler.handle(context, intent)
