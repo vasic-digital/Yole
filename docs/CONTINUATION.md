@@ -6,7 +6,45 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-63 **Phase 10 COMPLETE** — IdeEditorScreen integration (rename + code actions + signature help + formatting + references); commit `5fc2cd03`).
+**Last updated:** 2026-05-16 (iter-63 **Phase 12 COMPLETE** — Documentation (user-guide + architecture + CHANGELOG v1.6.0); commit pending).
+
+## Section 51 — iter-63 Phase 12: Documentation
+
+**Status:** COMPLETE. Phase 12 gate passed.
+
+**Branch:** master. **Last commit:** `docs(iter-63): Phase 12 — user-guide + architecture + CHANGELOG`.
+
+### What was shipped
+
+- `docs/features/lsp-4c/user-guide.md` — new file (5 capabilities, per-platform UX table, all 6 Phase 10 deferral trackers honestly framed per CONST-035).
+- `docs/features/lsp-4c/architecture.md` — new file (6-layer extending-LspServerHost template, data model, RenamePreviewPanel architecture, testing strategy, cross-platform disposition, consolidated known-gaps table).
+- `CHANGELOG.md` — v1.6.0 entry inserted above v1.5.0 block (Added section + Known gaps + Cross-platform impact).
+- `docs/CONTINUATION.md` — this section (Phase 12 done; Phase 13 next).
+
+### Deferred trackers documented
+
+All 6 Phase 10 deferred trackers appear in both the user-guide and architecture docs:
+
+| Tracker | Where documented |
+|---------|-----------------|
+| `#iter-63-longpress-gesture-detector` | user-guide §1, architecture §7 |
+| `#iter-63-desktop-signature-help-popup-deferred` | user-guide §3, architecture §6, §7 |
+| `#iter-63-server-trigger-chars-hardcoded` | user-guide §3, §4, architecture §7 |
+| `#iter-63-format-on-save-settings-toggle` | user-guide §4, architecture §7 |
+| `#iter-63-on-type-edit-apply` | user-guide §4, architecture §7 |
+| `#iter-63-explicit-format-edit-apply` | user-guide §4, architecture §7 |
+
+### Next: iter-63 Phase 13 — Firebase distribution v1.6.0
+
+Per plan §13:
+- Bump `versionCode 150 → 160`, `versionName 1.5.0 → 1.6.0`, `packageVersion 1.5.0 → 1.6.0`.
+- Build 3 Android variants (Release + Debug + DEV) + Desktop macOS-arm64 DMG.
+- Copy artifacts to `releases/` following naming convention: `Yole-Android-1.6.0-Release-0.0.0.1.60.apk` etc.
+- Distribute via Firebase CLI (same pattern as iter-62: direct `--testers` flag, not `--groups`).
+- Update CHANGELOG distribution subsection + CONTINUATION.md.
+- After Phase 13: **iter-63 is COMPLETE** — Feature 4 (LSP) arc closed after 4a + 4b + 4c.
+
+---
 
 ## Section 50 — iter-63 Phase 10: IdeEditorScreen integration (all 5 LSP capabilities)
 

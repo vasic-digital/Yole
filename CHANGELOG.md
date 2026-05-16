@@ -3,6 +3,63 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## iter-63 v1.6.0 — LSP refactoring capabilities: rename + code actions + signature help + formatting + find-references (2026-05-16)
+
+**Version:** 1.6.0 (versionCode 160 → dotted `0.0.0.1.60`)
+**Build status:** Android fully wired — all 5 LSP capabilities accessible via toolbar buttons and keyboard shortcuts. Desktop LSP host has all 5 new methods implemented; Desktop editor UI wiring deferred. iOS + Web stubs return null/empty.
+
+iter-63 closes the LSP arc opened in iter-61 (LSP hosting) and expanded in iter-62 (diagnostics + hover + go-to-definition). Five new refactoring capabilities are shipped: symbol rename with multi-file preview, code-action lightbulb gutter, signature help pill (mobile) and popup (desktop, deferred), document formatting (on-save + explicit + on-type), and find-references bottom drawer.
+
+### Added
+
+- **`TextEdit`** (`shared/.../lsp/TextEdit.kt`) — `data class TextEdit(val range: IntRange, val newText: String)` with `apply(text: String): String`; clamps out-of-bounds ranges; pure commonMain.
+- **`WorkspaceEdit`** (`shared/.../lsp/WorkspaceEdit.kt`) — `data class WorkspaceEdit(val changes: Map<String, List<TextEdit>>)` with `isEmpty` computed property.
+- **`WorkspaceEditApplier`** (`shared/.../lsp/WorkspaceEditApplier.kt`) — `object` applying multi-file edits in reverse-offset order; validates non-overlapping ranges (throws `ApplyConflict` on collision); skips unknown URIs.
+- **5 new suspend methods on `LspServerHost`** — `rename`, `codeActions`, `signatureHelp`, `formatting`, `references`. JVM actuals call LSP4J with per-method `withTimeout`; iOS/Wasm stubs return null/emptyList.
+- **`CodeAction`** + **`SignatureHelp`** + **`SignatureInformation`** + **`ParameterInformation`** data classes (commonMain).
+- **`ReferenceLocation`** typealias for `DefinitionLocation` (commonMain reuse).
+- **LSP4J mapping helpers** (`internal` top-level fns in `LspServerHost.desktop.kt`) — `mapLspWorkspaceEdit` (handles both `changes` legacy and `documentChanges` modern LSP forms), `mapLspCodeAction` (handles `Either<Command, CodeAction>` union), `mapLspSignatureHelp`, `mapLspTextEdits` (re-uses iter-62 `LspRangeMapping.lineColToOffset`).
+- **5 `LspXxxRequester` interfaces** (commonMain) — `LspRenameRequester`, `LspCodeActionRequester`, `LspSignatureHelpRequester`, `LspFormattingRequester`, `LspReferencesRequester`. Decouple `IdeEditorScreen` from non-open `LspServerHost` expect class; enable canned-data testing.
+- **`RenameAction`** (`androidApp/.../rename/RenameAction.kt`) — `AlertDialog` + `TextField` prompts for new name; routes to `RenamePreviewPanel` or toast on null.
+- **`RenamePreviewPanel`** (`androidApp/.../rename/RenamePreviewPanel.kt`) — `ModalBottomSheet` with per-file collapsible diff rows; Apply + Cancel buttons; testTags `rename-preview-panel`, `rename-file-<uri>`, `rename-apply`, `rename-cancel`.
+- **`CodeActionLightbulb`** (`androidApp/.../codeaction/CodeActionLightbulb.kt`) — per-line amber icon in 3rd gutter column; testTag `lightbulb-line-<n>`. Gutter order: `[diagnostic-dot][lightbulb][fold-chevron]`.
+- **`CodeActionMenu`** (`androidApp/.../codeaction/CodeActionMenu.kt`) — `DropdownMenu` anchored to lightbulb tap; testTag `code-action-menu`.
+- **`CodeActionInvoker`** (`androidApp/.../codeaction/CodeActionInvoker.kt`) — dispatches edit→`WorkspaceEditApplier`+persist or command→`onCommand`.
+- **`SignatureHelpPill`** (`androidApp/.../signaturehelp/SignatureHelpPill.kt`) — mobile Surface chip above cursor; active parameter bold via `SpanStyle(fontWeight = Bold)`; testTag `signature-pill`.
+- **`SignatureHelpPopup`** (`androidApp/.../signaturehelp/SignatureHelpPopup.kt`) — floating Popup for desktop; max 480×200 dp; testTag `signature-popup`. Desktop wiring deferred (`#iter-63-desktop-signature-help-popup-deferred`).
+- **`SignatureHelpTrigger`** (`shared/.../lsp/SignatureHelpTrigger.kt`) — commonMain keystroke detector; `(` and `,` trigger LSP request; `)` dismisses; 30 s auto-dismiss; cancels in-flight job before each new request.
+- **`FormattingTrigger`** (`shared/.../lsp/FormattingTrigger.kt`) — 3 entry points: `onSave`, `onExplicit`, `onType`. On-type trigger chars hardcoded as `{';', '}', '\n'}` (`#iter-63-server-trigger-chars-hardcoded`). Buffer apply deferred (`#iter-63-on-type-edit-apply`, `#iter-63-explicit-format-edit-apply`).
+- **`onTypeFormatting`** — 6th new suspend method on `LspServerHost` (beyond the 5 in the plan) added during Phase 8.
+- **`ReferencesPanel`** (`androidApp/.../references/ReferencesPanel.kt`) — persistent 200 dp bottom drawer; `LazyColumn` rows: filename + 1-based line + context-line preview; tap → `EditorNavigationStack` push + navigate.
+- **`FindReferencesAction`** (`shared/.../lsp/FindReferencesAction.kt`) — `LspReferencesRequester` orchestrator.
+- **`IdeEditorScreen` integration** — all 5 capabilities wired in `YoleApp.kt`: Rename via toolbar button + F2; Code Actions via 500 ms polling `LaunchedEffect` → `actionsByLine`; Signature Help via `SignatureHelpTrigger` in `onTextChanged`; Formatting via `FormattingTrigger.onSave` + `Ctrl+Shift+F`; Find References via toolbar button + Shift+F12; `ReferencesPanel` 200 dp bottom drawer.
+- **`SyncedScrollEditor` extended** — `onRenameRequest: () -> Unit` (F2) + `onFindReferencesRequest: () -> Unit` (Shift+F12) key handlers; `actionsByLine` + `onCodeActionLineTap` params for gutter.
+
+### Behind the scenes
+
+- **Phase 0** deep research (`docs/features/lsp-4c/research-report.md`) — closed 8 OPEN questions on LSP4J 1.0.0 typing, WorkspaceEdit semantics, on-type trigger chars, Compose multi-pane patterns, CodeAction command/edit dichotomy, SignatureHelp cursor anchor, `includeDeclaration` flag, and format-on-save race conditions.
+- **`lsp_refactoring_capabilities_challenge.sh`** — static (6 source files + 5 method call sites in desktop actual) + runtime (5 desktopTest classes PASS, 0 FAIL). Wired into `qa-iter-63-gates` → `qa-all`.
+- **`lsp_workspace_edit_applier_challenge.sh`** — static (`WorkspaceEditApplier.kt` + `ApplyConflict`) + runtime (`WorkspaceEditApplierTest` ≥ 4 PASSED, 0 FAILED). Wired into `qa-iter-63-gates`.
+- **Mutation verification** (CONST-035) — all structural Robolectric tests killed by stubs; all desktopTest mapping tests killed by mapper stubs.
+
+### Known gaps (v1.6.0)
+
+- **`#iter-63-longpress-gesture-detector`** — Full long-press context menu on `BasicTextField` deferred; Rename + Find References accessible via toolbar buttons.
+- **`#iter-63-desktop-signature-help-popup-deferred`** — Desktop editor UI wiring (SignatureHelp, Rename preview, References panel) deferred. Server-side calls work.
+- **`#iter-63-server-trigger-chars-hardcoded`** — On-type trigger chars hardcoded; server-capability query deferred.
+- **`#iter-63-format-on-save-settings-toggle`** — Settings toggle for format-on-save deferred; feature is always-on.
+- **`#iter-63-on-type-edit-apply`** / **`#iter-63-explicit-format-edit-apply`** — Formatting round-trip works; buffer patching deferred.
+
+### Cross-platform impact summary (CONST-037)
+
+- **Android:** All 5 capabilities fully wired. F2 / Shift+F12 handlers. Toolbar buttons. 14+ Robolectric + unit tests pass.
+- **Desktop macOS-arm64:** `LspServerHost` actual methods implemented and tested. F2 / Shift+F12 `onPreviewKeyEvent` handlers compile. Editor UI wiring deferred.
+- **Desktop Linux / Windows:** Same JVM code; binary distribution gated on `#crossbuild-linux-windows-infra`.
+- **iOS:** All 6 new `LspServerHost` methods stubbed. No UI changes.
+- **Web (Wasm):** All 6 new `LspServerHost` methods stubbed. No UI changes.
+
+---
+
 ## iter-62 v1.5.0 — LSP capability expansion: diagnostics + hover + go-to-definition (2026-05-16)
 
 **Version:** 1.5.0 (versionCode 150 → dotted `0.0.0.1.50`)
