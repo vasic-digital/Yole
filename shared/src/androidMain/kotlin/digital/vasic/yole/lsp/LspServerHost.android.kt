@@ -1,16 +1,21 @@
 /*#######################################################
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
- * iter-61 Phase 4: LspServerHost — Android (JVM) actual.
+ * iter-61 Phase 4 / iter-62 Phase 2: LspServerHost — Android (JVM) actual.
  *
  * Body is identical to the Desktop actual. Both targets run on the JVM
  * so LSP4J's ProcessBuilder-based Launcher works on both.
  *
+ * iter-62 Phase 2 additions (same as Desktop):
+ *   - hover(): 500ms timeout; delegates to mapHoverContentsToMarkdown.
+ *   - definition(): 1000ms timeout; delegates to mapLspDefinitionsToList.
+ *   - diagnosticsCache: DiagnosticsCache field; publishDiagnostics populated.
+ *
  * Note: LspServerInstaller returns InstallError.NotInstalled on Android
  * until Phase 8 adds SplitInstallManager-aware extraction. The acquireOrNull
  * guard surfaces this honestly: getOrElse { return@withLock null } means
- * complete() returns LspCompletionResult(emptyList()) — the popup still shows
- * non-LSP completions (token + snippet providers remain unaffected).
+ * complete()/hover()/definition() return their honest-degradation values —
+ * non-LSP completions (token + snippet providers) remain unaffected.
  *#######################################################*/
 package digital.vasic.yole.lsp
 
@@ -34,11 +39,17 @@ import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.CompletionItemCapabilities
 import org.eclipse.lsp4j.CompletionList
 import org.eclipse.lsp4j.CompletionParams
+import org.eclipse.lsp4j.DefinitionParams
+import org.eclipse.lsp4j.DiagnosticSeverity
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import org.eclipse.lsp4j.DidCloseTextDocumentParams
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
+import org.eclipse.lsp4j.HoverParams
 import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.InitializedParams
+import org.eclipse.lsp4j.Location
+import org.eclipse.lsp4j.LocationLink
+import org.eclipse.lsp4j.MarkupContent
 import org.eclipse.lsp4j.MessageActionItem
 import org.eclipse.lsp4j.MessageParams
 import org.eclipse.lsp4j.Position
@@ -67,6 +78,7 @@ actual class LspServerHost actual constructor(
     private val servers = mutableMapOf<String, RunningServer>()
     private val _states = MutableSharedFlow<Map<String, ServerState>>(replay = 1)
     actual val states: SharedFlow<Map<String, ServerState>> = _states.asSharedFlow()
+    actual val diagnosticsCache: DiagnosticsCache = DiagnosticsCache()
 
     init {
         scope.launch { tickIdleShutdown() }
@@ -164,6 +176,54 @@ actual class LspServerHost actual constructor(
         }
     }
 
+    actual suspend fun hover(
+        langId: String,
+        documentUri: String,
+        line: Int,
+        character: Int,
+    ): HoverInfo? {
+        val server = mutex.withLock { servers[langId] } ?: return null
+        return try {
+            withTimeout(500L) {
+                val params = HoverParams(TextDocumentIdentifier(documentUri), Position(line, character))
+                val raw = server.languageServer.textDocumentService.hover(params)
+                    .get(500, TimeUnit.MILLISECONDS)
+                raw?.let { mapHoverContentsToMarkdown(it) }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: TimeoutException) {
+            null
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    actual suspend fun definition(
+        langId: String,
+        documentUri: String,
+        line: Int,
+        character: Int,
+    ): List<DefinitionLocation> {
+        val server = mutex.withLock { servers[langId] } ?: return emptyList()
+        return try {
+            withTimeout(1000L) {
+                val params = DefinitionParams(TextDocumentIdentifier(documentUri), Position(line, character))
+                @Suppress("UNCHECKED_CAST")
+                val raw: Either<MutableList<Location>, MutableList<LocationLink>>? =
+                    server.languageServer.textDocumentService.definition(params)
+                        .get(1000, TimeUnit.MILLISECONDS) as? Either<MutableList<Location>, MutableList<LocationLink>>
+                mapLspDefinitionsToList(raw)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: TimeoutException) {
+            emptyList()
+        } catch (_: Throwable) {
+            emptyList()
+        }
+    }
+
     actual suspend fun shutdownAll() = mutex.withLock {
         for ((langId, srv) in servers.toMap()) {
             try {
@@ -226,8 +286,17 @@ actual class LspServerHost actual constructor(
     private fun buildFakeClient(): LanguageClient = object : LanguageClient {
         override fun telemetryEvent(o: Any?) {}
         override fun publishDiagnostics(p: PublishDiagnosticsParams?) {
-            // Cache for Phase 4b consumption per spec §5.5.
-            // DiagnosticsCache lands in 4b; v1 drops diagnostics on the floor honestly.
+            p ?: return
+            val mapped = p.diagnostics.orEmpty().map { lspDiag ->
+                Diagnostic(
+                    severity = mapLspSeverity(lspDiag.severity),
+                    range = 0..0, // Phase 3 finalizes via LspRangeMapping + cached docTexts
+                    message = mapLspMessageEither(lspDiag.message),
+                    source = lspDiag.source,
+                    code = mapLspCodeEither(lspDiag.code),
+                )
+            }
+            diagnosticsCache.upsert(p.uri, mapped)
         }
         override fun showMessage(p: MessageParams?) {}
         override fun showMessageRequest(p: ShowMessageRequestParams?): CompletableFuture<MessageActionItem> =
@@ -272,4 +341,58 @@ actual class LspServerHost actual constructor(
         @Volatile var lastActivity: Long,
         val openDocs: MutableSet<String> = mutableSetOf(),
     )
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers — mirror of Desktop actual; top-level for testability.
+// ---------------------------------------------------------------------------
+
+internal fun mapHoverContentsToMarkdown(hover: org.eclipse.lsp4j.Hover): HoverInfo? {
+    val contents = hover.contents ?: return null
+    val text = when {
+        contents.isLeft -> {
+            contents.left.orEmpty().joinToString("\n\n") { item ->
+                when {
+                    item.isLeft -> item.left ?: ""
+                    else -> item.right?.value ?: ""
+                }
+            }
+        }
+        else -> contents.right?.value ?: ""
+    }
+    return if (text.isBlank()) null else HoverInfo(contents = text, range = null)
+}
+
+internal fun mapLspDefinitionsToList(
+    raw: Either<MutableList<org.eclipse.lsp4j.Location>, MutableList<org.eclipse.lsp4j.LocationLink>>?,
+): List<DefinitionLocation> {
+    raw ?: return emptyList()
+    return when {
+        raw.isLeft -> raw.left.orEmpty().map { loc ->
+            DefinitionLocation(uri = loc.uri ?: "", range = 0..0)
+        }
+        else -> raw.right.orEmpty().map { link ->
+            DefinitionLocation(uri = link.targetUri ?: "", range = 0..0)
+        }
+    }
+}
+
+internal fun mapLspSeverity(severity: DiagnosticSeverity?): Severity = when (severity) {
+    DiagnosticSeverity.Error -> Severity.Error
+    DiagnosticSeverity.Warning -> Severity.Warning
+    DiagnosticSeverity.Information -> Severity.Information
+    DiagnosticSeverity.Hint -> Severity.Hint
+    null -> Severity.Information
+}
+
+internal fun mapLspMessageEither(message: Either<String, MarkupContent>?): String = when {
+    message == null -> ""
+    message.isLeft -> message.left ?: ""
+    else -> message.right?.value ?: ""
+}
+
+internal fun mapLspCodeEither(code: Either<String, Int>?): String? = when {
+    code == null -> null
+    code.isLeft -> code.left
+    else -> code.right?.toString()
 }

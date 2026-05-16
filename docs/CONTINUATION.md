@@ -6,7 +6,27 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-62 **Phase 1 COMPLETE** — Diagnostic + Severity + DiagnosticsCache. Files: `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/Diagnostic.kt`, `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/DiagnosticsCache.kt`, `shared/src/commonTest/kotlin/digital/vasic/yole/lsp/DiagnosticTest.kt`, `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/DiagnosticsCacheTest.kt`. Tests: 3 commonTest (DiagnosticTest) + 5 desktopTest (DiagnosticsCacheTest) = 8 total, all PASS. Mutation-verified: (1) adding 5th Severity case → all_4_severities_present FAILS; (2) append-instead-of-replace in upsert → upsert_replaces_previous + upsert_empty_clears_uri FAIL. Detekt clean. **Next: Phase 2 — YoleLanguageClient.publishDiagnostics wiring + DiagnosticsCache population.**
+**Last updated:** 2026-05-16 (iter-62 **Phase 2 COMPLETE** — LspServerHost.hover/definition + publishDiagnostics wired to DiagnosticsCache.
+
+Files added:
+- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/HoverInfo.kt` — data class `HoverInfo(contents: String, range: IntRange? = null)`
+- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/DefinitionLocation.kt` — data class `DefinitionLocation(uri: String, range: IntRange)`
+
+Files modified:
+- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/LspServerHost.kt` — expect class extended with `hover()`, `definition()`, `diagnosticsCache`.
+- `shared/src/desktopMain/kotlin/digital/vasic/yole/lsp/LspServerHost.desktop.kt` — JVM actual: hover(500ms), definition(1000ms), diagnosticsCache field, publishDiagnostics wired. Internal helpers: `mapHoverContentsToMarkdown`, `mapLspDefinitionsToList`, `mapLspSeverity`, `mapLspMessageEither`, `mapLspCodeEither`.
+- `shared/src/androidMain/kotlin/digital/vasic/yole/lsp/LspServerHost.android.kt` — same JVM actual body + helpers (duplicated per CONST-038 no-shared-JVM-set constraint).
+- `shared/src/iosMain/kotlin/digital/vasic/yole/lsp/LspServerHost.ios.kt` — stub: hover→null, definition→emptyList, diagnosticsCache=DiagnosticsCache().
+- `shared/src/wasmJsMain/kotlin/digital/vasic/yole/lsp/LspServerHost.wasmJs.kt` — stub: hover→null, definition→emptyList, diagnosticsCache=DiagnosticsCache().
+- `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/LspServerHostTest.kt` — 2 new degradation tests: `noSpec_hover_returnsNull`, `noSpec_definition_returnsEmpty`.
+
+Tests: 5/5 LspServerHostTest PASS + all 29 LSP suite tests PASS. Mutation-verified (CONST-035): stub hover→HoverInfo("fake",null) → noSpec_hover_returnsNull FAILS; stub definition→listOf(DefinitionLocation("x",0..0)) → noSpec_definition_returnsEmpty FAILS. Revert → 5/5 PASS. Detekt clean.
+
+Type deviation from plan: LSP4J 1.0.0 uses `Diagnostic.message: Either<String, MarkupContent>` (not plain String) and `Diagnostic.code: Either<String, Int>` (not `Either<String, Number>`). Helpers `mapLspMessageEither` / `mapLspCodeEither` use the correct types. Phase 0 §3 note about Hover.contents `Either<List<Either<String, MarkedString>>, MarkupContent>` was correct.
+
+**Next: Phase 3 — HoverInfo + DefinitionLocation LSP4J mapping finalization (LspRangeMapping); range = 0..0 placeholders replaced with accurate line/col offsets.**
+
+**Previous: iter-62 Phase 1 COMPLETE** — Diagnostic + Severity + DiagnosticsCache. Files: `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/Diagnostic.kt`, `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/DiagnosticsCache.kt`, `shared/src/commonTest/kotlin/digital/vasic/yole/lsp/DiagnosticTest.kt`, `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/DiagnosticsCacheTest.kt`. Tests: 3 commonTest (DiagnosticTest) + 5 desktopTest (DiagnosticsCacheTest) = 8 total, all PASS.
 
 **Previous: iter-61 Phase 11 COMPLETE** — Firebase distribution v1.4.0. Version bumped 1.3.0 → 1.4.0 (versionCode 130 → 140, dotted `0.0.0.1.40`) in `androidApp/build.gradle.kts` + `desktopApp/build.gradle.kts`. Artifacts built + staged (`releases/`): `Yole-Android-1.4.0-Release-0.0.0.1.40.apk` (29 MB), `Yole-Android-1.4.0-Debug-0.0.0.1.40.apk` (35 MB), `Yole-Desktop-macos-arm64-1.4.0-Release-0.0.0.1.40.dmg` (484 MB — includes 8 LSP binaries). Firebase: Android Release release id `4a8aeso45bqs8` (all 3 testers SUCCESS); Android DEV release id `3gs4270pq6478` (all 3 testers SUCCESS). **iter-61 COMPLETE. Next: iter-62 (Feature 4b) — LSP diagnostics / hover / go-to-definition.**
 

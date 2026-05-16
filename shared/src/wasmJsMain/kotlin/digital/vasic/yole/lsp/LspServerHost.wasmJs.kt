@@ -1,10 +1,16 @@
 /*#######################################################
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
- * iter-61 Phase 4: LspServerHost — Web/Wasm honest stub.
+ * iter-61 Phase 4 / iter-62 Phase 2: LspServerHost — Web/Wasm honest stub.
  *
- * Native binaries cannot run inside a browser Wasm sandbox. Returns
- * emptyList() from complete() per CONST-035 honest-degradation policy.
+ * Native binaries cannot run inside a browser Wasm sandbox. All LSP
+ * methods degrade honestly:
+ *   - complete()    → LspCompletionResult(emptyList())
+ *   - hover()       → null
+ *   - definition()  → emptyList()
+ * per CONST-035 honest-degradation policy.
+ *
+ * diagnosticsCache stays empty (no publishDiagnostics source in Wasm).
  *#######################################################*/
 package digital.vasic.yole.lsp
 
@@ -20,6 +26,8 @@ actual class LspServerHost actual constructor(
     actual val states: SharedFlow<Map<String, ServerState>> =
         MutableSharedFlow<Map<String, ServerState>>().asSharedFlow()
 
+    actual val diagnosticsCache: DiagnosticsCache = DiagnosticsCache()
+
     actual suspend fun complete(
         langId: String,
         documentUri: String,
@@ -29,6 +37,20 @@ actual class LspServerHost actual constructor(
         character: Int,
         workspaceRoot: String,
     ): LspCompletionResult = LspCompletionResult(emptyList())
+
+    actual suspend fun hover(
+        langId: String,
+        documentUri: String,
+        line: Int,
+        character: Int,
+    ): HoverInfo? = null
+
+    actual suspend fun definition(
+        langId: String,
+        documentUri: String,
+        line: Int,
+        character: Int,
+    ): List<DefinitionLocation> = emptyList()
 
     actual suspend fun didOpen(langId: String, uri: String, text: String, version: Int) {}
     actual suspend fun didChange(langId: String, uri: String, version: Int, fullText: String) {}

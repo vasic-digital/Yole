@@ -1,11 +1,16 @@
 /*#######################################################
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
- * iter-61 Phase 4: LspServerHost — expect class declaration.
+ * iter-61 Phase 4 / iter-62 Phase 2: LspServerHost — expect class.
  *
  * Central owner of LSP server processes. Lazy spawn per langId,
  * 5-min idle shutdown, restart-on-crash with backoff. Uses Eclipse
  * LSP4J 1.0.0 for JSON-RPC framing on JVM targets.
+ *
+ * iter-62 Phase 2 additions:
+ *   - hover(): returns HoverInfo? (null on timeout/error/no-spec).
+ *   - definition(): returns List<DefinitionLocation> (empty on timeout/error/no-spec).
+ *   - diagnosticsCache: DiagnosticsCache populated by publishDiagnostics.
  *
  * Mutation procedure (CONST-035):
  *   1. In the JVM actual, stub complete() to always return
@@ -14,14 +19,17 @@
  *        --tests "digital.vasic.yole.lsp.LspServerHostTest"
  *   3. Expect: noSpec_complete_returnsEmptyList FAILS (stub returns non-empty).
  *   4. Revert; confirm all LspServerHostTest tests PASS.
+ *   5. Stub hover() to return HoverInfo("fake", null) → noSpec_hover_returnsNull FAILS.
+ *   6. Stub definition() to return listOf(DefinitionLocation("x",0..0)) → noSpec_definition_returnsEmpty FAILS.
+ *   7. Revert; confirm all 5 tests PASS.
  *
  * Cross-platform impact (CONST-037):
  *   - Desktop:  JVM actual — LSP4J ProcessBuilder wiring (this phase).
  *   - Android:  JVM actual — identical body to Desktop (this phase).
- *   - iOS:      Honest stub — returns emptyList. App Store sandbox
- *               prohibits spawning subprocesses.
- *   - Web/Wasm: Honest stub — returns emptyList. Native binaries
- *               cannot run inside a browser Wasm sandbox.
+ *   - iOS:      Honest stub — hover returns null, definition returns emptyList.
+ *               App Store sandbox prohibits spawning subprocesses.
+ *   - Web/Wasm: Honest stub — hover returns null, definition returns emptyList.
+ *               Native binaries cannot run inside a browser Wasm sandbox.
  *
  * Submodules: not touched (CONST-038). LSP4J consumed as Maven artifact.
  *#######################################################*/
@@ -95,6 +103,43 @@ expect class LspServerHost(
 
     /** Notify the server that a document was closed. No-op if no server running. */
     suspend fun didClose(langId: String, uri: String)
+
+    /**
+     * Request hover information at the given position.
+     *
+     * Returns [HoverInfo] with LSP-provided markdown on success, or `null` on
+     * timeout (500 ms), no spec, server down, or any error — honest degradation
+     * per CONST-035.
+     */
+    suspend fun hover(
+        langId: String,
+        documentUri: String,
+        line: Int,
+        character: Int,
+    ): HoverInfo?
+
+    /**
+     * Request go-to-definition locations for the symbol at the given position.
+     *
+     * Returns a list of [DefinitionLocation] on success, or an empty list on
+     * timeout (1000 ms), no spec, server down, or any error — honest degradation
+     * per CONST-035.
+     */
+    suspend fun definition(
+        langId: String,
+        documentUri: String,
+        line: Int,
+        character: Int,
+    ): List<DefinitionLocation>
+
+    /**
+     * Single source of truth for LSP-emitted diagnostics. Populated by
+     * the internal YoleLanguageClient.publishDiagnostics callback wired
+     * in Phase 2. Consumed by the 3 render surfaces in Phase 5.
+     *
+     * iOS/Wasm stubs instantiate an empty [DiagnosticsCache] that stays empty.
+     */
+    val diagnosticsCache: DiagnosticsCache
 
     /** Gracefully shutdown and forcibly kill all running servers. Idempotent. */
     suspend fun shutdownAll()

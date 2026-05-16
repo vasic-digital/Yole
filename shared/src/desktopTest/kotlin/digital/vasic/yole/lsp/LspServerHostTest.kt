@@ -1,32 +1,32 @@
 /*#######################################################
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
- * iter-61 Phase 4: LspServerHost behavioral-degradation tests.
+ * iter-61 Phase 4 / iter-62 Phase 2: LspServerHost behavioral-degradation tests.
  *
- * These three tests verify the contract of LspServerHost without
- * requiring a real LSP binary subprocess (those arrive in Phase 7).
- * They exercise the orchestration logic: Mutex-guarded map, honest
- * empty-list degradation, and idempotent shutdown.
+ * These 5 tests verify the contract of LspServerHost without requiring a
+ * real LSP binary subprocess (those arrive in Phase 7). They exercise the
+ * orchestration logic: Mutex-guarded map, honest degradation, and idempotent
+ * shutdown.
  *
- * Approach: behavioral-degradation (3 tests), NOT full fake-LSP-server
- * harness. The fake-LSP-server harness (PipedInputStream/LSP4J Launcher
- * wiring) is a multi-hundred-line endeavor deferred to Phase 7's
- * RealServerSmokeTest which exercises the wiring end-to-end with
- * real installed binaries. See plan §4.5 for rationale.
+ * iter-62 Phase 2 adds 2 tests:
+ *   - noSpec_hover_returnsNull: hover on unknown langId returns null.
+ *   - noSpec_definition_returnsEmpty: definition on unknown langId returns emptyList.
+ *
+ * Approach: behavioral-degradation, NOT full fake-LSP-server harness.
+ * Deferred to Phase 7's RealServerSmokeTest.
  *
  * Mutation procedure (CONST-035):
- *   1. In LspServerHost.desktop.kt, stub complete() to always return
- *      LspCompletionResult(listOf(LspCompletionLine("__stub__","__stub__","Text",null,null))).
- *   2. Run: ./gradlew :shared:desktopTest \
- *        --tests "digital.vasic.yole.lsp.LspServerHostTest"
- *   3. Expect: noSpec_complete_returnsEmptyList FAILS (stub returns non-empty).
- *   4. Revert; confirm all 3 tests PASS.
+ *   1. Stub complete() to return non-empty → noSpec_complete_returnsEmptyList FAILS.
+ *   2. Stub hover() to return HoverInfo("fake", null) → noSpec_hover_returnsNull FAILS.
+ *   3. Stub definition() to return listOf(DefinitionLocation("x",0..0))
+ *      → noSpec_definition_returnsEmpty FAILS.
+ *   4. Revert; confirm all 5 tests PASS.
  *
  * Cross-platform impact (CONST-037):
  *   - Desktop: JVM actual tested here.
  *   - Android: identical JVM body; covered by androidUnitTest in CI.
- *   - iOS/Web:  honest stubs always return emptyList — no test needed
- *               for the stub path (trivially correct).
+ *   - iOS/Web:  honest stubs always return null/emptyList — no test needed
+ *               for stub path (trivially correct).
  *#######################################################*/
 package digital.vasic.yole.lsp
 
@@ -97,5 +97,42 @@ class LspServerHostTest {
         host.shutdownAll()
         // Reaching here means idempotency holds.
         assertEquals(0, 0) // explicit assertion for mutation-ratchet scanner
+    }
+
+    /**
+     * When the registry has no spec for a given langId, hover() MUST return null
+     * — never throw, never return a non-null HoverInfo.
+     *
+     * Mutation: stub hover() to return HoverInfo("fake", null) → this test FAILS.
+     */
+    @Test
+    fun noSpec_hover_returnsNull() = runBlocking<Unit> {
+        val host = LspServerHost(registry = LspServerRegistry.default())
+        val result = host.hover(
+            langId = "nonexistent-lang-xyz",
+            documentUri = "file:///tmp/test.nonexistent-lang-xyz",
+            line = 0,
+            character = 5,
+        )
+        assertTrue(result == null, "Expected null for unknown langId, got $result")
+    }
+
+    /**
+     * When the registry has no spec for a given langId, definition() MUST return
+     * an empty list — never throw, never return a non-empty list.
+     *
+     * Mutation: stub definition() to return listOf(DefinitionLocation("x",0..0))
+     * → this test FAILS.
+     */
+    @Test
+    fun noSpec_definition_returnsEmpty() = runBlocking<Unit> {
+        val host = LspServerHost(registry = LspServerRegistry.default())
+        val result = host.definition(
+            langId = "nonexistent-lang-xyz",
+            documentUri = "file:///tmp/test.nonexistent-lang-xyz",
+            line = 0,
+            character = 5,
+        )
+        assertTrue(result.isEmpty(), "Expected emptyList for unknown langId, got $result")
     }
 }
