@@ -6,7 +6,38 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-63 **Phase 6 COMPLETE** — CodeActionLightbulb + CodeActionMenu + CodeActionInvoker + SyncedScrollEditor 3rd gutter column; commit `1dcc4b1f`).
+**Last updated:** 2026-05-16 (iter-63 **Phase 7 COMPLETE** — SignatureHelpPill + SignatureHelpPopup + SignatureHelpTrigger; commit `c8925dce`).
+
+## Section 49 — iter-63 Phase 7: SignatureHelpPill + SignatureHelpPopup + SignatureHelpTrigger
+
+**Status:** COMPLETE. Phase 7 gate passed.
+
+**Branch:** master. **Last commit:** `c8925dce`.
+
+### What was shipped
+
+- `androidApp/.../signaturehelp/SignatureHelpPill.kt` — Material3 Surface chip above cursor line; active param bolded via `SpanStyle(fontWeight = Bold)`; `resolveActiveParamSpan()` helper; testTag "signature-pill".
+- `androidApp/.../signaturehelp/SignatureHelpPopup.kt` — Floating Popup anchored at cursor (mirrors HoverPopup); label bold + paramDoc below HorizontalDivider; max 480×200 dp; testTag "signature-popup".
+- `shared/.../lsp/SignatureHelpTrigger.kt` — commonMain keystroke detector; `(` and `,` trigger LSP request; `)` dismisses; cancels in-flight job before each new request; 30-second auto-dismiss timer.
+- `SignatureHelpPillRobolectricTest.kt` — 7 assertions, 5 test methods (androidApp Robolectric), all PASS.
+- `SignatureHelpPopupRobolectricTest.kt` — 6 test methods (androidApp Robolectric), all PASS.
+- `SignatureHelpTriggerTest.kt` — 5 test methods (desktopTest), all PASS.
+
+### Test counts
+- desktopTest SignatureHelpTriggerTest: 5/5 PASS
+- androidApp SignatureHelpPillRobolectricTest: BUILD SUCCESSFUL (all PASS)
+- androidApp SignatureHelpPopupRobolectricTest: BUILD SUCCESSFUL (all PASS)
+
+### Next: Phase 8 — Formatting (on-save + explicit + on-type) + Settings toggle
+
+Per plan §8.1–8.6:
+- `FormattingTrigger` class with 3 entry points: `onSave`, `onExplicit`, `onType`.
+- Extend `LspServerHost` with `onTypeFormatting(...)`.
+- `FormattingSettings` Settings row (toggle `formatOnSave`, default true).
+- Wire `Ctrl+Shift+F` in `SyncedScrollEditor`.
+- desktopTest + Robolectric tests.
+
+---
 
 ## Section 48 — iter-63 Phase 6: CodeActionLightbulb + Menu + Invoker (3rd gutter column)
 
@@ -21,19 +52,6 @@
 - `androidApp/.../codeaction/CodeActionInvoker.kt` — suspend dispatcher: edit→WorkspaceEditApplier+onEdit; command→onCommand; neither→no-op.
 - `SyncedScrollEditor.kt` modified — new params `actionsByLine` + `onCodeActionLineTap`; gutter order `[diagnostic-dot][lightbulb][fold-chevron]`.
 - `CodeActionLightbulbRobolectricTest.kt` — 4 structural tests with CONST-035 mutation guards, all PASS.
-
-### Regression spot-check
-- FoldGutterRobolectricTest: PASS
-- DiagnosticsGutterTest: PASS
-- RenamePreviewPanelRobolectricTest: PASS
-
-### Next: Phase 7 — Signature help: pill (mobile) + popup (desktop)
-
-Per plan §7.1–7.5:
-- `SignatureHelpPill.kt` — mobile inline Surface chip above cursor line.
-- `SignatureHelpPopup.kt` — desktop Popup tooltip.
-- `SignatureHelpTrigger.kt` — `(` and `,` keystroke detector + debounce.
-- Robolectric tests for both surfaces.
 
 ---
 
