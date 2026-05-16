@@ -6,7 +6,53 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-64 **Phase 15 COMPLETE** — Firebase distribution v1.7.0. **5-FEATURE MANDATE FULLY COMPLETE AND SHIPPED.**).
+**Last updated:** 2026-05-16 (v1.8.0 **COMPLETE** — comprehensive QA validation + multi-platform Firebase distribution. All Android variants shipped. Desktop DMG staged. Web Wasm deferred (`#wasmjs-production-distribution-gap`). Linux/Windows/iOS not shipped per existing trackers.).
+
+## Section 61 — v1.8.0: Comprehensive QA validation + multi-platform re-distribution
+
+**Status:** COMPLETE.
+
+**Branch:** master. **Last commit:** `feat(v1.8.0): comprehensive QA validation + multi-platform Firebase distribute (Android + Desktop + Web Wasm)`.
+
+### What was shipped
+
+- `androidApp/build.gradle.kts`: `versionCode 170 → 180`, `versionName 1.7.0 → 1.8.0`.
+- `desktopApp/build.gradle.kts`: `packageVersion 1.7.0 → 1.8.0`.
+- `releases/Yole-Android-1.8.0-Release-0.0.0.1.80.apk` (39 MB)
+- `releases/Yole-Android-1.8.0-Debug-0.0.0.1.80.apk` (48 MB, package `digital.vasic.yole.android.dev`)
+- `releases/Yole-Android-1.8.0-DEV-0.0.0.1.80.apk` (48 MB, same as Debug — aliased per convention)
+- `releases/Yole-Desktop-macos-arm64-1.8.0-Release-0.0.0.1.80.dmg` (524 MB)
+
+### Firebase App Distribution results
+
+- Android Release: release id `4hvq67pf8vmqg`, app `1:578988389676:android:d61715a0a84a42c65d2889` — distributed to all 3 testers (SUCCESS)
+- Android DEV (debug, `.dev` package): release id `69g7porgq5fq0`, app `1:578988389676:android:5a3d47a9fb23b6465d2889` — distributed to all 3 testers (SUCCESS)
+- Desktop macOS-arm64 DMG: staged locally; no Firebase Desktop product category (pre-existing gap, same as iter-58 through iter-64)
+- Distribution pattern: `--testers` email list (NOT `--groups`). DEV distributed via direct firebase CLI (distribute.sh hardcodes release app ID; DEV uses direct invocation with DEV app ID).
+
+### Deferred / blocked
+
+- **Web Wasm production distribution:** `binaries.executable()` not set in `webApp/build.gradle.kts` → `:webApp:wasmJsBrowserDistribution` task not generated → no bundle to host. `firebase.json` hosting not configured. Tracked as `#wasmjs-production-distribution-gap`. To resolve for v1.9.0: add `binaries.executable()` to webApp wasmJs DSL (investigate the "Cannot invoke flatMap... optimizeTask is null" error first), then `firebase init hosting`, set public dir to `webApp/build/dist/wasmJs/productionExecutable/`, then `firebase deploy --only hosting`.
+- **Linux .deb:** `packageDeb` SKIPPED on macOS host. Requires Linux host or cross-compilation infra.
+- **Windows .msi:** `packageMsi` SKIPPED on macOS host. Requires Windows host.
+- **iOS:** `linkPodReleaseFrameworkIosArm64` task not found; iOS target not active in :shared. Blocked by `#shared-iosmain-databasefactory-broken`.
+
+### QA validation summary (re-validation pass before v1.8.0)
+
+- JVM tests: 9,137 PASS
+- Go packages: 152 PASS
+- Yole challenges: 18/18 PASS
+- Iteration gates: 8/8 PASS
+- Stale-test fix: CONST-035 anti-bluff correction committed (commit per git log).
+
+### Next
+
+Candidate for v1.9.0:
+1. Fix `#wasmjs-production-distribution-gap` — add `binaries.executable()` to webApp and set up Firebase Hosting for Web Wasm PWA.
+2. iOS groundwork when `#shared-iosmain-databasefactory-broken` is resolved.
+3. New feature mandate (deep research pass first).
+
+---
 
 ## Section 60 — iter-64 Phase 15: Firebase distribution v1.7.0 — 5-FEATURE MANDATE COMPLETE
 

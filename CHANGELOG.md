@@ -3,6 +3,41 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## v1.8.0 — Comprehensive QA validation + multi-platform re-distribution (2026-05-16)
+
+**Version:** 1.8.0 (versionCode 180 → dotted `0.0.0.1.80`)
+**Build status:** Android Release + Debug/DEV distributed via Firebase App Distribution. Desktop macOS-arm64 DMG built and staged. Web Wasm production distribution deferred (`#wasmjs-production-distribution-gap`). Linux/Windows/iOS not shipped (see per-platform disposition).
+
+v1.8.0 is a re-distribution release following comprehensive QA re-validation. The entire test suite was rerun after a stale-test fix (tests that passed without actually exercising user-visible behavior). All 9,137 JVM tests, 152 Go packages, 18 challenges, and 8 iteration gates GREEN.
+
+### QA Validation Summary
+
+- **JVM tests:** 9,137 PASS (commonTest + desktopTest + androidUnitTest)
+- **Go packages:** 152 PASS (Challenges + Containers + HelixQA + LLMProvider + Security submodules)
+- **Yole challenges:** 18/18 PASS
+- **Iteration gates:** 8/8 PASS
+- **Stale-test fix:** Tests with structural-only assertions that could pass on stub implementations corrected to exercise actual user-visible behavior per CONST-035 anti-bluff mandate.
+
+### Distribution (v1.8.0)
+
+- **Android Release:** Firebase release id `4hvq67pf8vmqg`, app `1:578988389676:android:d61715a0a84a42c65d2889` — distributed to all 3 testers (SUCCESS)
+- **Android DEV (debug, `.dev` package):** Firebase release id `69g7porgq5fq0`, app `1:578988389676:android:5a3d47a9fb23b6465d2889` — distributed to all 3 testers (SUCCESS)
+- **Desktop macOS-arm64:** `Yole-Desktop-macos-arm64-1.8.0-Release-0.0.0.1.80.dmg` (524 MB) — staged locally; no Firebase Desktop product category (pre-existing gap, same as iter-58 through iter-64)
+- **Web Wasm:** DEFERRED — `#wasmjs-production-distribution-gap`; `binaries.executable()` not set in `webApp/build.gradle.kts`, `:webApp:wasmJsBrowserDistribution` task not generated; Firebase Hosting not configured
+- **Linux .deb:** SKIPPED by Gradle on macOS host (cross-platform packaging not supported without Linux host)
+- **Windows .msi:** SKIPPED by Gradle on macOS host (requires Windows host)
+- **iOS:** BUILD FAILED — `linkPodReleaseFrameworkIosArm64` task not found; blocked by `#shared-iosmain-databasefactory-broken`
+
+### Known gaps carried forward
+
+| Tracker | Description |
+|---------|-------------|
+| `#wasmjs-production-distribution-gap` | Web Wasm production bundle requires `binaries.executable()` + firebase.json hosting setup |
+| `#crossbuild-linux-windows-infra` | Linux/Windows builds require matching host OS or cross-compilation setup |
+| `#shared-iosmain-databasefactory-broken` | iOS framework link fails; iOS has never shipped |
+
+---
+
 ## iter-64 v1.7.0 — Feature 5: Import from external document formats (docx + html + rtf + odt + pdf + epub → Markdown) (2026-05-16)
 
 **Version:** 1.7.0 (versionCode 170 → dotted `0.0.0.1.70`)
