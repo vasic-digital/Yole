@@ -30,6 +30,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -54,7 +55,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import digital.vasic.yole.desktop.ui.theme.YoleDesktopTheme
 import digital.vasic.yole.desktop.ui.theme.YoleDesktopThemeWithSettings
+import digital.vasic.yole.desktop.ui.import_.acceptImportFileDrops
 import digital.vasic.yole.format.FormatRegistry
+import digital.vasic.yole.import_.DocxImporter
+import digital.vasic.yole.import_.EpubImporter
+import digital.vasic.yole.import_.HtmlImporter
+import digital.vasic.yole.import_.ImporterRegistry
+import digital.vasic.yole.import_.OdtImporter
+import digital.vasic.yole.import_.PdfImporter
+import digital.vasic.yole.import_.RtfImporter
 import digital.vasic.yole.syntax.theme.themeUiColor
 import java.util.prefs.Preferences
 
@@ -209,6 +218,23 @@ fun MainScreen() {
     var cursorLine by remember { mutableStateOf(1) }
     var cursorColumn by remember { mutableStateOf(1) }
 
+    // ── iter-64 Phase 12: ImporterRegistry for desktop drag-drop ────────────
+    // All 6 importers registered eagerly; construction is cheap (no I/O).
+    val importerRegistry = remember {
+        ImporterRegistry.default(
+            listOf(
+                DocxImporter(),
+                HtmlImporter(),
+                RtfImporter(),
+                OdtImporter(),
+                PdfImporter(),
+                EpubImporter(),
+            )
+        )
+    }
+    // Coroutine scope for the import pipeline dispatch.
+    val importScope = rememberCoroutineScope()
+
     Scaffold(
         modifier = Modifier
             .testTag("main_screen")
@@ -307,7 +333,25 @@ fun MainScreen() {
         },
         containerColor = ideBackground()
     ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
+        // iter-64 Phase 12: wrap the main content area in acceptImportFileDrops
+        // so that any supported format file dropped onto the desktop window is
+        // routed through ImporterRegistry. The converted Markdown is opened as
+        // the current file content.
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .acceptImportFileDrops { bytes, name ->
+                    importScope.launch {
+                        val ext = name.substringAfterLast('.', "")
+                        val importer = importerRegistry.forExtension(ext) ?: return@launch
+                        importer.import(bytes, name).onSuccess { doc ->
+                            selectedFile = name.substringBeforeLast('.').ifBlank { "imported" } + ".md"
+                            fileContent = doc.markdown
+                            currentScreen = Screen.EDITOR
+                        }
+                    }
+                }
+        ) {
             if (animationsEnabled) {
                 AnimatedContent(
                     targetState = currentScreen,

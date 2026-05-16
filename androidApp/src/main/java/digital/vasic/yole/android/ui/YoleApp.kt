@@ -143,7 +143,40 @@ import digital.vasic.yole.android.ui.settings.LspSettingsTopBar
 import digital.vasic.yole.android.ui.settings.MaybeShowFormatMigrationDialog
 import digital.vasic.yole.android.util.PdfExportUtil
 import digital.vasic.yole.android.util.BackupRestoreUtil
+import digital.vasic.yole.android.ui.import_.ImportButton
+import digital.vasic.yole.android.ui.import_.ImportMenuItem
+import digital.vasic.yole.android.ui.import_.ImportPreview
+import digital.vasic.yole.android.ui.import_.ImportProgressDialog
+import digital.vasic.yole.android.ui.import_.ImportShareIntentHandler
+import digital.vasic.yole.import_.DocxImporter
+import digital.vasic.yole.import_.EpubImporter
+import digital.vasic.yole.import_.HtmlImporter
+import digital.vasic.yole.import_.ImportedDocument
+import digital.vasic.yole.import_.ImporterRegistry
+import digital.vasic.yole.import_.OdtImporter
+import digital.vasic.yole.import_.PdfImporter
+import digital.vasic.yole.import_.RtfImporter
 import java.io.File
+
+/**
+ * iter-64 Phase 12: Process-singleton bridge for share/open-with Intents.
+ *
+ * [MainActivity.onNewIntent] writes here; [MainScreen] polls via a
+ * [LaunchedEffect]. Declared as an [object] so [MainActivity] can reference
+ * it without holding a reference to any Activity or Composable.
+ *
+ * Thread-safety: reads and writes happen on the main thread only (Activity
+ * lifecycle callbacks are always on main; Compose state reads are on the
+ * Compose main-thread). @Volatile provides the visibility guarantee for any
+ * edge case where a background thread writes first (e.g. deep-link routing
+ * from a notification service).
+ *
+ * Submodules: not touched (CONST-038).
+ */
+object YoleApp {
+    @Volatile var pendingShareBytes: ByteArray? = null
+    @Volatile var pendingShareFileName: String = ""
+}
 
 // ===== IDE Theme Color Accessors =====
 // iter-57 Phase 3b: replaced legacy IdeTheme/YoleColors palette. All UI
@@ -431,6 +464,103 @@ fun MainScreen() {
     // Drawer state
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
+    // ── iter-64 Phase 12: ImporterRegistry + import flow state ──────────────
+    // ImporterRegistry is constructed once per MainScreen composition.
+    // All 6 importer instances are created eagerly; construction is cheap
+    // (no I/O). The registry is passed by lambda capture to avoid a
+    // CompositionLocal (the rest of the app does not need it).
+    val importerRegistry = remember {
+        ImporterRegistry.default(
+            listOf(
+                DocxImporter(),
+                HtmlImporter(),
+                RtfImporter(),
+                OdtImporter(),
+                PdfImporter(),
+                EpubImporter(),
+            )
+        )
+    }
+
+    // State for the in-flight import: bytes + filename resolved from the file picker.
+    var importPendingBytes by remember { mutableStateOf<ByteArray?>(null) }
+    var importPendingFileName by remember { mutableStateOf("") }
+
+    // Progress dialog visibility and result/preview state.
+    var showImportProgress by remember { mutableStateOf(false) }
+    var importedDoc by remember { mutableStateOf<ImportedDocument?>(null) }
+
+    // File picker for the import flow (any MIME type because all 6 formats are
+    // supported; "*/*" lets the user choose among them).
+    val importFilePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        coroutineScope.launch {
+            val bytes = try {
+                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            } catch (_: Exception) { null }
+            if (bytes == null) {
+                Toast.makeText(context, "Cannot read selected file", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            val name = uri.lastPathSegment?.substringAfterLast('/') ?: "imported"
+            importPendingBytes = bytes
+            importPendingFileName = name
+            showImportProgress = true
+            val ext = name.substringAfterLast('.', "")
+            val importer = importerRegistry.forExtension(ext)
+            if (importer == null) {
+                showImportProgress = false
+                Toast.makeText(context, "No importer for .$ext files", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            val result = importer.import(bytes, name)
+            showImportProgress = false
+            result.onSuccess { doc ->
+                importedDoc = doc
+            }.onFailure { err ->
+                Toast.makeText(context, "Import failed: ${err.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    // Share-intent import: MainActivity.onNewIntent writes to YoleApp singleton;
+    // we poll it on resume via a LaunchedEffect loop. The loop runs on the
+    // Compose coroutine dispatcher (main thread) so no synchronisation needed
+    // beyond the @Volatile guarantee on the singleton fields.
+    LaunchedEffect(Unit) {
+        while (true) {
+            val bytes = YoleApp.pendingShareBytes
+            if (bytes != null) {
+                val name = YoleApp.pendingShareFileName.ifBlank { "shared" }
+                YoleApp.pendingShareBytes = null
+                YoleApp.pendingShareFileName = ""
+                importPendingBytes = bytes
+                importPendingFileName = name
+                showImportProgress = true
+                val ext = name.substringAfterLast('.', "")
+                val importer = importerRegistry.forExtension(ext)
+                if (importer == null) {
+                    showImportProgress = false
+                    Toast.makeText(context, "No importer for .$ext files", Toast.LENGTH_SHORT).show()
+                } else {
+                    val result = importer.import(bytes, name)
+                    showImportProgress = false
+                    result.onSuccess { doc -> importedDoc = doc }
+                        .onFailure { err ->
+                            Toast.makeText(
+                                context,
+                                "Import failed: ${err.message}",
+                                Toast.LENGTH_LONG,
+                            ).show()
+                        }
+                }
+            }
+            delay(300L) // poll interval
+        }
+    }
+
     // Load settings
     var themeMode by remember { mutableStateOf(settings.getThemeMode()) }
     var showLineNumbers by remember { mutableStateOf(settings.getShowLineNumbers()) }
@@ -695,7 +825,11 @@ fun MainScreen() {
                                         else -> {}
                                     }
                                 },
-                                onMoreClick = { currentSubScreen = SubScreen.SETTINGS }
+                                onMoreClick = { currentSubScreen = SubScreen.SETTINGS },
+                                // iter-64 Phase 12: expose import on the FILES tab.
+                                onImportClick = if (currentScreen == Screen.FILES) {
+                                    { importFilePicker.launch(arrayOf("*/*")) }
+                                } else null,
                             )
                         }
                         else -> {}
@@ -1301,6 +1435,31 @@ fun MainScreen() {
                     }
                 )
             }
+
+            // ── iter-64 Phase 12: Import flow dialogs ───────────────────────
+            // ImportProgressDialog: shown while the importer coroutine runs.
+            if (showImportProgress) {
+                ImportProgressDialog(
+                    fileName = importPendingFileName,
+                    onCancel = { showImportProgress = false },
+                )
+            }
+
+            // ImportPreview: shown when the importer has produced a result.
+            val doc = importedDoc
+            if (doc != null) {
+                val suggestedName = importPendingFileName
+                    .substringBeforeLast('.').ifBlank { "imported" } + ".md"
+                ImportPreview(
+                    doc = doc,
+                    suggestedFileName = suggestedName,
+                    onSave = { filename ->
+                        openFileInTab(filename, doc.markdown)
+                        importedDoc = null
+                    },
+                    onCancel = { importedDoc = null },
+                )
+            }
         }
     }
 }
@@ -1314,7 +1473,10 @@ fun IdeMainTopBar(
     isDarkTheme: Boolean,
     onMenuClick: () -> Unit,
     onSearchClick: () -> Unit,
-    onMoreClick: () -> Unit
+    onMoreClick: () -> Unit,
+    // iter-64 Phase 12: import button shown on the FILES tab only.
+    // null = do not show the button (other tabs, sub-screens, etc.)
+    onImportClick: (() -> Unit)? = null,
 ) {
     val bg = ideSurface()
     TopAppBar(
@@ -1335,17 +1497,47 @@ fun IdeMainTopBar(
             }
         },
         actions = {
+            // ImportButton: shown on the FILES tab so users can import documents.
+            if (onImportClick != null) {
+                ImportButton(onImportRequest = onImportClick)
+            }
             IconButton(
                 onClick = onSearchClick,
                 modifier = Modifier.semantics { contentDescription = "Search" }
             ) {
                 Icon(Icons.Outlined.Search, contentDescription = "Search")
             }
-            IconButton(
-                onClick = onMoreClick,
-                modifier = Modifier.semantics { contentDescription = "Settings" }
-            ) {
-                Icon(Icons.Outlined.MoreVert, contentDescription = "More")
+            // MoreVert overflow — contains ImportMenuItem as the first item.
+            var showMoreDropdown by remember { mutableStateOf(false) }
+            Box {
+                IconButton(
+                    onClick = { showMoreDropdown = true },
+                    modifier = Modifier.semantics { contentDescription = "Settings" }
+                ) {
+                    Icon(Icons.Outlined.MoreVert, contentDescription = "More")
+                }
+                DropdownMenu(
+                    expanded = showMoreDropdown,
+                    onDismissRequest = { showMoreDropdown = false },
+                ) {
+                    // Import from... entry always visible in the overflow menu.
+                    if (onImportClick != null) {
+                        ImportMenuItem(
+                            onImportRequest = {
+                                showMoreDropdown = false
+                                onImportClick()
+                            },
+                        )
+                        HorizontalDivider()
+                    }
+                    DropdownMenuItem(
+                        text = { Text("Settings") },
+                        onClick = {
+                            showMoreDropdown = false
+                            onMoreClick()
+                        },
+                    )
+                }
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(

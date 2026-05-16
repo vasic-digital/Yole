@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-64 **Phase 6 COMPLETE** — OdtImporter: expect class + Desktop JVM actual (Apache ODFDOM 1.0.0-BETA1) + Android actual (raw ZipInputStream + XmlPullParser, no Xerces conflict) + iOS/Wasm honest stubs + 5 desktopTest tests PASS; mutation guard + Android ZIP structural check confirmed).
+**Last updated:** 2026-05-16 (iter-64 **Phase 12 COMPLETE** — Editor/YoleApp integration: ImportButton+ImportMenuItem in FILES tab toolbar (IdeMainTopBar), ImporterRegistry.default(6 importers) + import file picker in MainScreen, ImportProgressDialog + ImportPreview overlays, MainActivity.onNewIntent → ImportShareIntentHandler → YoleApp singleton → MainScreen polling loop, desktop acceptImportFileDrops on main Box; 3 Robolectric E2E tests PASS).
 
 ## Section 52 — iter-63 Phase 13: Firebase distribution v1.6.0
 
@@ -4369,5 +4369,47 @@ Per plan `docs/superpowers/plans/2026-05-16-lsp-4c-plan.md §Phase 2`:
 - 5 degradation tests in `LspServerHostTest.kt`.
 
 ---
+
+## Section YY — iter-64 Phase 12: Editor/YoleApp integration
+
+**Status:** COMPLETE.
+
+**Branch:** master. **Last commit:** `feat(iter-64): Phase 12 — Editor/YoleApp integration + ImporterRegistry wiring`.
+
+### What was added/changed
+
+**androidApp/src/main/java/digital/vasic/yole/android/ui/YoleApp.kt**
+- `YoleApp` singleton object: `@Volatile pendingShareBytes` + `pendingShareFileName` — bridge between `MainActivity.onNewIntent` and Compose.
+- `MainScreen`: `ImporterRegistry.default(listOf(DocxImporter, HtmlImporter, RtfImporter, OdtImporter, PdfImporter, EpubImporter))` via `remember`.
+- `importFilePicker` launcher — opens OS picker on FILES tab import click; dispatches bytes through `importerRegistry.forExtension(ext)`.
+- State vars: `showImportProgress`, `importedDoc`, `importPendingBytes`, `importPendingFileName`.
+- Polling `LaunchedEffect(Unit)` (300 ms) reads `YoleApp.pendingShareBytes` and routes through importer.
+- `ImportProgressDialog` overlay when `showImportProgress = true`.
+- `ImportPreview` overlay when `importedDoc != null`; onSave → `openFileInTab(filename, doc.markdown)`.
+- `IdeMainTopBar`: optional `onImportClick` param; renders `ImportButton` + overflow `DropdownMenu` with `ImportMenuItem` + Settings when FILES tab active.
+
+**androidApp/src/main/java/digital/vasic/yole/android/MainActivity.kt**
+- `override fun onNewIntent(intent: Intent)` → `ImportShareIntentHandler.handle(this, intent)` → `YoleApp.pendingShareBytes` + `YoleApp.pendingShareFileName`.
+
+**desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/YoleApp.kt**
+- `importerRegistry` + `importScope` in `MainScreen`.
+- Main content `Box` modifier chains `.acceptImportFileDrops { bytes, name -> ... }`.
+
+**androidApp/src/test/.../robolectric/import_/ImportIntegrationRobolectricTests.kt** (NEW)
+- 3 tests, all PASS: structural + behavioural (synthesised HTML ACTION_SEND intent).
+
+### Mutation evidence (CONST-035)
+
+Nine mutation guards across the 3 tests — all fail on the relevant mutation and revert to PASS.
+
+### Cross-platform impact
+- Android: fully wired (import button, share intent, progress + preview overlays).
+- Desktop: drag-drop wired via `acceptImportFileDrops` modifier.
+- iOS: N/A this phase.
+- Web: N/A this phase.
+
+### Next
+
+iter-64 Phase 13: Firebase distribution v1.7.0.
 
 <!-- END OF CONTINUATION DOCUMENT -->

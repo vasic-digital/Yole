@@ -26,6 +26,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import digital.vasic.yole.android.ui.YoleApp
+import digital.vasic.yole.android.ui.import_.ImportShareIntentHandler
 import digital.vasic.yole.android.util.FirebaseUtil
 import digital.vasic.yole.syntax.theme.ThemeProvider
 import digital.vasic.yole.syntax.theme.ThemeRegistry
@@ -167,6 +168,31 @@ class MainActivity : ComponentActivity() {
         }
     }
     
+    /**
+     * iter-64 Phase 12: handle share/open-with Intents arriving while the
+     * Activity is already running (single-top launch mode).
+     *
+     * Bytes extracted by [ImportShareIntentHandler] are forwarded to the
+     * Compose layer via [YoleApp.pendingShareBytes] state-holder. The actual
+     * importer dispatch happens inside the LaunchedEffect in MainScreen that
+     * observes that state, keeping all coroutine work on the Compose side.
+     *
+     * Cross-platform impact (CONST-037):
+     *   Android: handled here via Activity.onNewIntent.
+     *   Desktop / iOS / Web: N/A — intent system is Android-only.
+     *
+     * Submodules: not touched (CONST-038).
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val bytes = ImportShareIntentHandler.handle(this, intent) ?: return
+        val fileName = intent.getStringExtra(Intent.EXTRA_TITLE)
+            ?: intent.data?.lastPathSegment?.substringAfterLast('/')
+            ?: "shared"
+        YoleApp.pendingShareBytes = bytes
+        YoleApp.pendingShareFileName = fileName
+    }
+
     private fun requestManageExternalStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             try {
