@@ -142,7 +142,7 @@ class AllFormatsAutomationTest {
                 editAddition = "\n(C) New task",
                 expectedPreviewContains = "Task one",
                 expectedFormatName = "Todo.txt",
-                detectedFormatName = "Plain Text" // .txt extension matches Plain Text first
+                detectedFormatName = "Todo.txt" // iter-40 #yole-todotxt-compound-extension-detection: whole-filename `todo.txt` matches Todo.txt's `.todo.txt` extension via Pass 1
             ),
             FormatTestCase(
                 formatId = TextFormat.ID_CSV,
