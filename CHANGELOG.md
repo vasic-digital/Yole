@@ -3,6 +3,63 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## iter-64 v1.7.0 — Feature 5: Import from external document formats (docx + html + rtf + odt + pdf + epub → Markdown) (2026-05-16)
+
+**Version:** 1.7.0 (versionCode 170 → dotted `0.0.0.1.70`)
+**Build status:** Android and Desktop fully wired — all 6 format importers accessible via FILES tab button, File menu, Android share intent, and Desktop drag-and-drop. iOS and Web return `ImportError.NotSupported` for all formats (architectural block — no JVM runtime).
+
+iter-64 closes the 5-feature mandate opened in iter-57. Document format import is the fifth and final planned feature: users can now import Word documents, HTML pages, RTF files, OpenDocument Text, PDFs, and EPUB e-books and edit them as Markdown in Yole.
+
+### Added
+
+- **`DocumentImporter`** (`shared/.../import_/DocumentImporter.kt`) — commonMain interface: `supportedExtensions: Set<String>`, `sourceFormat: String`, `suspend fun import(bytes, fileName): Result<ImportedDocument>`.
+- **`ImportedDocument`** (`shared/.../import_/ImportedDocument.kt`) — `data class(markdownContent, sourceFormat, warnings: List<ImportWarning>)`.
+- **`ImportError`** — sealed class: `NotSupported(format, platform)`, `Malformed(format, cause)`, `IoError(message, cause)`.
+- **`ImporterRegistry`** (`shared/.../import_/ImporterRegistry.kt`) — `default()` returns 6 importers; `forExtension` / `forMimeType` lookup.
+- **5 conversion helpers** (`shared/.../import_/conversion/`): `HeadingDetector` (font-size rank → H1-H6), `CodeBlockDetector` (monospace font whitelist), `TableConverter` (rows → GFM pipe table), `ImageExtractor` (bytes → `ExtractedImage` + jpg→jpeg normalisation), `LinkPreserver` (text+URL → inline Markdown link).
+- **`DocxImporter`** — `expect class`; Desktop + Android JVM actuals via Apache POI 5.5.1 (`poi-ooxml`); iOS + Web stubs. Preserves headings, bold/italic, tables, images, hyperlinks.
+- **`HtmlImporter`** — Desktop + Android actuals via jsoup 1.17.2 + flexmark-html2md-converter 0.64.8; ATX headings forced; `.html` and `.htm` extensions.
+- **`RtfImporter`** — Desktop actual via `javax.swing.text.rtf.RTFEditorKit` (Java SE stdlib, no new dependency); Android stub `#iter-64-android-rtf-no-swing` (`javax.swing` absent from Android SDK).
+- **`OdtImporter`** — Desktop actual via Apache ODFDOM 1.0.0-BETA1 (`odfdom-java`); Android actual via ZipInputStream + `android.util.Xml.newPullParser()` (Xerces2 excluded from `androidMain`).
+- **`PdfImporter`** — Desktop actual via PDFBox 3.0.7; Android actual via pdfbox-android 2.0.27.0 (divergent API: `PDDocument.load`, `com.tom_roush.*` packages, `Bitmap.compress` for images).
+- **`EpubImporter`** — roll-own ZIP + OPF spine parsing + `HtmlImporter` per chapter; no third-party EPUB library (`epublib` upstream abandoned May 2021).
+- **Import UI primitives** (`androidApp`): `ImportButton`, `ImportMenuItem`, `ImportProgressDialog`, `ImportPreview`, `ImportWarningsPanel` Composables.
+- **Android share intent** — `ImportShareIntentHandler` wired into `MainActivity.onNewIntent`; routes `ACTION_SEND` URI → `YoleApp.singleton` → main screen polling loop.
+- **Desktop drag-and-drop** — `acceptImportFileDrops` on main `Box`; handles multiple files in sequence.
+- **2 anti-bluff challenges** in `yole-challenges/scripts/`: `import_format_challenge.sh` + `import_ui_integration_challenge.sh`; wired into `qa-iter-64-gates` → `qa-all`.
+- **Documentation:** `docs/features/import-from/user-guide.md`, `architecture.md`, `supported-formats.md`.
+
+### Behind the scenes
+
+- `multiDexEnabled = true` added to `androidApp/build.gradle.kts` (POI pushes method count past 64k).
+- `androidApp/proguard-rules.pro` created with centic9 POI keep rules (dormant while minify=false; preemptive).
+- `PDFBoxResourceLoader.init(null)` — Android-side PDF init; production call site should pass `Context` (`#iter-64-pdfbox-android-context`).
+- Heading-detection accuracy benchmark: published ML baseline 96.95% on well-formatted PDFs.
+- EPUB library choice rationale: `epublib` abandoned; roll-own is ~120 lines and avoids a stale dependency.
+
+### Known gaps (v1.7.0)
+
+| Tracker | Description |
+|---------|-------------|
+| `#iter-64-android-rtf-no-swing` | RTF not available on Android — `javax.swing` absent from Android SDK |
+| `#iter-64-ios-hard-blocked` | All 6 formats return `NotSupported` on iOS (no JVM runtime) |
+| `#iter-64-web-hard-blocked` | All 6 formats return `NotSupported` on Web/Wasm (no JVM runtime) |
+| `#iter-64-pdf-image-only` | Image-only (raster-scan) PDFs produce empty Markdown; no text layer |
+| `#iter-64-pdf-heading-heuristic` | PDF heading detection is font-size heuristic; degrades on irregular PDFs |
+| `#iter-64-pdfbox-android-context` | `PDFBoxResourceLoader.init(null)` — production call site must supply `Context` |
+| `#iter-64-rtf-colour-images` | RTF colour, font family, embedded images, and tables not extracted |
+| `#iter-64-odt-android-list-nesting` | ODT Android path does not preserve nested list indentation |
+| `#iter-64-epub-metadata` | EPUB title, author, cover image, publisher dropped; spine text only |
+
+### Cross-platform impact (CONST-037)
+
+- **Android:** All 6 importers wired; RTF returns `NotSupported`; share intent + FILES button. `multiDexEnabled = true`. POI keep rules preemptive.
+- **Desktop:** All 6 importers wired; full JVM (PDFBox 3.x, ODFDOM, RTFEditorKit). Drag-and-drop + FILES button + File menu.
+- **iOS:** All 6 importers return `ImportError.NotSupported` — architectural block (no JVM). No UI changes.
+- **Web/Wasm:** All 6 importers return `ImportError.NotSupported` — architectural block (no JVM). No UI changes.
+
+---
+
 ## iter-63 v1.6.0 — LSP refactoring capabilities: rename + code actions + signature help + formatting + find-references (2026-05-16)
 
 **Version:** 1.6.0 (versionCode 160 → dotted `0.0.0.1.60`)

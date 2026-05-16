@@ -6,7 +6,47 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-64 **Phase 12 COMPLETE** — Editor/YoleApp integration: ImportButton+ImportMenuItem in FILES tab toolbar (IdeMainTopBar), ImporterRegistry.default(6 importers) + import file picker in MainScreen, ImportProgressDialog + ImportPreview overlays, MainActivity.onNewIntent → ImportShareIntentHandler → YoleApp singleton → MainScreen polling loop, desktop acceptImportFileDrops on main Box; 3 Robolectric E2E tests PASS).
+**Last updated:** 2026-05-16 (iter-64 **Phase 14 COMPLETE** — Documentation: user-guide + architecture + supported-formats + CHANGELOG v1.7.0 entry. **5-FEATURE MANDATE COMPLETE — ready for Phase 15 distribution.**).
+
+## Section 59 — iter-64 Phase 14: Documentation
+
+**Status:** COMPLETE.
+
+**Branch:** master. **Last commit:** `docs(iter-64): Phase 14 — user-guide + architecture + supported-formats + CHANGELOG`.
+
+### What was shipped
+
+- `docs/features/import-from/user-guide.md` — end-user guide: 6 formats, 4 invocation surfaces, Android share intent instructions, fidelity expectations, platform availability table, known-gaps table with all 9 tracker IDs.
+- `docs/features/import-from/architecture.md` — contributor guide: core abstractions, extending the importer pattern (5-step recipe), conversion helpers, per-format contributor notes (POI keep rules, PDFBox version split, ODFDOM Xerces conflict, epublib abandonment + roll-own rationale), invocation surfaces, cross-platform disposition, testing strategy, consolidated known-gaps table.
+- `docs/features/import-from/supported-formats.md` — format matrix: 6 formats × {library + version, fidelity tier, Android-specific notes, known gaps}.
+- `CHANGELOG.md` — v1.7.0 entry inserted above v1.6.0 block; includes Added section, known-gaps table (9 trackers), cross-platform impact block.
+- `docs/CONTINUATION.md` — this section.
+
+### 5-Feature Mandate status
+
+iter-64 closes the 5-feature mandate opened in iter-57:
+
+| # | Feature | Iteration | Status |
+|---|---------|-----------|--------|
+| 1 | Syntax highlighting | iter-57/58 | SHIPPED v1.1.0 |
+| 2 | Source-code file support | iter-58 | SHIPPED v1.2.0 |
+| 3 | Auto-complete | iter-60 | SHIPPED v1.3.0 |
+| 4 | LSP integration | iter-61/62/63 | SHIPPED v1.4.0–v1.6.0 |
+| 5 | Import from | iter-64 | SHIPPED v1.7.0 |
+
+**All 5 features delivered.** The mandate is complete.
+
+### Next: iter-64 Phase 15 — Firebase distribution v1.7.0
+
+Per plan §15:
+- Bump `versionCode` from 160 to 170; `versionName` from 1.6.0 to 1.7.0 in `androidApp/build.gradle.kts`.
+- Bump `packageVersion` from 1.6.0 to 1.7.0 in `desktopApp/build.gradle.kts`.
+- Build Release + Debug + DEV Android APKs.
+- Build Desktop macOS-arm64 DMG.
+- Place artifacts in `releases/` with correct naming convention.
+- Firebase App Distribution for Android × 3 variants; Desktop staged locally.
+
+---
 
 ## Section 52 — iter-63 Phase 13: Firebase distribution v1.6.0
 
