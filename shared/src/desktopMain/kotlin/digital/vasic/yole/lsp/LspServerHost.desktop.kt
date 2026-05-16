@@ -33,6 +33,10 @@
  *   - formatting(): 1000ms timeout; placeholder TextEdit list mapping.
  *   - references(): 2000ms timeout; reuses mapLspDefinitionsToList for Locations.
  *
+ * iter-63 Phase 8 additions:
+ *   - onTypeFormatting(): 500ms timeout; maps result via mapLspTextEdits.
+ *     Called by FormattingTrigger.onType after the trigger-char guard.
+ *
  * iter-63 Phase 3 additions (finalizes Phase 2 placeholder mappers):
  *   - mapLspWorkspaceEdit: handles documentChanges (modern, preferred) +
  *     changes (legacy) per LSP 3.18; prefers documentChanges when present.
@@ -74,6 +78,7 @@ import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import org.eclipse.lsp4j.DidCloseTextDocumentParams
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
 import org.eclipse.lsp4j.DocumentFormattingParams
+import org.eclipse.lsp4j.DocumentOnTypeFormattingParams
 import org.eclipse.lsp4j.FormattingOptions
 import org.eclipse.lsp4j.ResourceOperation
 import org.eclipse.lsp4j.SnippetTextEdit
@@ -394,6 +399,37 @@ actual class LspServerHost actual constructor(
                 raw.orEmpty().map { loc ->
                     DefinitionLocation(uri = loc.uri ?: "", range = 0..0)
                 }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: TimeoutException) {
+            emptyList()
+        } catch (_: Throwable) {
+            emptyList()
+        }
+    }
+
+    actual suspend fun onTypeFormatting(
+        langId: String,
+        uri: String,
+        line: Int,
+        character: Int,
+        triggerChar: Char,
+    ): List<TextEdit> {
+        val server = mutex.withLock { servers[langId] } ?: return emptyList()
+        return try {
+            withTimeout(500L) {
+                val options = FormattingOptions(4, true)
+                val params = DocumentOnTypeFormattingParams(
+                    TextDocumentIdentifier(uri),
+                    options,
+                    Position(line, character),
+                    triggerChar.toString(),
+                )
+                val raw = server.languageServer.textDocumentService.onTypeFormatting(params)
+                    .get(500, TimeUnit.MILLISECONDS)
+                val docText = server.docTexts[uri] ?: ""
+                mapLspTextEdits(raw.orEmpty(), docText)
             }
         } catch (e: CancellationException) {
             throw e

@@ -19,6 +19,10 @@
  *   - formatting(): returns List<TextEdit> (empty on timeout/error/no-spec). 1s timeout.
  *   - references(): returns List<DefinitionLocation> (empty on timeout/error/no-spec). 2s timeout.
  *
+ * iter-63 Phase 8 additions:
+ *   - onTypeFormatting(): returns List<TextEdit> (empty on timeout/error/no-spec). 500ms timeout.
+ *     Called by FormattingTrigger.onType for trigger-char-gated on-type formatting.
+ *
  * Mutation procedure (CONST-035):
  *   1. In the JVM actual, stub complete() to always return
  *      LspCompletionResult(listOf(LspCompletionLine("__stub__","__stub__","Text",null,null))).
@@ -33,7 +37,8 @@
  *   9. Stub signatureHelp() to return SignatureHelp(emptyList(),0,0) → noSpec_signatureHelp_returnsNull FAILS.
  *  10. Stub formatting() to return listOf(TextEdit(0..0,"x")) → noSpec_formatting_returnsEmpty FAILS.
  *  11. Stub references() to return listOf(DefinitionLocation("x",0..0)) → noSpec_references_returnsEmpty FAILS.
- *  12. Revert; confirm all 10 tests PASS.
+ *  12. Stub onTypeFormatting() to return listOf(TextEdit(0..0,"x")) → noSpec_onTypeFormatting_returnsEmpty FAILS.
+ *  13. Revert; confirm all 11 tests PASS.
  *
  * Cross-platform impact (CONST-037):
  *   - Desktop:  JVM actual — LSP4J ProcessBuilder wiring (this phase).
@@ -219,6 +224,34 @@ expect class LspServerHost(
         character: Int,
         includeDeclaration: Boolean = true,
     ): List<DefinitionLocation>
+
+    /**
+     * Request on-type formatting edits for the character just typed.
+     *
+     * Returns a list of [TextEdit] on success, or an empty list on timeout
+     * (500 ms), no spec, server down, or any error — honest degradation
+     * per CONST-035.
+     *
+     * Called by [FormattingTrigger.onType] after confirming [triggerChar] is
+     * in the server's declared trigger-character set. The caller is responsible
+     * for the trigger-character guard; this method always attempts the LSP call.
+     *
+     * Per Phase 0 §3: rust-analyzer supports 8 on-type trigger chars,
+     * clangd supports `}` only, gopls has no on-type support.
+     *
+     * @param langId      Language identifier for the document.
+     * @param uri         Document URI.
+     * @param line        0-based cursor line after the keystroke.
+     * @param character   0-based cursor character offset after the keystroke.
+     * @param triggerChar The character that was typed (first trigger char per LSP spec).
+     */
+    suspend fun onTypeFormatting(
+        langId: String,
+        uri: String,
+        line: Int,
+        character: Int,
+        triggerChar: Char,
+    ): List<TextEdit>
 
     /**
      * Single source of truth for LSP-emitted diagnostics. Populated by

@@ -118,6 +118,11 @@
  *       CodeActionLightbulb is composed in the gutter column (between
  *       the diagnostics dot and the fold chevron). Removing the call
  *       MUST cause CodeActionLightbulbRobolectricTest to fail because
+ *   (8) iter-63 Phase 8 invariant: when onExplicitFormat is non-default,
+ *       Ctrl+Shift+F MUST invoke it. Removing the key handler or stub-
+ *       bing it to a no-op MUST cause FormattingSettingsRobolectricTest
+ *       structural check to fail — the source MUST contain the literal
+ *       `onExplicitFormat()` inside the Ctrl+Shift+F branch.
  *       the "lightbulb-line-" and "code-action-lightbulb" tags disappear.
  *
  *
@@ -163,6 +168,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import digital.vasic.yole.android.ui.editor.codeaction.CodeActionLightbulb
@@ -222,6 +228,11 @@ fun SyncedScrollEditor(
     // Invoked with the 0-based line number when the user taps a lightbulb.
     // Null = lightbulb column not shown (existing callers unchanged).
     onCodeActionLineTap: (line: Int) -> Unit = {},
+    // iter-63 Phase 8: explicit format shortcut (Ctrl+Shift+F). Default no-op
+    // preserves backwards-compatibility for callers that predate Phase 8.
+    // When non-default, pressing Ctrl+Shift+F invokes this callback so the
+    // caller (IdeEditorScreen) can call FormattingTrigger.onExplicit().
+    onExplicitFormat: () -> Unit = {},
 ) {
     val sharedScroll = rememberScrollState()
     val activeLanguage = LocalLanguage.current
@@ -487,6 +498,16 @@ fun SyncedScrollEditor(
                         if (hoverCb != null) m.hoverShortcut(hoverCb) else m
                     }
                     .onPreviewKeyEvent { event ->
+                        // iter-63 Phase 8: Ctrl+Shift+F — explicit format shortcut.
+                        // Checked BEFORE completion popup handlers so the shortcut
+                        // fires even when the popup is open.
+                        if (event.type == KeyEventType.KeyDown &&
+                            event.isCtrlPressed && event.isShiftPressed &&
+                            event.key == Key.F
+                        ) {
+                            onExplicitFormat()
+                            true
+                        } else {
                         // iter-60 Phase 6.4: completion keyboard handlers.
                         // Checked FIRST so popup navigation takes priority
                         // over the editor's own key handling.
@@ -581,6 +602,7 @@ fun SyncedScrollEditor(
                         } else {
                             false
                         }
+                        } // end: else branch of Ctrl+Shift+F guard
                     }
                     .let { m ->
                         if (semanticsLabel != null) {

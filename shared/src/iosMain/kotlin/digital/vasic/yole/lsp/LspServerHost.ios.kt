@@ -11,8 +11,9 @@
  *   - rename()         → null
  *   - codeActions()    → emptyList()
  *   - signatureHelp()  → null
- *   - formatting()     → emptyList()
- *   - references()     → emptyList()
+ *   - formatting()          → emptyList()
+ *   - references()          → emptyList()
+ *   - onTypeFormatting()    → emptyList()
  * per CONST-035 honest-degradation policy.
  *
  * diagnosticsCache stays empty (no publishDiagnostics source on iOS).
@@ -92,6 +93,14 @@ actual class LspServerHost actual constructor(
         character: Int,
         includeDeclaration: Boolean,
     ): List<DefinitionLocation> = emptyList()
+
+    actual suspend fun onTypeFormatting(
+        langId: String,
+        uri: String,
+        line: Int,
+        character: Int,
+        triggerChar: Char,
+    ): List<TextEdit> = emptyList()
 
     actual suspend fun didOpen(langId: String, uri: String, text: String, version: Int) {}
     actual suspend fun didChange(langId: String, uri: String, version: Int, fullText: String) {}

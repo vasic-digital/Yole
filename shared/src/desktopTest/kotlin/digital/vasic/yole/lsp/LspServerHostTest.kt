@@ -18,6 +18,9 @@
  *   - noSpec_formatting_returnsEmpty
  *   - noSpec_references_returnsEmpty
  *
+ * iter-63 Phase 8 adds 1 test:
+ *   - noSpec_onTypeFormatting_returnsEmpty
+ *
  * Approach: behavioral-degradation, NOT full fake-LSP-server harness.
  * Deferred to Phase 7's RealServerSmokeTest.
  *
@@ -35,7 +38,9 @@
  *      → noSpec_formatting_returnsEmpty FAILS.
  *   8. Stub references() to return listOf(DefinitionLocation("x",0..0))
  *      → noSpec_references_returnsEmpty FAILS.
- *   9. Revert; confirm all 10 tests PASS.
+ *   9. Stub onTypeFormatting() to return listOf(TextEdit(0..0,"x"))
+ *      → noSpec_onTypeFormatting_returnsEmpty FAILS.
+ *  10. Revert; confirm all 11 tests PASS.
  *
  * Cross-platform impact (CONST-037):
  *   - Desktop: JVM actual tested here.
@@ -239,6 +244,26 @@ class LspServerHostTest {
             uri = "file:///tmp/test.nonexistent-lang-xyz",
             line = 0,
             character = 5,
+        )
+        assertTrue(result.isEmpty(), "Expected emptyList for unknown langId, got $result")
+    }
+
+    /**
+     * When the registry has no spec for a given langId, onTypeFormatting() MUST return
+     * an empty list — never throw, never return a non-empty list.
+     *
+     * Mutation: stub onTypeFormatting() to return listOf(TextEdit(0..0,"x"))
+     * → this test FAILS.
+     */
+    @Test
+    fun noSpec_onTypeFormatting_returnsEmpty() = runBlocking<Unit> {
+        val host = LspServerHost(registry = LspServerRegistry.default())
+        val result = host.onTypeFormatting(
+            langId = "nonexistent-lang-xyz",
+            uri = "file:///tmp/test.nonexistent-lang-xyz",
+            line = 0,
+            character = 5,
+            triggerChar = ';',
         )
         assertTrue(result.isEmpty(), "Expected emptyList for unknown langId, got $result")
     }
