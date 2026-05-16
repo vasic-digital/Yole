@@ -28,6 +28,13 @@ android {
         versionCode = 160
         versionName = "1.6.0"
 
+        // iter-64 Phase 3: Apache POI pushes the method count past the 64k
+        // dex limit. multiDexEnabled = true activates AndroidX MultiDex so
+        // the APK is split across multiple dex files at build time.
+        // androidx.multidex:multidex is already declared in libs.versions.toml
+        // and wired into shared/build.gradle.kts androidMain dependencies.
+        multiDexEnabled = true
+
         // Custom runner grants MANAGE_EXTERNAL_STORAGE before any test
         // launches MainActivity. Resolves Bucket A of the iter-34 finding
         // documented in docs/qa/iter-34/known-issues.md.

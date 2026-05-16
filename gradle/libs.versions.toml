@@ -54,6 +54,15 @@ ktor = "3.0.2"
 sshj = "0.38.0"
 smbj = "0.13.0"
 
+# Apache POI (iter-64 Phase 3) — OOXML lite variant for .docx import.
+# poi-ooxml-lite ships only the XWPF/XSSF APIs; excludes the heavy XML
+# processing chain that poi-ooxml pulls in. ~6 MB vs ~15 MB on the classpath.
+# Verified on Maven Central 2026-05-16; centic9/poi-on-android keep-rule set
+# applied in androidApp/proguard-rules.pro. stax:stax-api excluded (Android
+# ships its own StAX implementation). multiDex enabled for Android (method
+# count exceeds 64k with POI on the classpath).
+poi = "5.5.1"
+
 # LSP4J (iter-61 Phase 4) — Eclipse LSP4J JSON-RPC client/server.
 # Pinned at 1.0.0 (released 2026-02-10) per Phase 0 research §8.
 # JDK 11 compatible. MIT / EPL-2.0 dual-licensed.
@@ -252,6 +261,13 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 # Protocol Libraries
 sshj = { module = "com.hierynomus:sshj", version.ref = "sshj" }
 smbj = { module = "com.hierynomus:smbj", version.ref = "smbj" }
+
+# Apache POI (iter-64 Phase 3) — docx import via OOXML-lite.
+# poi-ooxml-lite: minimal variant, only XWPF/XSSF surface.
+# poi-ooxml: full OOXML; included transitively but listed explicitly for clarity.
+# stax:stax-api excluded at the dependency site (Android ships javax.xml.stream).
+poi-ooxml-lite = { module = "org.apache.poi:poi-ooxml-lite", version.ref = "poi" }
+poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
 
 # LSP4J (iter-61 Phase 4)
 lsp4j = { module = "org.eclipse.lsp4j:org.eclipse.lsp4j", version.ref = "lsp4j" }

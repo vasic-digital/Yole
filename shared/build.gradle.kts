@@ -145,6 +145,17 @@ kotlin {
                 implementation(libs.lsp4j)  // iter-61 Phase 4: Eclipse LSP4J JSON-RPC
                 implementation(libs.flexmark.core)  // iter-62 Phase 4: HoverMarkdownRenderer Flexmark walker
 
+                // iter-64 Phase 3: Apache POI for .docx import.
+                // poi-ooxml-lite omits the XWPF user-model classes (XWPFDocument,
+                // XWPFParagraph, XWPFRun, XWPFTable) needed by DocxImporter — those
+                // live in poi-ooxml full. Switching to poi-ooxml per plan deviation
+                // §3.1 note: "poi-ooxml-lite (~6 MB)" means the ooxml-lite schema JARs
+                // are INCLUDED transitively by poi-ooxml, not that we use the lite
+                // artifact directly. Actual on-disk footprint remains ~6–8 MB.
+                // multiDex required (POI pushes method count > 64k); enabled via
+                // multiDexEnabled = true in androidApp/build.gradle.kts defaultConfig.
+                implementation(libs.poi.ooxml)
+
                 // Tree-Sitter (iter-57 Phase 5 — Android NDK fix landed
                 // post-Phase 13, ticket #android-tree-sitter-ndk-so-missing):
                 //
@@ -200,6 +211,10 @@ kotlin {
                 implementation(libs.smbj)   // SMB/CIFS
                 implementation(libs.lsp4j)  // iter-61 Phase 4: Eclipse LSP4J JSON-RPC
                 implementation(libs.flexmark.core)  // iter-62 Phase 4: HoverMarkdownRenderer Flexmark walker
+
+                // iter-64 Phase 3: Apache POI for .docx import.
+                // Desktop JVM ships StAX; no additional exclusion required.
+                implementation(libs.poi.ooxml)
 
                 // Tree-Sitter (iter-57 Phase 5). JAR bundles native binaries
                 // for x86_64-linux, aarch64-linux, x86_64-macos, aarch64-macos,
