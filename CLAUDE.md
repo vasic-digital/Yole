@@ -2,7 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## INHERITED FROM HelixConstitution/CLAUDE.md
+
+All rules in `HelixConstitution/CLAUDE.md` (and the `HelixConstitution/Constitution.md`
+it references) apply unconditionally. The project-specific rules below extend them.
+Project-specific rules MUST NOT weaken any clause inherited from HelixConstitution.
+
 > **Precedence:** `CONSTITUTION.md` is the authoritative rule set. When a rule here conflicts with the Constitution, the Constitution wins.
+>
+> **Universal base:** `HelixConstitution/Constitution.md` is the root of all universal rules. `CONSTITUTION.md` extends it with Yole-specific rules (CONST-033 through CONST-039).
 >
 > **Sibling guidance:** `AGENTS.md` carries cross-agent governance shared with non-Claude CLI agents (Codex, Gemini CLI, Copilot CLI). Read it for rules that apply regardless of which CLI you're driving; do not duplicate its content here.
 
@@ -436,3 +444,37 @@ without an explicit justification comment.
 
 <!-- END anti-bluff addendum (CONST-035) -->
 
+<!-- BEGIN helix-constitution-inheritance + anti-bluff escalation (CONST-039) -->
+
+## ⚠️ Anti-Bluff End-User Quality Guarantee — CONST-039 (Escalated via HelixConstitution)
+
+**Root authority:** `HelixConstitution/Constitution.md` §7.1 + §11.4. This section
+is Yole's session-level summary; read HelixConstitution for the full canonical text.
+
+**Forensic anchor — direct operator mandate (verbatim, 2026-04-28):**
+
+> "We had been in position that all tests do execute with success and all
+> Challenges as well, but in reality the most of the features does not work
+> and can't be used! This MUST NOT be the case and execution of tests and
+> Challenges MUST guarantee the quality, the completition and full usability
+> by end users of the product! This MUST BE part of Constitution of our
+> project, its CLAUDE.MD and AGENTS.MD if it is not there already, and to be
+> applied to all Submodules's Constitution, CLAUDE.MD and AGENTS.MD as well
+> (if not there already)!"
+
+**When writing a test, ask yourself:** if every line of the unit under test were
+replaced with a trivial stub, would this test still pass? If yes, the test is
+bluff. Rewrite it to exercise the real behavior.
+
+**Required positive evidence by test category:**
+
+- **Unit tests** — real inputs mirroring production call sites + mutation verification
+- **Component tests** (Compose UI / Robolectric) — real user gestures; structural source-grep is NOT sufficient
+- **Integration tests** — real subsystems (real parser, real file system, real coroutines)
+- **E2E / HelixQA on-device** — screen recording OR screenshot stream OR log capture showing feature working from cold-launch to completion
+- **Challenges** — per-test PASS/FAIL lines + log-file artefact path; RUNTIME layer mandatory
+
+**Inheriting to submodules:** when propagating this rule to owned shared submodules,
+phrase everything GENERICALLY per CONST-038 (no Yole-specific platform names).
+
+<!-- END helix-constitution-inheritance + anti-bluff escalation (CONST-039) -->

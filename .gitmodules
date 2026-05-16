@@ -25,3 +25,6 @@
 [submodule "Security"]
 	path = Security
 	url = git@github.com:vasic-digital/Security.git
+[submodule "HelixConstitution"]
+	path = HelixConstitution
+	url = git@github.com:HelixDevelopment/HelixConstitution.git

@@ -1,5 +1,11 @@
 # Yole - Development Guide for AI Agents
 
+> **Base agent rules:** `HelixConstitution/AGENTS.md` — READ IT FIRST.
+> The base file is authoritative for any topic not covered here. All rules in
+> `HelixConstitution/AGENTS.md` (and the `HelixConstitution/Constitution.md`
+> it references) apply unconditionally. Rules below extend them and MUST NOT
+> weaken any inherited clause.
+>
 > **Precedence:** `CONSTITUTION.md` is the authoritative rule set. When a rule here conflicts, the Constitution wins.
 
 ## MANDATORY Rules
@@ -340,3 +346,34 @@ without an explicit justification comment.
 
 <!-- END anti-bluff addendum (CONST-035) -->
 
+<!-- BEGIN helix-constitution-inheritance + anti-bluff escalation (CONST-039) -->
+
+## ⚠️ Anti-Bluff End-User Quality Guarantee — CONST-039 (Escalated via HelixConstitution)
+
+**Root authority:** `HelixConstitution/Constitution.md` §7.1 + §11.4. This section
+is Yole's agent-level summary; read HelixConstitution for the full canonical text.
+
+**Forensic anchor — direct operator mandate (verbatim, 2026-04-28):**
+
+> "We had been in position that all tests do execute with success and all
+> Challenges as well, but in reality the most of the features does not work
+> and can't be used! This MUST NOT be the case and execution of tests and
+> Challenges MUST guarantee the quality, the completition and full usability
+> by end users of the product! This MUST BE part of Constitution of our
+> project, its CLAUDE.MD and AGENTS.MD if it is not there already, and to be
+> applied to all Submodules's Constitution, CLAUDE.MD and AGENTS.MD as well
+> (if not there already)!"
+
+**Required positive evidence by test category (agent checklist):**
+
+- **Unit tests** — real inputs + mutation-verified assertions (stub-swap must cause FAIL)
+- **Component tests** (Compose UI / Robolectric) — real user gestures; source-grep NOT sufficient
+- **Integration tests** — real subsystems only; mocks only at honest external boundaries
+- **E2E / HelixQA on-device** — screen recording OR screenshot stream OR log capturing feature from cold-launch to completion
+- **Challenges** — per-test PASS/FAIL lines + log artefact path; RUNTIME layer mandatory
+
+**When editing submodule governance:** phrase this rule GENERICALLY per CONST-038.
+Do NOT hardcode Yole-specific platform names (Android/Desktop/iOS/Web) into
+shared submodule governance documents.
+
+<!-- END helix-constitution-inheritance + anti-bluff escalation (CONST-039) -->

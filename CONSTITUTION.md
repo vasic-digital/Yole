@@ -3,6 +3,11 @@
 > **Status:** Active. This document is the project's authoritative
 > rule set. When a rule here conflicts with `CLAUDE.md`, `AGENTS.md`,
 > or any guide, the Constitution wins.
+>
+> **Inherits from:** `HelixConstitution/Constitution.md` — all universal
+> clauses in that document apply unconditionally. The rules below extend
+> or tighten them; they MUST NOT weaken any clause inherited from
+> HelixConstitution.
 
 ## Mission
 
@@ -375,6 +380,78 @@ example of a rule that MUST be expressed generically inside a
 submodule.
 
 <!-- END submodule-decoupling addendum (CONST-038) -->
+
+<!-- BEGIN helix-constitution-inheritance + anti-bluff escalation (CONST-039) -->
+
+### CONST-039 — Anti-Bluff End-User Quality Guarantee (Escalated via HelixConstitution)
+
+**Status:** Mandatory. Non-negotiable. Escalates CONST-035 with test-category-level
+evidence requirements. Applies to every test, challenge, gate, script, and
+verification artifact in this repository and all its owned submodules.
+
+**Canonical authority:** `HelixConstitution/Constitution.md` §7.1 and §11.4 through
+§11.4.25 — those clauses are the root definition. CONST-039 is Yole's binding
+pointer to them, with the Yole-specific evidence table below.
+
+**Forensic anchor — direct operator mandate (verbatim, 2026-04-28):**
+
+> "We had been in position that all tests do execute with success and all
+> Challenges as well, but in reality the most of the features does not work
+> and can't be used! This MUST NOT be the case and execution of tests and
+> Challenges MUST guarantee the quality, the completition and full usability
+> by end users of the product! This MUST BE part of Constitution of our
+> project, its CLAUDE.MD and AGENTS.MD if it is not there already, and to be
+> applied to all Submodules's Constitution, CLAUDE.MD and AGENTS.MD as well
+> (if not there already)!"
+
+**Operative rule:** the bar for shipping is **not** "tests pass" but
+**"users can use the feature."** Every PASS in this codebase MUST carry
+**positive runtime evidence** captured during execution that the feature
+actually works for the end user. The following PASS classes are all
+**critical defects** regardless of how green the summary looks:
+
+- Metadata-only PASS (grepping source for a symbol or manifest entry)
+- Configuration-only PASS (checking a build flag without running the code)
+- "Absence-of-error" PASS (no exception thrown ≠ feature works)
+- Source-grep-only PASS (file exists, class exists, testTag exists — none of these prove runtime behaviour)
+- `composable exists with testTag X` PASS without exercising a user gesture
+
+**Per-test-category evidence requirements (Yole-specific):**
+
+| Test category | Minimum positive evidence |
+|---|---|
+| **Unit tests** | Exercise the unit under real inputs mirroring production call sites; assertions must mutate-verify — if you swap the unit under test for a trivial stub the test MUST fail. |
+| **Component tests** (Robolectric / Compose UI) | Must perform real user gestures (tap, type, swipe, scroll, drag) and assert the resulting UX state. Pure structural source-grep tests are NOT sufficient. |
+| **Integration tests** | Real subsystems only (real file system, real parser, real network socket where applicable). Mocks/stubs only at honest external boundaries. Skipped tests need `// SKIP-OK: <ticket>`. |
+| **End-to-end / HelixQA on-device** | Capture screen recording OR screenshot stream OR log capture showing the feature working from cold-launch to completion. This evidence is the ground-truth ship gate. |
+| **Challenges** | Must produce per-test PASS/FAIL lines AND a log-file artefact path. Static-only checks are "necessary but not sufficient" — every challenge must have a RUNTIME layer. |
+
+**Decoupling requirement per CONST-038:** When propagating CONST-039 text to
+owned shared submodules, phrase all examples GENERICALLY — do not name Android,
+Desktop, iOS, or Web explicitly. Use "every consuming project's full platform
+matrix" instead.
+
+**Enforcement.** All verification commands from CONST-035 apply:
+
+```bash
+bash scripts/anti-bluff/bluff-scanner.sh --mode all
+bash yole-challenges/scripts/anchor_manifest_challenge.sh
+bash yole-challenges/scripts/mutation_ratchet_challenge.sh
+```
+
+All three must PASS. Pre-existing bluff hits are tracked in
+`yole-challenges/baselines/bluff-baseline.txt`; do not extend the baseline
+without an explicit justification comment.
+
+**Skip-marker convention:** `// SKIP-OK: #<ticket>` (canonical),
+`// ANTI-BLUFF-EXEMPT: <reason>` (synonym).
+
+**See also:** `HelixConstitution/Constitution.md` §11.4 (comprehensive
+per-evidence-type requirements), `HelixConstitution/CLAUDE.md`
+(session-level anti-bluff rules), `CLAUDE.md` and `AGENTS.md`
+(this project's consuming-side extensions).
+
+<!-- END helix-constitution-inheritance + anti-bluff escalation (CONST-039) -->
 
 ## Definition of Done
 

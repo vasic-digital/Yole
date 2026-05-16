@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-65 **PARTIALLY COMPLETE** — Web Wasm `compileKotlinWasmJs` fixed (2 JVM-only API removals); bundle blocked by KGP 2.0.20 bug (`ExecutableWasm.optimizeTask` null at init). Firebase Hosting + `releases/Yole-Web-*` staging deferred to v1.9.0 pending KGP >2.1.x upgrade.).
+**Last updated:** 2026-05-16 (iter-66 **COMPLETE** — HelixConstitution submodule wired (`git@github.com:HelixDevelopment/HelixConstitution.git`); CONST-039 Anti-Bluff End-User Quality Guarantee added to Yole CONSTITUTION.md/CLAUDE.md/AGENTS.md; governance inheritance + anti-bluff escalation propagated to all 9 owned submodules (Challenges, Containers, HelixQA, LLMProvider, Security, DocProcessor, LLMOrchestrator, LLMsVerifier, VisionEngine); all submodules committed and pushed.).
 
 ## Section 62 — iter-65: Web Wasm partial resolution — `#wasmjs-production-distribution-gap`
 
