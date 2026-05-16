@@ -6,7 +6,21 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-62 **Phase 4 COMPLETE** — HoverMarkdownRenderer Flexmark walker → HoverBlock sealed hierarchy).
+**Last updated:** 2026-05-16 (iter-62 **Phase 5 COMPLETE** — DiagnosticsGutter + InlineUnderline + ProblemsPanel + DiagnosticsPalette Android UI surfaces).
+
+Files added (Phase 5):
+- `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/diagnostics/DiagnosticsPalette.kt` — pure helper `severityVisuals(Severity, isDark): SeverityVisuals` with VS Code–inspired color palette. 4 severity → (color, icon) mappings.
+- `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/diagnostics/DiagnosticsGutter.kt` — `@Composable DiagnosticsGutter` + `offsetToLine()` helper. Groups by line, highest severity wins per-line, colored 8dp dots. testTags: `diagnostics-gutter`, `diag-line-<lineNum>`.
+- `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/diagnostics/DiagnosticsInlineUnderline.kt` — `DiagnosticsInlineUnderline: VisualTransformation` applying straight colored underlines per diagnostic range. Identity OffsetMapping. Clamps out-of-bounds.
+- `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/diagnostics/DiagnosticsProblemsPanel.kt` — `@Composable DiagnosticsProblemsPanel` LazyColumn sorted by range.first with severity icon + message + 1-based line. Click → onJumpToLine(0-based line). testTags: `problems-panel`, `problems-row-<index>`.
+- `androidApp/src/test/kotlin/digital/vasic/yole/android/robolectric/diagnostics/DiagnosticsPaletteTest.kt` — 5 tests.
+- `androidApp/src/test/kotlin/digital/vasic/yole/android/robolectric/diagnostics/DiagnosticsGutterTest.kt` — 5 tests.
+- `androidApp/src/test/kotlin/digital/vasic/yole/android/robolectric/diagnostics/DiagnosticsInlineUnderlineTest.kt` — 4 tests.
+- `androidApp/src/test/kotlin/digital/vasic/yole/android/robolectric/diagnostics/DiagnosticsProblemsPanelTest.kt` — 5 tests.
+
+Tests Phase 5: 19/19 PASS (androidUnitTest with -PincludeRobolectric=true). Mutation-verified (CONST-035): stub severityVisuals → Color.Red always → 3/5 FAIL; stub filter() skip → 2/4 FAIL; stub onClick no-op → 1/5 FAIL. Revert → all PASS. FoldGutter spot-check: 6/6 PASS. Detekt: zero violations. Cross-platform impact: Phase 5 ships Android editor surfaces only; Desktop/iOS/Web deferred per plan section.
+
+**Next: Phase 6 — Desktop hover tooltip + definition jump wiring.**
 
 Files added (Phase 4):
 - `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/HoverBlock.kt` — sealed class hierarchy: Paragraph, Heading, CodeBlock, InlineCodeSpan, FallbackText.
