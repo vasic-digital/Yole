@@ -156,6 +156,12 @@ kotlin {
                 // multiDexEnabled = true in androidApp/build.gradle.kts defaultConfig.
                 implementation(libs.poi.ooxml)
 
+                // iter-64 Phase 4: HtmlImporter — jsoup HTML parser + flexmark html→md converter.
+                // Both BSD-2-Clause. flexmark-html2md-converter is a sibling to flexmark-core
+                // already on the classpath; transitive overhead is ~200 KB.
+                implementation(libs.jsoup)
+                implementation(libs.flexmark.html2md.converter)
+
                 // Tree-Sitter (iter-57 Phase 5 — Android NDK fix landed
                 // post-Phase 13, ticket #android-tree-sitter-ndk-so-missing):
                 //
@@ -215,6 +221,10 @@ kotlin {
                 // iter-64 Phase 3: Apache POI for .docx import.
                 // Desktop JVM ships StAX; no additional exclusion required.
                 implementation(libs.poi.ooxml)
+
+                // iter-64 Phase 4: HtmlImporter — jsoup HTML parser + flexmark html→md converter.
+                implementation(libs.jsoup)
+                implementation(libs.flexmark.html2md.converter)
 
                 // Tree-Sitter (iter-57 Phase 5). JAR bundles native binaries
                 // for x86_64-linux, aarch64-linux, x86_64-macos, aarch64-macos,

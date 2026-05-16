@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-64 **Phase 3 COMPLETE** — DocxImporter (Apache POI poi-ooxml 5.5.1): expect class + Desktop/Android JVM actuals + iOS/Wasm stubs + 4 desktopTest tests PASS; mutation guard confirmed).
+**Last updated:** 2026-05-16 (iter-64 **Phase 4 COMPLETE** — HtmlImporter (jsoup 1.17.2 + flexmark-html2md-converter 0.64.8): expect class + Desktop/Android JVM actuals + iOS/Wasm stubs + 5 desktopTest tests PASS; mutation guard confirmed; `SETEXT_HEADINGS=false` set so converter produces ATX `#` headings).
 
 ## Section 52 — iter-63 Phase 13: Firebase distribution v1.6.0
 
@@ -144,7 +144,66 @@ iter-64 Phase 3 — per plan §2.7+ (platform-specific importer implementations)
 
 ### Next
 
-iter-64 Phase 4 per plan: PdfImporter (Apache PDFBox).
+iter-64 Phase 4 — HtmlImporter. ← **DONE; see Section 55 below.**
+
+---
+
+## Section 55 — iter-64 Phase 4: HtmlImporter (jsoup + flexmark-html2md)
+
+**Status:** COMPLETE.
+
+**Branch:** master. **Last commit:** `feat(iter-64): Phase 4 — HtmlImporter (jsoup + flexmark-html2md)`.
+
+### What was added
+
+**Dependencies:**
+- `gradle/libs.versions.toml`:
+  - `jsoup = "1.17.2"` (BSD-2-Clause; verified Maven Central 2026-05-16)
+  - `flexmark-html2md-converter` catalog entry: `com.vladsch.flexmark:flexmark-html2md-converter:0.64.8` (same flexmark version already on classpath; ~200 KB additional JAR)
+- `shared/build.gradle.kts`: `implementation(libs.jsoup)` + `implementation(libs.flexmark.html2md.converter)` in both `androidMain` and `desktopMain` source sets.
+
+**Source files:**
+- `shared/src/commonMain/kotlin/digital/vasic/yole/import_/HtmlImporter.kt` — `expect class HtmlImporter() : DocumentImporter`
+- `shared/src/desktopMain/kotlin/digital/vasic/yole/import_/HtmlImporter.desktop.kt` — full JVM actual
+- `shared/src/androidMain/kotlin/digital/vasic/yole/import_/HtmlImporter.android.kt` — full JVM actual (identical body)
+- `shared/src/iosMain/kotlin/digital/vasic/yole/import_/HtmlImporter.ios.kt` — `Result.failure(ImportError.NotSupported("html", "iOS"))`
+- `shared/src/wasmJsMain/kotlin/digital/vasic/yole/import_/HtmlImporter.wasmJs.kt` — `Result.failure(ImportError.NotSupported("html", "Web"))`
+- `shared/src/desktopTest/kotlin/digital/vasic/yole/import_/HtmlImporterTest.kt` — 5 desktopTest tests
+
+### JVM implementation highlights
+
+- `Jsoup.parse(html, "")` — tolerant HTML5 parser; handles malformed markup
+- `MutableDataSet().set(FlexmarkHtmlConverter.SETEXT_HEADINGS, false)` — forces ATX headings (`# H1`) instead of Setext style (`===` underline)
+- `FlexmarkHtmlConverter.builder(options).build().convert(document).trim()` — produces CommonMark Markdown
+- `supportedExtensions = setOf("html", "htm")` — both `.html` and `.htm` handled
+- `CancellationException` rethrown; all other exceptions → `ImportError.Malformed`
+
+### Test coverage (desktopTest — HtmlImporterTest.kt)
+
+| Test | Assertion |
+|---|---|
+| `converts h1 heading and bold text to Markdown` | `<h1>Title</h1><p><b>bold</b></p>` → `# Title` and `**bold**` present |
+| `mutation guard - stub returning failure…` | Inline stub always fails; asserts `isFailure` |
+| `reports html and htm as supported extensions` | `supportedExtensions` contains `"html"` and `"htm"` |
+| `converts complex HTML with heading bold and paragraph` | Full HTML with h1, p, strong, em → correct ATX + markers |
+| `sourceFormat is html regardless of htm extension` | `<h2>Sub</h2>` imported with fileName `"file.htm"` → `sourceFormat == "html"` |
+
+5 tests, 5 PASS, 0 FAIL.
+
+### Mutation evidence
+
+Inline stub (`object : DocumentImporter`) always returns `Result.failure(ImportError.Malformed(...))`. Mutation guard test asserts `isFailure` — if real importer is substituted with a no-op, the primary test fails on `isSuccess`.
+
+### Cross-platform impact
+
+- Android: `HtmlImporter.android.kt` actual added; jsoup + flexmark-html2md-converter on `androidMain` classpath.
+- Desktop: `HtmlImporter.desktop.kt` actual added; same deps on `desktopMain` classpath.
+- iOS: `HtmlImporter.ios.kt` honest stub; `ImportError.NotSupported("html", "iOS")`.
+- Web: `HtmlImporter.wasmJs.kt` honest stub; `ImportError.NotSupported("html", "Web")`.
+
+### Next
+
+iter-64 Phase 5 — RtfImporter (Apache POI HSMF or javax.swing.text.rtf fallback).
 
 ---
 

@@ -54,6 +54,16 @@ ktor = "3.0.2"
 sshj = "0.38.0"
 smbj = "0.13.0"
 
+# jsoup (iter-64 Phase 4) — HTML parser for HtmlImporter.
+# BSD-2-Clause license. JVM-only (desktopMain + androidMain).
+# Version 1.17.2 verified on Maven Central 2026-05-16.
+jsoup = "1.17.2"
+
+# flexmark-html2md-converter (iter-64 Phase 4) — HTML→Markdown conversion.
+# BSD-2-Clause license. Uses the same flexmark 0.64.8 version already on the
+# classpath; zero additional transitive cost beyond the module JAR (~200 KB).
+# Artifact: com.vladsch.flexmark:flexmark-html2md-converter:0.64.8.
+
 # Apache POI (iter-64 Phase 3) — OOXML lite variant for .docx import.
 # poi-ooxml-lite ships only the XWPF/XSSF APIs; excludes the heavy XML
 # processing chain that poi-ooxml pulls in. ~6 MB vs ~15 MB on the classpath.
@@ -261,6 +271,10 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 # Protocol Libraries
 sshj = { module = "com.hierynomus:sshj", version.ref = "sshj" }
 smbj = { module = "com.hierynomus:smbj", version.ref = "smbj" }
+
+# jsoup + flexmark-html2md-converter (iter-64 Phase 4) — HtmlImporter.
+jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
+flexmark-html2md-converter = { module = "com.vladsch.flexmark:flexmark-html2md-converter", version.ref = "flexmark" }
 
 # Apache POI (iter-64 Phase 3) — docx import via OOXML-lite.
 # poi-ooxml-lite: minimal variant, only XWPF/XSSF surface.
