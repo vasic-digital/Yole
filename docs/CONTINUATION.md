@@ -6,7 +6,39 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-16 (iter-63 **Phase 12 COMPLETE** — Documentation (user-guide + architecture + CHANGELOG v1.6.0); commit pending).
+**Last updated:** 2026-05-16 (iter-63 **Phase 13 COMPLETE** — Firebase distribution v1.6.0; iter-63 COMPLETE).
+
+## Section 52 — iter-63 Phase 13: Firebase distribution v1.6.0
+
+**Status:** COMPLETE. iter-63 fully closed.
+
+**Branch:** master. **Last commit:** `feat(iter-63): Phase 13 — Firebase distribute v1.6.0 (Android × 3 + Desktop macOS-arm64)`.
+
+### What was shipped
+
+- `androidApp/build.gradle.kts`: `versionCode 150 → 160`, `versionName 1.5.0 → 1.6.0`.
+- `desktopApp/build.gradle.kts`: `packageVersion 1.5.0 → 1.6.0`.
+- `releases/Yole-Android-1.6.0-Release-0.0.0.1.60.apk` (29 MB)
+- `releases/Yole-Android-1.6.0-Debug-0.0.0.1.60.apk` (36 MB, package `digital.vasic.yole.android.dev`)
+- `releases/Yole-Android-1.6.0-DEV-0.0.0.1.60.apk` (36 MB, same as Debug — aliased per convention)
+- `releases/Yole-Desktop-macos-arm64-1.6.0-Release-0.0.0.1.60.dmg` (496 MB, includes 8 LSP binaries + iter-63 capability code)
+
+### Firebase App Distribution results
+
+- Android Release: release id `40r4818omv420`, app `1:578988389676:android:d61715a0a84a42c65d2889` — distributed to all 3 testers (SUCCESS)
+- Android DEV (debug, `.dev` package): release id `2d5ttjleit4fg`, app `1:578988389676:android:5a3d47a9fb23b6465d2889` — distributed to all 3 testers (SUCCESS)
+- Desktop macOS-arm64 DMG: staged locally; no Firebase Desktop product category (pre-existing gap, same as iter-58/60/61/62)
+- Distribution pattern: `--testers` email list (NOT `--groups`). DEV distributed via direct firebase CLI invocation (distribute.sh hardcodes release app ID).
+
+### iter-63 is COMPLETE
+
+Feature 4 LSP arc is fully closed: iter-61 (hosting + completion) + iter-62 (diagnostics + hover + go-to-definition) + iter-63 (rename + code actions + signature help + formatting + find-references).
+
+### Next: iter-64 — Feature 5: Document format import
+
+Per task #12 / #79: import from external document formats (docx + pdf + rtf + html + odt + epub → markdown). Start with Phase 0 deep research.
+
+---
 
 ## Section 51 — iter-63 Phase 12: Documentation
 
@@ -33,16 +65,6 @@ All 6 Phase 10 deferred trackers appear in both the user-guide and architecture 
 | `#iter-63-format-on-save-settings-toggle` | user-guide §4, architecture §7 |
 | `#iter-63-on-type-edit-apply` | user-guide §4, architecture §7 |
 | `#iter-63-explicit-format-edit-apply` | user-guide §4, architecture §7 |
-
-### Next: iter-63 Phase 13 — Firebase distribution v1.6.0
-
-Per plan §13:
-- Bump `versionCode 150 → 160`, `versionName 1.5.0 → 1.6.0`, `packageVersion 1.5.0 → 1.6.0`.
-- Build 3 Android variants (Release + Debug + DEV) + Desktop macOS-arm64 DMG.
-- Copy artifacts to `releases/` following naming convention: `Yole-Android-1.6.0-Release-0.0.0.1.60.apk` etc.
-- Distribute via Firebase CLI (same pattern as iter-62: direct `--testers` flag, not `--groups`).
-- Update CHANGELOG distribution subsection + CONTINUATION.md.
-- After Phase 13: **iter-63 is COMPLETE** — Feature 4 (LSP) arc closed after 4a + 4b + 4c.
 
 ---
 

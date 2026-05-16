@@ -50,6 +50,13 @@ iter-63 closes the LSP arc opened in iter-61 (LSP hosting) and expanded in iter-
 - **`#iter-63-format-on-save-settings-toggle`** — Settings toggle for format-on-save deferred; feature is always-on.
 - **`#iter-63-on-type-edit-apply`** / **`#iter-63-explicit-format-edit-apply`** — Formatting round-trip works; buffer patching deferred.
 
+### Distribution (Phase 13)
+
+- Android Release: Firebase release id `40r4818omv420`, app `1:578988389676:android:d61715a0a84a42c65d2889` — distributed to all 3 testers (SUCCESS)
+- Android DEV (debug, `.dev` package): Firebase release id `2d5ttjleit4fg`, app `1:578988389676:android:5a3d47a9fb23b6465d2889` — distributed to all 3 testers (SUCCESS)
+- Desktop macOS-arm64 DMG: `Yole-Desktop-macos-arm64-1.6.0-Release-0.0.0.1.60.dmg` (496 MB, includes 8 LSP binaries + iter-63 capability code) — staged locally, no Firebase Desktop product
+- Tester group: `--testers` (email list direct), NOT `--groups` (avoids iter-59 404 pattern). DEV distributed via direct firebase CLI (distribute.sh hardcodes release app ID).
+
 ### Cross-platform impact summary (CONST-037)
 
 - **Android:** All 5 capabilities fully wired. F2 / Shift+F12 handlers. Toolbar buttons. 14+ Robolectric + unit tests pass.
