@@ -114,6 +114,12 @@
  *       DiagnosticsInlineUnderline is applied as a chained
  *       VisualTransformation. Removing either call MUST cause
  *       IdeEditorScreenLspIntegrationRobolectricTest test 1 to fail.
+ *   (7) iter-63 Phase 6 invariant: when actionsByLine is non-empty,
+ *       CodeActionLightbulb is composed in the gutter column (between
+ *       the diagnostics dot and the fold chevron). Removing the call
+ *       MUST cause CodeActionLightbulbRobolectricTest to fail because
+ *       the "lightbulb-line-" and "code-action-lightbulb" tags disappear.
+ *
  *
  *########################################################*/
 package digital.vasic.yole.android.ui.editor
@@ -159,6 +165,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
+import digital.vasic.yole.android.ui.editor.codeaction.CodeActionLightbulb
 import digital.vasic.yole.android.ui.editor.diagnostics.DiagnosticsGutter
 import digital.vasic.yole.android.ui.editor.diagnostics.DiagnosticsInlineUnderline
 import digital.vasic.yole.android.ui.editor.hover.hoverShortcut
@@ -169,6 +176,7 @@ import digital.vasic.yole.completion.trigger.CompletionTrigger
 import digital.vasic.yole.completion.trigger.TriggerEvent
 import digital.vasic.yole.language.LocalLanguage
 import digital.vasic.yole.language.affordance.FoldRange
+import digital.vasic.yole.lsp.CodeAction
 import digital.vasic.yole.lsp.Diagnostic
 import digital.vasic.yole.syntax.EnabledFormatGate
 import digital.vasic.yole.syntax.SyntaxHighlighter
@@ -205,6 +213,15 @@ fun SyncedScrollEditor(
     // hover trigger). The cursor line/character are extracted from tfvState
     // at call time. Null = hover not wired (callers that predate Phase 8).
     onHoverRequest: (() -> Unit)? = null,
+    // iter-63 Phase 6: code-action lightbulb (3rd gutter column).
+    // Map of 0-based line → list of CodeActions for that line. When
+    // non-empty, CodeActionLightbulb renders a yellow star icon in the
+    // gutter column between the diagnostics dot and the fold chevron.
+    // Order: [diagnostic-dot] [lightbulb] [fold-chevron].
+    actionsByLine: Map<Int, List<CodeAction>> = emptyMap(),
+    // Invoked with the 0-based line number when the user taps a lightbulb.
+    // Null = lightbulb column not shown (existing callers unchanged).
+    onCodeActionLineTap: (line: Int) -> Unit = {},
 ) {
     val sharedScroll = rememberScrollState()
     val activeLanguage = LocalLanguage.current
@@ -338,25 +355,8 @@ fun SyncedScrollEditor(
                         modifier = Modifier.height(20.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        // iter-58 Phase 5: fold-chevron affordance. The
-                        // gutter row reserves a 16dp slot whether or not
-                        // this line starts a FoldRange (see FoldGutter
-                        // for the empty-slot Box) so line numbers stay
-                        // vertically aligned.
-                        FoldGutter(
-                            lineNumber = idx + 1,
-                            ranges = foldRanges,
-                            foldedRanges = foldedRanges.value,
-                            iconTint = chevronTint,
-                            onToggleFold = { range -> toggleFold(foldedRanges, range) },
-                        )
-                        // iter-62 Phase 8: diagnostics severity dot for
-                        // this line. DiagnosticsGutter manages its own
-                        // vertical layout but here we reuse the per-line
-                        // Row to emit a single dot. When no diagnostic
-                        // matches this line, DiagnosticsGutter renders
-                        // nothing for the slot. We pass a single-line
-                        // view of diagnostics filtered to this line.
+                        // Gutter column order: [diagnostic-dot] [lightbulb] [fold-chevron]
+                        // iter-62 Phase 8: diagnostics severity dot (column 1).
                         if (diagnostics.isNotEmpty()) {
                             val lineDiags = diagnostics.filter { diag ->
                                 digital.vasic.yole.android.ui.editor.diagnostics
@@ -369,6 +369,35 @@ fun SyncedScrollEditor(
                                 modifier = Modifier.testTag("diag-gutter-row-$idx"),
                             )
                         }
+                        // iter-63 Phase 6: code-action lightbulb (column 2).
+                        // Rendered as a single-line slice of CodeActionLightbulb
+                        // so the per-line Row pattern stays consistent with the
+                        // DiagnosticsGutter approach above.
+                        if (actionsByLine.isNotEmpty()) {
+                            val lineActions = actionsByLine[idx] ?: emptyList()
+                            CodeActionLightbulb(
+                                actionsByLine = if (lineActions.isNotEmpty()) {
+                                    mapOf(0 to lineActions)
+                                } else {
+                                    emptyMap()
+                                },
+                                lineHeight = 20.dp,
+                                totalLines = 1,
+                                onTap = { onCodeActionLineTap(idx) },
+                                modifier = Modifier.testTag("lightbulb-gutter-row-$idx"),
+                            )
+                        }
+                        // iter-58 Phase 5: fold-chevron affordance (column 3).
+                        // The gutter row reserves a 16dp slot whether or not
+                        // this line starts a FoldRange (see FoldGutter for the
+                        // empty-slot Box) so line numbers stay vertically aligned.
+                        FoldGutter(
+                            lineNumber = idx + 1,
+                            ranges = foldRanges,
+                            foldedRanges = foldedRanges.value,
+                            iconTint = chevronTint,
+                            onToggleFold = { range -> toggleFold(foldedRanges, range) },
+                        )
                         Text(
                             text = "${idx + 1}",
                             color = gutterFg,
