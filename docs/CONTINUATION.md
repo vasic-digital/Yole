@@ -6,11 +6,11 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-17 (iter-75 in progress — Priority 1-6 done. iOS K/N fix, cross-file back-nav, jdt:// routing, Desktop LSP surfaces, Desktop SignatureHelpPopup, iter-64 importer polish (EPUB metadata, ODT list nesting, PDF image-only warning, RTF colour warning). v1.9.4 bumped. All desktopTests GREEN. Commits pending.)
+**Last updated:** 2026-05-17 (iter-75 COMPLETE — all 7 priorities done. iOS K/N fix, cross-file back-nav, jdt:// routing, Desktop LSP surfaces, Desktop SignatureHelpPopup, iter-64 importer polish (EPUB metadata, ODT list nesting, PDF image-only warning, RTF colour warning). v1.9.4 shipped. Firebase distribution: Release + DEV APKs distributed. Desktop DMG built. All commits on master.)
 
 ## Section 68 — iter-75: LSP polish + iOS K/N fix + importer polish + v1.9.4
 
-**Status:** IN PROGRESS (Priority 7 + Firebase distribution + commits remaining).
+**Status:** COMPLETE.
 
 **Branch:** master.
 
@@ -90,18 +90,27 @@
 | `app/src/main/res/raw/changelog.md` | v1.9.4 entry |
 | `docs/CONTINUATION.md` | This section |
 
-### Remaining in iter-75
+### Priority 7 — DEV Firebase App Registration
 
-- Priority 7: Register `digital.vasic.yole.android.dev` Firebase App (`#iter-74-dev-firebase-registration`)
-- Final: Build Release + Debug + DEV APKs at versionCode 194, distribute via Firebase
+DEV app (`digital.vasic.yole.android.dev`) was already registered in `google-services.json` from a prior iteration
+(mobilesdk_app_id: `1:578988389676:android:5a3d47a9fb23b6465d2889`). No new registration required.
 
-### Next Recommended Steps
+### Release artifacts at v1.9.4
 
-1. Build APKs: `./gradlew :androidApp:assembleFlavorDefaultRelease :androidApp:assembleFlavorDefaultDebug`
-2. Firebase distribute v1.9.4 Release APK
-3. (Optional) DEV APK after Firebase Dev App registration
-4. Commit all changes with conventional commit `feat(iter-75): ...`
-5. Update CONTINUATION.md to reflect COMPLETE status
+| Artifact | Location |
+|----------|----------|
+| Android Release APK (39 MB) | `releases/Yole-Android-1.9.4-Release-0.0.0.1.94.apk` |
+| Android DEV APK (48 MB) | `releases/Yole-Android-1.9.4-DEV-0.0.0.1.94.apk` |
+| Desktop macOS DMG (524 MB) | `releases/Yole-Desktop-macos-arm64-1.9.4-Release-0.0.0.1.94.dmg` |
+
+Firebase App Distribution (Release): https://console.firebase.google.com/project/yole-app/appdistribution/app/android:digital.vasic.yole.android/releases/7v338uhfvlg9o
+Firebase App Distribution (DEV): https://console.firebase.google.com/project/yole-app/appdistribution/app/android:digital.vasic.yole.android.dev/releases/3is2otjf0ft18
+
+### Next Recommended Steps (iter-76+)
+
+- iter-69 remains open: 19+ iter-62/63/64 deferral trackers still have some not yet addressed
+- iter-70: v2.0.0 comprehensive QA + HelixQA on-device evidence
+- Consider building Linux .deb and Windows .msi from the container
 
 ---
 
