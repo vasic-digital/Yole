@@ -2,6 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  * iter-64 Phase 5: RtfImporterTest — anti-bluff test.
+ * iter-75 (#iter-64-rtf-colour-images): RTF colour detection warning test added.
  *
  * Synthesises a tiny RTF string in memory, imports it via the real
  * RtfImporter (Desktop JVM actual), and asserts the Markdown output
@@ -13,6 +14,13 @@
  *
  * CONST-035: test exercises the real RtfImporter code path end-to-end.
  * No mocking of the unit under test.
+ *
+ * Anti-bluff mutation for colour test (CONST-035):
+ *   1. Remove the colour-detection block in parseRtf.
+ *   2. Run: ./gradlew :shared:desktopTest \
+ *        --tests "digital.vasic.yole.import_.RtfImporterTest.rtfImporter_colouredText_emitsWarning"
+ *   3. Expect FAIL (warnings list is empty when colour is removed).
+ *   4. Revert; confirm GREEN.
  *#######################################################*/
 package digital.vasic.yole.import_
 
@@ -104,6 +112,51 @@ class RtfImporterTest {
     fun `RtfImporter reports rtf as supported extension`() {
         val importer = RtfImporter()
         assertContains(importer.supportedExtensions, "rtf")
+    }
+
+    // -----------------------------------------------------------------------
+    // iter-75 (#iter-64-rtf-colour-images): colour detection warning
+    // -----------------------------------------------------------------------
+
+    /**
+     * RTF with a coloured run (\cf1 with red colour in the colortbl) must
+     * produce at least one ImportWarning mentioning "colour" or "color".
+     *
+     * RTF syntax used:
+     *   \colortbl;\red255\green0\blue0;   — colour table: entry 1 = red
+     *   \cf1 Red\cf0                      — colour ref 1 on/off
+     *
+     * Mutation: remove the colour-detection block in parseRtf →
+     * warnings list stays empty → FAIL.
+     */
+    @Test
+    fun `rtfImporter_colouredText_emitsWarning`(): Unit = runBlocking<Unit> {
+        // RTF with a colortbl defining red (cf1) applied to the word "Red"
+        val rtf = "{\\rtf1\\ansi{\\colortbl;\\red255\\green0\\blue0;}Normal \\cf1 Red\\cf0 .}"
+        val bytes = rtf.toByteArray(Charsets.US_ASCII)
+
+        val importer = RtfImporter()
+        val result = importer.import(bytes, "colour.rtf")
+
+        assertTrue(result.isSuccess, "Import must succeed: ${result.exceptionOrNull()}")
+        val doc = result.getOrThrow()
+
+        // The markdown content must still contain the text
+        assertTrue(
+            doc.markdown.contains("Normal") || doc.markdown.contains("Red"),
+            "Markdown must contain text content from the RTF, got:\n${doc.markdown}",
+        )
+
+        // At least one warning must mention colours
+        val colourWarn = doc.warnings.any { w ->
+            w.message.contains("colour", ignoreCase = true) ||
+                w.message.contains("color", ignoreCase = true)
+        }
+        assertTrue(
+            colourWarn,
+            "Import must emit a warning about colour not being preserved, " +
+                "got warnings: ${doc.warnings.map { it.message }}",
+        )
     }
 
     // -----------------------------------------------------------------------

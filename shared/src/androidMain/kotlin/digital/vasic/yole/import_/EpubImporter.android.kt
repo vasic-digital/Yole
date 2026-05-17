@@ -2,6 +2,8 @@
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  * iter-64 Phase 8: EpubImporter — Android (JVM) actual.
+ * iter-75 (#iter-64-epub-metadata): OPF metadata (dc:title, dc:creator)
+ * extracted and prepended as YAML frontmatter.
  *
  * Identical implementation to the Desktop actual; both source sets target
  * JVM and share ZipInputStream + jsoup + HtmlImporter.  A future refactor
@@ -12,9 +14,11 @@
  *
  *   1. ZipInputStream(ByteArrayInputStream(bytes)) — enumerate all ZIP entries.
  *   2. Read META-INF/container.xml → jsoup.parse() → extract OPF path.
- *   3. Read OPF → jsoup.parse() → extract manifest (id → href) + spine order.
+ *   3. Read OPF → jsoup.parse() → extract metadata + manifest (id → href) + spine order.
  *   4. For each spine item: read chapter bytes → HtmlImporter().import() → markdown.
- *   5. Concatenate with "\n\n---\n\n" separator. Aggregate warnings.
+ *   5. Concatenate with "\n\n---\n\n" separator.
+ *   6. Prepend YAML frontmatter from OPF metadata if available.
+ *   7. Aggregate warnings.
  *
  * CancellationException is always rethrown.
  *#######################################################*/
@@ -55,10 +59,10 @@ actual class EpubImporter actual constructor() : DocumentImporter {
             ?: error("META-INF/container.xml not found in EPUB archive")
         val opfPath = extractOpfPath(containerXml)
 
-        // Step 3 — parse OPF file
+        // Step 3 — parse OPF file (metadata + manifest + spine)
         val opfBytes = entries[opfPath]
             ?: error("OPF file '$opfPath' not found in EPUB archive")
-        val (manifest, spineIdrefs) = parseOpf(opfBytes)
+        val (metadata, manifest, spineIdrefs) = parseOpf(opfBytes)
 
         // OPF directory is used to resolve relative hrefs
         val opfDir = opfPath.substringBeforeLast("/", missingDelimiterValue = "")
@@ -93,13 +97,36 @@ actual class EpubImporter actual constructor() : DocumentImporter {
         }
 
         // Step 5 — concatenate chapters with Markdown HR separator
-        val combinedMarkdown = chapterMarkdowns.joinToString(separator = "\n\n---\n\n")
+        val chapterBody = chapterMarkdowns.joinToString(separator = "\n\n---\n\n")
+
+        // Step 6 — prepend YAML frontmatter if dc:title or dc:creator present.
+        // iter-75 (#iter-64-epub-metadata)
+        val frontmatter = buildYamlFrontmatter(metadata)
+        val combinedMarkdown = if (frontmatter.isNotEmpty()) {
+            "---\n$frontmatter---\n\n$chapterBody"
+        } else {
+            chapterBody
+        }
 
         return ImportedDocument(
             sourceFormat = "epub",
             markdown = combinedMarkdown,
             warnings = allWarnings,
         )
+    }
+
+    /**
+     * Build a YAML frontmatter block (without the surrounding "---" delimiters)
+     * from the OPF [metadata] map. Returns an empty string if no known fields present.
+     */
+    internal fun buildYamlFrontmatter(metadata: Map<String, String>): String {
+        val lines = mutableListOf<String>()
+        metadata["title"]?.let { lines += "title: \"${it.replace("\"", "\\\"")}\"" }
+        metadata["creator"]?.let { lines += "author: \"${it.replace("\"", "\\\"")}\"" }
+        metadata["publisher"]?.let { lines += "publisher: \"${it.replace("\"", "\\\"")}\"" }
+        metadata["date"]?.let { lines += "date: \"$it\"" }
+        if (lines.isEmpty()) return ""
+        return lines.joinToString(separator = "\n") + "\n"
     }
 
     private fun readZipEntries(bytes: ByteArray): Map<String, ByteArray> {
@@ -128,9 +155,24 @@ actual class EpubImporter actual constructor() : DocumentImporter {
         return path
     }
 
-    private fun parseOpf(opfBytes: ByteArray): Pair<Map<String, String>, List<String>> {
+    internal fun parseOpf(opfBytes: ByteArray): Triple<Map<String, String>, Map<String, String>, List<String>> {
         val xml = opfBytes.toString(Charsets.UTF_8)
         val doc = Jsoup.parse(xml, "", org.jsoup.parser.Parser.xmlParser())
+
+        // Metadata: extract Dublin Core fields (dc:title, dc:creator, dc:publisher, dc:date).
+        // jsoup's XML parser retains "dc:title" tag names literally — match by local name
+        // after the last colon.
+        val metadata = mutableMapOf<String, String>()
+        val metadataEl = doc.selectFirst("metadata")
+        if (metadataEl != null) {
+            for (child in metadataEl.children()) {
+                val localName = child.tagName().substringAfterLast(':')
+                val text = child.text().trim()
+                if (text.isNotBlank() && localName in setOf("title", "creator", "publisher", "date")) {
+                    metadata.putIfAbsent(localName, text)
+                }
+            }
+        }
 
         val manifest = mutableMapOf<String, String>()
         for (item in doc.select("manifest item")) {
@@ -146,6 +188,6 @@ actual class EpubImporter actual constructor() : DocumentImporter {
 
         val spineIdrefs = doc.select("spine itemref").map { it.attr("idref") }
 
-        return manifest to spineIdrefs
+        return Triple(metadata, manifest, spineIdrefs)
     }
 }

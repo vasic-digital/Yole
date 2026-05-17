@@ -2,6 +2,9 @@
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  * iter-64 Phase 6: OdtImporter — Android (JVM) actual.
+ * iter-75 (#iter-64-odt-android-list-nesting): list depth tracking added.
+ * text:list/text:list-item events now produce "- " prefixed lines with
+ * two-space indentation per nesting level.
  *
  * Strategy: raw ZipInputStream + Android-native XmlPullParser.
  *
@@ -14,8 +17,10 @@
  *   3. Reads it with XmlPullParser (android.util.Xml.newPullParser()) — a
  *      platform-native API available since API level 1.
  *   4. Walks the SAX-style pull-parser events:
- *        text:h  → ATX heading (level from text:outline-level attribute)
- *        text:p  → plain paragraph
+ *        text:h        → ATX heading (level from text:outline-level attribute)
+ *        text:list     → increments listDepth; decrements on END_TAG
+ *        text:list-item → sets inListItem = true; next text:p gets bullet prefix
+ *        text:p        → plain paragraph (or bullet if inside a list item)
  *        (text content accumulated per paragraph/heading across nested tags)
  *
  * The same bytes that ODFDOM parses on Desktop are fed to the ZIP path here,
@@ -53,8 +58,12 @@ actual class OdtImporter actual constructor() : DocumentImporter {
     /**
      * Open [bytes] as a ZIP container, find content.xml, and parse it with
      * the Android XmlPullParser.  Returns an [ImportedDocument] with Markdown.
+     *
+     * iter-75 (#iter-64-odt-android-list-nesting): listDepth and inListItem
+     * state variables added. text:list increments depth; text:list-item flags
+     * the next text:p to receive a bullet prefix with 2-space-per-level indent.
      */
-    @Suppress("NestedBlockDepth", "TooGenericExceptionCaught")
+    @Suppress("NestedBlockDepth", "TooGenericExceptionCaught", "CyclomaticComplexMethod")
     internal fun parseOdtViaZip(bytes: ByteArray): ImportedDocument {
         val contentXmlBytes = extractContentXml(bytes)
             ?: throw IOException("content.xml not found in ODT archive — not a valid ODT file")
@@ -73,6 +82,10 @@ actual class OdtImporter actual constructor() : DocumentImporter {
         var headingLevel = 1
         val blockText = StringBuilder()
 
+        // iter-75 (#iter-64-odt-android-list-nesting): list tracking
+        var listDepth = 0      // incremented on text:list START_TAG
+        var inListItem = false // set on text:list-item START_TAG, cleared on its END_TAG
+
         var eventType = parser.eventType
         while (eventType != XmlPullParser.END_DOCUMENT) {
             when (eventType) {
@@ -84,6 +97,12 @@ actual class OdtImporter actual constructor() : DocumentImporter {
                             isHeading = true
                             headingLevel = resolveHeadingLevel(parser)
                             blockText.clear()
+                        }
+                        localName == "list" && isTextNs(parser.namespace) -> {
+                            listDepth++
+                        }
+                        localName == "list-item" && isTextNs(parser.namespace) -> {
+                            inListItem = true
                         }
                         localName == "p" && isTextNs(parser.namespace) -> {
                             inBlock = true
@@ -101,23 +120,40 @@ actual class OdtImporter actual constructor() : DocumentImporter {
 
                 XmlPullParser.END_TAG -> {
                     val localName = parser.name ?: ""
-                    val isBlockEnd = (localName == "h" || localName == "p") &&
-                        isTextNs(parser.namespace)
-                    if (isBlockEnd && inBlock) {
-                        val text = blockText.toString().trim()
-                        if (text.isNotEmpty()) {
-                            if (isHeading) {
-                                sb.append("#".repeat(headingLevel))
-                                sb.append(" ")
-                                sb.append(text)
-                                sb.append("\n\n")
-                            } else {
-                                sb.append(text)
-                                sb.append("\n\n")
-                            }
+                    when {
+                        localName == "list" && isTextNs(parser.namespace) -> {
+                            listDepth = (listDepth - 1).coerceAtLeast(0)
                         }
-                        inBlock = false
-                        blockText.clear()
+                        localName == "list-item" && isTextNs(parser.namespace) -> {
+                            inListItem = false
+                        }
+                        (localName == "h" || localName == "p") && isTextNs(parser.namespace) && inBlock -> {
+                            val text = blockText.toString().trim()
+                            if (text.isNotEmpty()) {
+                                when {
+                                    isHeading -> {
+                                        sb.append("#".repeat(headingLevel))
+                                        sb.append(" ")
+                                        sb.append(text)
+                                        sb.append("\n\n")
+                                    }
+                                    inListItem && listDepth > 0 -> {
+                                        // Indent 2 spaces per level beyond the first level.
+                                        val indent = "  ".repeat(listDepth - 1)
+                                        sb.append(indent)
+                                        sb.append("- ")
+                                        sb.append(text)
+                                        sb.append("\n")
+                                    }
+                                    else -> {
+                                        sb.append(text)
+                                        sb.append("\n\n")
+                                    }
+                                }
+                            }
+                            inBlock = false
+                            blockText.clear()
+                        }
                     }
                 }
 

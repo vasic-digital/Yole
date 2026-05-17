@@ -81,11 +81,18 @@ actual class PdfImporter actual constructor() : DocumentImporter {
         val runs = collector.runs
 
         if (runs.isEmpty()) {
+            // iter-75 (#iter-64-pdf-image-only): upgrade severity and improve message.
+            // PDFs with no extractable text are likely scanned/rasterized documents
+            // where the page content is a bitmap image with no embedded text layer.
             return ImportedDocument(
                 sourceFormat = "pdf",
                 markdown = "",
                 warnings = listOf(
-                    ImportWarning(Severity.Info, "No text runs extracted from PDF"),
+                    ImportWarning(
+                        Severity.Warning,
+                        "This PDF has no extractable text layer. It may be a scanned or " +
+                            "image-only PDF. Use OCR software to extract the content before importing.",
+                    ),
                 ),
             )
         }

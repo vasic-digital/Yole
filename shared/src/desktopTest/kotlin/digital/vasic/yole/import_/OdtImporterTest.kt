@@ -2,6 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  * iter-64 Phase 6: OdtImporterTest — anti-bluff tests.
+ * iter-75 (#iter-64-odt-android-list-nesting): list-nesting tests added.
  *
  * Two primary code paths exercised:
  *
@@ -244,6 +245,9 @@ class OdtImporterTest {
      * android.util.Xml.newPullParser().  The SAX events map 1-to-1 to the
      * pull-parser events used in the Android actual.
      *
+     * iter-75 (#iter-64-odt-android-list-nesting): listDepth + inListItem
+     * tracking added to match the updated Android actual.
+     *
      * The algorithm and assertions here MUST stay in sync with
      * OdtImporter.android.kt.  Any divergence is a signal to update one or both.
      */
@@ -273,6 +277,9 @@ class OdtImporterTest {
             var isHeading = false
             var headingLevel = 1
             val blockText = StringBuilder()
+            // iter-75 (#iter-64-odt-android-list-nesting)
+            var listDepth = 0
+            var inListItem = false
 
             private fun isTextNs(ns: String?) = ns.isNullOrEmpty() || ns == ODT_TEXT_NS
 
@@ -290,6 +297,12 @@ class OdtImporterTest {
                             ?: "1"
                         headingLevel = (raw.toIntOrNull() ?: 1).coerceIn(1, 6)
                     }
+                    localName == "list" && isTextNs(uri) -> {
+                        listDepth++
+                    }
+                    localName == "list-item" && isTextNs(uri) -> {
+                        inListItem = true
+                    }
                     localName == "p" && isTextNs(uri) -> {
                         inBlock = true; isHeading = false; blockText.clear()
                     }
@@ -297,17 +310,32 @@ class OdtImporterTest {
             }
 
             override fun endElement(uri: String?, localName: String?, qName: String?) {
-                if ((localName == "h" || localName == "p") && isTextNs(uri) && inBlock) {
-                    val text = blockText.toString().trim()
-                    if (text.isNotEmpty()) {
-                        if (isHeading) {
-                            result.append("#".repeat(headingLevel)).append(" ")
-                                .append(text).append("\n\n")
-                        } else {
-                            result.append(text).append("\n\n")
-                        }
+                when {
+                    localName == "list" && isTextNs(uri) -> {
+                        listDepth = (listDepth - 1).coerceAtLeast(0)
                     }
-                    inBlock = false; blockText.clear()
+                    localName == "list-item" && isTextNs(uri) -> {
+                        inListItem = false
+                    }
+                    (localName == "h" || localName == "p") && isTextNs(uri) && inBlock -> {
+                        val text = blockText.toString().trim()
+                        if (text.isNotEmpty()) {
+                            when {
+                                isHeading -> {
+                                    result.append("#".repeat(headingLevel)).append(" ")
+                                        .append(text).append("\n\n")
+                                }
+                                inListItem && listDepth > 0 -> {
+                                    val indent = "  ".repeat(listDepth - 1)
+                                    result.append(indent).append("- ").append(text).append("\n")
+                                }
+                                else -> {
+                                    result.append(text).append("\n\n")
+                                }
+                            }
+                        }
+                        inBlock = false; blockText.clear()
+                    }
                 }
             }
 
@@ -321,5 +349,117 @@ class OdtImporterTest {
         factory.newSAXParser().parse(ByteArrayInputStream(contentXmlBytes), handler)
 
         return result.trimEnd().toString()
+    }
+
+    // -----------------------------------------------------------------------
+    // iter-75 (#iter-64-odt-android-list-nesting): list nesting tests
+    // -----------------------------------------------------------------------
+
+    /**
+     * Build a minimal ODT with a single-level unordered list containing
+     * two items: "Alpha" and "Beta".
+     *
+     * The raw-ZIP path (Android actual algorithm) MUST output:
+     *   - Alpha
+     *   - Beta
+     *
+     * Mutation: stub parseOdtViaZipDesktop to always return "Alpha\n\nBeta\n\n"
+     * (plain paragraphs, no bullet prefix) → FAIL (expected "- Alpha").
+     */
+    private fun buildListOdtBytes(): ByteArray {
+        // Produce a minimal content.xml with a text:list structure
+        val ns = "urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+        val contentXml = """<?xml version="1.0" encoding="UTF-8"?>
+<office:document-content
+  xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+  xmlns:text="$ns">
+  <office:body>
+    <office:text>
+      <text:list>
+        <text:list-item>
+          <text:p>Alpha</text:p>
+        </text:list-item>
+        <text:list-item>
+          <text:p>Beta</text:p>
+        </text:list-item>
+      </text:list>
+    </office:text>
+  </office:body>
+</office:document-content>""".toByteArray(Charsets.UTF_8)
+
+        // Wrap in a ZIP with only content.xml (minimal valid structure for our parser)
+        val bos = ByteArrayOutputStream()
+        val zos = java.util.zip.ZipOutputStream(bos)
+        zos.putNextEntry(java.util.zip.ZipEntry("content.xml"))
+        zos.write(contentXml)
+        zos.closeEntry()
+        zos.close()
+        return bos.toByteArray()
+    }
+
+    @Test
+    fun `odtAndroidPath_flatList_producesListItems`() {
+        val bytes = buildListOdtBytes()
+        val md = parseOdtViaZipDesktop(bytes)
+
+        assertTrue(
+            md.contains("- Alpha"),
+            "List item 'Alpha' must have '- ' bullet prefix in Android ZIP path, got:\n$md",
+        )
+        assertTrue(
+            md.contains("- Beta"),
+            "List item 'Beta' must have '- ' bullet prefix in Android ZIP path, got:\n$md",
+        )
+    }
+
+    /**
+     * Nested list: outer item "Outer", inner item "Inner" (2-space indent).
+     *
+     * Expected:
+     *   - Outer
+     *     - Inner
+     *
+     * Mutation: remove depth indent logic → inner item has no leading spaces → FAIL.
+     */
+    @Test
+    fun `odtAndroidPath_nestedList_preservesIndentation`() {
+        val ns = "urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+        val contentXml = """<?xml version="1.0" encoding="UTF-8"?>
+<office:document-content
+  xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+  xmlns:text="$ns">
+  <office:body>
+    <office:text>
+      <text:list>
+        <text:list-item>
+          <text:p>Outer</text:p>
+          <text:list>
+            <text:list-item>
+              <text:p>Inner</text:p>
+            </text:list-item>
+          </text:list>
+        </text:list-item>
+      </text:list>
+    </office:text>
+  </office:body>
+</office:document-content>""".toByteArray(Charsets.UTF_8)
+
+        val bos = ByteArrayOutputStream()
+        val zos = java.util.zip.ZipOutputStream(bos)
+        zos.putNextEntry(java.util.zip.ZipEntry("content.xml"))
+        zos.write(contentXml)
+        zos.closeEntry()
+        zos.close()
+
+        val md = parseOdtViaZipDesktop(bos.toByteArray())
+
+        assertTrue(
+            md.contains("- Outer"),
+            "Outer list item must have '- ' prefix, got:\n$md",
+        )
+        assertTrue(
+            md.contains("  - Inner"),
+            "Nested list item must have '  - ' prefix (2-space indent), got:\n$md",
+        )
     }
 }

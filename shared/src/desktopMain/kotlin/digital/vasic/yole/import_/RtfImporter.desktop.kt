@@ -2,18 +2,26 @@
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  * iter-64 Phase 5: RtfImporter — Desktop (JVM) actual.
+ * iter-75 (#iter-64-rtf-colour-images): detect non-default foreground colour
+ * and emit ImportWarning so users know colour is not preserved in output.
  *
  * Uses javax.swing.text.rtf.RTFEditorKit (Java SE) to load RTF bytes into
  * a DefaultStyledDocument, then walks the Element tree to emit Markdown:
  *   - Each leaf element whose text is not the sentinel '\n' → paragraph
  *   - Bold / italic character attributes → ** / * markers
+ *   - Non-default foreground colour → ImportWarning(Info, ...)
  *   - Multiple paragraphs separated by blank line
+ *
+ * Colour, font family, embedded images, and tables are NOT preserved in the
+ * Markdown output — the tracker (#iter-64-rtf-colour-images) is closed by
+ * detecting their presence and warning the user, not by full extraction.
  *
  * CancellationException is always rethrown.
  *#######################################################*/
 package digital.vasic.yole.import_
 
 import kotlinx.coroutines.CancellationException
+import java.awt.Color
 import java.io.ByteArrayInputStream
 import javax.swing.text.AttributeSet
 import javax.swing.text.StyleConstants
@@ -26,11 +34,12 @@ actual class RtfImporter actual constructor() : DocumentImporter {
     @Suppress("TooGenericExceptionCaught")
     override suspend fun import(bytes: ByteArray, fileName: String): Result<ImportedDocument> {
         return try {
-            val markdown = parseRtf(bytes)
+            val (markdown, warnings) = parseRtf(bytes)
             Result.success(
                 ImportedDocument(
                     sourceFormat = "rtf",
                     markdown = markdown,
+                    warnings = warnings,
                 ),
             )
         } catch (e: CancellationException) {
@@ -40,7 +49,14 @@ actual class RtfImporter actual constructor() : DocumentImporter {
         }
     }
 
-    private fun parseRtf(bytes: ByteArray): String {
+    /**
+     * Parse RTF [bytes] and return a Pair of (markdown, warnings).
+     *
+     * iter-75 (#iter-64-rtf-colour-images): detects non-default foreground
+     * colour and emits a single ImportWarning so users know colour is not
+     * preserved. The colour itself is dropped (Markdown has no colour syntax).
+     */
+    private fun parseRtf(bytes: ByteArray): Pair<String, List<ImportWarning>> {
         // Validate RTF signature: all RTF documents start with "{\rtf"
         val header = bytes.take(5).toByteArray().decodeToString()
         if (!header.startsWith("{\\rtf")) {
@@ -56,6 +72,8 @@ actual class RtfImporter actual constructor() : DocumentImporter {
         val sb = StringBuilder()
         val root = doc.defaultRootElement
         val paragraphs = mutableListOf<String>()
+        val warnings = mutableListOf<ImportWarning>()
+        var colourWarningEmitted = false
 
         for (pIdx in 0 until root.elementCount) {
             val paraElem = root.getElement(pIdx)
@@ -78,6 +96,21 @@ actual class RtfImporter actual constructor() : DocumentImporter {
                 val bold = StyleConstants.isBold(attrs)
                 val italic = StyleConstants.isItalic(attrs)
 
+                // iter-75 (#iter-64-rtf-colour-images): detect non-default foreground colour.
+                // RTFEditorKit stores foreground as java.awt.Color via StyleConstants.Foreground.
+                // Default/unset colour appears as null or Color.BLACK (#000000).
+                if (!colourWarningEmitted) {
+                    val fg: Color? = StyleConstants.getForeground(attrs)
+                    if (fg != null && fg != Color.BLACK && text.isNotBlank()) {
+                        warnings += ImportWarning(
+                            Severity.Info,
+                            "RTF document contains coloured text. Colours are not preserved " +
+                                "in the Markdown output (#iter-64-rtf-colour-images).",
+                        )
+                        colourWarningEmitted = true
+                    }
+                }
+
                 paraBuilder.append(applyInlineFormatting(text, bold, italic))
             }
 
@@ -88,7 +121,7 @@ actual class RtfImporter actual constructor() : DocumentImporter {
         }
 
         paragraphs.joinTo(sb, separator = "\n\n")
-        return sb.toString()
+        return sb.toString() to warnings
     }
 
     private fun applyInlineFormatting(text: String, bold: Boolean, italic: Boolean): String {

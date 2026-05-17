@@ -2,6 +2,8 @@
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
  * iter-64 Phase 8: EpubImporter — Desktop (JVM) actual.
+ * iter-75 (#iter-64-epub-metadata): OPF metadata (dc:title, dc:creator)
+ * extracted and prepended as YAML frontmatter.
  *
  * Roll-own EPUB parsing pipeline (no new deps — uses existing jsoup + JVM stdlib):
  *
@@ -10,13 +12,15 @@
  *   2. Read META-INF/container.xml → jsoup.parse() → locate
  *      <rootfile full-path="..."> → extract the OPF path.
  *   3. Read OPF file bytes → jsoup.parse() → extract:
+ *        - metadata: <dc:title>, <dc:creator> → YAML frontmatter.
  *        - manifest: <item id="..." href="..." media-type="..."/> → id → href map.
  *        - spine:    <itemref idref="..."/> in document order → ordered list of idrefs.
  *   4. For each spine item: resolve href relative to the OPF directory,
  *      look up entry bytes → invoke HtmlImporter().import() → collect markdown.
  *   5. Concatenate chapter markdown with "\n\n---\n\n" (Markdown HR) as separator.
- *   6. Aggregate warnings from all chapters.
- *   7. Return Result.success(ImportedDocument) or Result.failure(ImportError.Malformed).
+ *   6. Prepend YAML frontmatter if dc:title or dc:creator present.
+ *   7. Aggregate warnings from all chapters.
+ *   8. Return Result.success(ImportedDocument) or Result.failure(ImportError.Malformed).
  *
  * CancellationException is always rethrown.
  *#######################################################*/
@@ -57,10 +61,10 @@ actual class EpubImporter actual constructor() : DocumentImporter {
             ?: error("META-INF/container.xml not found in EPUB archive")
         val opfPath = extractOpfPath(containerXml)
 
-        // Step 3 — parse OPF file
+        // Step 3 — parse OPF file (metadata + manifest + spine)
         val opfBytes = entries[opfPath]
             ?: error("OPF file '$opfPath' not found in EPUB archive")
-        val (manifest, spineIdrefs) = parseOpf(opfBytes)
+        val (metadata, manifest, spineIdrefs) = parseOpf(opfBytes)
 
         // OPF directory is used to resolve relative hrefs
         val opfDir = opfPath.substringBeforeLast("/", missingDelimiterValue = "")
@@ -96,13 +100,39 @@ actual class EpubImporter actual constructor() : DocumentImporter {
         }
 
         // Step 5 — concatenate chapters with Markdown HR separator
-        val combinedMarkdown = chapterMarkdowns.joinToString(separator = "\n\n---\n\n")
+        val chapterBody = chapterMarkdowns.joinToString(separator = "\n\n---\n\n")
+
+        // Step 6 — prepend YAML frontmatter if dc:title or dc:creator present.
+        // iter-75 (#iter-64-epub-metadata)
+        val frontmatter = buildYamlFrontmatter(metadata)
+        val combinedMarkdown = if (frontmatter.isNotEmpty()) {
+            "---\n$frontmatter---\n\n$chapterBody"
+        } else {
+            chapterBody
+        }
 
         return ImportedDocument(
             sourceFormat = "epub",
             markdown = combinedMarkdown,
             warnings = allWarnings,
         )
+    }
+
+    /**
+     * Build a YAML frontmatter block (without the surrounding "---" delimiters)
+     * from the OPF [metadata] map. Returns an empty string if no known fields
+     * are present.
+     *
+     * Mutation guard (CONST-035): stub to return "" → epubMetadata_prependsYaml FAILS.
+     */
+    internal fun buildYamlFrontmatter(metadata: Map<String, String>): String {
+        val lines = mutableListOf<String>()
+        metadata["title"]?.let { lines += "title: \"${it.replace("\"", "\\\"")}\"" }
+        metadata["creator"]?.let { lines += "author: \"${it.replace("\"", "\\\"")}\"" }
+        metadata["publisher"]?.let { lines += "publisher: \"${it.replace("\"", "\\\"")}\"" }
+        metadata["date"]?.let { lines += "date: \"$it\"" }
+        if (lines.isEmpty()) return ""
+        return lines.joinToString(separator = "\n") + "\n"
     }
 
     /**
@@ -150,16 +180,34 @@ actual class EpubImporter actual constructor() : DocumentImporter {
     }
 
     /**
-     * Parse the OPF package document and return:
+     * Parse the OPF package document and return a Triple of:
+     *   - metadata: map of Dublin Core field name → value (title, creator, publisher, date)
      *   - manifest: map of item id → href (relative to OPF dir)
      *   - spineIdrefs: ordered list of idrefs from the <spine>
      *
      * Only items with XHTML or HTML media-types are added to the manifest
      * (images and other resources are skipped).
+     *
+     * iter-75 (#iter-64-epub-metadata): metadata field added.
      */
-    private fun parseOpf(opfBytes: ByteArray): Pair<Map<String, String>, List<String>> {
+    internal fun parseOpf(opfBytes: ByteArray): Triple<Map<String, String>, Map<String, String>, List<String>> {
         val xml = opfBytes.toString(Charsets.UTF_8)
         val doc = Jsoup.parse(xml, "", org.jsoup.parser.Parser.xmlParser())
+
+        // Metadata: extract Dublin Core fields (dc:title, dc:creator, dc:publisher, dc:date).
+        // jsoup's XML parser retains the "dc:title" tag name literally — select by iterating
+        // all <metadata> children and matching the local name after the last ':'.
+        val metadata = mutableMapOf<String, String>()
+        val metadataEl = doc.selectFirst("metadata")
+        if (metadataEl != null) {
+            for (child in metadataEl.children()) {
+                val localName = child.tagName().substringAfterLast(':')
+                val text = child.text().trim()
+                if (text.isNotBlank() && localName in setOf("title", "creator", "publisher", "date")) {
+                    metadata.putIfAbsent(localName, text)
+                }
+            }
+        }
 
         // Manifest: collect id → href for text/xhtml and text/html items
         val manifest = mutableMapOf<String, String>()
@@ -177,6 +225,6 @@ actual class EpubImporter actual constructor() : DocumentImporter {
         // Spine: ordered idrefs
         val spineIdrefs = doc.select("spine itemref").map { it.attr("idref") }
 
-        return manifest to spineIdrefs
+        return Triple(metadata, manifest, spineIdrefs)
     }
 }
