@@ -6,16 +6,16 @@
   Used for Firebase App Distribution builds. The IPA can be installed on
   registered devices without going through the App Store.
 
-  Operator: replace TEAM_ID_HERE with your 10-char Apple Team ID.
+  Operator: replace A65D85HHRX with your 10-char Apple Team ID.
   See docs/setup/ios-signing.md for the full signing workflow.
 -->
 <plist version="1.0">
 <dict>
     <key>method</key>
     <string>ad-hoc</string>
-    <!-- Operator: replace TEAM_ID_HERE with your 10-char Apple Team ID -->
+    <!-- Operator: replace A65D85HHRX with your 10-char Apple Team ID -->
     <key>teamID</key>
-    <string>TEAM_ID_HERE</string>
+    <string>A65D85HHRX</string>
     <key>uploadSymbols</key>
     <true/>
     <key>uploadBitcode</key>

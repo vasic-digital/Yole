@@ -10,6 +10,8 @@
 		A713A00955C2417B9096A301 /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A713A00955C2417B9096A302 /* iOSApp.swift */; };
 		A713A00955C2417B9096A303 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A713A00955C2417B9096A304 /* Assets.xcassets */; };
 		A713A00955C2417B9096A305 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A713A00955C2417B9096A306 /* LaunchScreen.storyboard */; };
+		B811C00188A3527D9F00E412 /* shared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B811C00188A3527D9F00E411 /* shared.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		B811C00188A3527D9F00E413 /* shared.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B811C00188A3527D9F00E411 /* shared.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -18,13 +20,29 @@
 		A713A00955C2417B9096A304 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A713A00955C2417B9096A306 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		A713A00955C2417B9096A308 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B811C00188A3527D9F00E411 /* shared.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = shared.framework; path = "../shared/build/bin/iosSimulatorArm64/releaseFramework/shared.framework"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B811C00188A3527D9F00E414 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				B811C00188A3527D9F00E413 /* shared.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A713A00955C2417B9096A309 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B811C00188A3527D9F00E412 /* shared.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -36,7 +54,16 @@
 			children = (
 				A713A00955C2417B9096A311 /* iosApp */,
 				A713A00955C2417B9096A312 /* Products */,
+				B811C00188A3527D9F00E415 /* Frameworks */,
 			);
+			sourceTree = "<group>";
+		};
+		B811C00188A3527D9F00E415 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B811C00188A3527D9F00E411 /* shared.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		A713A00955C2417B9096A311 /* iosApp */ = {
@@ -60,14 +87,37 @@
 		};
 /* End PBXGroup section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		B811C00188A3527D9F00E416 /* Compile Kotlin/Native framework */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Compile Kotlin/Native framework";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXNativeTarget section */
 		A713A00955C2417B9096A313 /* Yole */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A713A00955C2417B9096A314 /* Build configuration list for PBXNativeTarget "Yole" */;
 			buildPhases = (
+				B811C00188A3527D9F00E416 /* Compile Kotlin/Native framework */,
 				A713A00955C2417B9096A315 /* Sources */,
 				A713A00955C2417B9096A309 /* Frameworks */,
 				A713A00955C2417B9096A316 /* Resources */,
+				B811C00188A3527D9F00E414 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -258,10 +308,16 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 194;
+				CURRENT_PROJECT_VERSION = 195;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = A65D85HHRX;
 				ENABLE_PREVIEWS = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../shared/build/bin/iosSimulatorArm64/releaseFramework",
+					"$(SRCROOT)/../shared/build/bin/iosArm64/releaseFramework",
+					"$(SRCROOT)/../shared/build/bin/iosX64/releaseFramework",
+				);
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -274,7 +330,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.9.4;
+				MARKETING_VERSION = 1.9.5;
 				PRODUCT_BUNDLE_IDENTIFIER = digital.vasic.yole.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -289,10 +345,16 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 194;
+				CURRENT_PROJECT_VERSION = 195;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = A65D85HHRX;
 				ENABLE_PREVIEWS = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../shared/build/bin/iosSimulatorArm64/releaseFramework",
+					"$(SRCROOT)/../shared/build/bin/iosArm64/releaseFramework",
+					"$(SRCROOT)/../shared/build/bin/iosX64/releaseFramework",
+				);
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -306,6 +368,8 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.9.4;
+				PRODUCT_BUNDLE_IDENTIFIER = digital.vasic.yole.ios;
+				MARKETING_VERSION = 1.9.5;
 				PRODUCT_BUNDLE_IDENTIFIER = digital.vasic.yole.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

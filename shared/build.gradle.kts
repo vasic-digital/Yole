@@ -9,6 +9,7 @@
  *########################################################*/
 
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+// XCFrameworkConfig not needed: framework built via Xcode embedAndSignAppleFrameworkForXcode
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -52,7 +53,7 @@ kotlin {
         }
     }
 
-    // iOS targets - Re-enabled for production
+    // iOS targets — framework for Xcode integration.
     iosX64()
     iosArm64()
     iosSimulatorArm64()
@@ -395,17 +396,34 @@ kotlin {
     }
 }
 
-// iOS framework configuration - enabled when building on macOS
+// iOS framework binary configuration — in a separate kotlin{} block to ensure all targets
+// and their configurations are fully registered before the framework binary is added.
+// This avoids the KGP 2.0.20 "iosX64DebugFrameworkExport not found" race condition
+// where KotlinNativeLink is realized before the export configuration is created.
 kotlin {
-    // Configure frameworks for iOS targets when available
+    // Pre-create the export configurations that KotlinNativeLink requires.
+    // KGP creates these lazily, but KotlinNativeLink accesses them eagerly in its constructor.
+    val iosTargetNames = listOf("iosX64", "iosArm64", "iosSimulatorArm64")
+    val buildTypes = listOf("Debug", "Release")
+    iosTargetNames.forEach { targetName ->
+        buildTypes.forEach { buildType ->
+            val configName = "${targetName}${buildType}FrameworkExport"
+            if (configurations.findByName(configName) == null) {
+                configurations.create(configName) {
+                    isCanBeResolved = true
+                    isCanBeConsumed = false
+                    isVisible = false
+                    description = "Export configuration for ${targetName} ${buildType} framework binary (KGP workaround)"
+                }
+            }
+        }
+    }
+
     targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget> {
-        if (targetName.contains("ios", ignoreCase = true)) {
-            binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.Framework> {
-                baseName = "YoleShared"
+        if (targetName.startsWith("ios")) {
+            binaries.framework {
+                baseName = "shared"
                 isStatic = true
-                
-                // Export the shared module for iOS consumption
-                export(project(":shared"))
             }
         }
     }

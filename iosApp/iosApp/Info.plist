@@ -12,10 +12,12 @@
     <string>Yole</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <key>CADisableMinimumFrameDurationOnPhone</key>
+    <true/>
     <key>CFBundleShortVersionString</key>
-    <string>1.9.4</string>
+    <string>1.9.5</string>
     <key>CFBundleVersion</key>
-    <string>194</string>
+    <string>195</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>UILaunchStoryboardName</key>

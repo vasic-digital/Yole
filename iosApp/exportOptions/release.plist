@@ -14,9 +14,9 @@
 <dict>
     <key>method</key>
     <string>app-store</string>
-    <!-- Operator: replace TEAM_ID_HERE with your 10-char Apple Team ID -->
+    <!-- Operator: replace A65D85HHRX with your 10-char Apple Team ID -->
     <key>teamID</key>
-    <string>TEAM_ID_HERE</string>
+    <string>A65D85HHRX</string>
     <key>uploadSymbols</key>
     <true/>
     <key>uploadBitcode</key>

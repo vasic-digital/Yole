@@ -62,20 +62,5 @@ kotlin {
     }
 }
 
-// iOS-specific configurations - Re-enabled for production development
-// Framework tasks will be configured when building on macOS with Xcode
-
-// Configure iOS frameworks when targets are available
-kotlin {
-    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget> {
-        if (targetName.contains("ios", ignoreCase = true)) {
-            binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.Framework> {
-                baseName = "YoleIOS"
-                isStatic = true
-                
-                // Export dependencies for iOS app framework
-                export(project(":shared"))
-            }
-        }
-    }
-}
+// iOS frameworks are produced by :shared via the XCFramework task.
+// iosApp is the Xcode wrapper project only — no additional framework binaries needed here.
