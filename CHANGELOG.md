@@ -63,6 +63,30 @@ The `webapp_render_validation_challenge.sh` runtime layer (Puppeteer) used `docu
 - Screenshot: `qa-results/iter-84/render-gate.png` — 22616 bytes, 99.5% non-white pixels
 - Render gate log confirms: Compose canvas in Shadow DOM (`shadow=true`), dimensions 1280×154
 
+### make qa-all results (iter-84)
+
+All 15 iter-gates PASS:
+
+| Gate | Result |
+|------|--------|
+| iter-55: scroll_sync + cross_platform_parity | PASS |
+| iter-57: syntax-highlighting | PASS |
+| iter-58: language-support completeness | PASS |
+| iter-60: auto-complete + snippets | PASS |
+| iter-61: LSP hosting + binary bundle | PASS |
+| iter-62: LSP diagnostics + hover/definition | PASS |
+| iter-63: LSP refactoring | PASS |
+| iter-64: import-from completeness | PASS |
+| iter-71: installable-asset icon (2.0.1 APK/DMG) | PASS |
+| iter-73: Web PWA icon + Android app-name | PASS |
+| iter-74: Desktop macOS ICNS | PASS |
+| iter-76: HelixQA evidence portability + scenario coverage | PASS |
+| iter-81: display-version-consistency (2.0.1) | PASS |
+| iter-82: Wasm production bundle existence | PASS |
+| iter-84: webapp_render_validation (NEW) | PASS |
+
+Note: `automation/run-qa-all.sh --skip-unit --skip-build` reports failures for Android/Web/Desktop automation stages — pre-existing status (Android emulator not running on this host; Playwright not installed in that context). These are NOT regressions introduced by iter-84.
+
 ### Open trackers (unchanged)
 | Tracker | Description | Fix path |
 |---------|-------------|----------|
