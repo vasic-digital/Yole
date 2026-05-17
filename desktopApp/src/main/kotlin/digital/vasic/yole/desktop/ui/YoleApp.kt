@@ -64,7 +64,14 @@ import digital.vasic.yole.import_.ImporterRegistry
 import digital.vasic.yole.import_.OdtImporter
 import digital.vasic.yole.import_.PdfImporter
 import digital.vasic.yole.import_.RtfImporter
+import digital.vasic.yole.desktop.ui.editor.DesktopCompletionDropdown
+import digital.vasic.yole.desktop.ui.editor.DesktopDiagnosticsGutter
+import digital.vasic.yole.desktop.ui.editor.DesktopHoverPopup
+import digital.vasic.yole.lsp.Diagnostic
+import digital.vasic.yole.lsp.HoverBlock
+import digital.vasic.yole.lsp.LspCompletionLine
 import digital.vasic.yole.syntax.theme.themeUiColor
+import androidx.compose.ui.unit.IntOffset
 import java.util.prefs.Preferences
 
 // ============================================================================
@@ -797,13 +804,36 @@ private fun IdeFileItem(
 // Editor Screen (IDE-style with line numbers)
 // ============================================================================
 
+/**
+ * Desktop IDE-style editor screen.
+ *
+ * iter-75 (#iter-62-desktop-editor-lsp-wiring): LSP surface parameters wired.
+ *   - [lspDiagnostics]    — populated by DiagnosticsCache observer in the host.
+ *   - [hoverBlocks]       — populated by a 300 ms mouse-dwell coroutine in the host.
+ *   - [onHoverDismiss]    — called to clear hoverBlocks when cursor moves far enough.
+ *   - [completionItems]   — populated by Ctrl+Space handler in the host.
+ *   - [onCompletionSelect] — called when user selects a completion item.
+ *   - [onCompletionDismiss] — called when completion dropdown should close.
+ *
+ * All LSP parameters default to empty/no-op so existing call-sites that have
+ * not yet been updated to provide an LspServerHost still compile unchanged.
+ */
 @Composable
 fun EditorScreen(
     fileName: String,
     content: String,
     onContentChanged: (String) -> Unit,
     showLineNumbers: Boolean = true,
-    onCursorPositionChanged: (Int, Int) -> Unit = { _, _ -> }
+    onCursorPositionChanged: (Int, Int) -> Unit = { _, _ -> },
+    // iter-75: LSP surfaces — all default to no-op/empty for backward compat.
+    lspDiagnostics: List<Diagnostic> = emptyList(),
+    hoverBlocks: List<HoverBlock> = emptyList(),
+    hoverAnchor: IntOffset = IntOffset.Zero,
+    onHoverDismiss: () -> Unit = {},
+    completionItems: List<LspCompletionLine> = emptyList(),
+    completionAnchor: IntOffset = IntOffset.Zero,
+    onCompletionSelect: (LspCompletionLine) -> Unit = {},
+    onCompletionDismiss: () -> Unit = {},
 ) {
     var text by remember { mutableStateOf(content) }
 
@@ -820,7 +850,8 @@ fun EditorScreen(
     val textColor = ideTextPrimary()
     val lineNumColor = ideTextSecondary()
 
-    Column(modifier = Modifier.fillMaxSize().background(bgColor)) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().background(bgColor)) {
         // Tab bar header
         Row(
             modifier = Modifier
@@ -860,33 +891,51 @@ fun EditorScreen(
 
         // Editor area with line numbers
         Row(modifier = Modifier.fillMaxSize()) {
-            // Line number gutter
+            // Line number gutter + DiagnosticsGutter overlay
             if (showLineNumbers) {
                 val lineCount = text.count { it == '\n' } + 1
                 val scrollState = rememberScrollState()
-                Box(
+                // Stack line-number column and diagnostics gutter side by side.
+                Row(
                     modifier = Modifier
-                        .width(52.dp)
+                        .width(68.dp)  // 52dp numbers + 8dp diag dots + 8dp padding
                         .fillMaxHeight()
                         .background(gutterBg)
-                        .verticalScroll(scrollState)
-                        .padding(end = 8.dp, top = 8.dp, start = 4.dp)
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.End,
-                        modifier = Modifier.fillMaxWidth()
+                    // Diagnostics dots column (8 dp wide)
+                    DesktopDiagnosticsGutter(
+                        diagnostics = lspDiagnostics,
+                        textForLineNumberMapping = text,
+                        lineHeightDp = 20,
+                        modifier = Modifier
+                            .width(16.dp)
+                            .fillMaxHeight()
+                            .padding(top = 8.dp, start = 4.dp),
+                    )
+                    // Line numbers
+                    Box(
+                        modifier = Modifier
+                            .width(52.dp)
+                            .fillMaxHeight()
+                            .verticalScroll(scrollState)
+                            .padding(end = 8.dp, top = 8.dp, start = 4.dp)
                     ) {
-                        for (i in 1..lineCount) {
-                            Text(
-                                text = i.toString(),
-                                style = TextStyle(
-                                    fontSize = 13.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = lineNumColor,
-                                    lineHeight = 20.sp
-                                ),
-                                modifier = Modifier.padding(vertical = 0.5.dp)
-                            )
+                        Column(
+                            horizontalAlignment = Alignment.End,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            for (i in 1..lineCount) {
+                                Text(
+                                    text = i.toString(),
+                                    style = TextStyle(
+                                        fontSize = 13.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        color = lineNumColor,
+                                        lineHeight = 20.sp
+                                    ),
+                                    modifier = Modifier.padding(vertical = 0.5.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -943,7 +992,27 @@ fun EditorScreen(
                 }
             )
         }
-    }
+        } // end Column
+
+        // iter-75: LSP popup overlays — rendered on top of the editor surface.
+        // HoverPopup: shown when hoverBlocks is non-empty (300ms mouse-dwell triggers it).
+        if (hoverBlocks.isNotEmpty()) {
+            DesktopHoverPopup(
+                blocks = hoverBlocks,
+                anchorOffset = hoverAnchor,
+                onDismiss = onHoverDismiss,
+            )
+        }
+        // CompletionDropdown: shown when completionItems is non-empty (Ctrl+Space triggers it).
+        if (completionItems.isNotEmpty()) {
+            DesktopCompletionDropdown(
+                items = completionItems,
+                anchorOffset = completionAnchor,
+                onSelect = onCompletionSelect,
+                onDismiss = onCompletionDismiss,
+            )
+        }
+    } // end outer Box
 }
 
 // ============================================================================
