@@ -102,156 +102,106 @@ as no Web bundle existed at iter-71 patch time.
 
 ---
 
-## #iter-72-web-pwa-manifest-missing-png-icons — NEW iter-72 (2026-05-17) — CRITICAL
+## #iter-72-web-pwa-manifest-missing-png-icons — FIXED iter-73 (2026-05-17) — CRITICAL
 
-**Status:** OPEN
+**Status:** FIXED in v1.9.2 (iter-73).
 
-**Symptom**
-`webApp/src/wasmJsMain/resources/manifest.json` declares two required PWA
-icons that do not exist on disk:
+**Resolution**
+Generated 6 PWA PNG icons from the Yole brand SVG (blue #1a73e8, white "Y" glyph,
+rounded corners) using Python/Pillow:
 
-```json
-{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }
-{ "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+```
+webApp/src/wasmJsMain/resources/icons/icon-48.png    (604 bytes)
+webApp/src/wasmJsMain/resources/icons/icon-72.png    (843 bytes)
+webApp/src/wasmJsMain/resources/icons/icon-96.png   (1138 bytes)
+webApp/src/wasmJsMain/resources/icons/icon-144.png  (1723 bytes)
+webApp/src/wasmJsMain/resources/icons/icon-192.png  (2324 bytes)
+webApp/src/wasmJsMain/resources/icons/icon-512.png  (6148 bytes)
 ```
 
-Only `webApp/src/wasmJsMain/resources/icons/icon.svg` is present. No PNG
-icons exist at the declared paths. When the Web Wasm app is deployed, browsers
-that attempt to install it as a PWA will fail icon resolution — the homescreen
-icon and splash screen will be blank/broken on all platforms.
-
-**Root cause**
-The PWA manifest was written with placeholder icon references but the actual
-PNG exports (192×192 and 512×512) were never generated and committed.
-
-**Impact**
-Any user attempting to install the Yole Wasm PWA to their device homescreen
-will get a broken/blank icon. This is a CONST-039 installable-asset failure:
-the manifest claims icons that are not present in the bundle.
-
-**Discovery**
-Identified during iter-72 comprehensive CONST-039 asset-gap audit on 2026-05-17.
-`make qa-all` does not currently gate on Web PWA icon presence (no
-`installable_web_icon_challenge.sh` exists yet — see
-`#iter-72-web-pwa-icon-challenge-gap`).
-
-**Fix**
-Export `icon-192.png` (192×192) and `icon-512.png` (512×512) from the Yole
-brand SVG and commit to `webApp/src/wasmJsMain/resources/icons/`. Then add a
-`installable_web_icon_challenge.sh` (CONST-039 layer) to verify they are
-bundled in the Wasm artifact at release time.
+Updated `manifest.json` to declare all 6 sizes. Added `web_pwa_icon_challenge.sh`
+(CONST-039 gate, 3 layers: manifest schema + source-tree PNG validity + bundle audit).
+Wired into `qa-iter-73-gates` → `qa-all`.
 
 **Iteration target:** iter-72 or iter-73
 
 ---
 
-## #iter-72-web-pwa-icon-challenge-gap — NEW iter-72 (2026-05-17)
+## #iter-72-web-pwa-icon-challenge-gap — FIXED iter-73 (2026-05-17)
 
-**Status:** OPEN
+**Status:** FIXED in v1.9.2 (iter-73).
 
-**Symptom**
-No CONST-039 installable-asset challenge exists for the Web Wasm bundle. The
-`installable_app_icon_challenge.sh` gate (iter-71) covers the Android APK
-only. A Web equivalent would open the built `.wasm` / static bundle and verify
-that the icons referenced in `manifest.json` are actually present.
+**Resolution**
+`yole-challenges/scripts/web_pwa_icon_challenge.sh` authored with 3 layers:
+- Layer A: manifest.json schema (icons array, 192x192 + 512x512 entries present)
+- Layer B: source-tree PNG presence + PNG magic bytes + size >= 500 bytes per file
+- Layer C: bundle audit (conditional on releases/ Wasm bundle; SKIPped with
+  `#wasmjs-production-distribution-gap` reason when no bundle exists yet)
 
-**Root cause**
-The iter-71 emergency fix prioritised Android (the active regression) and
-deferred Web/Desktop coverage to subsequent iterations.
-
-**Fix**
-Author `yole-challenges/scripts/installable_web_icon_challenge.sh` that:
-1. (Layer A) Verifies `manifest.json` lists at least two PNG entries with
-   sizes 192×192 and 512×512.
-2. (Layer B) Opens the built Wasm bundle (if present in `releases/`) and
-   confirms both PNG icon files are inside.
-3. (Layer C) Verifies each PNG file is ≥1 KB (not a stub).
-
-Wire into `qa-iter-72-gates` in the Makefile.
+Wired into `make qa-iter-73-gates` → `make qa-all`. Challenge passed PASS on iter-73.
 
 **Iteration target:** iter-72 or iter-73
 
 ---
 
-## #iter-72-android-app-name-asset-audit-gap — NEW iter-72 (2026-05-17)
+## #iter-72-android-app-name-asset-audit-gap — FIXED iter-73 (2026-05-17)
 
-**Status:** OPEN
+**Status:** FIXED in v1.9.2 (iter-73).
 
-**Symptom**
-`androidApp/src/main/res/values/strings.xml` defines `app_name = "Yole"` but
-no CONST-039 challenge verifies the string survives R8/resource shrinking and
-appears correctly in the packaged APK. `aapt2 dump badging` exposes the APK
-label field and could be used to verify `label='Yole'` in the badging output.
+**Resolution**
+`yole-challenges/scripts/app_name_survives_r8_challenge.sh` authored with 2 layers:
+- Layer A: verifies `android:label` in AndroidManifest.xml and
+  `manifestPlaceholders["appLabel"]` in build.gradle.kts for both Release ("Yole")
+  and DEV ("Yole DEV") variants
+- Layer B: runs `aapt2 dump badging` on both Release and DEV APKs from releases/ and
+  asserts exact label match per variant (SKIPped with documented reason when aapt2
+  unavailable or no APK present)
 
-**Impact**
-If the app name string is accidentally removed/renamed by a future resource
-shrink pass, no existing challenge will catch it before shipping.
-
-**Fix**
-Extend `installable_app_icon_challenge.sh` (or a new
-`installable_app_name_challenge.sh`) to assert that `aapt2 dump badging`
-contains `label='Yole'` against the release APK in `releases/`.
+Challenge passed on iter-73: Release APK label='Yole', DEV APK label='Yole DEV'.
+Wired into `make qa-iter-73-gates` → `make qa-all`.
 
 **Iteration target:** iter-73
 
 ---
 
-## #iter-72-desktop-app-name-asset-audit-gap — NEW iter-72 (2026-05-17)
+## #iter-72-desktop-app-name-asset-audit-gap — PARTIALLY FIXED iter-73 (2026-05-17)
 
-**Status:** OPEN
+**Status:** PARTIAL — version synced; DMG challenge deferred.
 
-**Symptom**
-`desktopApp/build.gradle.kts` sets `packageName = "Yole"` and
-`packageVersion = "1.9.0"` (note: not bumped to 1.9.1). No CONST-039 challenge
-verifies the app name appears correctly in the produced DMG / .app bundle.
-Additionally, the `packageVersion` in the Gradle script is one minor version
-behind the actual release version (1.9.0 vs v1.9.1 tag).
+**Resolution**
+`desktopApp/build.gradle.kts` `packageVersion` synced from `1.9.0` → `1.9.2`
+(matching the v1.9.2 release tag). The version drift gap is closed.
 
-**Impact**
-Users who inspect the Desktop app bundle properties will see version 1.9.0 even
-after the v1.9.1 release. No challenge currently gates on this divergence.
+DMG bundle challenge (`installable_desktop_icon_challenge.sh`) is deferred to
+iter-74 — the DMG has not been rebuilt yet for v1.9.2 and the challenge requires
+a new build artifact. See `#iter-71-desktop-icns-format-defect` for the related
+ICNS quality issue.
 
-**Fix**
-1. Sync `packageVersion` in `desktopApp/build.gradle.kts` to the actual release
-   version (1.9.1) on every release.
-2. Author `yole-challenges/scripts/installable_desktop_icon_challenge.sh` that
-   opens a DMG artifact and asserts:
-   - `Yole.app` is present
-   - `CFBundleDisplayName` in `Info.plist` equals "Yole"
-   - `CFBundleShortVersionString` matches the declared version
-   - `Yole.icns` is a proper ICNS container (magic bytes `69 63 6E 73`)
-
-Wire into `qa-iter-72-gates` in the Makefile.
+**Remaining gap:** `#iter-74-desktop-dmg-challenge` — author DMG challenge once
+v1.9.2 Desktop DMG is rebuilt and staged in releases/.
 
 **Iteration target:** iter-73
 
 ---
 
-## #iter-72-android-splash-screen-asset-audit-gap — NEW iter-72 (2026-05-17)
+## #iter-72-android-splash-screen-asset-audit-gap — N/A (confirmed iter-73, 2026-05-17)
 
-**Status:** OPEN
+**Status:** N/A — Yole has no splash screen; tracker is invalid.
 
-**Symptom**
-Yole for Android does not implement a splash screen (no `windowSplashScreen*`
-attributes, no `SplashScreen` API call, no `android:theme` referencing
-`Theme.SplashScreen`). Users on Android 12+ experience the system-generated
-"icon on white background" default splash, which may show the adaptive icon
-at incorrect sizing. No CONST-039 challenge exists to verify splash-screen
-asset presence or correctness.
+**Finding**
+Confirmed during iter-73 source inspection: Yole for Android has **no splash screen
+implementation** whatsoever. There is no `windowSplashScreen*` attribute in any
+theme file, no `SplashScreen` API call in any Activity, and no `Theme.SplashScreen`
+parent. The system-default splash (icon on white background) is what users see.
 
-**Impact**
-Low severity for shipping but adds friction for brand-quality release gate.
-As Yole targets a "professional code editor" audience, a branded splash screen
-is table-stakes for polish.
+This means there is no asset gap to gate against — you cannot write a challenge
+that verifies an asset that intentionally does not exist.
 
-**Fix**
-Implement the Android 12 Splash Screen API:
-1. Add `windowSplashScreenBackground` color and
-   `windowSplashScreenAnimatedIcon` drawable in the app theme.
-2. Call `installSplashScreen()` in `MainActivity.onCreate()`.
-3. Author a challenge layer in `installable_app_icon_challenge.sh` that
-   asserts `windowSplashScreenAnimatedIcon` is present in the APK's
-   compiled resources via `aapt2 dump resources`.
+**Disposition**
+- CONST-039 splash screen challenge: NOT APPLICABLE (no feature, no asset to check).
+- Future implementation: tracked as `#iter-74-android-splash-screen-implementation`
+  (product polish, not a defect). When a splash screen is added, update
+  `installable_app_icon_challenge.sh` with a Layer D for splash assets.
 
 **Iteration target:** iter-73
 

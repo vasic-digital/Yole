@@ -390,8 +390,18 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates
 	bash automation/run-qa-all.sh --skip-unit --skip-build
+	@echo "-----------------------------------------------------------------------------------"
+
+# iter-73 gates: Web PWA icon + Android app-name anti-bluff challenges (CONST-039).
+# Closes 5 asset gaps surfaced by the iter-72 comprehensive audit.
+# web_pwa_icon_challenge: verifies manifest.json PNG entries exist + are valid PNGs.
+# app_name_survives_r8_challenge: verifies Android label survives R8 via aapt2.
+qa-iter-73-gates:
+	@echo "=== iter-73 gates: Web PWA icon + Android app-name anti-bluff suite ==="
+	bash yole-challenges/scripts/web_pwa_icon_challenge.sh
+	bash yole-challenges/scripts/app_name_survives_r8_challenge.sh
 	@echo "-----------------------------------------------------------------------------------"
 
 # iter-71 gates: installable-asset anti-bluff challenge (CONST-039 + postmortem).

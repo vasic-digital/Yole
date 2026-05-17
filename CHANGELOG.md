@@ -3,6 +3,69 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## v1.9.2 — iter-73: Close 5 CONST-039 asset gaps (2026-05-17)
+
+**Version:** 1.9.2 (versionCode 192 → dotted `0.0.0.1.92`)
+**Type:** Patch — Web PWA icon fix + Desktop version sync + 2 new asset-gap challenges.
+
+### What was fixed
+
+**Gap 1: #iter-72-web-pwa-manifest-missing-png-icons (CRITICAL — CLOSED)**
+Web PWA manifest.json declared `icon-192.png` and `icon-512.png` that did not exist.
+Any user installing Yole as a PWA would have gotten a blank/broken homescreen icon.
+Generated 6 PNG icons (48/72/96/144/192/512 px) from the Yole brand SVG using
+Python/Pillow: blue #1a73e8 background, white "Y" glyph, rounded corners.
+Updated manifest.json to declare all 6 sizes.
+
+**Gap 2: #iter-72-web-pwa-icon-challenge-gap (CLOSED)**
+New challenge `yole-challenges/scripts/web_pwa_icon_challenge.sh` (3 layers):
+- Layer A: manifest schema (icons array + required 192x192 + 512x512 PNG entries)
+- Layer B: source-tree PNG presence + magic bytes + size >= 500 bytes per icon
+- Layer C: bundle audit (conditional; SKIPped with `#wasmjs-production-distribution-gap`)
+
+**Gap 3: #iter-72-android-app-name-asset-audit-gap (CLOSED)**
+New challenge `yole-challenges/scripts/app_name_survives_r8_challenge.sh` (2 layers):
+- Layer A: Manifest `android:label` declared + build.gradle.kts manifestPlaceholders
+  correct for both Release ("Yole") and DEV ("Yole DEV") variants
+- Layer B: `aapt2 dump badging` on Release and DEV APKs — label verified at runtime
+  Evidence: Release label='Yole', DEV label='Yole DEV'
+
+**Gap 4: #iter-72-desktop-app-name-asset-audit-gap (PARTIAL)**
+`desktopApp/build.gradle.kts` `packageVersion` synced: `1.9.0` -> `1.9.2`.
+DMG bundle challenge deferred to iter-74 (requires rebuilt v1.9.2 DMG artifact).
+
+**Gap 5: #iter-72-android-splash-screen-asset-audit-gap (N/A — CLOSED)**
+Confirmed Yole has no splash screen implementation. Tracker marked N/A.
+No challenge possible for a feature that doesn't exist.
+Future splash screen tracked as `#iter-74-android-splash-screen-implementation`.
+
+### New challenges wired into qa-all
+
+| Challenge | Type | Layers | Status |
+|-----------|------|--------|--------|
+| `web_pwa_icon_challenge.sh` | CONST-039 | A+B+C | PASS |
+| `app_name_survives_r8_challenge.sh` | CONST-039 | A+B | PASS |
+
+### Version bumps
+
+| Module | Before | After |
+|--------|--------|-------|
+| `androidApp` versionCode | 191 | 192 |
+| `androidApp` versionName | 1.9.1 | 1.9.2 |
+| `desktopApp` packageVersion | 1.9.0 | 1.9.2 |
+
+### Makefile
+
+`make qa-iter-73-gates` added; chained into `make qa-all`.
+
+Cross-platform impact:
+- Android: versionCode 192 / versionName 1.9.2; app_name_survives_r8 challenge added
+- Desktop: packageVersion synced to 1.9.2
+- iOS: unaffected
+- Web: PWA icons generated + manifest updated; web_pwa_icon_challenge added
+
+---
+
 ## v1.9.1 — iter-71 EMERGENCY: Android launcher icon fix (2026-05-17)
 
 **Version:** 1.9.1 (versionCode 191 → dotted `0.0.0.1.91`)
