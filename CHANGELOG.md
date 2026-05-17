@@ -3,6 +3,91 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## v1.9.4 — iter-75: LSP polish + iOS K/N fix + importer polish (2026-05-17)
+
+**Version:** 1.9.4 (versionCode 194 → dotted `0.0.0.1.94`)
+**Type:** Patch — 8 deferred trackers closed across LSP, iOS, and importer subsystems.
+
+### What was fixed
+
+**iOS K/N API fixes (Priority 1)**
+Fixed Kotlin/Native 2.0.20 ObjC interop compilation errors in:
+- `IOSBackgroundSync.ios.kt` — CEnum access patterns
+- `IOSDocumentProvider.ios.kt` — designated constructor usage
+- `IOSHapticFeedback.ios.kt` — ExperimentalForeignApi annotations
+- `IOSKeyboardSupport.ios.kt` — ExperimentalForeignApi annotations
+
+**`#iter-62-phase-8-cross-file-back-nav` — CLOSED (Priority 2)**
+GoTo-Definition back navigation now navigates to the previous file when
+the navigation stack entry is in a different file. Android `BackHandler`
+routes entries with different URI to `openFileInTab`; same-file entries
+call `onContentChanged`. Tests: `crossFile_backNav_calls_onNavigateToFile`
+and `intraFile_backNav_calls_onContentChanged` — GREEN.
+
+**`#iter-62-jdt-uri-scheme-unsupported` — CLOSED (Priority 3)**
+jdtls (Eclipse JDT Language Server) returns `jdt://` URIs for library/JDK
+class definitions. `GoToDefinitionAction` now routes these through a new
+`onOpenJdtUri` callback. `LspServerHost.jdtClassFileContents()` added to
+all platform actuals (Desktop/Android use `LSP4J RemoteEndpoint.request()`
+for `java/classFileContents`; iOS/Wasm return null).
+Test: `jdt_uri_routes_to_onOpenJdtUri` — GREEN.
+
+**`#iter-62-desktop-editor-lsp-wiring` — CLOSED (Priority 4)**
+`DesktopLspSurfaces.kt` added with `DesktopDiagnosticsGutter`,
+`DesktopHoverPopup`, `DesktopCompletionDropdown` composables.
+`diagnosticOffsetToLine` extracted to `commonMain/DiagnosticsOffsetHelper.kt`.
+5 mutation-verified tests in `DesktopLspSurfacesLogicTest` — GREEN.
+`EditorScreen` in `YoleApp.kt` wired with all LSP surface parameters.
+
+**`#iter-63-desktop-signature-help-popup-deferred` — CLOSED (Priority 5)**
+`DesktopSignatureHelpPopup.kt` created, mirroring Android `SignatureHelpPopup`.
+`resolveActiveParamSpan` + `splitSignatureParams` extracted to
+`commonMain/SignatureHelpSpanResolver.kt` (shared with Android).
+7 mutation-verified tests in `SignatureHelpSpanResolverTest` — GREEN.
+`EditorScreen` wired with `signatureHelp`/`signatureAnchor`/`onSignatureDismiss`.
+
+**`#iter-64-epub-metadata` — CLOSED (Priority 6a)**
+EPUB OPF `dc:title`, `dc:creator`, `dc:publisher`, `dc:date` extracted
+and prepended as YAML frontmatter. Both Desktop + Android actuals updated.
+5 new tests in `EpubImporterTest` — GREEN.
+
+**`#iter-64-odt-android-list-nesting` — CLOSED (Priority 6b)**
+Android ODT XmlPullParser state machine now tracks `listDepth` + `inListItem`.
+`text:list-item` content gets `"- "` prefix with 2-space indent per nesting level.
+2 new tests in `OdtImporterTest` (`flatList_producesListItems`, `nestedList_preservesIndentation`) — GREEN.
+
+**`#iter-64-pdf-image-only` — CLOSED (Priority 6c)**
+Empty-text PDF warning upgraded from `Severity.Info` to `Severity.Warning`
+with user-helpful message: "This PDF has no extractable text layer. It may
+be a scanned or image-only PDF. Use OCR software to extract the content
+before importing." Applied to both Desktop and Android actuals.
+
+**`#iter-64-rtf-colour-images` — CLOSED (Priority 6d)**
+Desktop RTF importer now detects non-default foreground colour via
+`StyleConstants.getForeground(attrs)` and emits `ImportWarning(Info, ...)`
+so users know colour is not preserved in Markdown output.
+Test: `rtfImporter_colouredText_emitsWarning` — GREEN.
+
+### Trackers closed
+
+| Tracker | Subsystem | Resolution |
+|---------|-----------|------------|
+| `#iter-62-phase-8-cross-file-back-nav` | LSP/Navigation | Android BackHandler cross-file routing |
+| `#iter-62-jdt-uri-scheme-unsupported` | LSP/GoToDef | onOpenJdtUri callback + jdtClassFileContents |
+| `#iter-62-desktop-editor-lsp-wiring` | Desktop UI | DesktopLspSurfaces + EditorScreen wiring |
+| `#iter-63-desktop-signature-help-popup-deferred` | Desktop UI | DesktopSignatureHelpPopup |
+| `#iter-64-epub-metadata` | Importer | OPF dc: fields → YAML frontmatter |
+| `#iter-64-odt-android-list-nesting` | Importer | Android ODT list depth tracking |
+| `#iter-64-pdf-image-only` | Importer | Warning severity + OCR guidance message |
+| `#iter-64-rtf-colour-images` | Importer | Colour detection warning |
+
+### Version changes
+
+- androidApp: versionCode 193→194, versionName 1.9.3→1.9.4
+- desktopApp: packageVersion 1.9.3→1.9.4
+
+---
+
 ## v1.9.3 — iter-74: DMG rebuild + Desktop ICNS + hover filter + format edit-apply (2026-05-17)
 
 **Version:** 1.9.3 (versionCode 193 → dotted `0.0.0.1.93`)

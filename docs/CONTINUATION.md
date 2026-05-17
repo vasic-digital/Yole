@@ -6,7 +6,104 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-17 (iter-74 COMPLETE — Desktop real ICNS generated, DMG rebuilt, installable_desktop_icon_challenge.sh (3 layers PASS), 4a hover filter, 4b edit-apply, 4c hover anchor, 4d scroll-to-line, 4e format-on-save pref, 4f server trigger chars all closed. v1.9.3 version bumped. Robolectric tests 7+8 added. Compile GREEN.)
+**Last updated:** 2026-05-17 (iter-75 in progress — Priority 1-6 done. iOS K/N fix, cross-file back-nav, jdt:// routing, Desktop LSP surfaces, Desktop SignatureHelpPopup, iter-64 importer polish (EPUB metadata, ODT list nesting, PDF image-only warning, RTF colour warning). v1.9.4 bumped. All desktopTests GREEN. Commits pending.)
+
+## Section 68 — iter-75: LSP polish + iOS K/N fix + importer polish + v1.9.4
+
+**Status:** IN PROGRESS (Priority 7 + Firebase distribution + commits remaining).
+
+**Branch:** master.
+
+### What was done (Priorities 1–6)
+
+**Priority 1 — iOS K/N API fixes**
+- `IOSBackgroundSync.ios.kt`, `IOSDocumentProvider.ios.kt`, `IOSHapticFeedback.ios.kt`, `IOSKeyboardSupport.ios.kt`
+- Fixed CEnum access, designated constructors, `@OptIn(ExperimentalForeignApi::class)` annotations
+
+**Priority 2 — `#iter-62-phase-8-cross-file-back-nav` CLOSED**
+- `EditorNavigationStack` `simulateBackHandler()` internal helper
+- Android `BackHandler` routes cross-file entries to `openFileInTab`
+- Tests: `crossFile_backNav_calls_onNavigateToFile`, `intraFile_backNav_calls_onContentChanged` — GREEN
+
+**Priority 3 — `#iter-62-jdt-uri-scheme-unsupported` CLOSED**
+- `GoToDefinitionAction.goToDefinition()` extended with `onOpenJdtUri` callback
+- `LspServerHost.jdtClassFileContents()` added to expect + all actuals
+- Test: `jdt_uri_routes_to_onOpenJdtUri` — GREEN
+
+**Priority 4 — `#iter-62-desktop-editor-lsp-wiring` CLOSED**
+- `desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/editor/DesktopLspSurfaces.kt` — NEW
+- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/DiagnosticsOffsetHelper.kt` — NEW
+- `EditorScreen` in `YoleApp.kt` wired with LSP surface parameters
+- 5 tests in `DesktopLspSurfacesLogicTest` — GREEN
+
+**Priority 5 — `#iter-63-desktop-signature-help-popup-deferred` CLOSED**
+- `desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/editor/DesktopSignatureHelpPopup.kt` — NEW
+- `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/SignatureHelpSpanResolver.kt` — NEW
+- `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/SignatureHelpSpanResolverTest.kt` — NEW (7 tests GREEN)
+- `EditorScreen` wired with `signatureHelp`/`signatureAnchor`/`onSignatureDismiss`
+
+**Priority 6 — Importer polish**
+- `#iter-64-epub-metadata`: OPF dc: metadata → YAML frontmatter (Desktop + Android EpubImporter) — 5 new tests GREEN
+- `#iter-64-odt-android-list-nesting`: Android ODT list depth tracking + bullet markers — 2 new tests GREEN
+- `#iter-64-pdf-image-only`: Warning severity upgraded + OCR guidance message (Desktop + Android)
+- `#iter-64-rtf-colour-images`: Colour detection warning in Desktop RtfImporter — 1 new test GREEN
+
+### Version changes
+
+- androidApp: versionCode 193→194, versionName 1.9.3→1.9.4
+- desktopApp: packageVersion 1.9.3→1.9.4
+
+### Files changed in iter-75 (so far)
+
+| File | Change |
+|------|--------|
+| `iosApp/iosApp/IOSBackgroundSync.swift` (and 3 other iOS files) | K/N interop fixes |
+| `androidApp/src/main/java/digital/vasic/yole/android/ui/YoleApp.kt` | Cross-file BackHandler routing |
+| `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/GoToDefinitionAction.kt` | onOpenJdtUri callback + jdt:// routing |
+| `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/LspServerHost.kt` | jdtClassFileContents expect |
+| `shared/src/desktopMain/kotlin/digital/vasic/yole/lsp/LspServerHost.desktop.kt` | jdtClassFileContents actual |
+| `shared/src/androidMain/kotlin/digital/vasic/yole/lsp/LspServerHost.android.kt` | jdtClassFileContents actual |
+| `shared/src/iosMain/kotlin/digital/vasic/yole/lsp/LspServerHost.ios.kt` | jdtClassFileContents stub |
+| `shared/src/wasmJsMain/kotlin/digital/vasic/yole/lsp/LspServerHost.wasmJs.kt` | jdtClassFileContents stub |
+| `desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/editor/DesktopLspSurfaces.kt` | NEW — 3 composables |
+| `desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/editor/DesktopSignatureHelpPopup.kt` | NEW |
+| `desktopApp/src/main/kotlin/digital/vasic/yole/desktop/ui/YoleApp.kt` | LSP surface wiring |
+| `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/DiagnosticsOffsetHelper.kt` | NEW |
+| `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/SignatureHelpSpanResolver.kt` | NEW |
+| `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/DesktopLspSurfacesLogicTest.kt` | NEW (5 tests) |
+| `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/GoToDefinitionActionTests.kt` | +1 test (jdt://) |
+| `shared/src/desktopTest/kotlin/digital/vasic/yole/lsp/SignatureHelpSpanResolverTest.kt` | NEW (7 tests) |
+| `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/signaturehelp/SignatureHelpPill.kt` | Delegated to shared resolveActiveParamSpan |
+| `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/signaturehelp/SignatureHelpPopup.kt` | Added import |
+| `shared/src/desktopMain/kotlin/digital/vasic/yole/import_/EpubImporter.desktop.kt` | EPUB metadata |
+| `shared/src/androidMain/kotlin/digital/vasic/yole/import_/EpubImporter.android.kt` | EPUB metadata |
+| `shared/src/desktopTest/kotlin/digital/vasic/yole/import_/EpubImporterTest.kt` | +5 metadata tests |
+| `shared/src/androidMain/kotlin/digital/vasic/yole/import_/OdtImporter.android.kt` | List depth tracking |
+| `shared/src/desktopTest/kotlin/digital/vasic/yole/import_/OdtImporterTest.kt` | +2 list tests |
+| `shared/src/desktopMain/kotlin/digital/vasic/yole/import_/PdfImporter.desktop.kt` | Warning upgrade |
+| `shared/src/androidMain/kotlin/digital/vasic/yole/import_/PdfImporter.android.kt` | Warning upgrade |
+| `shared/src/desktopMain/kotlin/digital/vasic/yole/import_/RtfImporter.desktop.kt` | Colour detection warning |
+| `shared/src/desktopTest/kotlin/digital/vasic/yole/import_/RtfImporterTest.kt` | +1 colour test |
+| `androidApp/build.gradle.kts` | versionCode 193→194, versionName 1.9.3→1.9.4 |
+| `desktopApp/build.gradle.kts` | packageVersion 1.9.3→1.9.4 |
+| `CHANGELOG.md` | v1.9.4 entry |
+| `app/src/main/res/raw/changelog.md` | v1.9.4 entry |
+| `docs/CONTINUATION.md` | This section |
+
+### Remaining in iter-75
+
+- Priority 7: Register `digital.vasic.yole.android.dev` Firebase App (`#iter-74-dev-firebase-registration`)
+- Final: Build Release + Debug + DEV APKs at versionCode 194, distribute via Firebase
+
+### Next Recommended Steps
+
+1. Build APKs: `./gradlew :androidApp:assembleFlavorDefaultRelease :androidApp:assembleFlavorDefaultDebug`
+2. Firebase distribute v1.9.4 Release APK
+3. (Optional) DEV APK after Firebase Dev App registration
+4. Commit all changes with conventional commit `feat(iter-75): ...`
+5. Update CONTINUATION.md to reflect COMPLETE status
+
+---
 
 ## Section 67 — iter-74: DMG rebuild + Desktop ICNS + hover polish + v1.9.3
 
