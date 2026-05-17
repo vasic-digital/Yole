@@ -1,17 +1,18 @@
 /*#######################################################
  * SPDX-FileCopyrightText: 2026 Milos Vasic
  * SPDX-License-Identifier: Apache-2.0
- * iter-62 Phase 7: GoToDefinitionAction unit tests (desktopTest).
+ * iter-62 Phase 7 / iter-75: GoToDefinitionAction unit tests (desktopTest).
  *
  * Tests use FakeLspDefinitionRequester (defined inline) rather than
  * a real or mocked LspServerHost to avoid MockK dependency and the
  * full JVM-actual lifecycle.  This is the documented plan deviation
  * (LspDefinitionRequester interface introduced for testability).
  *
- * 3 tests:
+ * 4 tests:
  *   1. zero_results_emits_toast
  *   2. one_result_pushes_and_opens
  *   3. multi_results_invokes_chooser
+ *   4. jdt_uri_routes_to_onOpenJdtUri (#iter-62-jdt-uri-scheme-unsupported, iter-75)
  *
  * Anti-bluff mutation procedure (CONST-035):
  *   1. Stub FakeLspDefinitionRequester to always return emptyList().
@@ -19,7 +20,9 @@
  *        --tests "digital.vasic.yole.lsp.GoToDefinitionActionTests"
  *   3. Expect FAIL: one_result_pushes_and_opens  (onOpenFileAt never called).
  *              FAIL: multi_results_invokes_chooser (onChoose never called).
- *   4. Revert; confirm all 3 GREEN.
+ *   4. Remove `loc.uri.startsWith("jdt://")` check in GoToDefinitionAction.
+ *   5. Expect FAIL: jdt_uri_routes_to_onOpenJdtUri (onOpenJdtUri never called; onOpenFileAt called instead).
+ *   6. Revert; confirm all 4 GREEN.
  *
  * Cross-platform impact (CONST-037):
  *   - Desktop: tested here (JVM runner, desktopTest source set).
@@ -188,5 +191,58 @@ class GoToDefinitionActionTests {
         assertEquals(0, stack.size, "stack must NOT be pushed on multi-result (Phase 8 does that post-selection)")
         assertFalse(openFileCalled, "onOpenFileAt must NOT be called on multi-result")
         assertFalse(toastCalled, "onToast must NOT be called on multi-result")
+    }
+
+    /**
+     * When jdtls returns a single jdt:// URI, onOpenJdtUri MUST be called with
+     * that URI and onOpenFileAt MUST NOT be called.
+     *
+     * Mutation: remove the `loc.uri.startsWith("jdt://")` branch in
+     * GoToDefinitionAction so jdt:// falls through to onOpenFileAt →
+     * jdtUriCalled stays false AND openFileCalled becomes true → FAIL.
+     *
+     * (#iter-62-jdt-uri-scheme-unsupported, iter-75)
+     */
+    @Test
+    fun jdt_uri_routes_to_onOpenJdtUri() = runBlocking<Unit> {
+        val jdtUri = "jdt://contents/java.lang/java.lang.String.class?=Test/%5C/path%5C/jdk.jar%3C%3Cjava.lang(String.class"
+        val requester = FakeLspDefinitionRequester(
+            returns = listOf(DefinitionLocation(uri = jdtUri, range = 0..0)),
+        )
+        val stack = EditorNavigationStack()
+        val currentUri = "file:///src/Main.java"
+        val currentCursor = 42
+
+        var jdtUriCalled = false
+        var receivedJdtUri: String? = null
+        var openFileCalled = false
+        var toastCalled = false
+        var chooseCalled = false
+
+        GoToDefinitionAction.goToDefinition(
+            requester = requester,
+            langId = "java",
+            currentUri = currentUri,
+            currentCursor = currentCursor,
+            line = 10,
+            character = 20,
+            stack = stack,
+            onOpenFileAt = { _, _ -> openFileCalled = true },
+            onOpenJdtUri = { uri -> jdtUriCalled = true; receivedJdtUri = uri },
+            onChoose = { _ -> chooseCalled = true },
+            onToast = { _ -> toastCalled = true },
+        )
+
+        // jdt:// must route to onOpenJdtUri, not to onOpenFileAt.
+        assertTrue(jdtUriCalled, "onOpenJdtUri must be called for jdt:// URI")
+        assertEquals(jdtUri, receivedJdtUri, "received URI must match the jdt:// location")
+        assertFalse(openFileCalled, "onOpenFileAt must NOT be called for jdt:// URI")
+        assertFalse(chooseCalled, "onChoose must NOT be called on single result")
+        assertFalse(toastCalled, "onToast must NOT be called on single result")
+        // Stack must still be pushed (user must be able to go back even from jdt:// views).
+        assertEquals(1, stack.size, "navigation stack must be pushed for jdt:// jump")
+        val pushed = stack.pop()!!
+        assertEquals(currentUri, pushed.uri, "pushed URI must be the caller's current document")
+        assertEquals(currentCursor, pushed.cursorOffset, "pushed cursor offset must be preserved")
     }
 }

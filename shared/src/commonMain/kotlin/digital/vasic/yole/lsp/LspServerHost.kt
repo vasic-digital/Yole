@@ -23,6 +23,11 @@
  *   - onTypeFormatting(): returns List<TextEdit> (empty on timeout/error/no-spec). 500ms timeout.
  *     Called by FormattingTrigger.onType for trigger-char-gated on-type formatting.
  *
+ * iter-75 additions (#iter-62-jdt-uri-scheme-unsupported):
+ *   - jdtClassFileContents(): sends custom LSP request `java/classFileContents` to jdtls
+ *     for jdt:// URIs. Returns decompiled source on success, null otherwise. 3s timeout.
+ *     JVM actuals implement via launcher.remoteEndpoint.request(). iOS/Wasm stubs return null.
+ *
  * Mutation procedure (CONST-035):
  *   1. In the JVM actual, stub complete() to always return
  *      LspCompletionResult(listOf(LspCompletionLine("__stub__","__stub__","Text",null,null))).
@@ -40,7 +45,8 @@
  *  12. Stub onTypeFormatting() to return listOf(TextEdit(0..0,"x")) → noSpec_onTypeFormatting_returnsEmpty FAILS.
  *  13. Stub getOnTypeTriggerChars() to return setOf(';') when server has no spec
  *      → noSpec_getOnTypeTriggerChars_returnsNull FAILS.
- *  14. Revert; confirm all tests PASS.
+ *  14. Stub jdtClassFileContents() to return "" → noSpec_jdtClassFileContents_returnsNull FAILS.
+ *  15. Revert; confirm all tests PASS.
  *
  * Cross-platform impact (CONST-037):
  *   - Desktop:  JVM actual — LSP4J ProcessBuilder wiring (this phase).
@@ -269,6 +275,29 @@ expect class LspServerHost(
      * `moreTriggerCharacter` entries. iOS/Wasm stubs return null.
      */
     fun getOnTypeTriggerChars(langId: String): Set<Char>?
+
+    /**
+     * Fetch decompiled source for a `jdt://` URI via the jdtls custom request
+     * `java/classFileContents`.
+     *
+     * Only meaningful for the Eclipse JDT Language Server (langId = "java").
+     * Returns the decompiled class file source as a [String] on success, or
+     * `null` on timeout (3000 ms), no server running, server error, or on
+     * platforms where process-based LSP servers cannot run (iOS, Wasm).
+     *
+     * Honest degradation per CONST-035: callers MUST handle null gracefully
+     * (e.g. show a toast "Cannot open JDT URI: server unavailable").
+     *
+     * @param langId   Language identifier; only "java" with jdtls is expected.
+     * @param jdtUri   The full `jdt://` URI returned by jdtls go-to-definition.
+     *
+     * Cross-platform impact (CONST-037):
+     *   - Desktop/Android: JVM actual sends `java/classFileContents` via remoteEndpoint.
+     *   - iOS/Wasm: stub returns null (no subprocess support).
+     *
+     * (#iter-62-jdt-uri-scheme-unsupported, iter-75)
+     */
+    suspend fun jdtClassFileContents(langId: String, jdtUri: String): String?
 
     /**
      * Single source of truth for LSP-emitted diagnostics. Populated by

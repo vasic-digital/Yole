@@ -107,5 +107,7 @@ actual class LspServerHost actual constructor(
     actual suspend fun didClose(langId: String, uri: String) {}
     // iter-74: iOS cannot spawn subprocesses — server capabilities unavailable.
     actual fun getOnTypeTriggerChars(langId: String): Set<Char>? = null
+    // iter-75: iOS cannot spawn subprocesses — jdt:// decompilation unavailable.
+    actual suspend fun jdtClassFileContents(langId: String, jdtUri: String): String? = null
     actual suspend fun shutdownAll() {}
 }

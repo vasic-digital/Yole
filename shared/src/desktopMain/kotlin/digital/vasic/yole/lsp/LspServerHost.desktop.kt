@@ -106,6 +106,7 @@ import org.eclipse.lsp4j.TextDocumentItem
 import org.eclipse.lsp4j.TextEdit as LspTextEdit
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier
 import org.eclipse.lsp4j.jsonrpc.Launcher
+import org.eclipse.lsp4j.jsonrpc.RemoteEndpoint
 import org.eclipse.lsp4j.jsonrpc.messages.Either
 import org.eclipse.lsp4j.services.LanguageClient
 import org.eclipse.lsp4j.services.LanguageServer
@@ -478,6 +479,8 @@ actual class LspServerHost actual constructor(
                 )
                 launcher.startListening()
                 val ls = launcher.remoteProxy
+                // iter-75: store the remote endpoint for custom LSP requests (e.g. java/classFileContents)
+                val remoteEndpoint = launcher.remoteEndpoint
                 val initParams = InitializeParams().apply {
                     processId = ProcessHandle.current().pid().toInt()
                     rootUri = "file://$workspaceRoot"
@@ -511,6 +514,7 @@ actual class LspServerHost actual constructor(
                 val server = RunningServer(
                     process,
                     ls,
+                    remoteEndpoint = remoteEndpoint,
                     lastActivity = System.currentTimeMillis(),
                     onTypeTriggerChars = onTypeTriggerChars,
                 )
@@ -590,9 +594,32 @@ actual class LspServerHost actual constructor(
     private fun workspaceRootOf(uri: String): String =
         uri.removePrefix("file://").substringBeforeLast('/')
 
+    actual suspend fun jdtClassFileContents(langId: String, jdtUri: String): String? {
+        val server = mutex.withLock { servers[langId] } ?: return null
+        return try {
+            withTimeout(3000L) {
+                // java/classFileContents is a custom jdtls JSON-RPC request.
+                // LSP4J RemoteEndpoint.request() dispatches any method name.
+                // The params object must match jdtls expectations: { uri: <jdt-uri> }.
+                val params = mapOf("uri" to jdtUri)
+                @Suppress("UNCHECKED_CAST")
+                val future = server.remoteEndpoint.request("java/classFileContents", params)
+                val raw = future.get(3000, TimeUnit.MILLISECONDS)
+                raw?.toString()?.takeIf { it.isNotBlank() }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: TimeoutException) {
+            null
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
     private data class RunningServer(
         val process: Process,
         val languageServer: LanguageServer,
+        val remoteEndpoint: RemoteEndpoint, // iter-75: for custom LSP requests (jdt://)
         @Volatile var lastActivity: Long,
         val openDocs: MutableSet<String> = mutableSetOf(),
         val docTexts: MutableMap<String, String> = mutableMapOf(), // Phase 3: per-URI text cache for LspRangeMapping

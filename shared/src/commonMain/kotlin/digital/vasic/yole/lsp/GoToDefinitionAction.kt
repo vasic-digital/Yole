@@ -6,6 +6,10 @@
  * Orchestrates the go-to-definition user flow:
  *   0 results → show toast ("No definition found at cursor").
  *   1 result  → push current location onto back-stack; open the target.
+ *     - file:// URI → calls onOpenFileAt(uri, rangeFirst).
+ *     - jdt:// URI  → calls onOpenJdtUri(jdtUri) so the caller can fetch
+ *                     decompiled source via LspServerHost.jdtClassFileContents
+ *                     (#iter-62-jdt-uri-scheme-unsupported, iter-75).
  *   N results → hand off to a chooser (the UI layer picks the target).
  *
  * Plan deviation (CONST-035 / testability):
@@ -23,14 +27,16 @@
  *        --tests "digital.vasic.yole.lsp.GoToDefinitionActionTests"
  *   3. Expect: one_result_pushes_and_opens FAILS (onOpenFileAt never called).
  *              multi_results_invokes_chooser FAILS (onChoose never called).
- *   4. Revert; confirm all 3 tests PASS.
+ *   4. Remove `entry.startsWith("jdt://")` check so jdt:// routes to onOpenFileAt.
+ *   5. Expect: jdt_uri_routes_to_onOpenJdtUri FAILS (onOpenJdtUri never called).
+ *   6. Revert; confirm all tests PASS.
  *
  * Cross-platform impact (CONST-037):
  *   - Common:  this object has no platform-specific imports.
  *   - Android: consumed by IdeEditorScreen wrapper in Phase 8.
  *   - Desktop: consumed by IdeEditorScreen wrapper in Phase 8.
- *   - iOS:     accessible; Phase 8 iOS wiring deferred.
- *   - Web:     accessible; Phase 8 Web wiring deferred.
+ *   - iOS:     accessible; jdtClassFileContents returns null on iOS (no subprocess).
+ *   - Web:     accessible; jdtClassFileContents returns null on Wasm (no subprocess).
  *
  * Submodules: not touched (CONST-038).
  *#######################################################*/
@@ -54,7 +60,11 @@ object GoToDefinitionAction {
      * @param line           Zero-based line index of the cursor position for the LSP request.
      * @param character      Zero-based character index of the cursor position for the LSP request.
      * @param stack          Navigation history stack; current location pushed on a single-result jump.
-     * @param onOpenFileAt   Called with (targetUri, cursorOffset) when exactly one result is found.
+     * @param onOpenFileAt   Called with (targetUri, cursorOffset) when exactly one non-jdt:// result is found.
+     * @param onOpenJdtUri   Called with the raw jdt:// URI when jdtls returns a library/class file URI.
+     *                       The caller is responsible for fetching decompiled source via
+     *                       [LspServerHost.jdtClassFileContents] and displaying it.
+     *                       (#iter-62-jdt-uri-scheme-unsupported, iter-75)
      * @param onChoose       Called with the full result list when more than one result is found.
      *                       Stack push happens AFTER the user selects from the chooser (Phase 8 wires that).
      * @param onToast        Called with a human-readable message when there are no results.
@@ -68,6 +78,7 @@ object GoToDefinitionAction {
         character: Int,
         stack: EditorNavigationStack,
         onOpenFileAt: (uri: String, cursorOffset: Int) -> Unit,
+        onOpenJdtUri: (jdtUri: String) -> Unit = {},
         onChoose: (List<DefinitionLocation>) -> Unit,
         onToast: (String) -> Unit,
     ) {
@@ -75,8 +86,16 @@ object GoToDefinitionAction {
         when {
             results.isEmpty() -> onToast("No definition found at cursor")
             results.size == 1 -> {
+                val loc = results[0]
                 stack.push(NavEntry(currentUri, currentCursor))
-                onOpenFileAt(results[0].uri, results[0].range.first)
+                if (loc.uri.startsWith("jdt://")) {
+                    // Eclipse JDT Language Server returns jdt:// URIs for library/JDK classes.
+                    // These cannot be opened as regular files; the caller must fetch decompiled
+                    // source via LspServerHost.jdtClassFileContents("java", jdtUri).
+                    onOpenJdtUri(loc.uri)
+                } else {
+                    onOpenFileAt(loc.uri, loc.range.first)
+                }
             }
             else -> onChoose(results)
         }
