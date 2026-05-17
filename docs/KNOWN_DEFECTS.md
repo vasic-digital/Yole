@@ -100,6 +100,163 @@ emergency patch.
 `#iter-71-web-favicon-audit-pending` — Wasm/Web bundle favicon audit deferred
 as no Web bundle existed at iter-71 patch time.
 
+---
+
+## #iter-72-web-pwa-manifest-missing-png-icons — NEW iter-72 (2026-05-17) — CRITICAL
+
+**Status:** OPEN
+
+**Symptom**
+`webApp/src/wasmJsMain/resources/manifest.json` declares two required PWA
+icons that do not exist on disk:
+
+```json
+{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }
+{ "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+```
+
+Only `webApp/src/wasmJsMain/resources/icons/icon.svg` is present. No PNG
+icons exist at the declared paths. When the Web Wasm app is deployed, browsers
+that attempt to install it as a PWA will fail icon resolution — the homescreen
+icon and splash screen will be blank/broken on all platforms.
+
+**Root cause**
+The PWA manifest was written with placeholder icon references but the actual
+PNG exports (192×192 and 512×512) were never generated and committed.
+
+**Impact**
+Any user attempting to install the Yole Wasm PWA to their device homescreen
+will get a broken/blank icon. This is a CONST-039 installable-asset failure:
+the manifest claims icons that are not present in the bundle.
+
+**Discovery**
+Identified during iter-72 comprehensive CONST-039 asset-gap audit on 2026-05-17.
+`make qa-all` does not currently gate on Web PWA icon presence (no
+`installable_web_icon_challenge.sh` exists yet — see
+`#iter-72-web-pwa-icon-challenge-gap`).
+
+**Fix**
+Export `icon-192.png` (192×192) and `icon-512.png` (512×512) from the Yole
+brand SVG and commit to `webApp/src/wasmJsMain/resources/icons/`. Then add a
+`installable_web_icon_challenge.sh` (CONST-039 layer) to verify they are
+bundled in the Wasm artifact at release time.
+
+**Iteration target:** iter-72 or iter-73
+
+---
+
+## #iter-72-web-pwa-icon-challenge-gap — NEW iter-72 (2026-05-17)
+
+**Status:** OPEN
+
+**Symptom**
+No CONST-039 installable-asset challenge exists for the Web Wasm bundle. The
+`installable_app_icon_challenge.sh` gate (iter-71) covers the Android APK
+only. A Web equivalent would open the built `.wasm` / static bundle and verify
+that the icons referenced in `manifest.json` are actually present.
+
+**Root cause**
+The iter-71 emergency fix prioritised Android (the active regression) and
+deferred Web/Desktop coverage to subsequent iterations.
+
+**Fix**
+Author `yole-challenges/scripts/installable_web_icon_challenge.sh` that:
+1. (Layer A) Verifies `manifest.json` lists at least two PNG entries with
+   sizes 192×192 and 512×512.
+2. (Layer B) Opens the built Wasm bundle (if present in `releases/`) and
+   confirms both PNG icon files are inside.
+3. (Layer C) Verifies each PNG file is ≥1 KB (not a stub).
+
+Wire into `qa-iter-72-gates` in the Makefile.
+
+**Iteration target:** iter-72 or iter-73
+
+---
+
+## #iter-72-android-app-name-asset-audit-gap — NEW iter-72 (2026-05-17)
+
+**Status:** OPEN
+
+**Symptom**
+`androidApp/src/main/res/values/strings.xml` defines `app_name = "Yole"` but
+no CONST-039 challenge verifies the string survives R8/resource shrinking and
+appears correctly in the packaged APK. `aapt2 dump badging` exposes the APK
+label field and could be used to verify `label='Yole'` in the badging output.
+
+**Impact**
+If the app name string is accidentally removed/renamed by a future resource
+shrink pass, no existing challenge will catch it before shipping.
+
+**Fix**
+Extend `installable_app_icon_challenge.sh` (or a new
+`installable_app_name_challenge.sh`) to assert that `aapt2 dump badging`
+contains `label='Yole'` against the release APK in `releases/`.
+
+**Iteration target:** iter-73
+
+---
+
+## #iter-72-desktop-app-name-asset-audit-gap — NEW iter-72 (2026-05-17)
+
+**Status:** OPEN
+
+**Symptom**
+`desktopApp/build.gradle.kts` sets `packageName = "Yole"` and
+`packageVersion = "1.9.0"` (note: not bumped to 1.9.1). No CONST-039 challenge
+verifies the app name appears correctly in the produced DMG / .app bundle.
+Additionally, the `packageVersion` in the Gradle script is one minor version
+behind the actual release version (1.9.0 vs v1.9.1 tag).
+
+**Impact**
+Users who inspect the Desktop app bundle properties will see version 1.9.0 even
+after the v1.9.1 release. No challenge currently gates on this divergence.
+
+**Fix**
+1. Sync `packageVersion` in `desktopApp/build.gradle.kts` to the actual release
+   version (1.9.1) on every release.
+2. Author `yole-challenges/scripts/installable_desktop_icon_challenge.sh` that
+   opens a DMG artifact and asserts:
+   - `Yole.app` is present
+   - `CFBundleDisplayName` in `Info.plist` equals "Yole"
+   - `CFBundleShortVersionString` matches the declared version
+   - `Yole.icns` is a proper ICNS container (magic bytes `69 63 6E 73`)
+
+Wire into `qa-iter-72-gates` in the Makefile.
+
+**Iteration target:** iter-73
+
+---
+
+## #iter-72-android-splash-screen-asset-audit-gap — NEW iter-72 (2026-05-17)
+
+**Status:** OPEN
+
+**Symptom**
+Yole for Android does not implement a splash screen (no `windowSplashScreen*`
+attributes, no `SplashScreen` API call, no `android:theme` referencing
+`Theme.SplashScreen`). Users on Android 12+ experience the system-generated
+"icon on white background" default splash, which may show the adaptive icon
+at incorrect sizing. No CONST-039 challenge exists to verify splash-screen
+asset presence or correctness.
+
+**Impact**
+Low severity for shipping but adds friction for brand-quality release gate.
+As Yole targets a "professional code editor" audience, a branded splash screen
+is table-stakes for polish.
+
+**Fix**
+Implement the Android 12 Splash Screen API:
+1. Add `windowSplashScreenBackground` color and
+   `windowSplashScreenAnimatedIcon` drawable in the app theme.
+2. Call `installSplashScreen()` in `MainActivity.onCreate()`.
+3. Author a challenge layer in `installable_app_icon_challenge.sh` that
+   asserts `windowSplashScreenAnimatedIcon` is present in the APK's
+   compiled resources via `aapt2 dump resources`.
+
+**Iteration target:** iter-73
+
+---
+
 ## #iter-71-desktop-icns-format-defect — NEW iter-71 (2026-05-17)
 
 **Symptom**
