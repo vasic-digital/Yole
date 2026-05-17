@@ -67,9 +67,11 @@ import digital.vasic.yole.import_.RtfImporter
 import digital.vasic.yole.desktop.ui.editor.DesktopCompletionDropdown
 import digital.vasic.yole.desktop.ui.editor.DesktopDiagnosticsGutter
 import digital.vasic.yole.desktop.ui.editor.DesktopHoverPopup
+import digital.vasic.yole.desktop.ui.editor.DesktopSignatureHelpPopup
 import digital.vasic.yole.lsp.Diagnostic
 import digital.vasic.yole.lsp.HoverBlock
 import digital.vasic.yole.lsp.LspCompletionLine
+import digital.vasic.yole.lsp.SignatureHelp
 import digital.vasic.yole.syntax.theme.themeUiColor
 import androidx.compose.ui.unit.IntOffset
 import java.util.prefs.Preferences
@@ -814,6 +816,9 @@ private fun IdeFileItem(
  *   - [completionItems]   — populated by Ctrl+Space handler in the host.
  *   - [onCompletionSelect] — called when user selects a completion item.
  *   - [onCompletionDismiss] — called when completion dropdown should close.
+ *   - [signatureHelp]     — populated by '(' / ',' keystroke LSP trigger.
+ *   - [signatureAnchor]   — pixel offset for signature popup anchoring.
+ *   - [onSignatureDismiss] — called when signature popup should close.
  *
  * All LSP parameters default to empty/no-op so existing call-sites that have
  * not yet been updated to provide an LspServerHost still compile unchanged.
@@ -834,6 +839,10 @@ fun EditorScreen(
     completionAnchor: IntOffset = IntOffset.Zero,
     onCompletionSelect: (LspCompletionLine) -> Unit = {},
     onCompletionDismiss: () -> Unit = {},
+    // iter-75 (#iter-63-desktop-signature-help-popup-deferred):
+    signatureHelp: SignatureHelp? = null,
+    signatureAnchor: IntOffset = IntOffset.Zero,
+    onSignatureDismiss: () -> Unit = {},
 ) {
     var text by remember { mutableStateOf(content) }
 
@@ -1010,6 +1019,15 @@ fun EditorScreen(
                 anchorOffset = completionAnchor,
                 onSelect = onCompletionSelect,
                 onDismiss = onCompletionDismiss,
+            )
+        }
+        // SignatureHelpPopup: shown when signatureHelp is non-null ('(' / ',' triggers it).
+        // iter-75 (#iter-63-desktop-signature-help-popup-deferred)
+        if (signatureHelp != null) {
+            DesktopSignatureHelpPopup(
+                info = signatureHelp,
+                anchorOffset = signatureAnchor,
+                onDismiss = onSignatureDismiss,
             )
         }
     } // end outer Box
