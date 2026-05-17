@@ -390,8 +390,16 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates
 	bash automation/run-qa-all.sh --skip-unit --skip-build
+	@echo "-----------------------------------------------------------------------------------"
+
+# iter-74 gates: Desktop .icns anti-bluff challenge (CONST-039).
+# Closes #iter-71-desktop-icns-format-defect: the source ICNS was a PNG renamed to .icns.
+# installable_desktop_icon_challenge: magic bytes + file size + chunk structure + DMG bundle.
+qa-iter-74-gates:
+	@echo "=== iter-74 gates: Desktop macOS ICNS anti-bluff suite ==="
+	bash yole-challenges/scripts/installable_desktop_icon_challenge.sh
 	@echo "-----------------------------------------------------------------------------------"
 
 # iter-73 gates: Web PWA icon + Android app-name anti-bluff challenges (CONST-039).

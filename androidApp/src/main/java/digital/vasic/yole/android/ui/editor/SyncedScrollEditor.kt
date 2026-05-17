@@ -124,6 +124,10 @@
  *       structural check to fail — the source MUST contain the literal
  *       `onExplicitFormat()` inside the Ctrl+Shift+F branch.
  *       the "lightbulb-line-" and "code-action-lightbulb" tags disappear.
+ *   (9) iter-74 (#iter-62-phase-8-tree-sitter-hover-filter-stubbed) invariant:
+ *       onValueChange MUST call onCursorOffsetChanged?.invoke(transformed.selection.end).
+ *       Removing this call MUST cause FormattingSettingsRobolectricTest
+ *       iter74_hoverFilter_wiresCursorOffset to fail.
  *
  *
  *########################################################*/
@@ -155,7 +159,9 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -165,12 +171,14 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.State
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalDensity
 import digital.vasic.yole.android.ui.editor.codeaction.CodeActionLightbulb
 import digital.vasic.yole.android.ui.editor.diagnostics.DiagnosticsGutter
 import digital.vasic.yole.android.ui.editor.diagnostics.DiagnosticsInlineUnderline
@@ -239,9 +247,39 @@ fun SyncedScrollEditor(
     // iter-63 Phase 10: Shift+F12 find-references shortcut. Default no-op.
     // When non-default, pressing Shift+F12 invokes FindReferencesAction.
     onFindReferencesRequest: () -> Unit = {},
+    // iter-74 (#iter-62-phase-8-problems-scroll-to-line): scroll-to-line command.
+    // When non-null, the editor scrolls to the given 0-based line on the next
+    // composition. The caller sets this to null after the scroll completes.
+    // Default null = no scroll (existing callers unchanged).
+    scrollToLineRequest: State<Int?>? = null,
+    // iter-74 (#iter-62-phase-8-tree-sitter-hover-filter-stubbed): cursor write-back.
+    // Called after every onValueChange with the current cursor char offset so the
+    // caller (IdeEditorScreen) can read the cursor position without accessing
+    // the internal tfvState. Default null = no write-back (existing callers
+    // unchanged). Anti-bluff: FormattingSettingsRobolectricTest verifies this
+    // parameter is used and that the hover lambda reads from lastCursorOffset.
+    onCursorOffsetChanged: ((Int) -> Unit)? = null,
+    // iter-74 (#iter-62-phase-8-hover-precise-anchor): cursor-pixel rect write-back.
+    // Called after every BasicTextField onTextLayout with the cursor Rect (in local
+    // BTF coordinates, 8.dp-padded). Caller (IdeEditorScreen) uses this to position
+    // HoverPopup near the actual cursor instead of always at (0,0). Default null =
+    // no write-back (existing callers unchanged). Rect is null when the text is empty.
+    onCursorRectChanged: ((androidx.compose.ui.geometry.Rect?) -> Unit)? = null,
 ) {
     val sharedScroll = rememberScrollState()
+    val density = LocalDensity.current
     val activeLanguage = LocalLanguage.current
+
+    // iter-74 (#iter-62-phase-8-problems-scroll-to-line): animate to requested line.
+    // lineHeight is 20.sp; multiply by line index to get approximate pixel offset.
+    // The LaunchedEffect key is the scrollToLineRequest value so it fires each time
+    // a new line is requested. A null value is a no-op.
+    LaunchedEffect(scrollToLineRequest?.value) {
+        val targetLine = scrollToLineRequest?.value ?: return@LaunchedEffect
+        val lineHeightPx = with(density) { 20.sp.toPx() }
+        val targetPx = (targetLine * lineHeightPx).toInt().coerceAtLeast(0)
+        sharedScroll.animateScrollTo(targetPx)
+    }
 
     // iter-58 Phase 5: per-editor session state of currently-collapsed
     // fold ranges. Tapping a chevron toggles the matching range in this
@@ -484,6 +522,10 @@ fun SyncedScrollEditor(
                         textState.value = transformed.text
                         onTextChanged(transformed.text)
                     }
+                    // iter-74 (#iter-62-phase-8-tree-sitter-hover-filter-stubbed):
+                    // write cursor offset back to caller so hover can query the
+                    // token at the real cursor position.
+                    onCursorOffsetChanged?.invoke(transformed.selection.end)
                     // iter-60 Phase 6.4: feed completion trigger after
                     // propagation so the trigger sees the post-bracket text.
                     completionTrigger?.onTextChanged(
@@ -634,6 +676,21 @@ fun SyncedScrollEditor(
                     },
                 textStyle = textStyle,
                 visualTransformation = highlightingTransform,
+                // iter-74 (#iter-62-phase-8-hover-precise-anchor): compute cursor
+                // pixel rect from TextLayoutResult and write it back to the caller.
+                onTextLayout = { layoutResult: TextLayoutResult ->
+                    val cursorRectCb = onCursorRectChanged
+                    if (cursorRectCb != null) {
+                        val cursorOffset = tfvState.value.selection.end
+                            .coerceIn(0, maxOf(0, layoutResult.layoutInput.text.length - 1))
+                        val rect: Rect? = if (layoutResult.layoutInput.text.isEmpty()) {
+                            null
+                        } else {
+                            layoutResult.getCursorRect(cursorOffset)
+                        }
+                        cursorRectCb(rect)
+                    }
+                },
             )
             if (placeholder != null && tfvState.value.text.isEmpty()) {
                 Text(

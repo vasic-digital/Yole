@@ -132,6 +132,7 @@ import digital.vasic.yole.language.LocalLanguage
 import digital.vasic.yole.language.affordance.OutlineExtractor
 import digital.vasic.yole.syntax.EnabledFormatGate
 import digital.vasic.yole.syntax.SyntaxHighlighter
+import digital.vasic.yole.syntax.Token
 import digital.vasic.yole.syntax.TokenizerEngine
 import digital.vasic.yole.syntax.grammar.GrammarRegistry
 import digital.vasic.yole.syntax.theme.LocalTheme
@@ -258,6 +259,12 @@ class YoleSettings(context: android.content.Context) : GsSharedPreferencesProper
     }
     fun setPriorEnabledFormatIds(ids: Set<String>) =
         setString("prior_enabled_format_ids", ids.joinToString(","))
+
+    // iter-74 (#iter-63-format-on-save-settings-toggle): LSP format-on-save toggle.
+    // Default is TRUE so users benefit automatically when an LSP server is available.
+    // Persisted under key "lsp_format_on_save" (matches PREF_KEY_LSP_FORMAT_ON_SAVE).
+    fun getLspFormatOnSave(): Boolean = getBool("lsp_format_on_save", true)
+    fun setLspFormatOnSave(enabled: Boolean) = setBool("lsp_format_on_save", enabled)
 }
 
 /**
@@ -1702,6 +1709,7 @@ fun IdeEditorScreen(
     onSaveClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val settings = remember { YoleSettings(context) }
     var text by remember(content) { mutableStateOf(content) }
     val format = remember(fileName) { FormatRegistry.detectByFilename(fileName) }
     val bg = ideBackground()
@@ -1790,11 +1798,12 @@ fun IdeEditorScreen(
 
     // ── iter-62 Phase 8: hover state ─────────────────────────────────────
     var hoverBlocks by remember { mutableStateOf<List<HoverBlock>>(emptyList()) }
-    // HoverPopup anchor is always TopStart relative to editor; the offset
-    // is zero for Phase 8 v1 (popup appears at top-left of editor Box).
-    // A precise cursor-pixel offset requires Layout coordinates that need
-    // an on-layout callback; deferred as #iter-62-phase-8-hover-precise-anchor.
-    val hoverPopupAnchor = androidx.compose.ui.unit.IntOffset.Zero
+    // iter-74 (#iter-62-phase-8-hover-precise-anchor): replaced always-(0,0) stub.
+    // The cursor rect is written back by SyncedScrollEditor.onCursorRectChanged
+    // via BasicTextField.onTextLayout → TextLayoutResult.getCursorRect(cursorOffset).
+    // The HoverPopup is positioned at (cursorRect.left.toInt(), cursorRect.bottom.toInt())
+    // which places it just below the cursor in the BTF's local coordinate space.
+    var hoverPopupAnchor by remember { mutableStateOf(androidx.compose.ui.unit.IntOffset.Zero) }
 
     // ── iter-62 Phase 8: go-to-definition state ──────────────────────────
     val navStack = remember { EditorNavigationStack() }
@@ -1916,10 +1925,27 @@ fun IdeEditorScreen(
             ): List<TextEdit> = lspHost.formatting(langId, uri, indentSize, useSpaces)
         }
     }
-    // Phase 10 v1: hardcode on-type trigger chars per
-    // #iter-63-server-trigger-chars-hardcoded.
-    // Full server-capability query is a future improvement.
-    val onTypeTriggerChars: Set<Char> = setOf(';', '}', '\n')
+    // iter-74 (#iter-63-server-trigger-chars-hardcoded): on-type trigger chars.
+    // Query server capabilities first; fall back to the conservative default set
+    // when the server has not yet initialised or returns no on-type spec.
+    // LspServerHost.getOnTypeTriggerChars() returns null until the server is Ready;
+    // we refresh whenever the server state map changes via the states SharedFlow.
+    var onTypeTriggerChars by remember(passedLangId) {
+        mutableStateOf<Set<Char>>(setOf(';', '}', '\n'))
+    }
+    LaunchedEffect(lspHost, passedLangId) {
+        lspHost.states.collect { stateMap ->
+            val ready = passedLangId != null && stateMap[passedLangId]?.let {
+                it is digital.vasic.yole.lsp.ServerState.Ready
+            } == true
+            if (ready && passedLangId != null) {
+                val caps = lspHost.getOnTypeTriggerChars(passedLangId)
+                if (caps != null && caps.isNotEmpty()) {
+                    onTypeTriggerChars = caps
+                }
+            }
+        }
+    }
     val formattingTrigger = if (passedLangId != null) {
         remember(lspHost, passedLangId) {
             FormattingTrigger(
@@ -1927,7 +1953,9 @@ fun IdeEditorScreen(
                 onTypeFormatter = { langId, uri, line, character, triggerChar ->
                     lspHost.onTypeFormatting(langId, uri, line, character, triggerChar)
                 },
-                settings = { false }, // Phase 10 v1: formatOnSave stub; Settings toggle deferred
+                // iter-74 (#iter-63-format-on-save-settings-toggle): read from real
+                // SharedPreferences key instead of hardcoded false.
+                settings = { settings.getLspFormatOnSave() },
             )
         }
     } else {
@@ -2126,6 +2154,18 @@ fun IdeEditorScreen(
             Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(borderColor))
         }
 
+        // iter-74 (#iter-62-phase-8-problems-scroll-to-line): scroll-to-line state.
+        // The Problems panel sets this to the target line; SyncedScrollEditor
+        // LaunchedEffect fires and animates sharedScroll to the approximate offset.
+        // Reset to null after a short delay so repeated clicks to the same line work.
+        val scrollToLineState = remember { mutableStateOf<Int?>(null) }
+
+        // iter-74 (#iter-62-phase-8-tree-sitter-hover-filter-stubbed):
+        // Cursor offset written back from SyncedScrollEditor on every keystroke.
+        // Used by onHoverRequest to check whether the cursor sits on an identifier
+        // token before firing the LSP hover request.
+        var lastCursorOffset by remember { mutableStateOf(0) }
+
         // Editor with line numbers — gutter + text share a single ScrollState
         // via SyncedScrollEditor (iter-55 fix for horizontal desync on vertical
         // scroll). See androidApp/.../ui/editor/SyncedScrollEditor.kt and
@@ -2158,6 +2198,21 @@ fun IdeEditorScreen(
                 SyntaxHighlighter(tokenizerEngine) { theme }
             } else {
                 null
+            }
+        }
+
+        // iter-74 (#iter-62-phase-8-tree-sitter-hover-filter-stubbed):
+        // Token list refreshed whenever text or langId changes. Used by
+        // onHoverRequest to check whether the cursor sits on an identifier-
+        // scope token before firing the LSP hover request.
+        var lastTokens by remember { mutableStateOf<List<Token>>(emptyList()) }
+        LaunchedEffect(text, passedLangId, highlighter) {
+            val h = highlighter ?: return@LaunchedEffect
+            val langForTokens = passedLangId ?: return@LaunchedEffect
+            lastTokens = try {
+                h.tokens(text, langForTokens)
+            } catch (_: Throwable) {
+                emptyList()
             }
         }
 
@@ -2227,11 +2282,10 @@ fun IdeEditorScreen(
                                         )
                                     }
                                 }
-                                // iter-63 Phase 10.4: on-type formatting hook.
-                                // #iter-63-server-trigger-chars-hardcoded: Phase 10 v1 uses
-                                // a hardcoded set { ';', '}', '\n' } instead of querying
-                                // server capabilities. Full server-capability query is a
-                                // future improvement.
+                                // iter-74 (#iter-63-on-type-edit-apply): on-type formatting.
+                                // Trigger chars are now queried from server capabilities via
+                                // getOnTypeTriggerChars() (iter-74 #iter-63-server-trigger-chars-hardcoded).
+                                // Edits are now applied to the buffer (closes #iter-63-on-type-edit-apply).
                                 val typedChar = newText.lastOrNull()
                                 if (passedLangId != null && formattingTrigger != null &&
                                     typedChar != null && typedChar in onTypeTriggerChars
@@ -2246,11 +2300,18 @@ fun IdeEditorScreen(
                                                 triggerChar = typedChar,
                                                 serverTriggerChars = onTypeTriggerChars,
                                             )
-                                            // Phase 10 v1: edits are obtained but application
-                                            // to the editor buffer is deferred as
-                                            // #iter-63-on-type-edit-apply.
                                             if (edits.isNotEmpty()) {
-                                                android.util.Log.d("YoleApp", "on-type formatting: ${edits.size} edits")
+                                                // Apply edits to the buffer.
+                                                val workspaceEdit = WorkspaceEdit(
+                                                    changes = mapOf(currentFileUri to edits),
+                                                )
+                                                val sources = mapOf(currentFileUri to text)
+                                                val updated = WorkspaceEditApplier.apply(workspaceEdit, sources)
+                                                val newContent = updated[currentFileUri]
+                                                if (newContent != null && newContent != text) {
+                                                    text = newContent
+                                                    onContentChanged(newContent)
+                                                }
                                             }
                                         } catch (_: Throwable) {
                                             // Degraded — on-type formatting unavailable.
@@ -2277,17 +2338,57 @@ fun IdeEditorScreen(
                             // iter-62 Phase 8.4: F1 explicit hover trigger.
                             // Tree-Sitter identifier lookup deferred per plan:
                             // #iter-62-phase-8-tree-sitter-hover-filter-stubbed.
+                            // iter-74 (#iter-62-phase-8-tree-sitter-hover-filter-stubbed):
+                            // Replaced always-true stub (line=0,character=0) with real
+                            // identifier-at-cursor check using lastTokens + lastCursorOffset.
+                            // Identifier scopes: variable, function, method, type, class,
+                            // parameter, and raw Tree-Sitter node names ending with "identifier"
+                            // or starting with "identifier". Falls back gracefully (fires hover)
+                            // when the token list is empty (engine not yet ready).
                             onHoverRequest = if (passedLangId != null) {
                                 {
-                                    completionScope.launch {
-                                        val info = lspHost.hover(
-                                            langId = passedLangId,
-                                            documentUri = currentFileUri,
-                                            line = 0,
-                                            character = 0,
-                                        )
-                                        if (info != null) {
-                                            hoverBlocks = HoverMarkdownRenderer.render(info.contents)
+                                    val offset = lastCursorOffset
+                                    // Convert char offset to UTF-8 byte offset for Token comparison.
+                                    val byteOffset = text.substring(0, offset.coerceIn(0, text.length))
+                                        .encodeToByteArray().size
+                                    // Identifier scope predicate — matches Tree-Sitter node types
+                                    // produced by the tokenizer that represent named symbols.
+                                    val identifierScopes = setOf(
+                                        "variable", "function", "method", "type", "class",
+                                        "parameter",
+                                    )
+                                    fun isIdentifierScope(scope: String): Boolean =
+                                        identifierScopes.any { scope.startsWith(it) } ||
+                                            scope.endsWith("identifier") ||
+                                            scope == "identifier"
+                                    // Check if byte offset falls inside any identifier token.
+                                    // When lastTokens is empty (engine warming up) we allow hover
+                                    // to fire so we do not suppress it during initial load.
+                                    val isOnIdentifier = lastTokens.isEmpty() ||
+                                        lastTokens.any { tok ->
+                                            byteOffset in tok.startByte until tok.endByte &&
+                                                isIdentifierScope(tok.scope)
+                                        }
+                                    // Only fire hover when cursor is on an identifier token.
+                                    if (isOnIdentifier) {
+                                        // Compute (line, character) from char offset for LSP call.
+                                        val safeOffset = offset.coerceIn(0, text.length)
+                                        var hoverLine = 0
+                                        var lastNl = -1
+                                        for (i in 0 until safeOffset) {
+                                            if (text[i] == '\n') { hoverLine++; lastNl = i }
+                                        }
+                                        val hoverChar = safeOffset - lastNl - 1
+                                        completionScope.launch {
+                                            val info = lspHost.hover(
+                                                langId = passedLangId,
+                                                documentUri = currentFileUri,
+                                                line = hoverLine,
+                                                character = hoverChar,
+                                            )
+                                            if (info != null) {
+                                                hoverBlocks = HoverMarkdownRenderer.render(info.contents)
+                                            }
                                         }
                                     }
                                 }
@@ -2304,10 +2405,19 @@ fun IdeEditorScreen(
                                                 langId = passedLangId,
                                                 uri = currentFileUri,
                                             )
-                                            // Phase 10 v1: edit application deferred as
-                                            // #iter-63-explicit-format-edit-apply.
+                                            // iter-74 (#iter-63-explicit-format-edit-apply):
+                                            // apply edits to buffer instead of just logging.
                                             if (edits.isNotEmpty()) {
-                                                android.util.Log.d("YoleApp", "explicit format: ${edits.size} edits")
+                                                val workspaceEdit = WorkspaceEdit(
+                                                    changes = mapOf(currentFileUri to edits),
+                                                )
+                                                val sources = mapOf(currentFileUri to text)
+                                                val updated = WorkspaceEditApplier.apply(workspaceEdit, sources)
+                                                val newContent = updated[currentFileUri]
+                                                if (newContent != null && newContent != text) {
+                                                    text = newContent
+                                                    onContentChanged(newContent)
+                                                }
                                             }
                                         } catch (_: Throwable) {
                                             // Degraded — formatting unavailable.
@@ -2338,6 +2448,24 @@ fun IdeEditorScreen(
                                             },
                                         )
                                     }
+                                }
+                            },
+                            // iter-74 (#iter-62-phase-8-problems-scroll-to-line):
+                            // pass scroll-to-line state so DiagnosticsProblemsPanel row
+                            // clicks scroll the editor instead of just closing the panel.
+                            scrollToLineRequest = scrollToLineState,
+                            // iter-74 (#iter-62-phase-8-tree-sitter-hover-filter-stubbed):
+                            // write cursor offset back so onHoverRequest can check the token
+                            // at the real cursor position instead of always using (0,0).
+                            onCursorOffsetChanged = { offset -> lastCursorOffset = offset },
+                            // iter-74 (#iter-62-phase-8-hover-precise-anchor):
+                            // write cursor pixel rect back so HoverPopup appears near cursor.
+                            onCursorRectChanged = { rect ->
+                                if (rect != null) {
+                                    hoverPopupAnchor = androidx.compose.ui.unit.IntOffset(
+                                        rect.left.toInt(),
+                                        rect.bottom.toInt(),
+                                    )
                                 }
                             },
                         )
@@ -2408,12 +2536,16 @@ fun IdeEditorScreen(
                         DiagnosticsProblemsPanel(
                             diagnostics = currentFileDiagnostics,
                             text = text,
-                            onJumpToLine = { _ ->
-                                // Jump-to-line via scroll is deferred:
-                                // #iter-62-phase-8-problems-scroll-to-line.
-                                // Closing the panel at least gives the user
-                                // a way to dismiss without losing context.
-                                isProblemsPanelOpen = false
+                            onJumpToLine = { line ->
+                                // iter-74 (#iter-62-phase-8-problems-scroll-to-line):
+                                // set scroll-to-line request; SyncedScrollEditor will
+                                // animate sharedScroll to the target line offset.
+                                // Reset afterwards so a repeat-click on the same line works.
+                                scrollToLineState.value = line
+                                completionScope.launch {
+                                    kotlinx.coroutines.delay(300)
+                                    scrollToLineState.value = null
+                                }
                             },
                         )
                     }

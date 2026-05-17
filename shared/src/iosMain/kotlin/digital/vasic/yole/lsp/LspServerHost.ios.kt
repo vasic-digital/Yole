@@ -105,5 +105,7 @@ actual class LspServerHost actual constructor(
     actual suspend fun didOpen(langId: String, uri: String, text: String, version: Int) {}
     actual suspend fun didChange(langId: String, uri: String, version: Int, fullText: String) {}
     actual suspend fun didClose(langId: String, uri: String) {}
+    // iter-74: iOS cannot spawn subprocesses — server capabilities unavailable.
+    actual fun getOnTypeTriggerChars(langId: String): Set<Char>? = null
     actual suspend fun shutdownAll() {}
 }

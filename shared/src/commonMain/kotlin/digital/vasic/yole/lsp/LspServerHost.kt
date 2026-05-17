@@ -38,7 +38,9 @@
  *  10. Stub formatting() to return listOf(TextEdit(0..0,"x")) → noSpec_formatting_returnsEmpty FAILS.
  *  11. Stub references() to return listOf(DefinitionLocation("x",0..0)) → noSpec_references_returnsEmpty FAILS.
  *  12. Stub onTypeFormatting() to return listOf(TextEdit(0..0,"x")) → noSpec_onTypeFormatting_returnsEmpty FAILS.
- *  13. Revert; confirm all 11 tests PASS.
+ *  13. Stub getOnTypeTriggerChars() to return setOf(';') when server has no spec
+ *      → noSpec_getOnTypeTriggerChars_returnsNull FAILS.
+ *  14. Revert; confirm all tests PASS.
  *
  * Cross-platform impact (CONST-037):
  *   - Desktop:  JVM actual — LSP4J ProcessBuilder wiring (this phase).
@@ -252,6 +254,21 @@ expect class LspServerHost(
         character: Int,
         triggerChar: Char,
     ): List<TextEdit>
+
+    /**
+     * Returns the on-type trigger characters declared by the LSP server for [langId],
+     * or null when the server has not yet initialised, has no on-type formatting spec,
+     * or any error occurred.
+     *
+     * iter-74 (#iter-63-server-trigger-chars-hardcoded): replaces the hardcoded
+     * `setOf(';', '}', '\n')` with real server-capability query. Callers fall back
+     * to the default set when this returns null.
+     *
+     * JVM actuals extract `initializeResult.capabilities
+     *   .documentOnTypeFormattingProvider?.firstTriggerCharacter` plus
+     * `moreTriggerCharacter` entries. iOS/Wasm stubs return null.
+     */
+    fun getOnTypeTriggerChars(langId: String): Set<Char>?
 
     /**
      * Single source of truth for LSP-emitted diagnostics. Populated by

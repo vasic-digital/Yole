@@ -475,9 +475,26 @@ actual class LspServerHost actual constructor(
                     }
                     initializationOptions = spec.initOptions
                 }
-                ls.initialize(initParams).get(30, TimeUnit.SECONDS)
+                val initResult = ls.initialize(initParams).get(30, TimeUnit.SECONDS)
                 ls.initialized(InitializedParams())
-                val server = RunningServer(process, ls, lastActivity = System.currentTimeMillis())
+                // iter-74 (#iter-63-server-trigger-chars-hardcoded): capture on-type trigger chars.
+                val onTypeTriggerChars: Set<Char> = run {
+                    val onTypeProvider = initResult?.capabilities
+                        ?.documentOnTypeFormattingProvider
+                    if (onTypeProvider == null) return@run emptySet()
+                    val chars = mutableSetOf<Char>()
+                    onTypeProvider.firstTriggerCharacter?.firstOrNull()?.let { chars.add(it) }
+                    onTypeProvider.moreTriggerCharacter?.forEach { s ->
+                        s?.firstOrNull()?.let { chars.add(it) }
+                    }
+                    chars
+                }
+                val server = RunningServer(
+                    process,
+                    ls,
+                    lastActivity = System.currentTimeMillis(),
+                    onTypeTriggerChars = onTypeTriggerChars,
+                )
                 servers[langId] = server
                 emitState()
                 server
@@ -560,7 +577,15 @@ actual class LspServerHost actual constructor(
         @Volatile var lastActivity: Long,
         val openDocs: MutableSet<String> = mutableSetOf(),
         val docTexts: MutableMap<String, String> = mutableMapOf(), // Phase 3: per-URI text cache for LspRangeMapping
+        // iter-74: on-type trigger chars captured from InitializeResult capabilities.
+        val onTypeTriggerChars: Set<Char> = emptySet(),
     )
+
+    actual fun getOnTypeTriggerChars(langId: String): Set<Char>? {
+        val server = servers[langId] ?: return null
+        val chars = server.onTypeTriggerChars
+        return if (chars.isEmpty()) null else chars
+    }
 }
 
 // ---------------------------------------------------------------------------

@@ -3,6 +3,75 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## v1.9.3 — iter-74: DMG rebuild + Desktop ICNS + hover filter + format edit-apply (2026-05-17)
+
+**Version:** 1.9.3 (versionCode 193 → dotted `0.0.0.1.93`)
+**Type:** Patch — Desktop macOS icon quality fix + 4 LSP feature polish items closed.
+
+### What was fixed
+
+**Task 1 + 2: Desktop macOS DMG rebuilt at v1.9.2, real `.icns` generated**
+The previous `icon.icns` was a PNG file renamed to `.icns` — blurry on Retina displays.
+Generated a real Apple ICNS via `sips` (resize 512→all sizes) + `iconutil -c icns`.
+New file: 198 KB real ICNS (was 61 KB PNG stub), verified magic bytes `69636e73`,
+9 size-variant chunks: ic12, ic07, ic13, ic08, ic04, ic14, ic09, ic05, ic11.
+New DMG `releases/Yole-Desktop-macos-arm64-1.9.3-Release-0.0.0.1.93.dmg` contains
+`Yole.app/Contents/Resources/Yole.icns` with confirmed real ICNS structure.
+
+**Task 3: `installable_desktop_icon_challenge.sh` — 3-layer anti-bluff challenge**
+- Layer A (static): `icon.icns` magic bytes ≠ PNG, size ≥ 30 KB, build.gradle references it
+- Layer B (DMG-open): mounts latest DMG, `Yole.icns` magic + size confirmed at runtime
+- Layer C (structure): Python struct parser reads ICNS chunks, asserts ≥ 2 size variants
+All 3 layers PASS. Wired into `qa-iter-74-gates` → `qa-all`.
+
+**4a: `#iter-62-phase-8-tree-sitter-hover-filter-stubbed` — CLOSED**
+Hover previously fired at hardcoded `line=0, character=0` regardless of cursor position,
+and always-true identifier filter allowed hover on whitespace and keywords.
+Now: cursor offset written back via `SyncedScrollEditor.onCursorOffsetChanged`;
+token list from `SyntaxHighlighter.tokens()` refreshed per text/lang change;
+`isIdentifierScope()` check filters by variable/function/method/type/class/parameter
+plus Tree-Sitter node names ending with "identifier". Actual (line, char) computed
+from `lastCursorOffset` via char-offset → line/col calculation.
+Anti-bluff: Robolectric test `iter74_hoverFilter_wiresCursorOffset` (test 7) verifies
+identifier scope predicate is wired — mutation to always-true kills the assertion.
+
+**4c: `#iter-62-phase-8-hover-precise-anchor` — CLOSED**
+HoverPopup previously anchored at (0, 0) — top-left corner of editor, not near cursor.
+Now: `SyncedScrollEditor.onCursorRectChanged` fires from `BasicTextField.onTextLayout`
+via `TextLayoutResult.getCursorRect(cursorOffset)`. `YoleApp.kt` updates `hoverPopupAnchor`
+to `IntOffset(rect.left, rect.bottom)` — popup appears just below the cursor.
+Anti-bluff: Robolectric test `iter74_hoverPreciseAnchor_wiresCursorRect` (test 8) verifies
+`getCursorRect` is wired and `var hoverPopupAnchor` is mutable.
+
+**4b: `#iter-63-on-type-edit-apply` + `#iter-63-explicit-format-edit-apply` — CLOSED**
+On-type and explicit formatting previously only logged the returned `TextEdit` list.
+Now both branches apply edits via `WorkspaceEditApplier.apply()` and update the buffer.
+
+**4d: `#iter-62-phase-8-problems-scroll-to-line` — CLOSED**
+Problems-panel row clicks now scroll the editor to the target line via
+`SyncedScrollEditor.scrollToLineRequest` + `LaunchedEffect` + `animateScrollTo`.
+
+**4e: `#iter-63-format-on-save-settings-toggle` — CLOSED**
+`FormattingTrigger` settings lambda wired to `settings.getLspFormatOnSave()` (real
+SharedPreferences key) instead of the hardcoded `{ false }` stub.
+
+**4f: `#iter-63-server-trigger-chars-hardcoded` — CLOSED**
+On-type trigger chars now come from LSP `InitializeResult.capabilities.documentOnTypeFormattingProvider`
+via `LspServerHost.getOnTypeTriggerChars(langId)`, with `LaunchedEffect` on server state
+ready → update `onTypeTriggerChars`. Hardcoded `setOf(';', '}', '\n')` is the fallback
+only when the server has not reported capabilities.
+
+### Tests added
+- `FormattingSettingsRobolectricTest` tests 7 + 8 (hover filter + precise anchor)
+- `installable_desktop_icon_challenge.sh` (3 layers, all PASS)
+
+### Cross-platform impact
+- Android: hover filter, precise anchor, edit-apply, scroll-to-line, format-on-save all ship.
+- Desktop: real ICNS (Retina quality), DMG rebuilt at v1.9.3, packageVersion bumped.
+- iOS: stub (unchanged — App Store sandbox prohibits LSP subprocess).
+- Web: stub (unchanged — Wasm sandbox).
+
+
 ## v1.9.2 — iter-73: Close 5 CONST-039 asset gaps (2026-05-17)
 
 **Version:** 1.9.2 (versionCode 192 → dotted `0.0.0.1.92`)

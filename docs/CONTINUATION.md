@@ -6,7 +6,97 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-17 (iter-73 COMPLETE — closed 5 CONST-039 asset gaps from iter-72 audit. Web PWA icons generated (6 sizes), 2 new challenges (web_pwa_icon + app_name_survives_r8), desktop version synced, splash N/A confirmed. v1.9.2 Android APKs built + staged. All qa-iter-73-gates PASS.)
+**Last updated:** 2026-05-17 (iter-74 COMPLETE — Desktop real ICNS generated, DMG rebuilt, installable_desktop_icon_challenge.sh (3 layers PASS), 4a hover filter, 4b edit-apply, 4c hover anchor, 4d scroll-to-line, 4e format-on-save pref, 4f server trigger chars all closed. v1.9.3 version bumped. Robolectric tests 7+8 added. Compile GREEN.)
+
+## Section 67 — iter-74: DMG rebuild + Desktop ICNS + hover polish + v1.9.3
+
+**Status:** COMPLETE.
+
+**Branch:** master.
+
+### What was done
+
+**Tasks 1+2 — Real ICNS + DMG at v1.9.2 (carried forward to v1.9.3)**
+- Generated real `.icns` via `sips` (9 size variants) + `iconutil -c icns`
+- `desktopApp/src/main/resources/icons/icon.icns` now 198 KB real ICNS (was 61 KB PNG stub)
+- Magic bytes `69636e73`, 9 chunks: ic12/ic07/ic13/ic08/ic04/ic14/ic09/ic05/ic11
+- DMG at `releases/Yole-Desktop-macos-arm64-1.9.2-Release-0.0.0.1.92.dmg` (549 MB)
+
+**Task 3 — `installable_desktop_icon_challenge.sh`**
+- Layer A (static): icon.icns magic + size + build.gradle reference
+- Layer B (DMG-open): mounts DMG, verifies Yole.icns inside app bundle
+- Layer C (Python struct): reads ICNS chunks, asserts ≥ 2 size variants
+- All 3 PASS. Wired into `qa-iter-74-gates` → `qa-all`.
+
+**4a — `#iter-62-phase-8-tree-sitter-hover-filter-stubbed` CLOSED**
+- Added `onCursorOffsetChanged` write-back to `SyncedScrollEditor`
+- `YoleApp.kt`: `lastCursorOffset` + `lastTokens` from `SyntaxHighlighter.tokens()`
+- `isIdentifierScope()` predicate (variable/function/method/type/class/parameter + "identifier" suffix)
+- Hover fires only on identifier tokens; real (hoverLine, hoverChar) computed from offset
+- Robolectric test 7 (`iter74_hoverFilter_wiresCursorOffset`) — PASS
+
+**4b — `#iter-63-on-type-edit-apply` + `#iter-63-explicit-format-edit-apply` CLOSED**
+- Both branches now call `WorkspaceEditApplier.apply()` + update buffer text
+- (Previously only logged the returned TextEdit list)
+
+**4c — `#iter-62-phase-8-hover-precise-anchor` CLOSED**
+- Added `onCursorRectChanged` write-back to `SyncedScrollEditor`
+- `BasicTextField.onTextLayout` → `TextLayoutResult.getCursorRect(cursorOffset)`
+- `YoleApp.kt`: `var hoverPopupAnchor` updated to `IntOffset(rect.left, rect.bottom)`
+- Robolectric test 8 (`iter74_hoverPreciseAnchor_wiresCursorRect`) — PASS
+
+**4d — `#iter-62-phase-8-problems-scroll-to-line` CLOSED**
+- `scrollToLineState` in `YoleApp.kt` + `scrollToLineRequest` in `SyncedScrollEditor`
+- `LaunchedEffect` + `animateScrollTo` to 20.sp × lineIndex px offset
+
+**4e — `#iter-63-format-on-save-settings-toggle` CLOSED**
+- `YoleSettings.getLspFormatOnSave()` wired to `FormattingTrigger settings` lambda
+
+**4f — `#iter-63-server-trigger-chars-hardcoded` CLOSED**
+- `LspServerHost.getOnTypeTriggerChars(langId)` added to expect class + all actuals
+- `LaunchedEffect` on server state → updates `onTypeTriggerChars` from real capabilities
+
+### Version changes
+
+- androidApp: versionCode 192→193, versionName 1.9.2→1.9.3
+- desktopApp: packageVersion 1.9.2→1.9.3
+
+### Files changed in iter-74
+
+| File | Change |
+|------|--------|
+| `desktopApp/src/main/resources/icons/icon.icns` | Replaced PNG stub with real ICNS (198 KB, 9 chunks) |
+| `releases/Yole-Desktop-macos-arm64-1.9.2-Release-0.0.0.1.92.dmg` | Built at v1.9.2 (549 MB) |
+| `yole-challenges/scripts/installable_desktop_icon_challenge.sh` | NEW 3-layer challenge |
+| `Makefile` | qa-iter-74-gates target added, chained into qa-all |
+| `shared/src/commonMain/kotlin/digital/vasic/yole/lsp/LspServerHost.kt` | Added `getOnTypeTriggerChars` to expect class |
+| `shared/src/desktopMain/kotlin/digital/vasic/yole/lsp/LspServerHost.desktop.kt` | Extracts trigger chars from InitializeResult |
+| `shared/src/androidMain/kotlin/digital/vasic/yole/lsp/LspServerHost.android.kt` | Same |
+| `shared/src/iosMain/kotlin/digital/vasic/yole/lsp/LspServerHost.ios.kt` | Stub actual |
+| `shared/src/wasmJsMain/kotlin/digital/vasic/yole/lsp/LspServerHost.wasmJs.kt` | Stub actual |
+| `androidApp/src/main/java/digital/vasic/yole/android/ui/YoleApp.kt` | 4a/4b/4c/4d/4e/4f wiring |
+| `androidApp/src/main/java/digital/vasic/yole/android/ui/editor/SyncedScrollEditor.kt` | onCursorOffsetChanged + onCursorRectChanged + scrollToLineRequest |
+| `androidApp/src/test/kotlin/digital/vasic/yole/android/robolectric/FormattingSettingsRobolectricTest.kt` | Tests 7+8 added |
+| `androidApp/build.gradle.kts` | versionCode 192→193, versionName 1.9.2→1.9.3 |
+| `desktopApp/build.gradle.kts` | packageVersion 1.9.2→1.9.3 |
+| `CHANGELOG.md` | v1.9.3 entry |
+| `docs/CONTINUATION.md` | This section |
+
+### qa-iter-74-gates
+
+```
+bash yole-challenges/scripts/installable_desktop_icon_challenge.sh
+```
+All 3 layers PASS.
+
+### Pending (not in iter-74)
+
+- `#iter-74-android-splash-screen-implementation` — deferred
+- Firebase distribute v1.9.3 — staged for next session
+- `#iter-69` remaining trackers (19+ total, 6 closed in iter-74)
+- Desktop v1.9.3 DMG rebuild (current DMG is labeled 1.9.2 but packageVersion now 1.9.3)
+
+---
 
 ## Section 66 — iter-73: Close 5 CONST-039 asset gaps + v1.9.2
 
