@@ -6,16 +6,40 @@
  * iOS Document Provider Implementation
  * File System Access and Document Picker integration
  *
+ * K/N API notes (iter-75 fixes):
+ *   - contentsForType(typeName, error) signature requires CPointer<ObjCObjectVar<NSError?>>?
+ *   - loadFromContents(contents, ofType, error) returns Boolean and takes nullable ofType
+ *   - open{} → openWithCompletionHandler{}
+ *   - save(to:for_:completionHandler:) → saveToURL(url, forSaveOperation, completionHandler)
+ *   - UIDocumentSaveForOverwriting is a top-level Long constant (not nested on UIDocument)
+ *   - UIDocumentStateEditingDisabled / UIDocumentStateInConflict are top-level ULong constants
+ *   - All NSString.stringWithContentsOfFile calls need @OptIn(ExperimentalForeignApi)
+ *
  *########################################################*/
 package digital.vasic.yole.ios
 
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.TextFormat
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.ObjCObjectVar
+import kotlinx.cinterop.CPointer
+import platform.Foundation.NSError
+import platform.Foundation.NSFileManager
+import platform.Foundation.NSISOLatin1StringEncoding
+import platform.Foundation.NSMacOSRomanStringEncoding
+import platform.Foundation.NSString
+import platform.Foundation.NSURL
+import platform.Foundation.NSUTF16BigEndianStringEncoding
+import platform.Foundation.NSUTF16LittleEndianStringEncoding
+import platform.Foundation.NSUTF16StringEncoding
+import platform.Foundation.NSUTF8StringEncoding
+import platform.Foundation.NSWindowsCP1252StringEncoding
+import platform.Foundation.create
+import platform.Foundation.stringWithContentsOfFile
 import platform.UIKit.UIDocument
-import platform.UIKit.UIDocumentBrowserViewController
-import platform.UIKit.UIDocumentBrowserTransitionController
-import platform.UIKit.UTType
-import platform.Foundation.*
+import platform.UIKit.UIDocumentSaveOperation
+import platform.UIKit.UIDocumentStateEditingDisabled
+import platform.UIKit.UIDocumentStateInConflict
 
 /**
  * Result of opening a document, including its content and detected format.
@@ -34,6 +58,7 @@ data class DocumentOpenResult(
  * iOS Document Provider for Yole
  * Handles file system access using UIDocument
  */
+@OptIn(ExperimentalForeignApi::class)
 class YoleDocument : UIDocument {
 
     var fileText: String = ""
@@ -44,29 +69,41 @@ class YoleDocument : UIDocument {
     constructor(fileURL: NSURL) : super(fileURL)
 
     /**
-     * Load contents from file
+     * Provide the in-memory content to UIDocument for saving.
+     * K/N signature: contentsForType(typeName: String, error: CPointer<ObjCObjectVar<NSError?>>?): Any?
      */
-    override fun contentsForType(typeName: String): NSObject {
+    override fun contentsForType(
+        typeName: String,
+        error: CPointer<ObjCObjectVar<NSError?>>?
+    ): Any? {
         return NSString.create(string = fileText)
     }
 
     /**
-     * Load document from file
+     * Load document content from the file system.
+     * K/N signature: loadFromContents(contents: Any, ofType: String?, error: CPointer<ObjCObjectVar<NSError?>>?): Boolean
      */
-    override fun loadFromContents(contents: NSObject, ofType: String) {
-        if (contents is NSString) {
-            fileText = contents as String
+    override fun loadFromContents(
+        contents: Any,
+        ofType: String?,
+        error: CPointer<ObjCObjectVar<NSError?>>?
+    ): Boolean {
+        val nsStr = contents as? NSString
+        if (nsStr != null) {
+            fileText = nsStr as String
         }
+        return true
     }
 }
 
 /**
  * Document Picker Delegate for iOS
  */
+@OptIn(ExperimentalForeignApi::class)
 class YoleDocumentPickerDelegate {
 
     /**
-     * Supported document types
+     * Supported document types (UTI strings)
      */
     val supportedTypes: List<String> = listOf(
         "public.plain-text",
@@ -80,21 +117,17 @@ class YoleDocumentPickerDelegate {
     )
 
     /**
-     * Create document picker configuration
+     * Returns the list of UTI strings that the picker will accept.
      */
-    fun createConfiguration(): UIDocumentBrowserViewController.Configuration {
-        return UIDocumentBrowserViewController.Configuration().apply {
-            allowsDocumentCreation = true
-            allowsPickingMultipleItems = false
-            sandboxedAllowedTypes = listOf(
-                UTType.plainText,
-                UTType.markdown,
-                UTType.commaSeparatedText,
-                UTType.tex,
-                UTType.rtf,
-                UTType.html
-            )
-        }
+    fun contentTypes(): List<String> {
+        return listOf(
+            "public.plain-text",
+            "net.daringfireball.markdown",
+            "public.comma-separated-values-text",
+            "public.tex",
+            "public.rtf",
+            "public.html"
+        )
     }
 
     /**
@@ -117,17 +150,19 @@ class YoleDocumentPickerDelegate {
 
             // Attempt to read file content with encoding detection
             val content = readFileWithEncodingDetection(url)
-                ?: return Result.failure(Exception("Failed to read document content at: ${url.path}"))
+                ?: return Result.failure(
+                    Exception("Failed to read document content at: ${url.path}")
+                )
 
             val encoding = detectEncoding(url)
 
-            // Open via UIDocument to register with the document system
+            // Register with UIDocument so the system tracks this document
             val document = YoleDocument(url)
             document.fileText = content
-            document.open { success ->
-                if (!success) {
-                    // UIDocument open failed; content was already read directly above
-                }
+            // openWithCompletionHandler is the correct K/N method name
+            document.openWithCompletionHandler { success ->
+                // Content was already read directly; UIDocument registration is best-effort
+                if (!success) { /* no-op; content is available */ }
             }
 
             Result.success(
@@ -149,11 +184,6 @@ class YoleDocumentPickerDelegate {
     /**
      * Save document content to the given URL.
      *
-     * Creates a YoleDocument, sets its content, and uses UIDocument's save API
-     * to persist the content to disk. Uses security-scoped resource access for
-     * sandboxed URLs. Handles save conflicts by checking modification dates before
-     * overwriting.
-     *
      * @param content The text content to save
      * @param url The destination NSURL
      * @return Result indicating success or failure with error details
@@ -161,7 +191,6 @@ class YoleDocumentPickerDelegate {
     fun saveDocument(content: String, url: NSURL): Result<Unit> {
         val accessGranted = url.startAccessingSecurityScopedResource()
         return try {
-            // Check for save conflicts: compare current file modification date
             val conflictCheck = checkForSaveConflict(url)
             if (conflictCheck != null) {
                 return Result.failure(conflictCheck)
@@ -169,18 +198,15 @@ class YoleDocumentPickerDelegate {
 
             val document = YoleDocument(url)
             document.fileText = content
-            var saveSucceeded = false
-            document.save(to = url, for_ = UIDocument.SaveOperation.ForOverwriting) { success ->
-                saveSucceeded = success
-            }
+            // K/N: saveToURL(url, forSaveOperation, completionHandler)
+            // UIDocumentSaveOperation.UIDocumentSaveForOverwriting is the enum entry
+            document.saveToURL(
+                url = url,
+                forSaveOperation = UIDocumentSaveOperation.UIDocumentSaveForOverwriting,
+                completionHandler = { /* async; fire-and-forget */ }
+            )
 
-            if (saveSucceeded) {
-                Result.success(Unit)
-            } else {
-                // Save was initiated but may complete asynchronously; treat as success
-                // unless we received an explicit failure callback
-                Result.success(Unit)
-            }
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(Exception("Failed to save document: ${e.message}", e))
         } finally {
@@ -208,12 +234,12 @@ class YoleDocumentPickerDelegate {
 
         // Fallback: try other common encodings
         val fallbackEncodings = listOf(
-            NSISOLatin1StringEncoding,        // ISO 8859-1
-            NSWindowsCP1252StringEncoding,     // Windows-1252
-            NSMacOSRomanStringEncoding,        // Mac OS Roman
-            NSUTF16StringEncoding,             // UTF-16
-            NSUTF16BigEndianStringEncoding,    // UTF-16 BE
-            NSUTF16LittleEndianStringEncoding  // UTF-16 LE
+            NSISOLatin1StringEncoding,         // ISO 8859-1
+            NSWindowsCP1252StringEncoding,      // Windows-1252
+            NSMacOSRomanStringEncoding,         // Mac OS Roman
+            NSUTF16StringEncoding,              // UTF-16
+            NSUTF16BigEndianStringEncoding,     // UTF-16 BE
+            NSUTF16LittleEndianStringEncoding   // UTF-16 LE
         )
 
         for (encoding in fallbackEncodings) {
@@ -265,9 +291,11 @@ class YoleDocumentPickerDelegate {
             val attributes = fileManager.attributesOfItemAtPath(path, null)
             if (attributes != null) {
                 val documentState = YoleDocument(url).documentState
-                if (documentState.contains(UIDocument.StateEditingDisabled) ||
-                    documentState.contains(UIDocument.StateInConflict)
-                ) {
+                // UIDocumentStateEditingDisabled / UIDocumentStateInConflict are
+                // top-level ULong bitmask constants in K/N.
+                val editingDisabled = (documentState and UIDocumentStateEditingDisabled) != 0UL
+                val inConflict = (documentState and UIDocumentStateInConflict) != 0UL
+                if (editingDisabled || inConflict) {
                     Exception(
                         "Save conflict detected: the file has been modified externally. " +
                             "Please resolve the conflict before saving."

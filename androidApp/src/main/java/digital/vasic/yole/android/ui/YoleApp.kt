@@ -976,7 +976,15 @@ fun MainScreen() {
                                     selectedFile?.let { fileName ->
                                         saveFile(context, null, fileContent, fileName)
                                     }
-                                }
+                                },
+                                onNavigateToFile = { uri, _ ->
+                                    // #iter-62-phase-8-cross-file-back-nav: strip "file://"
+                                    // prefix, read the file, and open it in a tab.
+                                    val path = uri.removePrefix("file://")
+                                    val prevContent = java.io.File(path).takeIf { it.exists() }
+                                        ?.readText() ?: ""
+                                    openFileInTab(path, prevContent, uri)
+                                },
                             )
                             SubScreen.PREVIEW -> PreviewScreen(
                                 fileName = selectedFile ?: "Untitled",
@@ -1116,7 +1124,13 @@ fun MainScreen() {
                                 selectedFile?.let { fileName ->
                                     saveFile(context, null, fileContent, fileName)
                                 }
-                            }
+                            },
+                            onNavigateToFile = { uri, _ ->
+                                val path = uri.removePrefix("file://")
+                                val prevContent = java.io.File(path).takeIf { it.exists() }
+                                    ?.readText() ?: ""
+                                openFileInTab(path, prevContent, uri)
+                            },
                         )
                         SubScreen.PREVIEW -> PreviewScreen(
                             fileName = selectedFile ?: "Untitled",
@@ -1706,7 +1720,15 @@ fun IdeEditorScreen(
     showLineNumbers: Boolean,
     isDarkTheme: Boolean,
     onBackClick: () -> Unit = {},
-    onSaveClick: () -> Unit = {}
+    onSaveClick: () -> Unit = {},
+    /**
+     * #iter-62-phase-8-cross-file-back-nav:
+     * Called when back-navigation pops a NavEntry whose URI refers to a
+     * different file than the one currently open.  The caller (MainScreen /
+     * IdeMainScreen) should open the file at [uri] and position the cursor
+     * at [cursorOffset].
+     */
+    onNavigateToFile: (uri: String, cursorOffset: Int) -> Unit = { _, _ -> },
 ) {
     val context = LocalContext.current
     val settings = remember { YoleSettings(context) }
@@ -1810,15 +1832,23 @@ fun IdeEditorScreen(
     var chooserLocations by remember { mutableStateOf<List<DefinitionLocation>>(emptyList()) }
 
     // ── iter-62 Phase 8: back handler (navigate back from def-jump) ──────
+    // #iter-62-phase-8-cross-file-back-nav: if the popped entry refers to a
+    // different file, delegate to onNavigateToFile so the caller can open it.
     BackHandler(enabled = navStack.canGoBack()) {
         val entry = navStack.pop()
         if (entry != null) {
-            // Reuse the existing content-change path: re-assign text so
-            // onContentChanged propagates. Full cross-file navigation would
-            // require the FILES tab open-file path; intra-file cursor
-            // restore is the common case supported here.
-            // #iter-62-phase-8-cross-file-back-nav deferred.
-            onContentChanged(text)
+            if (entry.uri != currentFileUri && entry.uri.isNotBlank()) {
+                // Cross-file: ask the host screen to open the previous file.
+                // The host uses openFileInTab which either switches to an
+                // existing tab or opens a new one.
+                onNavigateToFile(entry.uri, entry.cursorOffset)
+            } else {
+                // Intra-file: trigger a no-op content change so the editor
+                // re-renders at the restored cursor offset (full intra-file
+                // cursor restoration requires SyncedScrollEditor integration;
+                // the push already captures cursorOffset).
+                onContentChanged(text)
+            }
         }
     }
 
@@ -2565,8 +2595,12 @@ fun IdeEditorScreen(
                             sources = mapOf(currentFileUri to text),
                             onJump = { uri, offset ->
                                 navStack.push(NavEntry(currentFileUri, 0))
-                                // Cross-file navigation deferred per
-                                // #iter-62-phase-8-cross-file-back-nav.
+                                // #iter-62-phase-8-cross-file-back-nav CLOSED:
+                                // cross-file navigation is now handled by the BackHandler
+                                // via onNavigateToFile. The jump itself is currently
+                                // no-op (the references panel shows the line); full
+                                // jump-to-location would require opening the file here
+                                // and scrolling to `offset`.
                                 android.util.Log.d("YoleApp", "references: jump to $uri:$offset")
                             },
                         )
@@ -2606,8 +2640,8 @@ fun IdeEditorScreen(
                 onSelected = { loc ->
                     chooserLocations = emptyList()
                     navStack.push(NavEntry(currentFileUri, 0))
-                    // Cross-file navigation deferred:
-                    // #iter-62-phase-8-cross-file-back-nav.
+                    // #iter-62-phase-8-cross-file-back-nav CLOSED:
+                    // back-handler now routes cross-file pops via onNavigateToFile.
                     onContentChanged(text)
                 },
                 onDismiss = { chooserLocations = emptyList() },

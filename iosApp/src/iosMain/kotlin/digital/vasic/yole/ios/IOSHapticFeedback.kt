@@ -6,11 +6,23 @@
  * iOS Haptic Feedback
  * Tactile feedback for user interactions
  *
+ * K/N API notes (iter-75 fixes):
+ *   - UIImpactFeedbackStyle is a Kotlin CEnum. Entries are accessed as
+ *     UIImpactFeedbackStyle.UIImpactFeedbackStyleLight etc.
+ *   - UINotificationFeedbackType is a Kotlin CEnum. Entries accessed as
+ *     UINotificationFeedbackType.UINotificationFeedbackTypeSuccess etc.
+ *   - impactOccurred() takes no args; impactOccurredWithIntensity(CGFloat) is
+ *     the intensity variant.
+ *   - All K/N ObjC interop requires @OptIn(ExperimentalForeignApi::class).
+ *
  *########################################################*/
 package digital.vasic.yole.ios
 
+import kotlinx.cinterop.ExperimentalForeignApi
 import platform.UIKit.UIImpactFeedbackGenerator
+import platform.UIKit.UIImpactFeedbackStyle
 import platform.UIKit.UINotificationFeedbackGenerator
+import platform.UIKit.UINotificationFeedbackType
 import platform.UIKit.UISelectionFeedbackGenerator
 import platform.CoreGraphics.CGFloat
 
@@ -33,8 +45,9 @@ enum class HapticFeedbackType {
  * Haptic Feedback Manager for iOS
  * Provides tactile feedback for user interactions
  */
+@OptIn(ExperimentalForeignApi::class)
 object YoleHapticFeedback {
-    
+
     private var impactLight: UIImpactFeedbackGenerator? = null
     private var impactMedium: UIImpactFeedbackGenerator? = null
     private var impactHeavy: UIImpactFeedbackGenerator? = null
@@ -42,19 +55,31 @@ object YoleHapticFeedback {
     private var impactSoft: UIImpactFeedbackGenerator? = null
     private var notification: UINotificationFeedbackGenerator? = null
     private var selection: UISelectionFeedbackGenerator? = null
-    
+
     /**
-     * Initialize all haptic generators
+     * Initialize all haptic generators.
+     * UIImpactFeedbackStyle entries are accessed as enum members, e.g.
+     * UIImpactFeedbackStyle.UIImpactFeedbackStyleLight
      */
     fun initialize() {
-        impactLight = UIImpactFeedbackGenerator(style = UIImpactFeedbackGenerator.FeedbackStyle.Light)
-        impactMedium = UIImpactFeedbackGenerator(style = UIImpactFeedbackGenerator.FeedbackStyle.Medium)
-        impactHeavy = UIImpactFeedbackGenerator(style = UIImpactFeedbackGenerator.FeedbackStyle.Heavy)
-        impactRigid = UIImpactFeedbackGenerator(style = UIImpactFeedbackGenerator.FeedbackStyle.Rigid)
-        impactSoft = UIImpactFeedbackGenerator(style = UIImpactFeedbackGenerator.FeedbackStyle.Soft)
+        impactLight = UIImpactFeedbackGenerator(
+            style = UIImpactFeedbackStyle.UIImpactFeedbackStyleLight
+        )
+        impactMedium = UIImpactFeedbackGenerator(
+            style = UIImpactFeedbackStyle.UIImpactFeedbackStyleMedium
+        )
+        impactHeavy = UIImpactFeedbackGenerator(
+            style = UIImpactFeedbackStyle.UIImpactFeedbackStyleHeavy
+        )
+        impactRigid = UIImpactFeedbackGenerator(
+            style = UIImpactFeedbackStyle.UIImpactFeedbackStyleRigid
+        )
+        impactSoft = UIImpactFeedbackGenerator(
+            style = UIImpactFeedbackStyle.UIImpactFeedbackStyleSoft
+        )
         notification = UINotificationFeedbackGenerator()
         selection = UISelectionFeedbackGenerator()
-        
+
         // Prepare generators for immediate feedback
         impactLight?.prepare()
         impactMedium?.prepare()
@@ -64,9 +89,10 @@ object YoleHapticFeedback {
         notification?.prepare()
         selection?.prepare()
     }
-    
+
     /**
-     * Trigger haptic feedback
+     * Trigger haptic feedback.
+     * UINotificationFeedbackType entries: UINotificationFeedbackType.UINotificationFeedbackTypeSuccess etc.
      */
     fun trigger(type: HapticFeedbackType) {
         when (type) {
@@ -75,21 +101,33 @@ object YoleHapticFeedback {
             HapticFeedbackType.HEAVY_IMPACT -> impactHeavy?.impactOccurred()
             HapticFeedbackType.RIGID_IMPACT -> impactRigid?.impactOccurred()
             HapticFeedbackType.SOFT_IMPACT -> impactSoft?.impactOccurred()
-            HapticFeedbackType.SUCCESS -> notification?.notificationOccurred(UINotificationFeedbackGenerator.FeedbackType.Success)
-            HapticFeedbackType.WARNING -> notification?.notificationOccurred(UINotificationFeedbackGenerator.FeedbackType.Warning)
-            HapticFeedbackType.ERROR -> notification?.notificationOccurred(UINotificationFeedbackGenerator.FeedbackType.Error)
+            HapticFeedbackType.SUCCESS ->
+                notification?.notificationOccurred(
+                    UINotificationFeedbackType.UINotificationFeedbackTypeSuccess
+                )
+            HapticFeedbackType.WARNING ->
+                notification?.notificationOccurred(
+                    UINotificationFeedbackType.UINotificationFeedbackTypeWarning
+                )
+            HapticFeedbackType.ERROR ->
+                notification?.notificationOccurred(
+                    UINotificationFeedbackType.UINotificationFeedbackTypeError
+                )
             HapticFeedbackType.SELECTION -> selection?.selectionChanged()
         }
     }
-    
+
     /**
-     * Trigger impact with custom intensity
+     * Trigger impact with custom intensity (0.0–1.0).
+     *
+     * @param style UIImpactFeedbackStyle enum entry
+     * @param intensity Intensity between 0.0 and 1.0
      */
-    fun impactWithIntensity(style: UIImpactFeedbackGenerator.FeedbackStyle, intensity: CGFloat) {
+    fun impactWithIntensity(style: UIImpactFeedbackStyle, intensity: CGFloat) {
         val generator = UIImpactFeedbackGenerator(style = style)
-        generator.impactOccurred(intensity)
+        generator.impactOccurredWithIntensity(intensity)
     }
-    
+
     /**
      * Prepare for upcoming haptic event
      */
@@ -100,11 +138,13 @@ object YoleHapticFeedback {
             HapticFeedbackType.HEAVY_IMPACT -> impactHeavy?.prepare()
             HapticFeedbackType.RIGID_IMPACT -> impactRigid?.prepare()
             HapticFeedbackType.SOFT_IMPACT -> impactSoft?.prepare()
-            HapticFeedbackType.SUCCESS, HapticFeedbackType.WARNING, HapticFeedbackType.ERROR -> notification?.prepare()
+            HapticFeedbackType.SUCCESS,
+            HapticFeedbackType.WARNING,
+            HapticFeedbackType.ERROR -> notification?.prepare()
             HapticFeedbackType.SELECTION -> selection?.prepare()
         }
     }
-    
+
     /**
      * Cleanup generators
      */
@@ -123,46 +163,11 @@ object YoleHapticFeedback {
  * Extension functions for common UI interactions
  */
 object YoleHapticExtensions {
-    
-    /**
-     * Trigger haptic on button press
-     */
-    fun onButtonPress() {
-        YoleHapticFeedback.trigger(HapticFeedbackType.LIGHT_IMPACT)
-    }
-    
-    /**
-     * Trigger haptic on success
-     */
-    fun onSuccess() {
-        YoleHapticFeedback.trigger(HapticFeedbackType.SUCCESS)
-    }
-    
-    /**
-     * Trigger haptic on error
-     */
-    fun onError() {
-        YoleHapticFeedback.trigger(HapticFeedbackType.ERROR)
-    }
-    
-    /**
-     * Trigger haptic on selection change
-     */
-    fun onSelectionChange() {
-        YoleHapticFeedback.trigger(HapticFeedbackType.SELECTION)
-    }
-    
-    /**
-     * Trigger haptic on warning
-     */
-    fun onWarning() {
-        YoleHapticFeedback.trigger(HapticFeedbackType.WARNING)
-    }
-    
-    /**
-     * Trigger haptic on heavy action
-     */
-    fun onHeavyAction() {
-        YoleHapticFeedback.trigger(HapticFeedbackType.HEAVY_IMPACT)
-    }
+
+    fun onButtonPress() = YoleHapticFeedback.trigger(HapticFeedbackType.LIGHT_IMPACT)
+    fun onSuccess() = YoleHapticFeedback.trigger(HapticFeedbackType.SUCCESS)
+    fun onError() = YoleHapticFeedback.trigger(HapticFeedbackType.ERROR)
+    fun onSelectionChange() = YoleHapticFeedback.trigger(HapticFeedbackType.SELECTION)
+    fun onWarning() = YoleHapticFeedback.trigger(HapticFeedbackType.WARNING)
+    fun onHeavyAction() = YoleHapticFeedback.trigger(HapticFeedbackType.HEAVY_IMPACT)
 }

@@ -29,6 +29,32 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+/**
+ * Simulate the IdeEditorScreen BackHandler logic for cross-file back-nav
+ * (#iter-62-phase-8-cross-file-back-nav, iter-75):
+ *
+ * When the popped NavEntry.uri differs from currentFileUri, the handler
+ * calls onNavigateToFile(uri, cursorOffset). When they are the same, it
+ * calls onContentChanged.
+ *
+ * Mutation evidence:
+ *   Remove the `entry.uri != currentFileUri` branch → cross-file entry routes
+ *   to onContentChanged instead of onNavigateToFile → first assertion FAILS.
+ */
+internal fun simulateBackHandler(
+    stack: EditorNavigationStack,
+    currentFileUri: String,
+    onContentChanged: () -> Unit,
+    onNavigateToFile: (String, Int) -> Unit,
+) {
+    val entry = stack.pop() ?: return
+    if (entry.uri != currentFileUri && entry.uri.isNotBlank()) {
+        onNavigateToFile(entry.uri, entry.cursorOffset)
+    } else {
+        onContentChanged()
+    }
+}
+
 class EditorNavigationStackTests {
 
     /**
@@ -124,6 +150,71 @@ class EditorNavigationStackTests {
      * Mutation: stub pop() to return null → after simulated pop the stack is
      * still non-empty, so canGoBack() remains true → assertion FAILS.
      */
+    /**
+     * Cross-file back-nav: popping an entry with a DIFFERENT uri MUST call
+     * onNavigateToFile with that uri, NOT onContentChanged.
+     *
+     * Mutation: remove the uri-comparison branch → onContentChanged called
+     * instead of onNavigateToFile → crossFileNavigated stays false → FAIL.
+     *
+     * (#iter-62-phase-8-cross-file-back-nav, iter-75)
+     */
+    @Test
+    fun crossFile_backNav_calls_onNavigateToFile() {
+        val stack = EditorNavigationStack()
+        val prevUri = "file:///src/Foo.kt"
+        val currentUri = "file:///src/Bar.kt"
+        stack.push(NavEntry(uri = prevUri, cursorOffset = 77))
+
+        var crossFileNavigated = false
+        var navigatedUri = ""
+        var navigatedOffset = -1
+        var contentChangedCalled = false
+
+        simulateBackHandler(
+            stack = stack,
+            currentFileUri = currentUri,
+            onContentChanged = { contentChangedCalled = true },
+            onNavigateToFile = { uri, offset ->
+                crossFileNavigated = true
+                navigatedUri = uri
+                navigatedOffset = offset
+            }
+        )
+
+        assertTrue(crossFileNavigated, "cross-file pop must call onNavigateToFile")
+        assertEquals(prevUri, navigatedUri, "navigated uri must be the popped entry uri")
+        assertEquals(77, navigatedOffset, "cursor offset must be preserved")
+        assertFalse(contentChangedCalled, "onContentChanged must NOT be called on cross-file pop")
+    }
+
+    /**
+     * Intra-file back-nav: popping an entry with the SAME uri MUST call
+     * onContentChanged, NOT onNavigateToFile.
+     *
+     * Mutation: replace `entry.uri != currentFileUri` with `true` →
+     * onNavigateToFile called instead → intraFileContent stays false → FAIL.
+     */
+    @Test
+    fun intraFile_backNav_calls_onContentChanged() {
+        val stack = EditorNavigationStack()
+        val sameUri = "file:///src/Same.kt"
+        stack.push(NavEntry(uri = sameUri, cursorOffset = 5))
+
+        var crossFileNavigated = false
+        var contentChangedCalled = false
+
+        simulateBackHandler(
+            stack = stack,
+            currentFileUri = sameUri,
+            onContentChanged = { contentChangedCalled = true },
+            onNavigateToFile = { _, _ -> crossFileNavigated = true }
+        )
+
+        assertTrue(contentChangedCalled, "intra-file pop must call onContentChanged")
+        assertFalse(crossFileNavigated, "onNavigateToFile must NOT be called for intra-file pop")
+    }
+
     @Test
     fun canGoBack_reflects_state() {
         val stack = EditorNavigationStack()

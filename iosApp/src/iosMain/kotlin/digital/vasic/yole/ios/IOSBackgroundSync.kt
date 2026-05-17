@@ -13,18 +13,22 @@ import digital.vasic.yole.network.NetworkStorageService
 import digital.vasic.yole.network.config.NetworkStorageConfigService
 import digital.vasic.yole.network.common.NetworkDocument
 import digital.vasic.yole.network.common.SyncStatus
-import platform.BackgroundTasks.BGTask
-import platform.BackgroundTasks.BGTaskScheduler
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.coroutines.*
+import kotlinx.datetime.Clock
 import platform.BackgroundTasks.BGAppRefreshTaskRequest
 import platform.BackgroundTasks.BGProcessingTaskRequest
-import platform.Foundation.*
+import platform.BackgroundTasks.BGTask
+import platform.BackgroundTasks.BGTaskScheduler
+import platform.Foundation.NSDate
+import platform.Foundation.NSFileCoordinator
+import platform.Foundation.NSOperationQueue
+import platform.Foundation.NSURL
+import platform.Foundation.NSURLSessionConfiguration
 import platform.UserNotifications.UNMutableNotificationContent
 import platform.UserNotifications.UNNotificationRequest
-import platform.UserNotifications.UNUserNotificationCenter
 import platform.UserNotifications.UNTimeIntervalNotificationTrigger
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.datetime.Clock
+import platform.UserNotifications.UNUserNotificationCenter
 import kotlin.time.Duration.Companion.hours
 
 /**
@@ -106,11 +110,13 @@ class YoleBackgroundSyncManager(
      *
      * @return Result indicating whether registration succeeded
      */
+    @OptIn(ExperimentalForeignApi::class)
     fun registerTasks(): Result<Unit> {
         return try {
+            // K/N: the named param is 'usingQueue', not 'queue'
             scheduler.registerForTaskWithIdentifier(
                 YoleBackgroundTasks.SYNC_TASK,
-                queue = syncQueue
+                usingQueue = syncQueue
             ) { task ->
                 if (task != null) {
                     handleSyncTask(task)
@@ -119,7 +125,7 @@ class YoleBackgroundSyncManager(
 
             scheduler.registerForTaskWithIdentifier(
                 YoleBackgroundTasks.REFRESH_TASK,
-                queue = syncQueue
+                usingQueue = syncQueue
             ) { task ->
                 if (task != null) {
                     handleRefreshTask(task)
@@ -142,6 +148,7 @@ class YoleBackgroundSyncManager(
      *
      * @return Result indicating whether scheduling succeeded
      */
+    @OptIn(ExperimentalForeignApi::class)
     fun scheduleSync(): Result<Unit> {
         return try {
             val request = BGProcessingTaskRequest(identifier = YoleBackgroundTasks.SYNC_TASK)
@@ -153,9 +160,14 @@ class YoleBackgroundSyncManager(
                 maxBackoffMultiplier
             )
             val interval = syncIntervalSeconds * backoffMultiplier
-            request.earliestBeginDate = NSDate.dateWithTimeIntervalSinceNow(interval)
+            // K/N: use NSDate(timeIntervalSinceReferenceDate) + compute offset from reference date.
+            // dateWithTimeIntervalSinceNow is on NSDateMeta, which in K/N means NSDate.dateWithTimeIntervalSinceNow.
+            // Alternative: construct from reference date offset.
+            val now = NSDate().timeIntervalSinceReferenceDate
+            request.earliestBeginDate = NSDate(timeIntervalSinceReferenceDate = now + interval)
 
-            scheduler.submitTaskRequest(request)
+            // K/N: submitTaskRequest(request, error) — pass null for error pointer
+            scheduler.submitTaskRequest(request, error = null)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(Exception("Failed to schedule background sync: ${e.message}", e))
@@ -170,12 +182,15 @@ class YoleBackgroundSyncManager(
      *
      * @return Result indicating whether scheduling succeeded
      */
+    @OptIn(ExperimentalForeignApi::class)
     fun scheduleRefresh(): Result<Unit> {
         return try {
             val request = BGAppRefreshTaskRequest(identifier = YoleBackgroundTasks.REFRESH_TASK)
-            request.earliestBeginDate = NSDate.dateWithTimeIntervalSinceNow(refreshIntervalSeconds)
+            val nowRef = NSDate().timeIntervalSinceReferenceDate
+            request.earliestBeginDate = NSDate(timeIntervalSinceReferenceDate = nowRef + refreshIntervalSeconds)
 
-            scheduler.submitTaskRequest(request)
+            // K/N: submitTaskRequest(request, error) — pass null for error pointer
+            scheduler.submitTaskRequest(request, error = null)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(Exception("Failed to schedule background refresh: ${e.message}", e))
@@ -464,12 +479,15 @@ object YoleBackgroundSession {
      * @param identifier Unique session identifier
      * @return Configured NSURLSessionConfiguration for background transfers
      */
+    @OptIn(ExperimentalForeignApi::class)
     fun createConfiguration(identifier: String): NSURLSessionConfiguration {
-        return NSURLSessionConfiguration.backgroundSessionConfigurationWithIdentifier(identifier).apply {
-            isDiscretionary = false
-            sessionSendsLaunchEvents = true
-            allowsCellularAccess = true
-        }
+        val config = NSURLSessionConfiguration.backgroundSessionConfigurationWithIdentifier(identifier)
+        // K/N maps ObjC 'isDiscretionary' BOOL property → setDiscretionary()/isDiscretionary()
+        // Use explicit setter to avoid "Variable expected" ambiguity in apply block.
+        config.setDiscretionary(false)
+        config.setSessionSendsLaunchEvents(true)
+        config.setAllowsCellularAccess(true)
+        return config
     }
 
     /**
