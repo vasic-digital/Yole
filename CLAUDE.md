@@ -485,3 +485,31 @@ the artifact is bluff. Reference: `yole-challenges/scripts/installable_app_icon_
 phrase everything GENERICALLY per CONST-038 (no Yole-specific platform names).
 
 <!-- END helix-constitution-inheritance + anti-bluff escalation (CONST-039) -->
+
+<!-- BEGIN on-device end-user validation addendum (CONST-039, iter-76) -->
+## ⚠️ CONST-039 iter-76 addendum — On-Device End-User Validation Evidence
+
+**Rule (from CONSTITUTION.md):** Every user-facing feature MUST have at least one
+HelixQA scenario at `Challenges/banks/yole/feature-coverage/` that exercises the
+feature from cold-launch with positive runtime evidence (screenshot + assertion).
+Scenarios MUST be RE-EXECUTED on every release candidate.
+
+**7 scenarios authored in iter-76** (location: `Challenges/banks/yole/feature-coverage/`):
+
+| File | Feature |
+|------|---------|
+| `feature-1-syntax-highlighting.yaml` | Syntax highlighting (Tree-Sitter, pixel histogram) |
+| `feature-2-source-code-support.yaml` | Outline panel / document symbols (a11y count) |
+| `feature-3-autocomplete.yaml` | Auto-complete popup (testTag + item count) |
+| `feature-4a-lsp-completion.yaml` | LSP completion via rust-analyzer |
+| `feature-4b-diagnostics-hover-gotodef.yaml` | LSP diagnostics + hover + go-to-def |
+| `feature-4c-refactoring.yaml` | LSP rename refactoring |
+| `feature-5-import.yaml` | Import-From .docx → Markdown (OCR assertion) |
+
+**Gates in `make qa-iter-76-gates` (chained into `qa-all`):**
+- `helixqa_evidence_size_portable_challenge.sh` — macOS stat portability regression gate
+- `helixqa_scenario_coverage_challenge.sh` — ≥ 7 scenario YAMLs with evidence_type assertions
+
+**iOS deferred:** add `ios` to `platforms:` in each YAML when Xcode automation is
+configured. Tracker: `#iter-76-ios-scenarios-pending-xcode`.
+<!-- END on-device end-user validation addendum (CONST-039, iter-76) -->

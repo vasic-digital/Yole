@@ -384,3 +384,20 @@ Do NOT hardcode Yole-specific platform names (Android/Desktop/iOS/Web) into
 shared submodule governance documents.
 
 <!-- END helix-constitution-inheritance + anti-bluff escalation (CONST-039) -->
+
+<!-- BEGIN on-device end-user validation addendum (CONST-039, iter-76) -->
+## CONST-039 iter-76 addendum — On-Device End-User Validation Evidence
+
+Per `CONSTITUTION.md` addendum (iter-76, 2026-05-17):
+
+Every user-facing feature MUST have at least one HelixQA scenario at
+`Challenges/banks/yole/feature-coverage/` with positive runtime evidence.
+Scenarios MUST be RE-EXECUTED on every release candidate. See
+`Challenges/banks/yole/coverage-matrix.md` for the feature × iteration matrix.
+
+**Gates wired into `make qa-all` via `qa-iter-76-gates`:**
+- `helixqa_evidence_size_portable_challenge.sh` — macOS stat portability
+- `helixqa_scenario_coverage_challenge.sh` — scenario count + evidence assertions
+
+**iOS scenarios:** deferred pending Xcode. Tracker: `#iter-76-ios-scenarios-pending-xcode`.
+<!-- END on-device end-user validation addendum (CONST-039, iter-76) -->

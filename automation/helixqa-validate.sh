@@ -43,6 +43,19 @@ log_pass() { echo "  [PASS] $1"; ((TOTAL_PASS++)); ((TOTAL_CHECKS++)); }
 log_fail() { echo "  [FAIL] $1"; ((TOTAL_FAIL++)); ((TOTAL_CHECKS++)); }
 log_warn() { echo "  [WARN] $1"; ((TOTAL_WARN++)); ((TOTAL_CHECKS++)); }
 
+# get_file_size <path>
+# Portable file-size helper — works on macOS (BSD stat) and Linux (GNU stat).
+# Uses 'wc -c' which is POSIX and reads the actual byte count from stdin.
+# Falls back to 0 when the file does not exist.
+get_file_size() {
+    local f="$1"
+    if [ -f "$f" ]; then
+        wc -c < "$f" | tr -d ' '
+    else
+        echo 0
+    fi
+}
+
 # Check if ffmpeg is available
 HAS_FFMPEG=false
 if command -v "$FFMPEG_BIN" &>/dev/null || command -v ffmpeg &>/dev/null; then
@@ -62,7 +75,7 @@ validate_screenshot() {
     fi
 
     local size
-    size=$(stat -c%s "$file" 2>/dev/null || echo 0)
+    size=$(get_file_size "$file")
     if [[ "$size" -lt 1024 ]]; then
         log_fail "Screenshot too small (${size}B): $file ($context)"
         create_ticket "Invalid Evidence" "Screenshot is only ${size} bytes — likely empty or corrupt" "$context" "high"
@@ -96,7 +109,7 @@ validate_video() {
     fi
 
     local size
-    size=$(stat -c%s "$file" 2>/dev/null || echo 0)
+    size=$(get_file_size "$file")
     if [[ "$size" -lt 1024 ]]; then
         log_fail "Video too small (${size}B): $file ($context)"
         create_ticket "Invalid Evidence" "Video is only ${size} bytes — recording failed" "$context" "high"

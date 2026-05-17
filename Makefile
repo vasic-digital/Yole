@@ -390,8 +390,27 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates
 	bash automation/run-qa-all.sh --skip-unit --skip-build
+	@echo "-----------------------------------------------------------------------------------"
+
+# iter-76 gates: HelixQA evidence portability + per-feature scenario coverage (CONST-039).
+# helixqa_evidence_size_portable_challenge: fixes macOS 'stat -c%s' bug (Phase A/B).
+# helixqa_scenario_coverage_challenge: asserts ≥ 7 per-feature scenario YAMLs + matrix doc.
+qa-iter-76-gates: helixqa-validate-portable
+	@echo "=== iter-76 gates: HelixQA evidence portability + scenario completeness ==="
+	bash yole-challenges/scripts/helixqa_evidence_size_portable_challenge.sh
+	bash yole-challenges/scripts/helixqa_scenario_coverage_challenge.sh
+	@echo "-----------------------------------------------------------------------------------"
+
+# Validate helixqa-validate.sh uses portable file-size helper (no GNU stat -c%s)
+helixqa-validate-portable:
+	@echo "=== Checking helixqa-validate.sh for portable stat usage ==="
+	@if grep -qE 'stat -c%s|stat -c %s' automation/helixqa-validate.sh; then \
+		echo "FAIL: bare GNU stat -c%s found in automation/helixqa-validate.sh"; \
+		exit 1; \
+	fi
+	@echo "OK: no bare GNU stat in helixqa-validate.sh"
 	@echo "-----------------------------------------------------------------------------------"
 
 # iter-74 gates: Desktop .icns anti-bluff challenge (CONST-039).

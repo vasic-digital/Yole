@@ -476,6 +476,49 @@ per-evidence-type requirements), `HelixConstitution/CLAUDE.md`
 
 <!-- END helix-constitution-inheritance + anti-bluff escalation (CONST-039) -->
 
+<!-- BEGIN on-device end-user validation addendum (CONST-039, iter-76) -->
+### CONST-039 addendum — On-Device End-User Validation Evidence (iter-76, 2026-05-17)
+
+**Rule:** Every user-facing feature MUST have at least one HelixQA scenario at
+`Challenges/banks/yole/feature-coverage/` that exercises the feature from cold-launch
+with positive runtime evidence (screenshot + assertion). Scenarios MUST be
+RE-EXECUTED on every release candidate to catch cross-iteration regression.
+New features REQUIRE new scenarios before ship.
+
+**Enforcement:**
+
+- `yole-challenges/scripts/helixqa_scenario_coverage_challenge.sh` — static gate:
+  asserts `Challenges/banks/yole/feature-coverage/` contains ≥ the required
+  number of scenario YAMLs, all with `evidence_type:` assertions.
+  Wired into `make qa-iter-76-gates` and `make qa-all`.
+
+- `yole-challenges/scripts/helixqa_evidence_size_portable_challenge.sh` — regression
+  gate for the macOS `stat -c%s` host bug fixed in iter-76. Verifies the portable
+  `get_file_size()` helper in `automation/helixqa-validate.sh` reports correct file
+  sizes on both macOS (BSD stat) and Linux (GNU stat).
+
+**Coverage matrix:** `Challenges/banks/yole/coverage-matrix.md` documents the
+feature × iteration matrix and authoring rules. Every new iteration MUST update it.
+
+**iOS tracker:** Scenarios under `feature-coverage/` are written platform-agnostically.
+iOS (`iosMain`) is listed as a comment deferral in each YAML with tracker
+`#iter-76-ios-scenarios-pending-xcode`. Add `ios` to `platforms:` when Xcode
+automation is configured — no structural changes needed.
+
+**Import fixture tracker:** `feature-5-import.yaml` requires
+`Challenges/banks/yole/fixtures/test-import.docx`. Generate via:
+```bash
+python3 -c "
+from docx import Document
+d = Document()
+d.add_heading('Hello Import', level=1)
+d.add_paragraph('This is a test paragraph.')
+d.save('Challenges/banks/yole/fixtures/test-import.docx')
+"
+```
+Tracker: `#iter-76-import-fixture-docx-committed`.
+<!-- END on-device end-user validation addendum (CONST-039, iter-76) -->
+
 ## Definition of Done
 
 A change is done when:
