@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  exportOptions/development.plist — Development distribution (direct device install).
+
+  Used for local device testing during development. Does not require
+  provisioning profile upload; uses automatic signing.
+
+  Operator: replace TEAM_ID_HERE with your 10-char Apple Team ID.
+  See docs/setup/ios-signing.md for the full signing workflow.
+-->
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>development</string>
+    <!-- Operator: replace TEAM_ID_HERE with your 10-char Apple Team ID -->
+    <key>teamID</key>
+    <string>TEAM_ID_HERE</string>
+    <key>uploadSymbols</key>
+    <false/>
+    <key>signingStyle</key>
+    <string>automatic</string>
+    <key>thinning</key>
+    <string>&lt;none&gt;</string>
+    <key>compileBitcode</key>
+    <false/>
+</dict>
+</plist>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  exportOptions/adhoc.plist — Ad-hoc distribution (Firebase App Distribution).
+
+  Used for Firebase App Distribution builds. The IPA can be installed on
+  registered devices without going through the App Store.
+
+  Operator: replace TEAM_ID_HERE with your 10-char Apple Team ID.
+  See docs/setup/ios-signing.md for the full signing workflow.
+-->
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>ad-hoc</string>
+    <!-- Operator: replace TEAM_ID_HERE with your 10-char Apple Team ID -->
+    <key>teamID</key>
+    <string>TEAM_ID_HERE</string>
+    <key>uploadSymbols</key>
+    <true/>
+    <key>uploadBitcode</key>
+    <false/>
+    <key>signingStyle</key>
+    <string>automatic</string>
+    <key>thinning</key>
+    <string>&lt;none&gt;</string>
+    <key>compileBitcode</key>
+    <false/>
+</dict>
+</plist>

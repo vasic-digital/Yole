@@ -3,6 +3,28 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## v1.9.5 — iter-77: iOS infrastructure prep — Xcode project, signing, HelixQA iOS scenarios (2026-05-17)
+
+**Version:** 1.9.5 (versionCode unchanged — no shippable user-facing binary; iOS still requires Xcode to build)
+**Type:** Infrastructure — pre-Xcode iOS plumbing, HelixQA iOS platform enablement, helixqa binary, .docx fixture, Containers iOS simulator management.
+
+### What was done
+
+- Authored `iosApp/iosApp.xcodeproj` (hand-authored pbxproj, iOS 15.0, Swift 5.0, bundle ID `digital.vasic.yole.ios`, scheme `Yole`)
+- `iosApp/iosApp/Info.plist`, `LaunchScreen.storyboard`, `iOSApp.swift` — complete iOS app shell with honest placeholder (CONST-039)
+- `shared/src/iosMain/.../MainViewController.kt` — KMP Compose bootstrap producing `MainViewControllerKt.MainViewController()`
+- All 15 AppIcon PNGs regenerated from brand 1024×1024 source via `sips` — brand "Y" glyph confirmed
+- `iosApp/exportOptions/{release,adhoc,development}.plist` — three export methods for operator to fill Team ID
+- `iosApp/iosApp/GoogleService-Info.plist.template` + `docs/setup/firebase-ios-setup.md`
+- `docs/setup/ios-signing.md` — end-to-end signing + KMP framework linking guide
+- All 7 feature YAMLs in `Challenges/banks/yole/feature-coverage/` now include `ios` in platforms lists
+- `helixqa` binary built (25 MB arm64 v0.2.0) → `releases/tools/helixqa`
+- `Challenges/banks/yole/fixtures/test-import.docx` generated (36 KB, closes `#iter-76-import-fixture-docx-committed`)
+- `Containers/pkg/vm/ios`: `SimctlRun` interface method + `BootSimulator`, `ShutdownSimulator`, `InstallApp`, `LaunchApp`, `Screenshot`, `Recording` — all tests pass
+- `.gitignore`: iOS sensitive patterns added (CONST-053)
+
+---
+
 ## v1.9.4 — iter-75: LSP polish + iOS K/N fix + importer polish (2026-05-17)
 
 **Version:** 1.9.4 (versionCode 194 → dotted `0.0.0.1.94`)

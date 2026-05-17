@@ -144,6 +144,14 @@ shared/src/commonMain/resources/lsp-bundles/
 
 automation/node_modules/
 
+# iOS sensitive files (iter-77)
+**/GoogleService-Info.plist
+iosApp/signing/
+iosApp/build/
+shared/build/XCFrameworks/
+*.xcarchive
+*.ipa
+
 # NOTE (iter 31, 2026-05-12): the previous convention treated the
 # HelixQA sibling repos (DocProcessor / LLMOrchestrator / LLMsVerifier /
 # VisionEngine / LLMProvider / Security) as untracked dev-only clones.

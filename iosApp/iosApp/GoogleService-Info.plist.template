@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  GoogleService-Info.plist.template
+
+  DO NOT commit the real GoogleService-Info.plist — it contains API keys.
+  This template shows the structure; operator fills in values from Firebase Console.
+
+  After filling in: copy to iosApp/iosApp/GoogleService-Info.plist (gitignored).
+  See docs/setup/firebase-ios-setup.md for step-by-step instructions.
+-->
+<plist version="1.0">
+<dict>
+    <key>CLIENT_ID</key>
+    <string><!-- FROM_FIREBASE: e.g. 578988389676-xxxxxxxx.apps.googleusercontent.com --></string>
+    <key>REVERSED_CLIENT_ID</key>
+    <string><!-- FROM_FIREBASE: reversed CLIENT_ID --></string>
+    <key>API_KEY</key>
+    <string><!-- FROM_FIREBASE: iOS API key --></string>
+    <key>GCM_SENDER_ID</key>
+    <string>578988389676</string>
+    <key>PLIST_VERSION</key>
+    <string>1</string>
+    <key>BUNDLE_ID</key>
+    <string>digital.vasic.yole.ios</string>
+    <key>PROJECT_ID</key>
+    <string>yole-app</string>
+    <key>STORAGE_BUCKET</key>
+    <string>yole-app.appspot.com</string>
+    <key>IS_ADS_ENABLED</key>
+    <false/>
+    <key>IS_ANALYTICS_ENABLED</key>
+    <true/>
+    <key>IS_APPINVITE_ENABLED</key>
+    <true/>
+    <key>IS_GCM_ENABLED</key>
+    <true/>
+    <key>IS_SIGNIN_ENABLED</key>
+    <true/>
+    <key>GOOGLE_APP_ID</key>
+    <string><!-- FROM_FIREBASE: iOS App ID, format 1:578988389676:ios:... --></string>
+</dict>
+</plist>

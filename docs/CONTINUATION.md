@@ -6,7 +6,60 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-17 (iter-76 COMPLETE — Phase A: macOS stat portability fix in helixqa-validate.sh. Phase B: helixqa_evidence_size_portable_challenge PASS. Phase C: 7 per-feature HelixQA scenario YAMLs + 5 Rust/Kotlin/Python fixtures. Phase D: coverage-matrix.md + helixqa_scenario_coverage_challenge PASS (25/25 static, 1 deferred runtime — helixqa binary). Phase E: CONST-039 iter-76 addendum in CONSTITUTION.md + CLAUDE.md + AGENTS.md + HelixConstitution §11.4.39. qa-iter-76-gates wired into qa-all. 3 open trackers: #iter-76-ios-scenarios-pending-xcode, #iter-76-import-fixture-docx-committed, #iter-76-helixqa-runtime-deferred-emulator-absent.)
+**Last updated:** 2026-05-17 (iter-77 COMPLETE — iOS infrastructure prep done. Xcode project skeleton (hand-authored pbxproj), Info.plist, LaunchScreen.storyboard, iOSApp.swift (honest placeholder per CONST-039), MainViewController.kt in iosMain. AppIcon brand refresh: all 15 PNGs regenerated via sips from 1024×1024 brand source. exportOptions/{release,adhoc,development}.plist created. GoogleService-Info.plist.template + docs/setup/firebase-ios-setup.md + docs/setup/ios-signing.md. All 7 feature YAMLs now include ios in platforms. helixqa binary built (25 MB arm64 v0.2.0) → releases/tools/helixqa. test-import.docx fixture (36 KB). Containers/pkg/vm/ios extended with BootSimulator/ShutdownSimulator/InstallApp/LaunchApp/Screenshot/Recording + tests PASS. iter-76 trackers closed: #iter-76-ios-scenarios-pending-xcode, #iter-76-import-fixture-docx-committed. Remaining open: #iter-77-ios-ui-full-wire, #iter-76-helixqa-runtime-deferred-emulator-absent.)
+
+## Section 70 — iter-77: Pre-Xcode iOS infrastructure prep
+
+**Status:** COMPLETE.
+
+**Branch:** master.
+
+### Open trackers (post-iter-77)
+
+| Tracker | Description | Unblock condition |
+|---------|-------------|-------------------|
+| `#iter-77-ios-ui-full-wire` | Replace `YolePlaceholderViewController` + `YoleIosRoot` with real shared UI | After Xcode install + operator links XCFramework |
+| `#iter-76-helixqa-runtime-deferred-emulator-absent` | helixqa runtime execution needs running simulator | Install Xcode → `xcrun simctl boot` an iPhone simulator |
+
+### Closed trackers (iter-76 → iter-77)
+
+| Tracker | Closed by |
+|---------|-----------|
+| `#iter-76-ios-scenarios-pending-xcode` | All 7 feature YAMLs updated with `- ios` in platforms |
+| `#iter-76-import-fixture-docx-committed` | `Challenges/banks/yole/fixtures/test-import.docx` committed (36 KB) |
+
+### What was done
+
+| Task | Status | Key files |
+|------|--------|-----------|
+| 1a. Xcode project | DONE | `iosApp/iosApp.xcodeproj/project.pbxproj` |
+| 1b. Info.plist | DONE | `iosApp/iosApp/Info.plist` |
+| 1c. LaunchScreen.storyboard | DONE | `iosApp/iosApp/LaunchScreen.storyboard` |
+| 1d. iOSApp.swift | DONE | `iosApp/iosApp/iOSApp.swift` (honest placeholder) |
+| 1e. MainViewController.kt | DONE | `shared/src/iosMain/.../MainViewController.kt` |
+| 1f. framework binary decl | N/A | Already in `iosApp/build.gradle.kts` |
+| 2. AppIcon brand refresh | DONE | 15 PNGs via sips from brand 1024px source |
+| 3. exportOptions plists | DONE | `iosApp/exportOptions/{release,adhoc,development}.plist` |
+| 4. Firebase iOS template | DONE | `iosApp/iosApp/GoogleService-Info.plist.template` + `docs/setup/firebase-ios-setup.md` |
+| 5. iOS signing docs | DONE | `docs/setup/ios-signing.md` |
+| 6. HelixQA iOS scenarios | DONE | 7 YAMLs: `- ios` added; test_cases `[android, desktop, web, ios]` |
+| 7. helixqa binary | DONE | `HelixQA/bin/helixqa` + `releases/tools/helixqa` (25 MB arm64 v0.2.0) |
+| 8. test-import.docx | DONE | `Challenges/banks/yole/fixtures/test-import.docx` (36 KB) |
+| 9. Containers iOS simctl | DONE | BootSimulator/ShutdownSimulator/InstallApp/LaunchApp/Screenshot/Recording + tests |
+| 10. CHANGELOG + CONTINUATION | DONE | This document + CHANGELOG.md v1.9.5 entry |
+
+### Operator post-Xcode checklist
+
+1. `./gradlew :shared:assembleReleaseXCFramework` → produces `shared/build/XCFrameworks/release/shared.xcframework`
+2. Open `iosApp/iosApp.xcodeproj` in Xcode → link XCFramework (Embed & Sign)
+3. In `iOSApp.swift`: uncomment `import shared`, replace `YolePlaceholderViewController()` with `MainViewControllerKt.MainViewController()`
+4. In `MainViewController.kt`: replace `YoleIosRoot()` with shared `YoleApp()` (or iOS root composable)
+5. Fill `TEAM_ID_HERE` in `iosApp/exportOptions/*.plist` using `security find-identity -v -p codesigning`
+6. Place `GoogleService-Info.plist` from Firebase Console at `iosApp/iosApp/GoogleService-Info.plist`
+7. Simulator build: `xcodebuild -scheme Yole -sdk iphonesimulator -destination "platform=iOS Simulator,name=iPhone 15" build`
+8. Close tracker `#iter-77-ios-ui-full-wire`
+
+---
 
 ## Section 69 — iter-76: HelixQA end-to-end on-device validation + cross-iter regression matrix
 
