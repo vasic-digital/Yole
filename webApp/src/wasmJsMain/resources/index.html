@@ -137,7 +137,12 @@
         (function () {
             const SPLASH_FADE_DELAY_MS = 400;
             const POLL_INTERVAL_MS = 100;
-            const FALLBACK_TIMEOUT_MS = 10000;
+            // 25s — must exceed worst-case canvas-mount latency observed by the
+            // iter-84 render gate (Compose mounts in ~11s under headless Chromium
+            // SwiftShader; real user devices on slow networks may be slower).
+            // Lower values cause the splash to leave + the user to see a blank
+            // page even though Compose eventually mounts behind it.
+            const FALLBACK_TIMEOUT_MS = 25000;
             const start = Date.now();
             function hideSplash() {
                 const loading = document.getElementById('loading');
