@@ -89,12 +89,20 @@ bash yole-challenges/scripts/installable_desktop_icon_challenge.sh
 ```
 All 3 layers PASS.
 
+### Firebase distribution
+
+- Release v1.9.3 (versionCode 193) distributed to testers via Firebase App Distribution.
+  Firebase release ID: `1mafglj3vee88`
+  Console: https://console.firebase.google.com/project/yole-app/appdistribution/app/android:digital.vasic.yole.android/releases/1mafglj3vee88
+- DEV variant distribution skipped: `digital.vasic.yole.android.dev` requires a separate
+  Firebase App registration. Deferred as `#iter-74-dev-firebase-registration`.
+
 ### Pending (not in iter-74)
 
 - `#iter-74-android-splash-screen-implementation` — deferred
-- Firebase distribute v1.9.3 — staged for next session
-- `#iter-69` remaining trackers (19+ total, 6 closed in iter-74)
-- Desktop v1.9.3 DMG rebuild (current DMG is labeled 1.9.2 but packageVersion now 1.9.3)
+- `#iter-74-dev-firebase-registration` — DEV variant Firebase App ID not yet registered
+- `#iter-69` remaining trackers (6 closed in iter-74; ~13 remain)
+- Desktop v1.9.3 DMG rebuild (current DMG labeled 1.9.2; packageVersion now 1.9.3)
 
 ---
 
