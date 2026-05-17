@@ -853,10 +853,12 @@ private fun parseHtmlBlocks(html: String): List<HtmlBlock> {
 fun HtmlContent(html: String) {
     val blocks = remember(html) { parseHtmlBlocks(html) }
 
+    // No verticalScroll here — HtmlContent is always called from inside an already-scrollable Column.
+    // Adding verticalScroll to a component nested inside another verticalScroll causes an
+    // IllegalStateException in CMP 1.11.0 (unbounded height constraint).
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .fillMaxWidth()
             .padding(16.dp)
     ) {
         if (blocks.isEmpty()) {

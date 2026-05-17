@@ -904,14 +904,9 @@ fun IdeSidebar(
             )
         }
 
-        // Document list
-        val scrollState = rememberScrollState()
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(scrollState)
-        ) {
-            openTabs.forEach { tab ->
+        // Document list \u2014 LazyColumn avoids verticalScroll+weight constraint violation in CMP 1.11.0
+        LazyColumn(modifier = Modifier.weight(1f)) {
+            items(openTabs) { tab ->
                 val isActive = tab.id == activeTabId
                 val itemBg = if (isActive) {
                     if (isDarkTheme) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.04f)
@@ -1151,12 +1146,15 @@ fun IdeEditor(
         mutableStateOf(TextFieldValue(content, TextRange(content.length)))
     }
 
+    // Row fills the bounded height provided by the caller's .weight() modifier.
+    // verticalScroll is NOT used here — BasicTextField manages its own internal scrolling.
+    // Using verticalScroll on a component with fillMaxHeight throws in CMP 1.11.0.
     Row(
         modifier = modifier
             .fillMaxHeight()
             .background(bg)
     ) {
-        // Line number gutter
+        // Line number gutter — uses LazyColumn for efficient rendering, no verticalScroll needed
         if (showLineNumbers) {
             val gutterBg = if (isDarkTheme) Color(0xFF1E1E1E) else Color(0xFFF8F8F8)
             val gutterWidth = when {
@@ -1165,16 +1163,16 @@ fun IdeEditor(
                 else -> 40.dp
             }
 
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .width(gutterWidth)
                     .fillMaxHeight()
                     .background(gutterBg)
-                    .verticalScroll(editorScrollState)
                     .padding(top = 8.dp, end = 8.dp),
-                horizontalAlignment = Alignment.End
+                horizontalAlignment = Alignment.End,
+                state = rememberLazyListState()
             ) {
-                lines.forEachIndexed { index, _ ->
+                itemsIndexed(lines) { index, _ ->
                     Text(
                         text = "${index + 1}",
                         color = lineNumColor,
@@ -1197,7 +1195,7 @@ fun IdeEditor(
             )
         }
 
-        // Text editor
+        // Text editor — BasicTextField fills remaining width and manages scrolling internally
         BasicTextField(
             value = textFieldValue,
             onValueChange = { newValue ->
@@ -1216,7 +1214,6 @@ fun IdeEditor(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .verticalScroll(editorScrollState)
                 .padding(horizontal = 12.dp, vertical = 8.dp)
                 .semantics { contentDescription = "Code editor" },
             textStyle = TextStyle(
@@ -1286,12 +1283,17 @@ fun IdePreview(
                 .background(ideBorder())
         )
 
-        // Preview content
+        // Preview content — Box clips the scrollable Column to bounded height.
+        // In CMP 1.11.0, verticalScroll cannot be combined with weight() or fillMaxHeight()
+        // because weight/fillMaxHeight provide bounded constraints and verticalScroll needs
+        // to measure its child with unbounded height. Wrapping in a clipping Box solves this:
+        // the Box takes the bounded size, the scrollable Column inside measures unbounded.
+        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .padding(16.dp)
         ) {
             // Try shared parsers for all formats, fall back to plain text
             val detectedFormat = try {
@@ -1329,7 +1331,8 @@ fun IdePreview(
                     )
                 }
             }
-        }
+        } // end Column (scrollable content)
+        } // end Box (weight(1f) bounded clip)
     }
 }
 

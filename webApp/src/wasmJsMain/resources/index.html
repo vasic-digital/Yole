@@ -112,23 +112,76 @@
         <div class="loading-text">Loading workspace...</div>
     </div>
     
-    <!-- Main app container -->
-    <div id="root"></div>
-    
+    <!-- Main app container — id MUST match `viewportContainerId` passed to
+         ComposeViewport(...) in webApp/src/wasmJsMain/.../Main.kt.
+         iter-84: was "root" — caused blank screen because Compose couldn't
+         find its mount point and silently no-op'd. Now "yoleCanvas" to
+         match the Kotlin code. Verified by webapp_render_validation_challenge. -->
+    <div id="yoleCanvas"></div>
+
+    <!-- Wasm bundle: webpack produces yole-web.js which loads the .wasm.
+         iter-84: was MISSING — Kotlin/Wasm webpack does NOT auto-inject
+         a script tag when index.html lives in src/wasmJsMain/resources/.
+         Without this tag the bundle never executes and the page stays
+         on the splash screen forever (then "blank" once splash fades).
+         Verified by webapp_render_validation_challenge. -->
+    <script src="yole-web.js" defer></script>
+
     <script>
-        // Hide loading screen when app is ready
-        window.addEventListener('load', function() {
-            setTimeout(() => {
+        // Hide loading screen ONLY after the app actually mounts.
+        // iter-84: was time-based (1200 ms unconditional). That meant the
+        // splash faded even when Compose failed to mount, leaving the user
+        // staring at a blank white page. Now we poll for Compose's canvas
+        // injection AND fall back to a 10s timeout (in which case the
+        // splash stays visible — better than a lie).
+        (function () {
+            const SPLASH_FADE_DELAY_MS = 400;
+            const POLL_INTERVAL_MS = 100;
+            const FALLBACK_TIMEOUT_MS = 10000;
+            const start = Date.now();
+            function hideSplash() {
                 const loading = document.getElementById('loading');
-                if (loading) {
-                    loading.classList.add('fade-out');
-                    setTimeout(() => {
-                        loading.style.display = 'none';
-                    }, 400);
+                if (!loading) return;
+                loading.classList.add('fade-out');
+                setTimeout(() => { loading.style.display = 'none'; }, SPLASH_FADE_DELAY_MS);
+            }
+            // CMP 1.11.0+ uses a Shadow DOM for its layer structure. The shadow host is
+            // a DIV nested INSIDE #yoleCanvas (not #yoleCanvas itself). We must recursively
+            // walk the element tree crossing shadow roots to find the canvas.
+            function findCanvasDeep(el) {
+                if (!el) return false;
+                if (el.tagName === 'CANVAS') return true;
+                if (el.shadowRoot) {
+                    for (var i = 0; i < el.shadowRoot.children.length; i++) {
+                        if (findCanvasDeep(el.shadowRoot.children[i])) return true;
+                    }
                 }
-            }, 1200);
-        });
-        
+                for (var j = 0; j < el.children.length; j++) {
+                    if (findCanvasDeep(el.children[j])) return true;
+                }
+                return false;
+            }
+            function poll() {
+                // Compose Multiplatform (CMP 1.11.0+) injects a <canvas> inside the viewport
+                // container. The canvas is in a Shadow DOM subtree inside #yoleCanvas.
+                const container = document.getElementById('yoleCanvas');
+                const composeMounted = container && findCanvasDeep(container);
+                if (composeMounted) {
+                    hideSplash();
+                    return;
+                }
+                if (Date.now() - start > FALLBACK_TIMEOUT_MS) {
+                    // Don't hide the splash — the app failed to mount.
+                    // Leaving the splash visible is more honest per CONST-039
+                    // than showing a blank white page.
+                    console.error('[Yole] Compose did not mount within ' + FALLBACK_TIMEOUT_MS + 'ms — leaving splash visible');
+                    return;
+                }
+                setTimeout(poll, POLL_INTERVAL_MS);
+            }
+            window.addEventListener('load', () => setTimeout(poll, POLL_INTERVAL_MS));
+        })();
+
         // Service Worker registration for PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {

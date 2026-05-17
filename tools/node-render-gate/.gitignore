@@ -1,0 +1,5 @@
+# Node dependencies — never commit, npm install regenerates
+node_modules/
+
+# Debug scripts created during iter-84 investigation — not part of the production gate
+debug-*.js

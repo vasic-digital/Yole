@@ -408,8 +408,18 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates qa-iter-82-gates
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates qa-iter-82-gates qa-iter-84-gates
 	bash automation/run-qa-all.sh --skip-unit --skip-build
+	@echo "-----------------------------------------------------------------------------------"
+
+# iter-84 gates: Web Wasm render validation — static + runtime (CONST-039 anti-bluff).
+# Static layer: checks viewportContainerId + script tag consistency in index.html.
+# Runtime layer: runs Puppeteer render gate verifying Compose canvas mounted and
+# screenshot is non-blank. Requires Node.js + npm deps in tools/node-render-gate/.
+# Run AFTER ./gradlew :webApp:wasmJsBrowserDistribution to ensure bundle is current.
+qa-iter-84-gates:
+	@echo "=== iter-84 gates: Web Wasm render validation (static + runtime) ==="
+	bash yole-challenges/scripts/webapp_render_validation_challenge.sh
 	@echo "-----------------------------------------------------------------------------------"
 
 # iter-82 gates: Wasm production bundle existence + size check (CONST-039 installable-asset evidence).

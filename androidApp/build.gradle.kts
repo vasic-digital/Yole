@@ -47,8 +47,8 @@ android {
         // Raised from 24 to 26; API 26 covers ~92%+ of active Android devices (Dec 2025).
         minSdk = 26
         targetSdk = 35
-        versionCode = 200
-        versionName = "2.0.0"
+        versionCode = 201
+        versionName = "2.0.1"
 
         // iter-64 Phase 3: Apache POI pushes the method count past the 64k
         // dex limit. multiDexEnabled = true activates AndroidX MultiDex so

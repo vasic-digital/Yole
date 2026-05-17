@@ -6,7 +6,62 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-18 (iter-83 COMPLETE — v2.0.0 4-platform release: Android (44MB Release + 56MB Debug APKs), Desktop macOS DMG (526MB), Web Wasm PWA live at https://yole-app.web.app, iOS simulator (unchanged from v1.9.5). 9,123 tests run; 5 known K2 stub failures. make qa-all GREEN (all 14 iter-gates PASS). Tag v2.0.0 pushed.)
+**Last updated:** 2026-05-18 (iter-84 EMERGENCY COMPLETE — v2.0.1: 3 Web Wasm bugs fixed (container ID + script tag + Shadow DOM splash poll), 5 Compose layout fixes, render gate PASS locally + at https://yole-app.web.app. Android v2.0.1 (44MB Release + 56MB Debug) distributed to Firebase App Distribution. Desktop macOS DMG 525MB staged. All artifacts in releases/. Committed + tagged v2.0.1. make qa-all GREEN with 15 iter-gates.)
+
+## Section 75 — iter-84 EMERGENCY: Web Wasm blank-screen fix + browser-render anti-bluff gate + v2.0.1
+
+**Status:** COMPLETE.
+
+**Branch:** `master`
+
+### Summary
+
+v2.0.0 shipped a blank-screen Web Wasm PWA. Three compounding bugs identified and fixed:
+
+1. **Container ID mismatch** (`root` → `yoleCanvas`): `index.html` had `<div id="root">` but `ComposeViewport(viewportContainerId = "yoleCanvas")` targets `#yoleCanvas`. Compose silently no-ops.
+2. **Missing script tag**: `<script src="yole-web.js">` was absent. Wasm bundle never loaded.
+3. **CMP 1.11.0 Shadow DOM**: Splash poll used `querySelector('canvas')` which cannot pierce shadow roots. Deep recursive traversal (`findCanvasDeep()`) added.
+
+Also fixed: EnhancedWebApp.kt had 5 unbounded-height Compose layout bugs causing `IllegalStateException: Vertically scrollable component was measured with infinity maximum height constraints`.
+
+### Files changed in iter-84
+
+| File | Change |
+|------|--------|
+| `webApp/src/wasmJsMain/resources/index.html` | Container ID fix, script tag added, Shadow DOM-aware splash poll |
+| `webApp/src/wasmJsMain/kotlin/digital/vasic/yole/web/EnhancedWebApp.kt` | 5 Compose layout fixes (LazyColumn, Box, fillMaxHeight) |
+| `tools/node-render-gate/render-gate.js` | New Puppeteer gate: SwiftShader, Shadow DOM traversal, screenshot pixel analysis |
+| `yole-challenges/scripts/webapp_render_validation_challenge.sh` | New: static + runtime render gate |
+| `Makefile` | `qa-iter-84-gates` added to `qa-all` chain |
+| `androidApp/build.gradle.kts` | versionCode 200→201, versionName "2.0.0"→"2.0.1" |
+| `desktopApp/build.gradle.kts` | packageVersion "2.0.0"→"2.0.1" |
+| `yole-challenges/scripts/display_version_consistency_challenge.sh` | Fixed `|| true` guard on `ls -t` APK glob |
+| `CHANGELOG.md` | v2.0.1 entry added |
+
+### Gate results
+
+| Gate | Result |
+|------|--------|
+| `webapp_render_validation_challenge.sh` (local) | PASS — canvas 1280×154, screenshot 22616B 99.5% non-blank |
+| `webapp_render_validation_challenge.sh` (https://yole-app.web.app) | PASS — canvas mounted in 4561ms |
+| `display_version_consistency_challenge.sh` | PASS — 2.0.1 canonical |
+| Firebase deploy | PASS — https://yole-app.web.app live |
+
+### Artifacts distributed
+
+| Artifact | Size | Firebase |
+|----------|------|---------|
+| `releases/Yole-Android-2.0.1-Release-0.0.0.2.1.apk` | 44MB | `2o3olubl51ngo` |
+| `releases/Yole-Android-2.0.1-Debug-0.0.0.2.1.apk` | 56MB | `0931bg5vi6b2g` |
+| `releases/Yole-Desktop-macos-arm64-2.0.1-Release-0.0.0.2.1.dmg` | 525MB | N/A |
+| Web Wasm PWA | — | https://yole-app.web.app |
+
+### CONST-039 evidence
+
+- Screenshot: `qa-results/iter-84/render-gate.png` — 22616 bytes, 99.5% non-white pixels
+- Render gate confirms canvas in Shadow DOM (`shadow=true`), real dimensions 1280×154
+
+---
 
 ## Section 74 — iter-83: v2.0.0 multi-platform release
 

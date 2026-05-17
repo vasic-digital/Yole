@@ -3,6 +3,75 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## v2.0.1 — iter-84 EMERGENCY: Web Wasm blank-screen fix + browser-render anti-bluff gate (2026-05-18)
+
+**Version:** 2.0.1 (versionCode 201 → dotted `0.0.0.2.1`)
+**Type:** Emergency patch — Web Wasm render regression fix. v2.0.0 shipped a blank-screen PWA due to three compounding bugs discovered post-ship.
+
+### Root cause (3 compounding bugs)
+
+**Bug 1 — Wrong container div ID (`root` → `yoleCanvas`)**
+`ComposeViewport(viewportContainerId = "yoleCanvas")` in `Main.kt` targets `#yoleCanvas`, but `index.html` had `<div id="root">`. Compose silently no-ops when the mount point is absent — no error, blank page.
+
+**Bug 2 — Missing Wasm bundle script tag**
+`index.html` had no `<script src="yole-web.js">`. Kotlin/Wasm webpack does NOT auto-inject a script tag when `index.html` lives in `src/wasmJsMain/resources/`. The bundle never executed.
+
+**Bug 3 — CMP 1.11.0 Shadow DOM + missing splash-screen detection**
+CMP 1.11.0 renders its canvas inside a Shadow DOM subtree inside `#yoleCanvas`. The splash-screen poll used `container.querySelector('canvas')` which cannot pierce shadow roots, so the splash never hid. Fixed with deep recursive traversal crossing `.shadowRoot`.
+
+**Bug 4 — Render gate design flaw (fixed in test infra)**
+The `webapp_render_validation_challenge.sh` runtime layer (Puppeteer) used `document.querySelector('#yoleCanvas canvas')` — same shadow DOM blindness. Pixel sampling used `canvas.getContext('2d')` which returns null on a WebGL 2 (Skiko) canvas.
+
+### What was fixed
+
+**`webApp/src/wasmJsMain/resources/index.html`**
+- Changed `<div id="root">` → `<div id="yoleCanvas">` (container ID matches `Main.kt`)
+- Added `<script src="yole-web.js" defer></script>` (bundle was never loaded)
+- Splash poll: replaced `container.querySelector('canvas')` with `findCanvasDeep()` — recursive function crossing `.shadowRoot` boundaries (CMP 1.11.0 Shadow DOM)
+
+**`webApp/src/wasmJsMain/kotlin/digital/vasic/yole/web/EnhancedWebApp.kt`**
+- 5 Compose layout fixes eliminating `IllegalStateException: Vertically scrollable component was measured with infinity maximum height constraints`
+- `IdeSidebar`: `Column(weight(1f).verticalScroll)` → `LazyColumn(weight(1f))`
+- `IdeEditor` gutter: `Column.fillMaxHeight().verticalScroll` → `LazyColumn.fillMaxHeight()`
+- `IdeEditor` BasicTextField: removed inner `verticalScroll` modifier
+- `IdePreview`: `Column.fillMaxSize().verticalScroll` → `Box(weight(1f)) + Column.fillMaxWidth().verticalScroll`
+- `HtmlContent`: removed nested `verticalScroll` causing measure conflict
+
+**`tools/node-render-gate/render-gate.js`** (new — CONST-039 runtime evidence gate)
+- Added `--enable-unsafe-swiftshader --use-gl=swiftshader` flags for headless WebGL 2
+- Canvas detection: deep recursive traversal crossing `.shadowRoot` (CMP 1.11.0 Shadow DOM)
+- Pixel sampling: Puppeteer screenshot buffer analysis (screenshot byte count + non-white ratio) — replaces failed `getContext('2d')` approach for WebGL 2 canvas
+- Screenshot saved to `qa-results/iter-84/render-gate.png` as CONST-039 evidence
+
+**`yole-challenges/scripts/webapp_render_validation_challenge.sh`** (new gate)
+- Static layer: `viewportContainerId` in `Main.kt` matches `<div id=...>` in `index.html`; `yole-web.js` script tag present
+- Runtime layer: Puppeteer gate — canvas mounted (shadow DOM aware) + screenshot non-blank
+- Wired into `Makefile qa-iter-84-gates` → `qa-all`
+
+**`yole-challenges/scripts/display_version_consistency_challenge.sh`** (bugfix)
+- `ls -t releases/.../*.apk 2>/dev/null | head -1` assignment now guarded with `|| true`
+- Without it, `set -euo pipefail` caused the script to abort (exit 1) silently when no release APK exists for the new version — surfaced on 2.0.0 → 2.0.1 bump
+
+### What was deployed
+
+- Firebase Hosting re-deployed: `https://yole-app.web.app` — verified non-blank via render gate
+- `webapp_render_validation_challenge.sh`: PASS against deployed URL (canvas mounted in 4561ms, screenshot 22616B 99.5% non-blank)
+- Android Release APK: Firebase App Distribution `2o3olubl51ngo` (console.firebase.google.com/project/yole-app)
+- Android Debug APK: Firebase App Distribution `0931bg5vi6b2g`
+
+### CONST-039 runtime evidence
+- Screenshot: `qa-results/iter-84/render-gate.png` — 22616 bytes, 99.5% non-white pixels
+- Render gate log confirms: Compose canvas in Shadow DOM (`shadow=true`), dimensions 1280×154
+
+### Open trackers (unchanged)
+| Tracker | Description | Fix path |
+|---------|-------------|----------|
+| `#iter-82-completion-engine-k2-stub` | `CompletionEngineFlow` K2 NPE → `emptyFlow()` stub | Fix in KGP 2.4+ |
+| `#iter-78-ios-paid-dev-program-needed-for-firebase` | Device .ipa blocked | Xcode sign-in with correct Apple ID |
+| `#iter-76-ios-scenarios-pending-xcode` | iOS HelixQA scenarios await Xcode automation | Add `ios` to YAML platforms |
+
+---
+
 ## v2.0.0 — iter-83: First Web Wasm PWA production ship + KGP/CMP upgrade + iOS simulator baseline (2026-05-18)
 
 **Version:** 2.0.0 (versionCode 200 → dotted `0.0.0.2.0`)

@@ -1,0 +1,10 @@
+{
+  "name": "yole-web-render-gate",
+  "version": "1.0.0",
+  "description": "Puppeteer-driven Web Wasm browser-render validation. Loads the deployed Yole URL (or local bundle), waits for Compose to mount its canvas inside #yoleCanvas, asserts non-blank rendered DOM. iter-84 closes the recurring CONST-039 gap class (icons / version / iOS / web-render all shipped silently broken).",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "puppeteer": "^23.0.0"
+  }
+}

@@ -114,8 +114,11 @@ done
 if [[ -z "$AAPT2" ]]; then
     echo "[SKIP-OK: aapt2 not found in PATH or standard SDK locations]"
 else
-    # Find the most recently produced Release APK (or the canonical one in releases/)
-    APK=$(ls -t releases/Yole-Android-${ANDROID_VERSION_NAME}-Release-*.apk 2>/dev/null | head -1)
+    # Find the most recently produced Release APK (or the canonical one in releases/).
+    # The || true guard is required: with set -euo pipefail, ls exits non-zero when
+    # no files match the glob on macOS/Linux — that would abort the script before
+    # the empty-string check below. Surfaced when bumping 2.0.0 → 2.0.1 (iter-84).
+    APK=$(ls -t releases/Yole-Android-${ANDROID_VERSION_NAME}-Release-*.apk 2>/dev/null | head -1) || true
 
     if [[ -z "$APK" ]]; then
         echo "[SKIP-OK: no Yole-Android-${ANDROID_VERSION_NAME}-Release-*.apk in releases/; build + retry]"
