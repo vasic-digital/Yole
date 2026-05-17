@@ -390,8 +390,17 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates
 	bash automation/run-qa-all.sh --skip-unit --skip-build
+	@echo "-----------------------------------------------------------------------------------"
+
+# iter-81 gates: display-version-consistency challenge (CONST-039).
+# Catches the bug class surfaced in iter-80: production source displayed
+# "1.0.0" through v1.9.5 (9 consecutive shipped versions) because no test
+# verified the user-visible version string against the canonical versionName.
+qa-iter-81-gates:
+	@echo "=== iter-81 gates: display-version-consistency suite ==="
+	bash yole-challenges/scripts/display_version_consistency_challenge.sh
 	@echo "-----------------------------------------------------------------------------------"
 
 # iter-76 gates: HelixQA evidence portability + per-feature scenario coverage (CONST-039).
