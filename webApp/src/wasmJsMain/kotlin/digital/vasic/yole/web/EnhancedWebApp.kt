@@ -161,7 +161,7 @@ fun EnhancedYoleWebApp() {
             "creole" -> "= New Document =\n\n**Bold** and //italic// text.\n\n* Item 1\n* Item 2"
             "tiddlywiki" -> "! New Document\n\n''Bold'' and //italic// text.\n\n* Item 1\n* Item 2"
             "jupyter" -> "{\n  \"cells\": [\n    {\n      \"cell_type\": \"markdown\",\n      \"source\": [\"# New Notebook\"]\n    }\n  ],\n  \"metadata\": {},\n  \"nbformat\": 4\n}"
-            "keyvalue" -> "# Configuration\napp.name=Yole\napp.version=1.0.0\napp.debug=false"
+            "keyvalue" -> "# Configuration\napp.name=Yole\napp.version=1.9.5\napp.debug=false"
             "binary" -> "48 65 6C 6C 6F 20 57 6F 72 6C 64"
             else -> ""
         }

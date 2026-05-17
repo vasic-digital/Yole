@@ -47,7 +47,7 @@
  *#######################################################*/
 package digital.vasic.yole.android.robolectric.signaturehelp
 
-import digital.vasic.yole.android.ui.editor.signaturehelp.resolveActiveParamSpan
+import digital.vasic.yole.lsp.resolveActiveParamSpan
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull

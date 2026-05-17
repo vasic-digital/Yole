@@ -475,7 +475,9 @@ class FormattingSettingsRobolectricTest {
         )
 
         // (e) YoleApp must update anchor with rect.left and rect.bottom.
-        val rectAnchorBlock = yoleApp.substringAfter("onCursorRectChanged").substringBefore("scrollToLineRequest")
+        // Use the parameter-assignment form ("onCursorRectChanged = { rect ->") so we
+        // skip the comment at the top of the function and anchor to the actual lambda body.
+        val rectAnchorBlock = yoleApp.substringAfter("onCursorRectChanged = { rect ->")
         assertTrue(
             "YoleApp.kt onCursorRectChanged MUST update hoverPopupAnchor with rect.left",
             rectAnchorBlock.contains("rect.left"),

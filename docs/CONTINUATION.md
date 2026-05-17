@@ -6,7 +6,56 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-17 (iter-78 COMPLETE — iOS first build/run confirmed on iPhone 16 Pro simulator. KMP shared framework built (linkReleaseFrameworkIosSimulatorArm64, static 120 MB). KGP 2.0.20 workaround applied (pre-created 6 iosX64/Arm64/SimulatorArm64 Debug/Release FrameworkExport configs). Xcode project wired (framework ref + embed phase + Gradle run-script). iOSApp.swift live (import shared, MainViewControllerKt.MainViewController()). LaunchScreen.storyboard targetRuntime fixed (AppleCocoa→iOS.CocoaTouch). CADisableMinimumFrameDurationOnPhone added to Info.plist. Team ID A65D85HHRX in all exportOptions plists. Compose Multiplatform UI rendering confirmed on simulator (screenshot evidence). Firebase iOS app registered (1:578988389676:ios:c88ff26036a1e5705d2889). HelixQA iOS baseline 6/6 PASS. Android v1.9.5 (versionCode 195) built + Firebase distributed. Desktop macOS-arm64 v1.9.5 DMG 524 MB. Device .ipa deferred — wrong Apple ID in Xcode.)
+**Last updated:** 2026-05-17 (iter-80 COMPLETE — Post-T7 + post-v1.9.5 comprehensive qa-all validation. 4 real regressions found and fixed: (1) SignatureHelpPillRobolectricTest wrong import (android.ui.editor.signaturehelp → lsp); (2) FormattingSettingsRobolectricTest.iter74_hoverPreciseAnchor substringAfter hit comment not param; (3) VersionConsistencyTests hardcoded EXPECTED_VERSION="1.0.0"/EXPECTED_VERSION_CODE=100 (fixed to 1.9.5/195); (4) Display version strings "1.0.0" in YoleApp.kt/Dialogs.kt/Main.kt/EnhancedWebApp.kt updated to 1.9.5. T7 leakage: only in docs/archive/ (doc-only, not build-critical) + Dependencies/HelixDevelopment/LLMsVerifier migration scripts (throwaway, not build-critical). No T7 in Makefile/challenge scripts/build config. All 11 iter gates PASS after fixes. v2.0.0 readiness: iter-81 driver recommendation = KGP upgrade to 2.3.21 + attempt Web Wasm binaries.executable(). iOS parity ~83% CM-friendly. Kotlin latest stable = 2.3.21, 2.4.0-RC in flight.)
+
+## Section 72 — iter-80: Post-T7 + post-v1.9.5 comprehensive QA validation + v2.0.0 readiness assessment
+
+**Status:** COMPLETE.
+
+**Branch:** master.
+
+### Regressions found and fixed (iter-80)
+
+| Regression | Root cause | Fix |
+|-----------|------------|-----|
+| `SignatureHelpPillRobolectricTest` compile error | Wrong import: `android.ui.editor.signaturehelp.resolveActiveParamSpan` — function was moved to `lsp` package in iter-75 but test import not updated | Fixed import to `digital.vasic.yole.lsp.resolveActiveParamSpan` |
+| `FormattingSettingsRobolectricTest.iter74_hoverPreciseAnchor_wiresCursorRect` | `substringAfter("onCursorRectChanged")` hit comment at line 1824 (before `scrollToLineRequest` at 2486), not the lambda at 2493 (after `scrollToLineRequest`) | Changed to `substringAfter("onCursorRectChanged = { rect ->")` |
+| `VersionConsistencyTests.testDesktopBuildGradleVersion` + `testAndroidBuildGradleVersion` | Test constants `EXPECTED_VERSION="1.0.0"` / `EXPECTED_VERSION_CODE=100` never updated past iter-30 initial setup | Updated to `"1.9.5"` / `195` |
+| Display version "1.0.0" in production source | YoleApp.kt (Android+Desktop), Dialogs.kt, Main.kt, EnhancedWebApp.kt, FullUIAutomationTest.kt all had hardcoded `1.0.0` | Updated all to `1.9.5` |
+
+### T7 leakage audit (post-migration)
+
+| Location | T7 ref type | Action |
+|----------|-------------|--------|
+| `docs/archive/*.md`, `docs/performance/*.md` | Documentation only | No action — historical docs |
+| `Dependencies/HelixDevelopment/LLMsVerifier/final_test_fix.py`, `final_fix.py` | Hardcoded path in throwaway migration scripts | No action — not build-critical; scripts are one-shot migration tools |
+| `local.properties` | Comment-only ("Updated by iter-79 T7 migration") — actual `sdk.dir` is correct | No action — comment is accurate migration record |
+| `Makefile`, challenge scripts, build configs | None found | CLEAN |
+
+### Build cache notes (iter-80)
+
+Two challenge invocations triggered Kotlin internal compiler errors (`java.io.FileNotFoundException: WebDavService.class`) due to stale incremental build cache. Both resolved by running `./gradlew :shared:clean :shared:desktopTest` before re-running the affected challenges. Root cause: incremental compile state from T7 migration. Not a code defect.
+
+### v2.0.0 readiness / iter-81 recommendation
+
+| Candidate | Tractability | Notes |
+|-----------|--------------|-------|
+| **KGP 2.3.21 upgrade + Web Wasm** | HIGH | Kotlin 2.3.21 is latest stable (2.4.0-RC in flight). Current is 2.0.20 (+3 minor versions). Per iter-65, KGP 2.1.0 still had bytecode limitations; 2.3.x likely resolves. Attempt `binaries.executable()` after upgrade. |
+| iOS UI parity | MEDIUM | YoleApp.kt is ~83% CM-compatible (737 Compose hits vs 127 Android-specific). Blocked on operator: re-sign into Xcode with `milos85vasic.2nd@gmail.com` first. |
+| Linux .deb container build | LOW | Containers submodule has the Containerfile; requires `podman` on host. |
+
+**Recommended iter-81 focus:** KGP 2.0.20 → 2.3.21 upgrade + retry `wasmJsMain { binaries.executable() }`.
+
+### Open trackers (post-iter-80, inherited from iter-78)
+
+| Tracker | Description | Unblock condition |
+|---------|-------------|-------------------|
+| `#iter-78-ios-paid-dev-program-needed-for-firebase` | Device .ipa blocked — wrong Apple ID in Xcode | Operator: Xcode sign-out/in with `milos85vasic.2nd@gmail.com` |
+| `#iter-78-helixqa-ios-xcuitest-deferred` | HelixQA binary has no `--platform ios` | Future iter |
+| `#iter-78-ios-ui-feature-parity-pending` | iOS shows CM entry point only | Unblock after device .ipa |
+| `#wasmjs-production-distribution-gap` | Web Wasm bundle not built for production yet | iter-81 KGP upgrade |
+
+---
 
 ## Section 71 — iter-78: BUILD + SIGN + SHIP iOS + HelixQA iOS baseline + v1.9.5 multi-platform release
 

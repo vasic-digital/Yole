@@ -1300,7 +1300,7 @@ fun MainScreen() {
                         Column {
                             Text("Yole - Universal Text Editor")
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("Version: 1.0.0")
+                            Text("Version: 1.9.5")
                             Spacer(modifier = Modifier.height(8.dp))
                             Text("Platforms: Android, Desktop, iOS, Web")
                             Spacer(modifier = Modifier.height(8.dp))
@@ -2998,7 +2998,7 @@ fun IdeDrawerContent(
 
         // Version info at bottom
         Text(
-            "Yole v1.0.0",
+            "Yole v1.9.5",
             color = textSecondary.copy(alpha = 0.5f),
             fontSize = 10.sp,
             modifier = Modifier.padding(16.dp)
@@ -4313,7 +4313,7 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Version: 1.0.0",
+            text = "Version: 1.9.5",
             style = MaterialTheme.typography.bodySmall,
             fontFamily = FontFamily.Monospace,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -5532,7 +5532,7 @@ fun MoreScreen(
                 Column {
                     Text("About Yole", style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        "Version 1.0.0 - Text editor for Android, Desktop, iOS & Web",
+                        "Version 1.9.5 - Text editor for Android, Desktop, iOS & Web",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )

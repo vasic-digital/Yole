@@ -22,8 +22,8 @@ import java.io.File
 class VersionConsistencyTests {
 
     companion object {
-        const val EXPECTED_VERSION = "1.0.0"
-        const val EXPECTED_VERSION_CODE = 100
+        const val EXPECTED_VERSION = "1.9.5"
+        const val EXPECTED_VERSION_CODE = 195
 
         /**
          * Resolves a path relative to the project root regardless of the
