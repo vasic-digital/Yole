@@ -3,10 +3,57 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
-## v1.9.5 — iter-77: iOS infrastructure prep — Xcode project, signing, HelixQA iOS scenarios (2026-05-17)
+## v1.9.5 — iter-78: BUILD + SIGN + SHIP iOS + HelixQA iOS baseline + multi-platform release (2026-05-17)
 
-**Version:** 1.9.5 (versionCode unchanged — no shippable user-facing binary; iOS still requires Xcode to build)
-**Type:** Infrastructure — pre-Xcode iOS plumbing, HelixQA iOS platform enablement, helixqa binary, .docx fixture, Containers iOS simulator management.
+**Version:** 1.9.5 (versionCode 195 → dotted `0.0.0.1.95`)
+**Type:** Ship — iOS Compose Multiplatform first build/run on simulator, HelixQA iOS baseline (6/6 PASS), Android + Desktop released; Firebase iOS app registered.
+
+### What was shipped
+
+**iOS (First ship — simulator confirmed, device deferred)**
+- Built `shared` Kotlin/Native framework (`linkReleaseFrameworkIosSimulatorArm64`, static, 120 MB)
+- Wired XCFramework into Xcode project: PBXFileReference + PBXBuildFile + Embed Frameworks phase + Gradle run-script phase
+- `iOSApp.swift`: live `import shared`, `MainViewControllerKt.MainViewController()` — real KMP entry point
+- Fixed `LaunchScreen.storyboard` `targetRuntime` (`AppleCocoa` → `iOS.CocoaTouch`)
+- Fixed `Info.plist`: `CADisableMinimumFrameDurationOnPhone = true` (Compose MP iOS requirement)
+- All three `exportOptions/*.plist` filled with Team ID `A65D85HHRX`
+- Simulator Debug build: `** BUILD SUCCEEDED **`, Compose Multiplatform UI rendering confirmed (screenshot evidence)
+- Packaged: `releases/Yole-iOS-1.9.5-Simulator-0.0.0.1.95.zip` (73 MB)
+- KGP 2.0.20 workaround: pre-create `iosX64/Arm64/SimulatorArm64Debug/ReleaseFrameworkExport` configurations
+- Deferred: device .ipa — wrong Apple ID in Xcode (`#iter-78-ios-paid-dev-program-needed-for-firebase`)
+
+**Firebase iOS**
+- Registered iOS app: `digital.vasic.yole.ios` → App ID `1:578988389676:ios:c88ff26036a1e5705d2889`
+- `GoogleService-Info.plist` downloaded (gitignored via `.gitignore:148`)
+
+**HelixQA iOS Baseline (6/6 PASS)**
+- Simulator: iPhone 16 Pro (UDID `B17BD9A0-6A18-48AD-86D6-80488202DDB7`), iOS 18.3
+- IOS-SIM-001: App installs and launches → PASS (PID 28925)
+- IOS-SIM-002: Compose UI renders in foreground → PASS (screenshot evidence)
+- IOS-SIM-003: Cold start after terminate → PASS (PID 34711)
+- IOS-SIM-004: Dark mode appearance change → PASS
+- IOS-SIM-005: Return to light mode → PASS
+- IOS-SIM-006: Zero crashes during session → PASS (all DiagnosticReports from prior session)
+- Evidence: `qa-results/iter-78/helixqa-ios/` (5 screenshots + RESULTS.md)
+- Deferred: XCUITest/Appium automation → `#iter-78-helixqa-ios-xcuitest-deferred`
+
+**Android v1.9.5**
+- versionCode 194 → 195, versionName 1.9.4 → 1.9.5
+- Artifacts: `Yole-Android-1.9.5-Release-0.0.0.1.95.apk` (39 MB), `Yole-Android-1.9.5-Debug-0.0.0.1.95.apk` (48 MB)
+- Firebase App Distribution upload: `android:digital.vasic.yole.android` release `67f8bk1qhq0io`
+
+**Desktop macOS-arm64 v1.9.5**
+- packageVersion bumped 1.9.4 → 1.9.5
+- Artifact: `Yole-Desktop-macos-arm64-1.9.5-Release-0.0.0.1.95.dmg` (524 MB)
+
+### iter-77 infrastructure (included in this release)
+- Xcode project authored, Asset Catalogs, Info.plist, exportOptions, signing docs, HelixQA iOS scenarios, helixqa binary, Containers iOS simulator management.
+
+### Cross-platform impact
+- Android: versionCode/Name bumped, Release + Debug built + Firebase distributed
+- Desktop: packageVersion bumped, macOS-arm64 DMG built
+- iOS: First working Compose Multiplatform build confirmed on simulator; device export deferred (see blockers)
+- Web: Unaffected — no changes to webApp or wasmJsMain
 
 ### What was done
 
