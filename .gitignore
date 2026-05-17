@@ -164,3 +164,6 @@ shared/build/XCFrameworks/
 #   Security
 # A fresh clone followed by `git submodule update --init --recursive`
 # resolves the previous "missing sibling repos" gate.
+
+# Firebase local deployment cache
+.firebase/

@@ -59,11 +59,12 @@ private const val TEST_DEBOUNCE_MS = 30L
  * Slack added on top of the debounce window when "waiting for quiescence".
  * Guarantees the debounce timer has fired even on a slow CI host or when
  * the Dispatchers.Default pool is under load (e.g. running alongside 60+
- * other coroutine-heavy tests). Increased from 50 ms to 150 ms in iter-60
- * Phase 9 to eliminate flakiness of dismiss_thenLongerPrefixAfterShort
- * when the full digital.vasic.yole.completion.* suite runs concurrently.
+ * other coroutine-heavy tests). Increased from 50 ms → 150 ms in iter-60
+ * Phase 9; then 150 ms → 300 ms in iter-83 after observing flakiness of
+ * dismiss_thenLongerPrefixAfterShort when running alongside 9,123-test
+ * KGP 2.3.21 suite on a loaded Dispatchers.Default pool.
  */
-private const val DEBOUNCE_SLACK_MS = 150L
+private const val DEBOUNCE_SLACK_MS = 300L
 
 class CompletionTriggerTest {
 
@@ -352,7 +353,12 @@ class CompletionTriggerTest {
 
             // Go BELOW minPrefix — this is the re-arm trigger.
             trig.onTextChanged("f", 1)   // length 1 < 2 → Hide, and re-arms dismissed state
-            delay(5)
+            // Wait long enough for the short-prefix coroutine (scope.launch { mutex.withLock })
+            // to complete and set lastPrefixWasShort=true BEFORE the long-prefix call arrives.
+            // Under a loaded Dispatchers.Default pool with 9,000+ concurrent tests, 5ms was
+            // insufficient; the short-prefix coroutine's mutex.withLock can be delayed by
+            // scheduler contention. DEBOUNCE_SLACK_MS (300ms) guarantees ordering. (iter-83)
+            delay(DEBOUNCE_SLACK_MS)
 
             // Now go ABOVE minPrefix — the short→long transition fires Show.
             trig.onTextChanged("fo", 2)  // length 2 ≥ 2 → debounce starts, re-armed

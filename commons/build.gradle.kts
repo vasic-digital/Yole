@@ -48,11 +48,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    kotlinOptions {
-        jvmTarget = "11"
-        freeCompilerArgs += listOf(
-            "-opt-in=kotlin.RequiresOptIn"
-        )
+    // KGP 2.3+ requires compilerOptions DSL instead of kotlinOptions
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+            optIn.add("kotlin.RequiresOptIn")
+        }
     }
 
     lint {

@@ -699,7 +699,7 @@ fun createNewDocument(formatId: String, onDocumentCreated: (String, String) -> U
         "keyvalue" -> """
             # Application Configuration
             app.name=Yole
-            app.version=1.9.5
+            app.version=2.0.0
             app.debug=false
 
             # Database Settings

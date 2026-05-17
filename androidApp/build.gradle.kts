@@ -47,8 +47,8 @@ android {
         // Raised from 24 to 26; API 26 covers ~92%+ of active Android devices (Dec 2025).
         minSdk = 26
         targetSdk = 35
-        versionCode = 195
-        versionName = "1.9.5"
+        versionCode = 200
+        versionName = "2.0.0"
 
         // iter-64 Phase 3: Apache POI pushes the method count past the 64k
         // dex limit. multiDexEnabled = true activates AndroidX MultiDex so
@@ -117,7 +117,13 @@ android {
         isCoreLibraryDesugaringEnabled = true
     }
 
-    // kotlinOptions removed — jvmTarget set via Kotlin compilerOptions DSL (KGP 2.3+)
+    // KGP 2.3+ requires compilerOptions DSL; jvmTarget must match compileOptions (JVM 11)
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+            freeCompilerArgs.add("-Xexpect-actual-classes")
+        }
+    }
 
     buildFeatures {
         compose = true
@@ -214,10 +220,14 @@ dependencies {
     // iter-64 Phase 15: core library desugaring for Apache POI MethodHandle.invoke API.
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 
-    // Compose
+    // Compose (CMP artifacts for UI/Foundation/Runtime; material3 uses AndroidX for Android target)
     implementation(libs.compose.runtime)
     implementation(libs.compose.foundation)
-    implementation(libs.compose.material3)
+    // iter-83: CMP 1.11.0 material3 is a KMP-only artifact; Android target uses androidx.compose.material3
+    implementation(libs.androidx.compose.material3)
+    // Material Icons needed for Icons.* references in YoleApp.kt
+    implementation(libs.androidx.compose.material.icons.core)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.tooling.preview)
 
@@ -229,8 +239,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.compose)
     implementation(libs.androidx.documentfile)
 
-    // Material Design 3
-    implementation(libs.compose.material3)
+    // Material Design 3 (AndroidX alias, same as above — explicit for clarity)
+    implementation(libs.androidx.compose.material3)
 
     // PDF Export
     implementation("com.itextpdf:itextpdf:5.5.13.3")

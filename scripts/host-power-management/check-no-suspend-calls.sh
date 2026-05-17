@@ -70,6 +70,9 @@ EXCLUDE_PATHS=(
   "/vtcode-config/src/core/commands.rs"
   # Challenge documentation describing suspend-call detection (not executing):
   "Challenges/p1-f14-sandboxed-shell/CHALLENGE.md"
+  # HelixConstitution submodule: governance docs list forbidden commands as block-list
+  # documentation (enumerate what is prohibited), NOT as code invocations.
+  "HelixConstitution/"
 )
 
 # Forbidden grep -E patterns. Real, tight regexes — not bare words.
