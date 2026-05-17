@@ -12,6 +12,12 @@ import java.util.Date
 import java.util.TimeZone
 
 plugins {
+    // iter-82: Apply base plugin first so LifecycleBasePlugin registers the 'clean' task before
+    // KGP 2.3.21's WasmNodeJsRootPlugin applies BasePlugin to the root project again.
+    // Without this, Gradle 8.13 throws "Cannot add task 'clean' as a task with that name
+    // already exists." because BasePlugin.apply() calls LifecycleBasePlugin unconditionally.
+    id("base")
+
     // Apply plugins using version catalog
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
@@ -79,8 +85,9 @@ allprojects {
     }
 }
 
-// Clean task
-tasks.register<Delete>("clean") {
+// Clean task — configured on the task registered by the base plugin (iter-82: avoid duplicate
+// registration when KGP 2.3.21 WasmNodeJsRootPlugin applies BasePlugin to root project).
+tasks.named<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
 

@@ -28,7 +28,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.CanvasBasedWindow
+import androidx.compose.ui.window.ComposeViewport
 import digital.vasic.yole.format.FormatRegistry
 import digital.vasic.yole.format.ParserRegistry
 import digital.vasic.yole.format.TextFormat
@@ -58,7 +58,12 @@ fun main() {
     digital.vasic.yole.format.ParserInitializer.registerAllParsersLazy()
     PWAFeatures.initialize()
 
-    CanvasBasedWindow(canvasElementId = "yoleCanvas", title = "Yole - IDE Editor") {
+    // iter-82: CanvasBasedWindow was removed in CMP 1.11.0.
+    // Replaced with ComposeViewport which attaches to a DOM element by ID.
+    // The `title` parameter no longer exists on the Compose API; set it via document.title.
+    document.title = "Yole - IDE Editor"
+
+    ComposeViewport(viewportContainerId = "yoleCanvas") {
         // iter-57 Phase 3: ThemeProvider publishes the active VS Code theme
         // to every Composable. Wasm/JS cannot yet fetch bundled JSON theme
         // assets (that lands in Phase 6); for now we seed an in-memory Theme

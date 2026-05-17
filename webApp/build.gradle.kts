@@ -19,20 +19,14 @@ plugins {
 @OptIn(ExperimentalWasmDsl::class)
 kotlin {
     wasmJs {
-        moduleName = "yole-web"
-        // v1.8.0 / iter-65: binaries.executable() triggers a KGP 2.0.20 bug
-        // (KT-XXXXX — ExecutableWasm.syncInputConfigure accesses `optimizeTask`
-        // before the ExecutableWasm subclass constructor sets it, because
-        // JsIrBinary.<init> eagerly calls registerTask which triggers the
-        // configure action while `this.optimizeTask` is still null at the
-        // JVM level — classic super-constructor callback into not-yet-init field).
-        //
-        // The production bundle requires binaries.executable() → blocked until
-        // Kotlin 2.1+ or a Compose-MP release that ships the fix.
-        // Tracked as #wasmjs-production-distribution-gap (partially resolved:
-        // development bundle ships via wasmJsBrowserDevelopmentWebpack).
+        // iter-82: `moduleName` removed in KGP 2.3.x — use outputModuleName + Provider API.
+        outputModuleName.set("yole-web")
+        // iter-82: binaries.executable() was blocked by KGP 2.0.20 bug (KT-XXXXX).
+        // Fixed in KGP 2.3.21 — production bundle now enabled.
+        binaries.executable()
         browser {
             commonWebpackConfig {
+                // iter-82: `outputFileName` removed — kept for webpack output name only (not runTask).
                 outputFileName = "yole-web.js"
             }
         }
@@ -49,8 +43,9 @@ kotlin {
                 implementation(compose.components.resources)
 
                 // Web-specific dependencies
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+                // iter-82: pinned to 0.6.1 to match composite-build submodule binary compat constraint
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
             }
         }
@@ -76,7 +71,8 @@ kotlin {
                 }
             }
             runTask {
-                outputFileName = "yole-web.js"
+                // iter-82: `outputFileName` removed in KGP 2.3.x — use mainOutputFileName.
+                mainOutputFileName.set("yole-web.js")
             }
         }
     }

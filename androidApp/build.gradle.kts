@@ -117,9 +117,7 @@ android {
         isCoreLibraryDesugaringEnabled = true
     }
 
-    kotlinOptions {
-        jvmTarget = "11"
-    }
+    // kotlinOptions removed — jvmTarget set via Kotlin compilerOptions DSL (KGP 2.3+)
 
     buildFeatures {
         compose = true

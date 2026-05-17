@@ -20,19 +20,49 @@ plugins {
     kotlin("plugin.compose")
     id("com.android.library")
     id("org.jetbrains.compose")
-    id("org.jetbrains.kotlinx.benchmark") version "0.4.11"
-    id("org.jetbrains.kotlin.plugin.allopen") version "2.1.0"
+    // iter-82: kotlinx.benchmark 0.4.17 causes duplicate 'clean' task with Gradle 8.13.
+    // Temporarily disabled; re-enable when kotlinx-benchmark releases Gradle 8.13 compat fix.
+    // id("org.jetbrains.kotlinx.benchmark") version "0.4.17"
+    id("org.jetbrains.kotlin.plugin.allopen") version "2.3.21"
     id("org.jetbrains.dokka") version "2.0.0"
     id("org.jetbrains.kotlinx.kover") version "0.8.3"
     id("io.gitlab.arturbosch.detekt") version "1.23.7"
+}
+
+// iter-82: kotlinx-datetime version pin.
+// Compose MP 1.11.0 transitively brings kotlinx-datetime:0.7.1 via material3:1.9.0.
+// kotlinx-datetime 0.7.x removed Clock and Clock.System, which are still referenced in the
+// bytecode of composite-build submodules (RateLimiter-KMP, Auth-KMP) compiled against 0.6.1.
+// Binary incompatibility → NoClassDefFoundError at runtime.
+//
+// Fix: force all kotlinx-datetime resolutions to 0.6.1 (downgrade from 0.7.1).
+// material3-desktop-1.9.0.jar does not reference kotlinx.datetime at the bytecode level —
+// it declared the dependency for Kotlin compilation only, so the downgrade is safe at runtime.
+// Remove this block when all composite-build submodules have been migrated to 0.7.x native API
+// (i.e., when Clock.System.now() is replaced with the 0.7.x equivalent in RateLimiter-KMP etc.)
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlinx" &&
+            requested.name.startsWith("kotlinx-datetime")
+        ) {
+            useVersion("0.6.1")
+            because(
+                "iter-82: RateLimiter-KMP + Auth-KMP compiled against 0.6.1 Clock.System; " +
+                "Compose MP 1.11.0 material3 requests 0.7.1 which removed Clock.System. " +
+                "Pinned to 0.6.1 for binary compat; migrate submodules to 0.7.x to remove this pin."
+            )
+        }
+    }
 }
 
 kotlin {
     // Android target
     androidTarget {
         compilations.all {
-            kotlinOptions {
-                jvmTarget = "11"
+            compileTaskProvider.configure {
+                compilerOptions {
+                    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+                }
             }
         }
     }
@@ -42,8 +72,10 @@ kotlin {
         val mainCompilation = compilations.getByName("main")
 
         compilations.all {
-            kotlinOptions {
-                jvmTarget = "11"
+            compileTaskProvider.configure {
+                compilerOptions {
+                    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+                }
             }
         }
 
@@ -61,7 +93,7 @@ kotlin {
     // Web target (Wasm)
     @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
     wasmJs {
-        moduleName = "yole-shared"
+        outputModuleName.set("yole-shared")
         browser {
             commonWebpackConfig {
                 outputFileName = "yole-shared.js"
@@ -106,7 +138,7 @@ kotlin {
                  // implementation("app.cash.sqldelight:runtime:2.0.2")
                  // implementation("app.cash.sqldelight:coroutines-extensions:2.0.2")
 
-                // Compose runtime (if using Compose Multiplatform)
+                // Compose runtime (Compose Multiplatform)
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material3)
@@ -390,7 +422,7 @@ kotlin {
         // Benchmark source set (created automatically by benchmark compilation)
         val desktopBenchmark by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-benchmark-runtime:0.4.11")
+                implementation("org.jetbrains.kotlinx:kotlinx-benchmark-runtime:0.4.17")
             }
         }
     }
@@ -443,24 +475,24 @@ allOpen {
     annotation("org.openjdk.jmh.annotations.State")
 }
 
-// Benchmark configuration
-benchmark {
-    targets {
-        register("desktop") {
-            this as kotlinx.benchmark.gradle.JvmBenchmarkTarget
-            jmhVersion = "1.37"
-        }
-    }
-
-    configurations {
-        named("main") {
-            warmups = 3
-            iterations = 5
-            iterationTime = 1
-            iterationTimeUnit = "s"
-        }
-    }
-}
+// Benchmark configuration — disabled with benchmark plugin (iter-82: Gradle 8.13 compat issue)
+// benchmark {
+//     targets {
+//         register("desktop") {
+//             this as kotlinx.benchmark.gradle.JvmBenchmarkTarget
+//             jmhVersion = "1.37"
+//         }
+//     }
+//
+//     configurations {
+//         named("main") {
+//             warmups = 3
+//             iterations = 5
+//             iterationTime = 1
+//             iterationTimeUnit = "s"
+//         }
+//     }
+// }
 
 // Custom task to run simple benchmarks (workaround for kotlinx.benchmark KMP issues)
 tasks.register<JavaExec>("runSimpleBenchmarks") {
@@ -493,7 +525,7 @@ tasks.register<Exec>("runChallenges") {
 
     doFirst {
         // Check Go is available
-        val goCheck = try {
+        try {
             val proc = ProcessBuilder("go", "version")
                 .redirectErrorStream(true)
                 .start()
@@ -503,7 +535,6 @@ tasks.register<Exec>("runChallenges") {
                 throw GradleException("Go returned non-zero exit code")
             }
             logger.lifecycle("Found: $output")
-            true
         } catch (e: Exception) {
             throw GradleException(
                 "Go is not available on PATH. Install Go 1.24+ to run challenges. " +
@@ -535,7 +566,6 @@ tasks.register<Exec>("runHelixQA") {
     description = "Run HelixQA orchestrated QA across all platforms (requires Go 1.24+)"
 
     val helixqaDir = file("${rootDir}/HelixQA")
-    val banksDir = file("${rootDir}/Challenges/banks/yole")
 
     doFirst {
         if (!helixqaDir.exists()) {
@@ -896,4 +926,10 @@ tasks.named("desktopProcessResources") {
 }
 tasks.named("desktopTestProcessResources") {
     dependsOn(lspBundleStage, lspBundleStageTest)
+}
+
+// iter-82: ensure repackaged tree-sitter Android JAR is present before desktopTest runs,
+// so AndroidNativeUtilsPatchTest can find the patched JAR at its expected path.
+tasks.named("desktopTest") {
+    dependsOn("repackageTreeSitterJarForAndroid", "repackageTreeSitterMarkdownJarForAndroid")
 }

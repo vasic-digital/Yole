@@ -60,6 +60,19 @@ dependencyResolutionManagement {
                 includeModule("com.yarnpkg", "yarn")
             }
         }
+        // Binaryen (WebAssembly optimizer) distributions — required by KGP 2.3.x binaries.executable()
+        // for wasmJs targets. KGP uses Gradle artifact resolution for the binaryen binary.
+        ivy("https://github.com/WebAssembly/binaryen/releases/download") {
+            patternLayout {
+                artifact("version_[revision]/[artifact]-version_[revision]-[classifier].[ext]")
+            }
+            metadataSources {
+                artifact()
+            }
+            content {
+                includeModule("com.github.webassembly", "binaryen")
+            }
+        }
     }
 }
 

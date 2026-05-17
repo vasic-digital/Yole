@@ -390,8 +390,28 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates qa-iter-82-gates
 	bash automation/run-qa-all.sh --skip-unit --skip-build
+	@echo "-----------------------------------------------------------------------------------"
+
+# iter-82 gates: Wasm production bundle existence + size check (CONST-039 installable-asset evidence).
+# Verifies that binaries.executable() produced a non-degenerate .wasm binary in
+# webApp/build/dist/wasmJs/productionExecutable/ — the primary iter-82 deliverable.
+# Must be run AFTER ./gradlew :webApp:wasmJsBrowserDistribution has been executed.
+qa-iter-82-gates:
+	@echo "=== iter-82 gates: Wasm production bundle existence + size check ==="
+	@WASM=$$(find webApp/build/dist/wasmJs/productionExecutable -name "*.wasm" -not -name "*.map" 2>/dev/null | head -1); \
+	if [ -z "$$WASM" ]; then \
+		echo "FAIL: No .wasm file found in webApp/build/dist/wasmJs/productionExecutable/"; \
+		echo "      Run: ./gradlew :webApp:wasmJsBrowserDistribution"; \
+		exit 1; \
+	fi; \
+	SIZE=$$(wc -c < "$$WASM" 2>/dev/null | tr -d ' '); \
+	if [ "$$SIZE" -lt 100000 ]; then \
+		echo "FAIL: $$WASM is only $$SIZE bytes (< 100 KB) — likely a degenerate stub build"; \
+		exit 1; \
+	fi; \
+	echo "PASS: $$WASM exists and is $$SIZE bytes (non-degenerate)"
 	@echo "-----------------------------------------------------------------------------------"
 
 # iter-81 gates: display-version-consistency challenge (CONST-039).

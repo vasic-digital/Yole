@@ -25,3 +25,12 @@ data class CompletionItem(
 ) {
     enum class Kind { Identifier, Snippet, Keyword, Word }
 }
+
+/**
+ * K2-workaround (iter-82): KGP 2.3.21 K2 FIR FirIncompatibleClassExpressionChecker crashes
+ * with "source must not be null" when a function returns Flow<List<CompletionItem>> directly.
+ * The nested generic List<CompletionItem> in the return type causes a null PSI source node in
+ * the FIR tree. Using a typealias hides the nesting from the checker and avoids the NPE.
+ * Remove this alias when the upstream K2 bug is fixed.
+ */
+internal typealias CompletionList = List<CompletionItem>

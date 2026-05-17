@@ -3,17 +3,20 @@
 
 [versions]
 # Kotlin and Core
-kotlin = "2.0.20"
-agp = "8.9.0"
-compose = "1.7.3"
-compose-plugin = "1.7.3"
+kotlin = "2.3.21"
+agp = "8.11.0"
+compose = "1.11.0"
+compose-plugin = "1.11.0"
 
 # Kotlinx Libraries
-kotlinx-coroutines = "1.9.0"
-kotlinx-serialization = "1.7.3"
+kotlinx-coroutines = "1.10.2"
+kotlinx-serialization = "1.8.1"
+# iter-82: pinned to 0.6.1; shared/build.gradle.kts resolutionStrategy forces this version even
+# when Compose MP 1.11.0 material3 requests 0.7.1. Required for Clock.System binary compat with
+# composite-build submodules (RateLimiter-KMP, Auth-KMP) compiled against 0.6.1.
 kotlinx-datetime = "0.6.1"
 kotlinx-io = "0.6.0"
-kotlinx-atomicfu = "0.26.1"
+kotlinx-atomicfu = "0.27.0"
 kotlinx-benchmark = "0.4.11"
 
 # AndroidX Libraries
