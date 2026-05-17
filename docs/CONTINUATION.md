@@ -2270,12 +2270,13 @@ the top of this document. They are environment gaps, not code defects:
    (`./gradlew :shared:tasks` succeeds; `:shared:desktopTest` invocation
    recorded as iter 29 in-flight verification — see Section 12 below).
 
-3. **`GRADLE_USER_HOME` hard-pointed to `/Volumes/T7/Gradle`** (external
-   SSD, not mounted). Workaround in active use:
-   `GRADLE_USER_HOME=~/.gradle ./gradlew …`. macOS workflow viable.
-   Suggested follow-up: switch invocation pattern in Makefile to
-   `${GRADLE_USER_HOME:-$HOME/.gradle}` so users don't need the manual
-   override (LOW priority; not blocking).
+3. **`GRADLE_USER_HOME` migrated to `~/.gradle` — RESOLVED iter-79 (2026-05-17).**
+   T7 Gradle (pruned to 16G) merged into `~/.gradle` (now 17G). All env vars
+   (`GRADLE_USER_HOME`, `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `ANDROID_NDK_ROOT`)
+   updated to `$HOME`-based paths in `~/.zshrc`. `local.properties` updated to
+   `sdk.dir=/Users/milosvasic/Library/Android/sdk`. Build verified:
+   `:shared:desktopTest` BUILD SUCCESSFUL. Remaining T7 dependency: JetBrains
+   IDEs (60G) — see iter-79 migration doc at `docs/setup/t7-migration-2026-05-17.md`.
 
 4. **`bluff-scanner.sh` required bash 4+ — RESOLVED iter 29.**
    `brew install bash` → 5.3.9 at `/opt/homebrew/bin/bash`. Both
