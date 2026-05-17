@@ -12,6 +12,11 @@
  * `./gradlew :shared:assembleReleaseXCFramework` has been run,
  * the `import shared` line will fail to resolve.
  *
+ * The whole body is guarded with `#if canImport(UIKit) && canImport(SwiftUI)`
+ * so SourceKit stays quiet on hosts without an iOS SDK (pre-Xcode),
+ * without breaking the post-Xcode compile. The guard is removed in a
+ * follow-up commit once Xcode is installed.
+ *
  * Operator action required after Xcode install:
  *   1. ./gradlew :shared:assembleReleaseXCFramework
  *   2. Open iosApp/iosApp.xcodeproj in Xcode
@@ -21,7 +26,9 @@
  *
  *########################################################*/
 
+#if canImport(UIKit) && canImport(SwiftUI)
 import SwiftUI
+import UIKit
 // import shared  // Uncomment after Xcode + KMP framework are linked
 
 /// iOS app entry point. Uses SwiftUI @main to bootstrap the app.
@@ -86,3 +93,4 @@ final class YolePlaceholderViewController: UIViewController {
         ])
     }
 }
+#endif // canImport(UIKit) && canImport(SwiftUI)
