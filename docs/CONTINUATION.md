@@ -6,7 +6,7 @@
 > inaccurate Continuation document is a CONST-036 violation and MUST be
 > corrected before proceeding with any other work.
 
-**Last updated:** 2026-05-18 (iter-84 EMERGENCY COMPLETE — v2.0.1: 3 Web Wasm bugs fixed (container ID + script tag + Shadow DOM splash poll), 5 Compose layout fixes, render gate PASS locally + at https://yole-app.web.app. Android v2.0.1 distributed to Firebase App Distribution (Release: 2o3olubl51ngo, Debug: 0931bg5vi6b2g). Desktop macOS DMG 525MB staged. All 15 iter-gates PASS. Committed SHA 6e60587f. Tagged v2.0.1.)
+**Last updated:** 2026-05-18 (iter-84 EMERGENCY COMPLETE — v2.0.1: 3 Web Wasm bugs fixed (container ID + script tag + Shadow DOM splash poll), 5 Compose layout fixes, render gate PASS locally + at https://yole-app.web.app. Android v2.0.1 distributed to Firebase App Distribution (Release: 2o3olubl51ngo, Debug: 0931bg5vi6b2g). Desktop macOS DMG 525MB staged. All 15 iter-gates PASS. Committed SHA 6e60587f. Tagged v2.0.1. **iter-84 follow-up SHA 4f251802**: splash-fallback bumped 10s → 25s because the new render gate caught canvas mounting at 11.2s, after the 10s splash-fallback fired. Symptom for users: splash stayed visible forever even though the canvas had actually mounted behind it. Re-deployed; gate re-verified PASS with no console-error WARN.)
 
 ## Section 75 — iter-84 EMERGENCY: Web Wasm blank-screen fix + browser-render anti-bluff gate + v2.0.1
 
