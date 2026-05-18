@@ -808,42 +808,88 @@ private fun parseHtmlBlocks(html: String): List<HtmlBlock> {
         .replace(Regex("<meta\\b[^>]*/?>", RegexOption.IGNORE_CASE), "")
         .replace(Regex("<!--.*?-->", RegexOption.DOT_MATCHES_ALL), "")
 
-    // Match block-level elements: h1-h6, p, li, pre, code, hr, blockquote, div, ul, ol
+    // iter-85 phase-3: strip outer container divs (e.g. <div class='markdown'>...</div>)
+    // that wrap the entire emitted HTML for CSS scoping. Without this, the
+    // outer-div match is treated as a flat 'div' container — its handler
+    // concatenates ALL nested content into a SINGLE text blob, destroying
+    // the h1/p/h2/ul block structure. Caught visually by the iter-85 phase-2
+    // preview-pane probe: user saw "Welcome to YoleA professional IDE-style
+    // text editor.FeaturesMulti-tab editing17+ text format support..." as one
+    // unrendered text node instead of properly styled blocks.
+    // Strategy: peel off the OUTERMOST <div>...</div> wrapper(s) at the start
+    // and end of the cleaned HTML — but only when they are the topmost
+    // element. Nested divs / arbitrary divs inside content stay intact and
+    // their text content shows up as expected.
+    var peeledHtml = cleanedHtml.trim()
+    while (true) {
+        val openDiv = Regex("""^<div\b[^>]*>""", RegexOption.IGNORE_CASE).find(peeledHtml)
+        if (openDiv == null) break
+        val candidate = peeledHtml.substring(openDiv.range.last + 1).trimEnd()
+        if (!candidate.endsWith("</div>", ignoreCase = true)) break
+        peeledHtml = candidate.substring(0, candidate.length - "</div>".length).trim()
+    }
+
+    // Match block-level elements. h1-h6, p, li, pre, code, hr, blockquote,
+    // plus ul/ol/div which we now recursively descend.
     val blockPattern = Regex(
         """<(h[1-6]|p|li|pre|code|hr|blockquote|div|ul|ol)(?:\s[^>]*)?>(.+?)</\1>|<(hr)\s*/?>""",
         setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE)
     )
 
     var lastEnd = 0
-    for (match in blockPattern.findAll(cleanedHtml)) {
+    for (match in blockPattern.findAll(peeledHtml)) {
         // Add any text between blocks
-        val betweenText = cleanedHtml.substring(lastEnd, match.range.first)
+        val betweenText = peeledHtml.substring(lastEnd, match.range.first)
             .replace(Regex("<[^>]*>"), "").trim()
         if (betweenText.isNotEmpty()) {
             blocks.add(HtmlBlock("text", betweenText))
         }
 
         val tag = (match.groupValues[1].ifEmpty { match.groupValues[3] }).lowercase()
-        val content = match.groupValues[2]
-            .replace(Regex("<[^>]*>"), "") // Strip inline tags
-            .trim()
+        // Raw inner HTML (PRE inline-tag strip — needed for nested handling)
+        val rawInner = match.groupValues[2]
+        // Plain-text strip for leaf tags
+        val content = rawInner.replace(Regex("<[^>]*>"), "").trim()
 
-        if (tag == "hr") {
-            blocks.add(HtmlBlock("hr", ""))
-        } else if (tag == "ul" || tag == "ol" || tag == "div") {
-            // For container tags, just add the text content
-            if (content.isNotEmpty()) {
-                blocks.add(HtmlBlock("text", content))
+        when (tag) {
+            "hr" -> blocks.add(HtmlBlock("hr", ""))
+            "ul", "ol" -> {
+                // Extract each <li>...</li> as its own block.
+                //   - ul → tag "li"; renderer prepends "• ".
+                //   - ol → tag "oli"; renderer prepends "N. " using the
+                //         content's leading "N|" marker (stripped before
+                //         display) so the index travels with the item.
+                val liRegex = Regex("""<li\b[^>]*>(.+?)</li>""",
+                    setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE))
+                var index = 1
+                for (li in liRegex.findAll(rawInner)) {
+                    val liText = li.groupValues[1].replace(Regex("<[^>]*>"), "").trim()
+                    if (liText.isNotEmpty()) {
+                        if (tag == "ol") {
+                            blocks.add(HtmlBlock("oli", "$index|$liText"))
+                            index++
+                        } else {
+                            blocks.add(HtmlBlock("li", liText))
+                        }
+                    }
+                }
             }
-        } else if (content.isNotEmpty()) {
-            blocks.add(HtmlBlock(tag, content))
+            "div" -> {
+                // Recursive: a div might wrap inner block structure.
+                // parseHtmlBlocks() on its raw inner HTML gives us proper
+                // block decomposition (h1/p/ul/...) instead of a flat blob.
+                blocks.addAll(parseHtmlBlocks(rawInner))
+            }
+            else -> {
+                if (content.isNotEmpty()) blocks.add(HtmlBlock(tag, content))
+            }
         }
 
         lastEnd = match.range.last + 1
     }
 
     // Add any trailing text
-    val trailing = cleanedHtml.substring(lastEnd)
+    val trailing = peeledHtml.substring(lastEnd)
         .replace(Regex("<[^>]*>"), "").trim()
     if (trailing.isNotEmpty()) {
         blocks.add(HtmlBlock("text", trailing))
@@ -851,7 +897,7 @@ private fun parseHtmlBlocks(html: String): List<HtmlBlock> {
 
     // If no blocks were parsed, treat the whole thing as stripped text
     if (blocks.isEmpty()) {
-        val stripped = cleanedHtml.replace(Regex("<[^>]*>"), "").trim()
+        val stripped = peeledHtml.replace(Regex("<[^>]*>"), "").trim()
         if (stripped.isNotEmpty()) {
             stripped.lines().filter { it.isNotBlank() }.forEach { line ->
                 blocks.add(HtmlBlock("text", line.trim()))
@@ -947,6 +993,20 @@ fun HtmlContent(html: String) {
                         lineHeight = 24.sp,
                         modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
                     )
+                    "oli" -> {
+                        // Ordered-list item: content is "N|<text>" where N is
+                        // the 1-based index from parseHtmlBlocks.
+                        val pipe = block.content.indexOf('|')
+                        val (idx, text) = if (pipe > 0)
+                            block.content.substring(0, pipe) to block.content.substring(pipe + 1)
+                        else "?" to block.content
+                        Text(
+                            text = "$idx. $text",
+                            style = MaterialTheme.typography.bodyLarge,
+                            lineHeight = 24.sp,
+                            modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
+                        )
+                    }
                     "code", "pre" -> {
                         val codeBackgroundColor = MaterialTheme.colorScheme.surfaceVariant
                         Text(

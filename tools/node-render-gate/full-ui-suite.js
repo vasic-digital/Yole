@@ -72,16 +72,42 @@ const EXPECTED = [
 // Catches regressions where internal data leaks into the user-visible
 // surface. Each entry is a substring match.
 //
-// iter-85 forensic case: the literal CSS stylesheet body
+// iter-85 phase-1 forensic case: the literal CSS stylesheet body
 // `.markdown { font-family: -apple-system ... }` was leaking from
 // StyleSheets.MARKDOWN_STYLES through parser.toHtml() into the preview
 // pane because parseHtmlBlocks() in Main.kt didn't recognize <style>
 // blocks. Fixed by stripping <style>/<script>/<link>/<meta>/comments
-// in parseHtmlBlocks before block-level extraction. Asserting absence
-// here ensures the regression cannot return silently.
+// in parseHtmlBlocks before block-level extraction.
+//
+// iter-85 phase-3 forensic case: even with the CSS leak gone, all
+// markdown blocks were collapsed into a single concatenated text node
+// "Welcome to YoleA professional IDE-style text editor.Features
+// Multi-tab editing..." because the outer <div class='markdown'>
+// wrapper was being treated as a flat container that swallowed all
+// nested structure. Fixed by peeling the outer div + recursing into
+// div content + extracting each <li> as its own block. The two
+// "concatenation" forbiddens below catch that regression.
 const FORBIDDEN_TEXT = [
     { substring: '.markdown { font-family:', description: 'raw CSS leaking from <style> into preview pane' },
     { substring: '.markdown h1 { font-size:', description: 'raw CSS leaking from <style> into preview pane' },
+    { substring: 'YoleA professional', description: 'preview blocks concatenated without separation (iter-85-phase-3 regression)' },
+    { substring: 'FeaturesMulti-tab', description: 'preview list items concatenated without bullets/separation (iter-85-phase-3 regression)' },
+];
+
+// Preview-structure assertions — content that MUST appear as INDIVIDUAL
+// a11y nodes (not a concatenated blob). Each entry is an exact-string
+// match against the leaf text of a node. The default welcome.md content
+// authored in EnhancedWebApp.kt drives these — if you change the seed
+// document, update both at once.
+const PREVIEW_REQUIRED = [
+    { name: 'Welcome to Yole', description: 'h1 heading rendered as standalone node' },
+    { name: 'A professional IDE-style text editor.', description: 'first paragraph standalone' },
+    { name: 'Features', description: 'h2 heading standalone' },
+    { name: '• Multi-tab editing', description: 'first list item with bullet' },
+    { name: '• 17+ text format support', description: 'second list item with bullet' },
+    { name: '• Live preview', description: 'third list item with bullet' },
+    { name: '• Offline support (PWA)', description: 'fourth list item with bullet' },
+    { name: 'Create a new document or start editing here.', description: 'closing paragraph standalone' },
 ];
 
 function log(level, msg) {
@@ -194,6 +220,21 @@ async function main() {
             }
         }
 
+        // Preview-structure assertion: each required block MUST appear as its
+        // OWN standalone a11y node, proving the markdown was rendered into
+        // distinct Compose Text composables (not a concatenated blob).
+        log('INFO', `Asserting ${PREVIEW_REQUIRED.length} preview-pane standalone nodes...`);
+        const previewMissing = [];
+        for (const req of PREVIEW_REQUIRED) {
+            const hit = flat.find(n => n.name === req.name);
+            if (hit) {
+                log('OK', `  ✓ standalone: "${req.name}" (${req.description})`);
+            } else {
+                previewMissing.push(req);
+                log('FAIL', `  ✗ NOT STANDALONE: "${req.name}" (${req.description})`);
+            }
+        }
+
         // Write a summary report
         const report = {
             target: TARGET_URL,
@@ -203,9 +244,12 @@ async function main() {
             missing: missing.length,
             forbiddenChecked: FORBIDDEN_TEXT.length,
             leaks: leaks.length,
+            previewRequired: PREVIEW_REQUIRED.length,
+            previewMissing: previewMissing.length,
             consoleErrors: consoleErrors.slice(0, 20),
             missingItems: missing,
             leakedItems: leaks,
+            previewMissingItems: previewMissing,
         };
         fs.writeFileSync(
             path.join(OUT_DIR, 'report.json'),
@@ -217,15 +261,16 @@ async function main() {
             consoleErrors.slice(0, 5).forEach(e => log('WARN', `  ${e}`));
         }
 
-        if (missing.length > 0 || leaks.length > 0) {
+        if (missing.length > 0 || leaks.length > 0 || previewMissing.length > 0) {
             if (missing.length > 0) log('FAIL', `${missing.length}/${EXPECTED.length} expected UI elements MISSING`);
             if (leaks.length > 0) log('FAIL', `${leaks.length}/${FORBIDDEN_TEXT.length} forbidden text patterns LEAKED into a11y tree`);
+            if (previewMissing.length > 0) log('FAIL', `${previewMissing.length}/${PREVIEW_REQUIRED.length} preview-pane standalone nodes MISSING (blocks collapsed)`);
             log('FAIL', `see ${path.join(OUT_DIR, 'report.json')} for details`);
             await browser.close();
             process.exit(2);
         }
 
-        log('OK', `ALL ${EXPECTED.length} expected UI elements present, 0 forbidden leaks — full-UI suite PASS`);
+        log('OK', `ALL ${EXPECTED.length} expected UI elements present, 0 forbidden leaks, ${PREVIEW_REQUIRED.length}/${PREVIEW_REQUIRED.length} preview standalone nodes — full-UI suite PASS`);
     } finally {
         await browser.close();
     }
