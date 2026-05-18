@@ -287,7 +287,12 @@ fun EnhancedYoleWebApp() {
     val currentLineBg = ideCurrentLine()
     val danger = webDangerColor
 
-    Box(
+    // iter-90: wrap in BoxWithConstraints to expose viewport `maxWidth`. We
+    // derive responsive layout decisions from it — primarily to auto-collapse
+    // the sidebar + preview at narrow widths so the editor gets the screen
+    // on phones/tablets, where shrinking the desktop layout produced an
+    // unreadable mess (three columns squeezed into 320 px).
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(bg)
@@ -319,6 +324,29 @@ fun EnhancedYoleWebApp() {
                 } else false
             }
     ) {
+        // iter-90: 768 dp is the standard "tablet portrait" breakpoint.
+        // < 768 → mobile / narrow tablet — auto-collapse sidebar + preview.
+        // < 1024 → tablet landscape — sidebar visible, preview toggleable
+        //          (user opts in).
+        // >= 1024 → desktop default — all three panes visible.
+        // The user can still manually toggle sidebar/preview via the
+        // toolbar at any width; we only set the INITIAL adaptive default
+        // based on the current viewport, and re-adapt when the viewport
+        // crosses a breakpoint (e.g. user rotates phone, resizes window).
+        val isCompact = maxWidth < 768.dp
+        val isMedium = maxWidth in 768.dp..1023.dp
+        LaunchedEffect(isCompact, isMedium) {
+            if (isCompact) {
+                showSidebar = false
+                showPreview = false
+            } else if (isMedium) {
+                showSidebar = true
+                showPreview = false
+            } else {
+                showSidebar = true
+                showPreview = true
+            }
+        }
         Column(modifier = Modifier.fillMaxSize()) {
             // ===== MENU BAR =====
             IdeMenuBar(
@@ -747,6 +775,10 @@ fun IdeMenuBar(
     onPrint: () -> Unit
 ) {
     val menuHover = ideMenuHover()
+    // iter-90: Two-zone toolbar. Left zone (logo + action buttons) is
+    // horizontally scrollable on narrow viewports \u2014 phones can still
+    // reach Export/Print by swiping the bar. Right zone (Toggle theme
+    // + Settings) stays pinned to the trailing edge regardless of width.
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -755,47 +787,54 @@ fun IdeMenuBar(
             .padding(horizontal = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // App logo/branding
-        Box(
+        // Scrollable left + middle clusters
+        Row(
             modifier = Modifier
-                .padding(horizontal = 10.dp, vertical = 4.dp)
-                .background(accent, RoundedCornerShape(4.dp))
-                .padding(horizontal = 8.dp, vertical = 2.dp)
+                .weight(1f)
+                .horizontalScroll(rememberScrollState()),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                "YOLE",
-                color = Color.White,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Monospace,
-                letterSpacing = 1.sp
-            )
+            // App logo/branding
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                    .background(accent, RoundedCornerShape(4.dp))
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    "YOLE",
+                    color = Color.White,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = 1.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            IdeMenuButton("File", text, menuHover, onClick = onNewFile)
+            IdeMenuButton("Open", text, menuHover, onClick = onOpenFile)
+            IdeMenuButton("Save", text, menuHover, onClick = onSaveFile)
+            IdeMenuButton("Save As", text, menuHover, onClick = onSaveAs)
+
+            Box(modifier = Modifier.width(1.dp).height(18.dp).background(border.copy(alpha = 0.5f)))
+
+            IdeMenuButton("Find", text, menuHover, onClick = onFindReplace)
+            IdeMenuButton("Go To", text, menuHover, onClick = onGoToLine)
+
+            Box(modifier = Modifier.width(1.dp).height(18.dp).background(border.copy(alpha = 0.5f)))
+
+            IdeMenuButton("Preview", text, menuHover, onClick = onTogglePreview)
+            IdeMenuButton("Explorer", text, menuHover, onClick = onToggleSidebar)
+
+            Box(modifier = Modifier.width(1.dp).height(18.dp).background(border.copy(alpha = 0.5f)))
+
+            IdeMenuButton("Export", text, menuHover, onClick = onExport)
+            IdeMenuButton("Print", text, menuHover, onClick = onPrint)
         }
 
-        Spacer(modifier = Modifier.width(8.dp))
-
-        IdeMenuButton("File", text, menuHover, onClick = onNewFile)
-        IdeMenuButton("Open", text, menuHover, onClick = onOpenFile)
-        IdeMenuButton("Save", text, menuHover, onClick = onSaveFile)
-        IdeMenuButton("Save As", text, menuHover, onClick = onSaveAs)
-
-        Box(modifier = Modifier.width(1.dp).height(18.dp).background(border.copy(alpha = 0.5f)))
-
-        IdeMenuButton("Find", text, menuHover, onClick = onFindReplace)
-        IdeMenuButton("Go To", text, menuHover, onClick = onGoToLine)
-
-        Box(modifier = Modifier.width(1.dp).height(18.dp).background(border.copy(alpha = 0.5f)))
-
-        IdeMenuButton("Preview", text, menuHover, onClick = onTogglePreview)
-        IdeMenuButton("Explorer", text, menuHover, onClick = onToggleSidebar)
-
-        Box(modifier = Modifier.width(1.dp).height(18.dp).background(border.copy(alpha = 0.5f)))
-
-        IdeMenuButton("Export", text, menuHover, onClick = onExport)
-        IdeMenuButton("Print", text, menuHover, onClick = onPrint)
-
-        Spacer(modifier = Modifier.weight(1f))
-
+        // Pinned right cluster \u2014 always visible at the trailing edge.
         Text(
             if (isDarkTheme) "\u263D" else "\u2600",
             color = textSecondary,

@@ -3,6 +3,95 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## v2.0.5 — iter-90: Mobile responsiveness + launcher-icon anti-bluff (2026-05-18)
+
+**Version:** 2.0.5 (versionCode 205 → dotted `0.0.0.2.5`)
+**Type:** Mobile UX fix + permanent responsive/logo gates.
+
+### Bug fixed
+
+Operator-reported: the web app worked on desktop but mobile users saw the three-column desktop layout crammed into 320 px — toolbar buttons cut off, explorer + editor + preview unreadably narrow, no way to dismiss any panel. All prior web gates (iter-84/85/86/88/89) PASSed because every probe ran at the canonical 1280×800 desktop viewport. This was a textbook anti-bluff failure: the gates and the user experience disagreed.
+
+### Fix
+
+`webApp/src/wasmJsMain/.../EnhancedWebApp.kt` — adaptive layout via `BoxWithConstraints` exposing the viewport's `maxWidth` at composition time, with three breakpoints:
+
+| Width | Layout |
+|---|---|
+| `< 768 dp` (mobile XS/SM/LG) | Sidebar + preview auto-hidden, editor full-screen |
+| `768-1023 dp` (tablet portrait) | Sidebar visible, preview hidden but toggleable |
+| `>= 1024 dp` (tablet landscape / desktop) | Full three-pane layout |
+
+User can always manually toggle sidebar/preview via the toolbar buttons at any width — we only set the initial responsive default + re-adapt on breakpoint crossings (e.g. phone rotation, window resize).
+
+**Toolbar** split into two zones:
+- Scrollable left zone (logo + 11 action buttons) — horizontally swipeable on phones so every button stays reachable
+- Pinned right zone (Toggle theme + Settings) — always visible at the trailing edge
+
+### New permanent anti-bluff gates
+
+| Gate | What it asserts |
+|---|---|
+| `tools/node-render-gate/responsive-suite.js` | Probes 6 viewports (320 → 1280 px) per release. At each: splash hides, 5 key elements (YOLE + File/Save/Settings buttons + Code editor) reachable, breakpoint contract honored (sidebar/preview shown at expected widths only) |
+| `yole-challenges/scripts/web_logo_presence_challenge.sh` | Static: source has favicon.ico + all manifest-declared PWA PNGs. Runtime: each deployed icon URL returns `Content-Type: image/*` (defeats Firebase's `**` → `/index.html` rewrite that previously masked missing assets as HTTP 200) + page `<title>` contains "Yole" + in-app YOLE logo node present in a11y tree |
+
+Both wired into `qa-iter-90-gates` → `qa-all` (chain now **19 iter-gates**).
+
+### Anti-bluff verification (§11.4 gate-MUST-FAIL-before-fix)
+
+| Forensic case | Gate before fix | Gate after fix |
+|---|---|---|
+| 320×568 viewport renders desktop layout | responsive-suite FAIL: layout contract violated (3 panes squashed) | PASS: editor full-screen, key elements reachable |
+| Bogus icon URL returns HTTP 200 (Firebase rewrite serving index.html) | logo-presence FAIL: `Content-Type='text/html' (rewrite likely serving index.html — asset is actually missing)` | PASS: all 9 assets return `image/*` |
+
+### Cross-platform impact (CONST-037)
+
+The iter-90 changes are **wasm-only** — `webApp/src/wasmJsMain/.../EnhancedWebApp.kt` + `service-worker.js`. Android/Desktop/iOS source code unchanged. Version bumps applied for canonical-version-consistency per CONST-039 / iter-81.
+
+| Platform | Effect | Verification |
+|---|---|---|
+| Android Release | Version sync only (203→205) — no source change | APK rebuilt + redistributed; `installable_app_icon_challenge` PASS; `display_version_consistency_challenge` PASS |
+| Android Debug | Version sync only — no source change | APK rebuilt + redistributed |
+| Desktop macOS arm64 | Version sync only — no source change | DMG rebuilt + staged |
+| iOS | Version sync only — no source change | Simulator build OK; device `.ipa` blocked per `#iter-78-ios-paid-dev-program-needed-for-firebase` |
+| Web | Responsive layout + new gates | All 6 web gates PASS against live URL |
+
+### Distribution
+
+See `docs/ENDPOINTS.md` for canonical URLs. Quick reference:
+
+| Endpoint | URL / ID |
+|---|---|
+| **Web Production** | https://yole-app.web.app |
+| **Android Release** (Firebase) | release `7cff6nns6d5ig` — install URL: https://appdistribution.firebase.google.com/testerapps/1:578988389676:android:d61715a0a84a42c65d2889/releases/7cff6nns6d5ig |
+| **Android Debug (DEV)** (Firebase) | release `64r5nt0scocn8` — install URL: https://appdistribution.firebase.google.com/testerapps/1:578988389676:android:5a3d47a9fb23b6465d2889/releases/64r5nt0scocn8 |
+| Desktop macOS arm64 | `releases/Yole-Desktop-macos-arm64-2.0.5-Release-0.0.0.2.5.dmg` (526 MB) |
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `webApp/src/wasmJsMain/kotlin/digital/vasic/yole/web/EnhancedWebApp.kt` | `BoxWithConstraints` + responsive breakpoint LaunchedEffect; toolbar split into scrollable + pinned zones |
+| `tools/node-render-gate/responsive-suite.js` (new) | 6-viewport responsive gate |
+| `yole-challenges/scripts/web_responsive_suite_challenge.sh` (new) | Wrapper |
+| `yole-challenges/scripts/web_logo_presence_challenge.sh` (new) | Logo-presence gate with Content-Type validation |
+| `Makefile` | `qa-iter-90-gates` wired into `qa-all` chain |
+| `docs/ENDPOINTS.md` (new) | Canonical URL index for all distribution endpoints |
+| `androidApp/build.gradle.kts` | versionCode 204→205, versionName 2.0.4→2.0.5 |
+| `desktopApp/build.gradle.kts` | packageVersion 2.0.5 |
+| `iosApp/iosApp.xcodeproj/project.pbxproj` | MARKETING 2.0.5 / CURRENT_PROJECT_VERSION 205 |
+| `webApp/src/wasmJsMain/resources/service-worker.js` | CACHE_VERSION 2.0.4 → 2.0.5 |
+
+### Pre-distribute verification (§6.Z)
+
+```
+make qa-all       →  19 / 19 iter-gates PASS (sweep before distribute)
+6 web gates       →  ALL PASS against https://yole-app.web.app
+display_version_consistency_challenge → canonical 2.0.5 across source + Desktop + Android APK
+installable_app_icon_challenge → launcher icon structurally correct
+```
+
+
 ## v2.0.4 — iter-89: Service Worker stale-cache fix (operator-reported "spins endlessly") (2026-05-18)
 
 **Version:** 2.0.4 (versionCode 204 → dotted `0.0.0.2.4`)

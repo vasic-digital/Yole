@@ -408,7 +408,7 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates qa-iter-82-gates qa-iter-84-gates qa-iter-85-gates qa-iter-86-gates qa-iter-89-gates
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates qa-iter-82-gates qa-iter-84-gates qa-iter-85-gates qa-iter-86-gates qa-iter-89-gates qa-iter-90-gates
 	bash automation/run-qa-all.sh --skip-unit --skip-build
 	@echo "-----------------------------------------------------------------------------------"
 
@@ -456,6 +456,19 @@ qa-iter-86-gates:
 qa-iter-89-gates:
 	@echo "=== iter-89 gates: Service Worker cache-version + network-first ==="
 	bash yole-challenges/scripts/web_sw_cache_version_challenge.sh
+	@echo "-----------------------------------------------------------------------------------"
+
+# iter-90 gates: Web responsive layout + launcher-icon visibility (CONST-039).
+# Responsive suite probes 6 viewport sizes (320 → 1280) asserting that
+# key UI is reachable + breakpoint contract honored on every device class.
+# Logo presence gate asserts every PWA icon URL + favicon + in-app logo
+# all resolve and appear. Both close the iter-90 forensic gap where prior
+# gates ran only at desktop 1280x800 and missed broken mobile rendering.
+qa-iter-90-gates:
+	@echo "=== iter-90 gates: Web responsive layout (6 viewports) ==="
+	bash yole-challenges/scripts/web_responsive_suite_challenge.sh
+	@echo "=== iter-90 gates: Web launcher-icon / logo presence ==="
+	bash yole-challenges/scripts/web_logo_presence_challenge.sh
 	@echo "-----------------------------------------------------------------------------------"
 
 # Web testing container lifecycle (iter-85 phase 2).
