@@ -14,9 +14,25 @@
     mipmap-anydpi-v26/ic_launcher.xml        (foreground + monochrome)
     mipmap-anydpi-v26/ic_launcher_round.xml  (foreground + monochrome)
 
-  This file also serves the monochrome layer — Android 13+ renders it as
-  a single-color tinted shape, so the path must be filled with a solid
-  color (here #FFFFFFFF = white, tinted at runtime by the system).
+  This file also serves the monochrome layer (Android 13+ renders the
+  MONOCHROME layer as a single-color tinted shape; the foreground layer
+  is rendered as-authored without tint).
+
+  iter-91 forensic case: the iter-71 fix authored the path with
+  android:fillColor="#FFFFFFFF" on the assumption "tinted at runtime by
+  the system". Only the MONOCHROME layer is tinted; the FOREGROUND layer
+  rendered as solid white on the white ic_launcher_background → invisible
+  icon on every Android launcher and on the system "All files access" /
+  app-info screens. The installable_app_icon_challenge PASSed because it
+  only checked vector structure (path present, no @mipmap/ reference) —
+  not that the foreground color contrasts with the background. Operator-
+  visible result: blank white circle where the Y should be.
+
+  Fix: foreground fillColor = Yole brand red (#D32F2F) — high contrast
+  against the white background, on-brand. The monochrome layer reuses
+  the same vector but Android 13+ ignores the fillColor and tints with
+  the system accent, so the brand color choice only affects the
+  foreground layer.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -36,14 +52,9 @@
         Top of arms: y=22
         Join point (center): x=54, y=56
         Baseline: y=86
-
-      Coordinates (clockwise outer outline, then inner cutout via moveto):
-        Left arm outer:  (24,22) → (54,56) left edge
-        Left arm inner:  (34,22) → (54,46) right edge of left arm
-        Right arm mirror, then stem down to baseline.
     -->
     <path
-        android:fillColor="#FFFFFFFF"
+        android:fillColor="#FFD32F2F"
         android:pathData="
           M 24,22
           L 49,56

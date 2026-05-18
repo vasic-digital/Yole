@@ -1,7 +1,7 @@
 # Yole — Distribution Endpoints
 
 Living index of every shipped artifact's public URL, kept in sync with `CHANGELOG.md`.
-Last updated: **v2.0.5 (iter-90)** — 2026-05-18.
+Last updated: **v2.0.6 (iter-91)** — 2026-05-18.
 
 ---
 
@@ -31,15 +31,15 @@ Two Firebase Apps because the DEV variant uses `applicationIdSuffix = ".dev"`
 (package `digital.vasic.yole.android.dev`) which is a different Firebase App
 from the production `digital.vasic.yole.android`.
 
-| Variant | Package | Firebase App ID | v2.0.5 release ID |
+| Variant | Package | Firebase App ID | v2.0.6 release ID |
 |---|---|---|---|
-| **Release** | `digital.vasic.yole.android` | `1:578988389676:android:d61715a0a84a42c65d2889` | `7cff6nns6d5ig` |
-| **Debug (DEV)** | `digital.vasic.yole.android.dev` | `1:578988389676:android:5a3d47a9fb23b6465d2889` | `64r5nt0scocn8` |
+| **Release** | `digital.vasic.yole.android` | `1:578988389676:android:d61715a0a84a42c65d2889` | `1qep5papjgmo8` |
+| **Debug (DEV)** | `digital.vasic.yole.android.dev` | `1:578988389676:android:5a3d47a9fb23b6465d2889` | `11ac9q6ck1olo` |
 
-### Tester install URLs (v2.0.5)
+### Tester install URLs (v2.0.6)
 
-- **Release**: https://appdistribution.firebase.google.com/testerapps/1:578988389676:android:d61715a0a84a42c65d2889/releases/7cff6nns6d5ig
-- **Debug (DEV)**: https://appdistribution.firebase.google.com/testerapps/1:578988389676:android:5a3d47a9fb23b6465d2889/releases/64r5nt0scocn8
+- **Release**: https://appdistribution.firebase.google.com/testerapps/1:578988389676:android:d61715a0a84a42c65d2889/releases/1qep5papjgmo8
+- **Debug (DEV)**: https://appdistribution.firebase.google.com/testerapps/1:578988389676:android:5a3d47a9fb23b6465d2889/releases/11ac9q6ck1olo
 
 ### Firebase console (operator-only)
 
@@ -48,8 +48,8 @@ from the production `digital.vasic.yole.android`.
 
 ### Local APK paths
 
-- `releases/Yole-Android-2.0.5-Release-0.0.0.2.5.apk` (44 MB)
-- `releases/Yole-Android-2.0.5-Debug-0.0.0.2.5.apk` (56 MB)
+- `releases/Yole-Android-2.0.6-Release-0.0.0.2.6.apk` (44 MB)
+- `releases/Yole-Android-2.0.6-Debug-0.0.0.2.6.apk` (56 MB)
 
 ---
 
@@ -57,7 +57,7 @@ from the production `digital.vasic.yole.android`.
 
 | Platform | Artifact | Status |
 |---|---|---|
-| macOS arm64 | `releases/Yole-Desktop-macos-arm64-2.0.5-Release-0.0.0.2.5.dmg` (526 MB) | Staged locally |
+| macOS arm64 | `releases/Yole-Desktop-macos-arm64-2.0.6-Release-0.0.0.2.6.dmg` (526 MB) | Staged locally |
 | macOS x64 | not built this iteration | Cross-build host needed |
 | Linux x64 | not built this iteration | `#iter-69-linux-container-deb-build` |
 | Windows x64 | not built this iteration | `#crossbuild-windows-image-provisioning` |
@@ -81,7 +81,7 @@ from the production `digital.vasic.yole.android`.
 | Tags | https://github.com/vasic-digital/Yole/tags |
 | Releases | https://github.com/vasic-digital/Yole/releases |
 
-Latest tag: `yole-2.0.5`.
+Latest tag: `yole-2.0.6`.
 
 ---
 

@@ -3,6 +3,76 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## v2.0.6 — iter-91: Android launcher icon visibility fix (white-on-white invisible) (2026-05-18)
+
+**Version:** 2.0.6 (versionCode 206 → dotted `0.0.0.2.6`)
+**Type:** Critical Android visibility fix — launcher icon was invisible (white-on-white) across v2.0.0 → v2.0.5.
+
+### Bug fixed
+
+On-device install of v2.0.5 on the emulator surfaced a real defect that no prior gate caught: the Android launcher icon rendered as a blank white circle on the home launcher, app drawer, and system "All files access" / app-info screens. The Yole "Y" was invisible because the foreground vector was filled `#FFFFFFFF` (white) on a `#FFFFFFFF` (white) background.
+
+Root cause: the iter-71 fix that addressed the prior PNG-as-foreground bug authored the vector with white fillColor on the assumption "tinted at runtime by the system" — but only the **monochrome** layer is tinted by Android 13+; the **foreground** layer renders as authored. So white-on-white shipped invisibly across **five release cycles** (v2.0.0 → v2.0.5).
+
+### Fix
+
+`androidApp/src/main/res/drawable/ic_launcher_foreground.xml` — fillColor changed `#FFFFFFFF` (white) → `#FFD32F2F` (Yole brand red). High contrast against the white background, on-brand.
+
+Debug variant was already white-on-bright-green (high contrast) — no change needed.
+
+### Anti-bluff gate tightening
+
+The `installable_app_icon_challenge` had three layers (source structure, APK packaging, vector integrity) — all of which checked **structure** but none checked **visibility**. The white-on-white icon passed every assertion because the vector WAS structurally correct.
+
+iter-91 adds **LAYER D — foreground-background color contrast**:
+- Parses foreground vector's `<path>` `fillColor` (using Python XML to avoid grep-matching inside documentation comments)
+- Parses the adaptive icon's `background android:drawable="@color/..."` reference
+- Resolves the @color/ ref via `values/colors.xml`
+- Asserts foreground hex ≠ background hex (with alpha-channel normalization)
+
+Anti-bluff verification (§11.4 gate-MUST-FAIL-before-fix):
+
+| State | Layer D verdict |
+|---|---|
+| Before fix (release: `#FFFFFFFF` on `#FFFFFFFF`) | `[FAIL] release: foreground fillColor (#FFFFFFFF) equals background color (#FFFFFFFF) — icon will be invisible` |
+| After fix (release: `#FFD32F2F` on `#FFFFFFFF`) | `[OK] release: foreground (#FFD32F2F) contrasts with background (#FFFFFFFF)` |
+
+### On-device confirmation
+
+`qa-results/iter-91/android-icon-fixed-v206.png` — screenshot from emulator-5554 (Pixel-class API 35) showing the Yole app on the "All files access" system page with a clearly visible red "Y" inside a white circle. The bug class is now visually closed.
+
+### Cross-platform impact (CONST-037)
+
+iter-91 fix is **Android-only** (single XML resource file). Web/Desktop/iOS source code unchanged.
+
+| Platform | Effect | Verification |
+|---|---|---|
+| Android Release | Fixed — `#FFD32F2F` red Y now visible | Installed on emulator-5554, screenshot captured, gate Layer D PASS |
+| Android Debug | Unaffected (was already #FFFFFFFF on #FF00FF00 green = high contrast) | Rebuilt + redistributed for version sync |
+| Desktop macOS arm64 | Version sync only — DMG rebuilt + staged | iter-74 desktop icon challenge still PASS |
+| iOS | Version sync only — simulator build OK | Device .ipa blocked per `#iter-78-...` |
+| Web | Version sync only (no source change) — Web bundle redeployed | All 6 web gates PASS against live URL |
+
+### Distribution
+
+| Platform | Artifact | Channel |
+|---|---|---|
+| Android Release | `Yole-Android-2.0.6-Release-0.0.0.2.6.apk` (44 MB) | Firebase release `1qep5papjgmo8` — https://appdistribution.firebase.google.com/testerapps/1:578988389676:android:d61715a0a84a42c65d2889/releases/1qep5papjgmo8 |
+| Android Debug | `Yole-Android-2.0.6-Debug-0.0.0.2.6.apk` (56 MB) | Firebase release `11ac9q6ck1olo` — https://appdistribution.firebase.google.com/testerapps/1:578988389676:android:5a3d47a9fb23b6465d2889/releases/11ac9q6ck1olo |
+| Desktop macOS arm64 | `Yole-Desktop-macos-arm64-2.0.6-Release-0.0.0.2.6.dmg` (526 MB) | `releases/` (DMG checksum VALID, Info.plist CFBundleShortVersionString=2.0.6) |
+| Web Wasm | bundle | https://yole-app.web.app |
+
+### Pre-distribute verification (§6.Z)
+
+```
+make qa-all                                  →  19 / 19 iter-gates PASS
+installable_app_icon_challenge (with LAYER D) →  4 / 4 layers PASS for both Release and Debug variants
+hdiutil verify <DMG>                          →  checksum VALID
+6 web gates against live URL                  →  ALL PASS
+On-device install + screenshot                →  RED Y visibly rendered in launcher circle
+```
+
+
 ## v2.0.5 — iter-90: Mobile responsiveness + launcher-icon anti-bluff (2026-05-18)
 
 **Version:** 2.0.5 (versionCode 205 → dotted `0.0.0.2.5`)

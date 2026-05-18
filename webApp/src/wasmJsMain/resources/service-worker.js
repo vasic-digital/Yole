@@ -29,7 +29,7 @@
 // after they once visited the site, even after 4 subsequent deploys fixed
 // the bug. The cascade-audit gate (iter-89) verifies this string contains
 // the current versionName.
-const CACHE_VERSION = '2.0.5';
+const CACHE_VERSION = '2.0.6';
 const CACHE_NAME = 'yole-cache-' + CACHE_VERSION;
 const API_CACHE_NAME = 'yole-api-cache-' + CACHE_VERSION;
 

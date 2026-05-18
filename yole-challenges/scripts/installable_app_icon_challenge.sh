@@ -319,9 +319,113 @@ if [ "${vec_fail}" -ne 0 ]; then
 fi
 
 echo ""
+echo "=== [installable_app_icon_challenge] LAYER D: foreground-background color contrast ==="
+
+# iter-91 anti-bluff addition. Forensic case: through v2.0.0 → v2.0.5 the
+# release-variant foreground vector was filled `#FFFFFFFF` on a
+# `#FFFFFFFF` background — invisible icon. Layers A/B/C all PASSed
+# because they checked vector STRUCTURE (path present, no @mipmap/) not
+# VISIBILITY. Operator screenshot on emulator showed a blank white
+# circle where the Y should be.
+#
+# This layer parses the foreground fillColor and the background
+# @color/<name> reference from values/colors.xml, then asserts they
+# are not identical. (A proper contrast-ratio check would parse hex →
+# RGB and compute WCAG luminance contrast — kept simple here:
+# zero-tolerance "must not be the same color".)
+
+contrast_fail=0
+for variant_label in "release" "debug"; do
+    if [ "${variant_label}" = "release" ]; then
+        FG_XML="androidApp/src/main/res/drawable/ic_launcher_foreground.xml"
+        ADAPTIVE_XML="androidApp/src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+        COLORS_XML="androidApp/src/main/res/values/colors.xml"
+    else
+        FG_XML="androidApp/src/debug/res/drawable/ic_launcher_foreground_dev.xml"
+        ADAPTIVE_XML="androidApp/src/debug/res/mipmap-anydpi-v26/ic_launcher.xml"
+        COLORS_XML="androidApp/src/debug/res/values/colors.xml"
+    fi
+    if [ ! -f "${FG_XML}" ] || [ ! -f "${ADAPTIVE_XML}" ] || [ ! -f "${COLORS_XML}" ]; then
+        echo "[SKIP-OK] ${variant_label}: source XML(s) missing — covered by LAYER A"
+        continue
+    fi
+
+    # Extract foreground fillColor from the FIRST <path> element. We parse
+    # XML so we don't trip on any literal hex strings sitting inside <!-- -->
+    # documentation blocks (the iter-91 comment block deliberately quotes
+    # the prior broken color value as forensic context). Python's stdlib
+    # xml.etree is available on every host we care about.
+    # Android XML resources put elements (<vector>, <path>) in the DEFAULT
+    # namespace; only the `android:` attribute prefix maps to the schema URI.
+    # So the element query is unprefixed; the attribute query uses the URI.
+    FG_COLOR=$(python3 -c "
+import xml.etree.ElementTree as ET
+tree = ET.parse('${FG_XML}')
+path = tree.getroot().find('path')
+if path is not None:
+    c = path.get('{http://schemas.android.com/apk/res/android}fillColor', '')
+    print(c.upper())
+" 2>/dev/null)
+    if [ -z "${FG_COLOR}" ]; then
+        echo "[FAIL] ${variant_label}: could not extract <path> fillColor from ${FG_XML}"
+        contrast_fail=1
+        continue
+    fi
+
+    # Extract background reference from the adaptive icon
+    BG_REF=$(grep -oE 'android:drawable="@color/[^"]+"' "${ADAPTIVE_XML}" | head -1 | sed -E 's/.*@color\/([^"]+)".*/\1/')
+    if [ -z "${BG_REF}" ]; then
+        echo "[FAIL] ${variant_label}: could not extract background @color/ ref from ${ADAPTIVE_XML}"
+        contrast_fail=1
+        continue
+    fi
+
+    # Resolve the @color/<name> → hex value in colors.xml
+    BG_COLOR=$(grep -E "<color name=\"${BG_REF}\">" "${COLORS_XML}" | head -1 | sed -E 's/.*>([^<]+)<.*/\1/' | tr 'a-z' 'A-Z')
+    if [ -z "${BG_COLOR}" ]; then
+        echo "[FAIL] ${variant_label}: could not resolve @color/${BG_REF} in ${COLORS_XML}"
+        contrast_fail=1
+        continue
+    fi
+
+    # Normalise both to 8-digit AARRGGBB for comparison
+    # (a "#FFD32F2F" and a "#D32F2F" should compare equal — the alpha-channel
+    # difference is conventional only).
+    norm_color() {
+        local c="$1"
+        c="${c#\#}"
+        case "${#c}" in
+            6) echo "FF${c}" ;;
+            8) echo "${c}" ;;
+            *) echo "${c}" ;;
+        esac
+    }
+    FG_NORM=$(norm_color "${FG_COLOR}")
+    BG_NORM=$(norm_color "${BG_COLOR}")
+
+    if [ "${FG_NORM}" = "${BG_NORM}" ]; then
+        echo "[FAIL] ${variant_label}: foreground fillColor (${FG_COLOR}) equals background color (${BG_COLOR}) — icon will be invisible"
+        contrast_fail=1
+    else
+        echo "[OK] ${variant_label}: foreground (${FG_COLOR}) contrasts with background (${BG_COLOR})"
+    fi
+done
+
+if [ "${contrast_fail}" -ne 0 ]; then
+    echo ""
+    echo "[FAIL] installable_app_icon_challenge LAYER D failed — foreground and background"
+    echo "       are the same color. Icon will render as a blank shape on every Android"
+    echo "       launcher and on the system Settings / All-files-access / app-info screens."
+    echo "       The iter-91 forensic case shipped this bug across v2.0.0 → v2.0.5."
+    exit 4
+fi
+
+echo ""
 echo "==================================================================="
-echo "[PASS] installable_app_icon_challenge — all 3 layers PASS."
-echo "       The Android launcher icon is correctly structured and packaged."
-echo "       Evidence: source checks, APK resource table, vector integrity."
+echo "[PASS] installable_app_icon_challenge — all 4 layers PASS."
+echo "       The Android launcher icon is correctly structured, packaged,"
+echo "       and has visible foreground-background contrast."
+echo "       Evidence: source checks, APK resource table, vector integrity,"
+echo "       color-contrast (FG != BG)."
 echo "       CONST-039 installable-asset verification: SATISFIED."
 echo "==================================================================="
