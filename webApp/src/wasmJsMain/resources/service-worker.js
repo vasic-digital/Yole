@@ -4,14 +4,37 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Service Worker for Yole Web Application
- * Offline caching, cache-first for app shell, network-first for dynamic content
+ *
+ * iter-89 strategy:
+ *   - CACHE_NAME embeds a per-build epoch so every deploy invalidates
+ *     the prior cache. The original v1 static name was the operator-
+ *     reported "spins endlessly" defect: SW served the v2.0.0 cached
+ *     bundle to a returning user FOREVER because the cache name never
+ *     changed, so subsequent deploys never triggered an `activate`
+ *     cleanup that deleted the old cache.
+ *   - NETWORK-FIRST for the JS / Wasm / HTML app shell: fresh content
+ *     wins on every load; cache is only used as offline fallback. The
+ *     previous CACHE-FIRST strategy locked in whatever the user first
+ *     visited and never refreshed it on subsequent deploys.
+ *   - skipWaiting() in install so a new SW takes over immediately,
+ *     not after every tab is closed.
+ *   - clients.claim() in activate so the new SW controls already-open
+ *     tabs immediately, not on next navigation.
  *
  *########################################################*/
 
-const CACHE_NAME = 'yole-cache-v1';
-const API_CACHE_NAME = 'yole-api-cache-v1';
+// IMPORTANT: bump CACHE_VERSION on EVERY release so each deploy invalidates
+// the prior cache. The iter-89 forensic case: leaving this static caused
+// users to be served the v2.0.0 splash-then-blank bundle from cache forever
+// after they once visited the site, even after 4 subsequent deploys fixed
+// the bug. The cascade-audit gate (iter-89) verifies this string contains
+// the current versionName.
+const CACHE_VERSION = '2.0.4';
+const CACHE_NAME = 'yole-cache-' + CACHE_VERSION;
+const API_CACHE_NAME = 'yole-api-cache-' + CACHE_VERSION;
 
-// App shell resources to cache on install
+// App shell resources to cache on install. These are also served via
+// network-first below — the cache here is just a warm-start offline buffer.
 const APP_SHELL_RESOURCES = [
     '/',
     '/index.html',
@@ -21,15 +44,14 @@ const APP_SHELL_RESOURCES = [
     '/Logo.png'
 ];
 
-// Install event: cache app shell resources
+// Install: cache app shell + skip waiting so the new SW takes over now
 self.addEventListener('install', function(event) {
-    console.log('[ServiceWorker] Install');
+    console.log('[ServiceWorker] Install ' + CACHE_VERSION);
     event.waitUntil(
         caches.open(CACHE_NAME).then(function(cache) {
-            console.log('[ServiceWorker] Caching app shell');
+            console.log('[ServiceWorker] Caching app shell to ' + CACHE_NAME);
             return cache.addAll(APP_SHELL_RESOURCES).catch(function(error) {
                 console.warn('[ServiceWorker] Some resources failed to cache:', error);
-                // Cache what we can, don't fail the install
                 return Promise.allSettled(
                     APP_SHELL_RESOURCES.map(function(url) {
                         return cache.add(url).catch(function(err) {
@@ -38,58 +60,55 @@ self.addEventListener('install', function(event) {
                     })
                 );
             });
+        }).then(function() {
+            // iter-89: take over immediately on new SW deploy.
+            return self.skipWaiting();
         })
     );
 });
 
-// Activate event: clean up old caches
+// Activate: nuke every cache that isn't the current one, then claim clients
 self.addEventListener('activate', function(event) {
-    console.log('[ServiceWorker] Activate');
+    console.log('[ServiceWorker] Activate ' + CACHE_VERSION);
     event.waitUntil(
         caches.keys().then(function(cacheNames) {
             return Promise.all(
                 cacheNames.filter(function(cacheName) {
-                    // Delete old versioned caches
                     return cacheName !== CACHE_NAME && cacheName !== API_CACHE_NAME;
                 }).map(function(cacheName) {
-                    console.log('[ServiceWorker] Deleting old cache:', cacheName);
+                    console.log('[ServiceWorker] Deleting stale cache:', cacheName);
                     return caches.delete(cacheName);
                 })
             );
         }).then(function() {
-            // Claim all clients so the new service worker takes effect immediately
+            // iter-89: control already-open tabs immediately (was already
+            // here in iter-85 but combined with skipWaiting()/network-first
+            // it now actually takes effect on the user's next page load,
+            // not eventually-someday-when-all-tabs-close).
             return self.clients.claim();
         })
     );
 });
 
-// Fetch event: serve from cache or network
+// Fetch: same-origin → network-first for app shell, cache as offline backup
 self.addEventListener('fetch', function(event) {
     var request = event.request;
     var url = new URL(request.url);
+    if (url.origin !== location.origin) return;
 
-    // Only handle same-origin requests
-    if (url.origin !== location.origin) {
-        return;
-    }
-
-    // Determine caching strategy based on resource type
-    if (isAppShellResource(url.pathname)) {
-        // Cache-first strategy for app shell resources
-        event.respondWith(cacheFirst(request));
-    } else {
-        // Network-first strategy for dynamic content
-        event.respondWith(networkFirst(request));
-    }
+    // iter-89: NETWORK-FIRST for everything. Fresh content always wins;
+    // cache is only used when the network is down. The prior CACHE-FIRST
+    // strategy was the iter-89 forensic root cause — once the operator's
+    // browser cached the v2.0.0 bundle, no deploy could displace it.
+    event.respondWith(networkFirst(request));
 });
 
-// Message event: handle skip-waiting and other messages
+// Message: handle skip-waiting and stats requests
 self.addEventListener('message', function(event) {
     if (event.data && event.data.type === 'SKIP_WAITING') {
         console.log('[ServiceWorker] Skip waiting');
         self.skipWaiting();
     }
-
     if (event.data && event.data.type === 'GET_CACHE_STATS') {
         caches.open(CACHE_NAME).then(function(cache) {
             return cache.keys();
@@ -97,99 +116,50 @@ self.addEventListener('message', function(event) {
             event.source.postMessage({
                 type: 'CACHE_STATS',
                 count: keys.length,
-                cacheName: CACHE_NAME
+                cacheName: CACHE_NAME,
+                version: CACHE_VERSION
             });
         });
     }
 });
 
 /**
- * Check if a path is an app shell resource
- */
-function isAppShellResource(pathname) {
-    // Exact matches
-    if (APP_SHELL_RESOURCES.indexOf(pathname) !== -1) {
-        return true;
-    }
-    // Static assets (JS, CSS, images, fonts, wasm)
-    if (/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|wasm)$/.test(pathname)) {
-        return true;
-    }
-    return false;
-}
-
-/**
- * Cache-first strategy: try cache, fall back to network
- * Used for app shell resources that rarely change
- */
-function cacheFirst(request) {
-    return caches.match(request).then(function(cachedResponse) {
-        if (cachedResponse) {
-            // Return cached response and update cache in background
-            fetchAndCache(request);
-            return cachedResponse;
-        }
-        // Not in cache, fetch from network
-        return fetchAndCache(request);
-    }).catch(function() {
-        // Both cache and network failed, return offline fallback
-        return offlineFallback(request);
-    });
-}
-
-/**
- * Network-first strategy: try network, fall back to cache
- * Used for dynamic content that should be fresh when possible
+ * Network-first strategy.
+ *
+ * Always try the network first. On success, update the cache as a side
+ * effect (so we have a warm offline copy). On failure (offline / DNS /
+ * 5xx), fall back to whatever's in the cache; if nothing is cached
+ * either, render the offline page.
+ *
+ * This is the "fresh content always wins" strategy that the iter-89 fix
+ * adopts to escape the cache-first lock-in defect.
  */
 function networkFirst(request) {
     return fetch(request).then(function(networkResponse) {
-        // Clone the response before caching (response can only be consumed once)
         if (networkResponse && networkResponse.ok) {
             var responseClone = networkResponse.clone();
-            caches.open(API_CACHE_NAME).then(function(cache) {
+            caches.open(CACHE_NAME).then(function(cache) {
                 cache.put(request, responseClone);
-            });
+            }).catch(function() {});
         }
         return networkResponse;
     }).catch(function() {
-        // Network failed, try cache
         return caches.match(request).then(function(cachedResponse) {
-            if (cachedResponse) {
-                return cachedResponse;
-            }
-            // No cache either, return offline fallback
+            if (cachedResponse) return cachedResponse;
             return offlineFallback(request);
         });
     });
 }
 
 /**
- * Fetch a resource and cache it for future use
- */
-function fetchAndCache(request) {
-    return fetch(request).then(function(networkResponse) {
-        if (networkResponse && networkResponse.ok) {
-            var responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(function(cache) {
-                cache.put(request, responseClone);
-            });
-        }
-        return networkResponse;
-    });
-}
-
-/**
- * Offline fallback response
- * Returns a basic HTML page when both cache and network are unavailable
+ * Offline fallback response. Same as before — for navigation requests
+ * return cached index.html or a tiny inline offline page; for other
+ * resources return a 503 text/plain.
  */
 function offlineFallback(request) {
-    // For navigation requests (HTML pages), return the cached index.html
-    if (request.mode === 'navigate' || request.headers.get('accept').indexOf('text/html') !== -1) {
+    if (request.mode === 'navigate' || (request.headers.get('accept') || '').indexOf('text/html') !== -1) {
         return caches.match('/index.html').then(function(cachedIndex) {
-            if (cachedIndex) {
-                return cachedIndex;
-            }
-            // Last resort: generate a minimal offline page
+            if (cachedIndex) return cachedIndex;
             return new Response(
                 '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Yole - Offline</title>' +
                 '<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;' +
@@ -207,8 +177,6 @@ function offlineFallback(request) {
             );
         });
     }
-
-    // For other resources, return a simple error response
     return new Response('Offline - resource not available', {
         status: 503,
         headers: { 'Content-Type': 'text/plain' }

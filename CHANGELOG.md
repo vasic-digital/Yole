@@ -3,6 +3,74 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## v2.0.4 — iter-89: Service Worker stale-cache fix (operator-reported "spins endlessly") (2026-05-18)
+
+**Version:** 2.0.4 (versionCode 204 → dotted `0.0.0.2.4`)
+**Type:** Critical bug-fix — returning users were stuck on the splash forever because the Service Worker served the four-version-old cached bundle. Web gates PASSed across iter-84/85/86/88 because fresh Puppeteer sessions never had a prior SW cache to be stuck on. This release adds the gate that would have caught it.
+
+### Bug fixed
+
+Operator reported: opening https://yole-app.web.app/ "does not ever pass to home screen of the app, it just spins endlessly! We are forever on the loading progress indicator." Cause: the Service Worker at `webApp/src/wasmJsMain/resources/service-worker.js` had `CACHE_NAME = 'yole-cache-v1'` as a static string that was never bumped. The lifecycle:
+
+1. Operator first visited at v2.0.0 (splash-then-blank bundle) — SW cached the broken app shell under `yole-cache-v1`.
+2. v2.0.1 / v2.0.2 / v2.0.3 deployed fixes to the source. Each deploy installed a new SW (since `/service-worker.js` was served `Cache-Control: no-cache`).
+3. But the new SW's `install` event saw an existing `yole-cache-v1`, called `cache.addAll(...)` which is a no-op when entries already exist, and the `activate` cleanup filter (`cacheName !== CACHE_NAME`) preserved the same cache name → no deletion.
+4. Worse: the strategy was **cache-first** for app shell — every fetch returned the v2.0.0 cached `yole-web.js`, never the v2.0.x deployed one.
+
+The operator was stuck on v2.0.0's broken bundle for four version cycles.
+
+### Fix
+
+`service-worker.js` rewritten with:
+- `CACHE_VERSION = '2.0.4'` — embeds versionName. Cache name = `'yole-cache-' + CACHE_VERSION`, so each release uses a distinct cache. Activate handler's filter (which already deleted caches not matching `CACHE_NAME`) now actually deletes old caches because the name shifts every release.
+- **Network-first** for everything (was cache-first for app shell). Fresh content always wins; cache is offline fallback only.
+- `self.skipWaiting()` in install: new SW takes over immediately, doesn't wait for all tabs to close.
+- `self.clients.claim()` in activate: new SW controls already-open tabs immediately, not on next navigation.
+
+### New permanent anti-bluff gate
+
+`yole-challenges/scripts/web_sw_cache_version_challenge.sh` (wired into `qa-iter-89-gates` → `qa-all`):
+
+- **Static layer**: SW source CACHE_VERSION must match `versionName` from `androidApp/build.gradle.kts`. A static SW version that drifts from app version is the iter-89 bug class.
+- **Runtime layer**: fetches the deployed `/service-worker.js`, verifies its CACHE_VERSION matches the canonical version, and warns if the strategy doesn't include `networkFirst`.
+
+Anti-bluff verification (per §11.4 gate-MUST-FAIL-before-fix):
+
+| State | Gate behavior |
+|---|---|
+| Before iter-89 fix (deployed SW has `CACHE_NAME = 'yole-cache-v1'`, no CACHE_VERSION) | `[FAIL] deployed SW does not declare CACHE_VERSION` |
+| After iter-89 fix + redeploy | `[OK] deployed SW CACHE_VERSION matches canonical: 2.0.4` + `[OK] uses network-first strategy` |
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `webApp/src/wasmJsMain/resources/service-worker.js` | CACHE_VERSION + network-first + skipWaiting + clients.claim |
+| `yole-challenges/scripts/web_sw_cache_version_challenge.sh` (new) | Anti-bluff gate |
+| `Makefile` | `qa-iter-89-gates` wired into `qa-all` (chain is now 18 iter-gates) |
+| `androidApp/build.gradle.kts` | versionCode 203→204, versionName 2.0.3→2.0.4 |
+| `desktopApp/build.gradle.kts` | packageVersion 2.0.4 |
+| `iosApp/iosApp.xcodeproj/project.pbxproj` | MARKETING 2.0.4, CURRENT_PROJECT_VERSION 204 |
+
+### What operators see after this release
+
+Returning users with a stuck SW will see the fixed app on the **next page refresh** — no hard refresh required. The lifecycle:
+1. Browser refetches `/service-worker.js` (`Cache-Control: no-cache` forces this)
+2. New SW JS differs from old → install
+3. `skipWaiting()` → new SW immediately active
+4. `clients.claim()` → takes over the open tab
+5. Subsequent fetches go through network-first → fresh bundle wins
+
+### Distribution
+
+| Platform | Artifact | Channel |
+|---|---|---|
+| Android Release | `Yole-Android-2.0.4-Release-0.0.0.2.4.apk` (44 MB) | Firebase release `56tm3fubeeiv0` |
+| Android Debug | `Yole-Android-2.0.4-Debug-0.0.0.2.4.apk` (56 MB) | Firebase release `1ol15ck4iba3o` |
+| Desktop macOS arm64 | `Yole-Desktop-macos-arm64-2.0.4-Release-0.0.0.2.4.dmg` (526 MB) | `releases/` |
+| Web Wasm | bundle with fixed SW | Firebase Hosting → https://yole-app.web.app |
+
+
 ## v2.0.3 — iter-88: Save button works again (kotlinx.datetime wasm IR-linkage fix) (2026-05-18)
 
 **Version:** 2.0.3 (versionCode 203 → dotted `0.0.0.2.3`)

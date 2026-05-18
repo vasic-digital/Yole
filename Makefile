@@ -408,7 +408,7 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates qa-iter-82-gates qa-iter-84-gates qa-iter-85-gates qa-iter-86-gates
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates qa-iter-82-gates qa-iter-84-gates qa-iter-85-gates qa-iter-86-gates qa-iter-89-gates
 	bash automation/run-qa-all.sh --skip-unit --skip-build
 	@echo "-----------------------------------------------------------------------------------"
 
@@ -445,6 +445,17 @@ qa-iter-85-gates:
 qa-iter-86-gates:
 	@echo "=== iter-86 gates: Web Wasm interactive-flow suite ==="
 	bash yole-challenges/scripts/web_interactive_flow_challenge.sh
+	@echo "-----------------------------------------------------------------------------------"
+
+# iter-89 gates: Service Worker cache-version anti-bluff (CONST-039).
+# Verifies that SW CACHE_VERSION moves with the canonical versionName,
+# so each deploy invalidates the prior cache and returning users get
+# the fresh bundle. Catches the iter-89 forensic case: through v2.0.0
+# → v2.0.3, SW shipped 'yole-cache-v1' static, so every redeployed
+# user got the v2.0.0 broken bundle from cache forever.
+qa-iter-89-gates:
+	@echo "=== iter-89 gates: Service Worker cache-version + network-first ==="
+	bash yole-challenges/scripts/web_sw_cache_version_challenge.sh
 	@echo "-----------------------------------------------------------------------------------"
 
 # Web testing container lifecycle (iter-85 phase 2).
