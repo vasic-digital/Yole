@@ -432,6 +432,8 @@ qa-iter-84-gates:
 qa-iter-85-gates:
 	@echo "=== iter-85 gates: Web Wasm full-UI accessibility-tree suite ==="
 	bash yole-challenges/scripts/web_full_ui_suite_challenge.sh
+	@echo "=== iter-85 gates: Anti-bluff covenant cascade audit (governance integrity) ==="
+	bash yole-challenges/scripts/anti_bluff_cascade_audit_challenge.sh
 	@echo "-----------------------------------------------------------------------------------"
 
 # Web testing container lifecycle (iter-85 phase 2).
