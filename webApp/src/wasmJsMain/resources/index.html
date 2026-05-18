@@ -39,7 +39,15 @@
             overflow: hidden;
         }
         
-        #root {
+        /* iter-85: was #root (legacy ID) — corrected to #yoleCanvas to match
+           the Kotlin ComposeViewport(viewportContainerId = "yoleCanvas") in
+           Main.kt. Symptom of the old (broken) selector: the canvas div had
+           no CSS height, fell back to height:auto, and Compose rendered into
+           a content-sized strip (~154px tall on a 800px viewport) — leaving
+           the bottom 80% of the page blank white. The render-gate.js byte-
+           count heuristic missed it because PNG compresses huge white areas
+           to near-nothing, hiding the regression. */
+        #yoleCanvas {
             width: 100vw;
             height: 100vh;
         }
