@@ -3,6 +3,62 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## v2.0.3 — iter-88: Save button works again (kotlinx.datetime wasm IR-linkage fix) (2026-05-18)
+
+**Version:** 2.0.3 (versionCode 203 → dotted `0.0.0.2.3`)
+**Type:** Bug-fix release — the Save button (and every web feature using a timestamp: new-tab IDs, "last saved" indicator, scheduled snapshots) was silently crashing on the web build. Anti-bluff probe in iter-88 caught it; same probe is now a permanent gate.
+
+### Bug fixed
+
+`kotlinx-datetime` was pinned to 0.6.1 in iter-82 to preserve `Clock.System` on JVM/Desktop (Compose MP 1.11.0 transitively brings 0.7.x which removed it). But the kotlinx-datetime 0.6.1 **wasm-js klib does not contain `Clock.System`** — calling `Clock.System.now()` on the wasm runtime produces an `IrLinkageError: Can not get instance of singleton 'System': No class found for symbol 'kotlinx.datetime/Clock.System|null[0]'` and the entire enclosing handler aborts.
+
+Every web feature with a timestamp hit this:
+- Save button — write document to localStorage → CRASH; `localStorage` stayed empty
+- New tab — generate unique ID → CRASH; tab never created
+- Editor — update last-saved indicator → CRASH; UI froze on that path
+- Settings — persist last-changed timestamp → CRASH
+
+Fixed by replacing all `Clock.System` usages in `webApp/src/wasmJsMain/` with a `WebTime.kt` shim that calls JavaScript `Date.now()` / `new Date().toISOString()` via `@JsFun`. Zero dependencies, zero IR linkage risk.
+
+### Anti-bluff coverage tightening
+
+The iter-86 `interactive-flow-suite.js` Save check was BLUFF — it only verified the page survived the click. Save crashed silently every time but the gate PASSed because the PAGE (not the Save handler) stayed up. iter-88 tightens the check to assert three concrete persistence signals:
+
+1. `localStorage` key count must grow after Save click
+2. `yole_web_state_content` key must be present with non-zero length
+3. `yole_web_state_timestamp` must be present
+4. At least one `yole_doc_*` blob key must be present
+
+Anti-bluff verification (per §11.4 gate-MUST-FAIL-before-fix):
+
+| State | localStorage post-Save | Gate |
+|---|---|---|
+| Before iter-88 fix | `{}` (empty — IrLinkageError aborted handler) | FAIL: `Save did NOT persist (state-content:false timestamp:false doc-blob:false)` |
+| After iter-88 fix | 8 keys: `yole_doc_welcome_content` 233B, `yole_web_state_timestamp` 13B, etc. | PASS: `state changed (afterCount:8, newKeysWritten:8, hasStateContent:true)` |
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `webApp/src/wasmJsMain/kotlin/digital/vasic/yole/web/WebTime.kt` (new) | `nowEpochMilliseconds()` + `nowIsoString()` + `todayIsoDate()` via JS `Date` |
+| `webApp/src/wasmJsMain/kotlin/digital/vasic/yole/web/EnhancedWebApp.kt` | 5 `Clock.System.*` callsites → WebTime shims; removed import |
+| `webApp/src/wasmJsMain/kotlin/digital/vasic/yole/web/Main.kt` | 1 `Clock.System.*` callsite → WebTime shim; removed 3 imports |
+| `tools/node-render-gate/interactive-flow-suite.js` | Save check tightened from "page survives" → 4 explicit localStorage assertions |
+| `androidApp/build.gradle.kts` | versionCode 202→203, versionName 2.0.2→2.0.3 |
+| `desktopApp/build.gradle.kts` | packageVersion 2.0.3 |
+| `iosApp/iosApp.xcodeproj/project.pbxproj` | MARKETING 2.0.3, CURRENT_PROJECT_VERSION 203 |
+
+### Distribution
+
+| Platform | Artifact | Channel |
+|---|---|---|
+| Android Release | `Yole-Android-2.0.3-Release-0.0.0.2.3.apk` | Firebase App Distribution (Yole Android) |
+| Android Debug | `Yole-Android-2.0.3-Debug-0.0.0.2.3.apk` | Firebase App Distribution (Yole DEV) |
+| Desktop macOS arm64 | `Yole-Desktop-macos-arm64-2.0.3-Release-0.0.0.2.3.dmg` | `releases/` |
+| Web Wasm | bundle at `webApp/build/dist/wasmJs/productionExecutable` | Firebase Hosting → https://yole-app.web.app |
+| iOS | simulator-only; device .ipa blocked per `#iter-78-...` | n/a |
+
+
 ## v2.0.2 — iter-85/86 cumulative: preview render fix + autocomplete unstubbed + anti-bluff coverage expansion (2026-05-18)
 
 **Version:** 2.0.2 (versionCode 202 → dotted `0.0.0.2.2`)

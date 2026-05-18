@@ -40,9 +40,9 @@ import digital.vasic.yole.syntax.theme.themeUiColor
 import kotlinx.browser.document
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+// iter-88: kotlinx.datetime.Clock removed — wasm klib doesn't ship Clock.System
+// in 0.6.1. The single callsite at line 296 uses todayIsoDate() from
+// WebTime.kt instead, which goes through JS Date directly.
 import org.w3c.dom.HTMLAnchorElement
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.url.URL
@@ -293,7 +293,10 @@ fun FormatList(
  * Get current date in YYYY-MM-DD format
  */
 fun getCurrentDate(): String {
-    return Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
+    // iter-88: was Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
+    // — failed on wasm with IrLinkageError because kotlinx-datetime 0.6.1 wasm klib
+    // doesn't ship Clock.System. WebTime.todayIsoDate() uses JS Date directly.
+    return todayIsoDate()
 }
 
 /**

@@ -44,7 +44,9 @@ import digital.vasic.yole.syntax.theme.themeUiColor
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
 import kotlinx.coroutines.*
-import kotlinx.datetime.Clock
+// iter-88: kotlinx.datetime.Clock removed — wasm klib doesn't ship Clock.System
+// in 0.6.1. All call sites use the WebTime.kt shim (nowEpochMilliseconds /
+// nowIsoString) which goes through JS Date.now() directly.
 
 // Top-level JS helpers for Wasm compatibility.
 // In Kotlin/Wasm, js("...") must be the sole expression in a top-level function body
@@ -142,7 +144,7 @@ fun EnhancedYoleWebApp() {
 
     // Helper: create new document
     fun createDocument(format: String) {
-        val id = Clock.System.now().toEpochMilliseconds().toString()
+        val id = nowEpochMilliseconds().toString()
         val ext = getDefaultExtensionForFormat(format)
         val name = "untitled.$ext"
         val template = when (format) {
@@ -234,7 +236,7 @@ fun EnhancedYoleWebApp() {
             // Update doc list
             val allIds = openTabs.joinToString(",") { it.id }
             localStorage.setItem("yole_doc_list", allIds)
-            lastSavedTimestamp = Clock.System.now().toString()
+            lastSavedTimestamp = nowIsoString()
             openTabs = openTabs.map {
                 if (it.id == activeTab.id) it.copy(isDirty = false) else it
             }
@@ -334,7 +336,7 @@ fun EnhancedYoleWebApp() {
                             val content = PWAFeatures.getOpenedFileContent()
                             if (content != null) {
                                 val format = detectFormatFromFilename(fileHandle.name)
-                                val id = Clock.System.now().toEpochMilliseconds().toString()
+                                val id = nowEpochMilliseconds().toString()
                                 val newTab = DocumentTab(
                                     id = id,
                                     name = fileHandle.name,
@@ -356,7 +358,7 @@ fun EnhancedYoleWebApp() {
                         localStorage.setItem("yole_doc_${tab.id}_format", tab.format)
                         val allIds = openTabs.joinToString(",") { it.id }
                         localStorage.setItem("yole_doc_list", allIds)
-                        lastSavedTimestamp = Clock.System.now().toString()
+                        lastSavedTimestamp = nowIsoString()
                         openTabs = openTabs.map {
                             if (it.id == tab.id) it.copy(isDirty = false) else it
                         }
@@ -1855,7 +1857,7 @@ private fun saveSettingsToLocalStorage(isDarkTheme: Boolean, fontSize: Int, word
 }
 
 private fun saveDocumentToLocalStorage(content: String, format: String, name: String) {
-    val timestamp = Clock.System.now().toEpochMilliseconds()
+    val timestamp = nowEpochMilliseconds()
     localStorage.setItem("yole_web_state_content", content)
     localStorage.setItem("yole_web_state_format", format)
     localStorage.setItem("yole_web_state_name", name)

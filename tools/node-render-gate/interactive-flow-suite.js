@@ -98,24 +98,46 @@ const EXPECTED_STATE_FLOWS = [
     },
     {
         label: 'Save button',
-        description: 'Save button writes current document to localStorage',
+        description: 'Save button MUST write current document to localStorage',
         verify: async (page) => {
+            // iter-88: tightened from "page survives" (which was bluff — Save
+            // crashed silently with kotlinx-datetime IrLinkageError but the
+            // PAGE stayed up so the check PASSed). The new assertion mandates
+            // that clicking Save grows localStorage and that the saved entries
+            // include the canonical state-keys (yole_web_state_content,
+            // yole_web_state_timestamp) plus a yole_doc_* document blob.
             const before = await page.evaluate(() => {
-                let n = 0;
-                for (let i = 0; i < localStorage.length; i++) n++;
-                return n;
+                const keys = [];
+                for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+                return keys;
             });
             await clickByLabel(page, 'Save button');
-            await new Promise(r => setTimeout(r, 600));
+            await new Promise(r => setTimeout(r, 1000));
             const after = await page.evaluate(() => {
-                let n = 0;
-                for (let i = 0; i < localStorage.length; i++) n++;
-                return n;
+                const out = {};
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    out[k] = (localStorage.getItem(k) || '').length;
+                }
+                return out;
             });
-            // Save should keep or grow localStorage count. We just verify
-            // the operation didn't crash (page still responsive).
-            const stillAlive = await page.evaluate(() => document.title);
-            return { ok: !!stillAlive, beforeCount: before, afterCount: after };
+            const afterKeys = Object.keys(after);
+            const newKeys = afterKeys.filter(k => !before.includes(k));
+            const hasStateContent = afterKeys.some(k => k === 'yole_web_state_content' && after[k] > 0);
+            const hasTimestamp = afterKeys.some(k => k === 'yole_web_state_timestamp' && after[k] > 0);
+            const hasDocBlob = afterKeys.some(k => k.startsWith('yole_doc_') && after[k] > 0);
+            const ok = hasStateContent && hasTimestamp && hasDocBlob;
+            return {
+                ok,
+                beforeCount: before.length,
+                afterCount: afterKeys.length,
+                newKeysWritten: newKeys.length,
+                hasStateContent,
+                hasTimestamp,
+                hasDocBlob,
+                reason: ok ? null :
+                    `Save did NOT persist (state-content:${hasStateContent} timestamp:${hasTimestamp} doc-blob:${hasDocBlob}). Likely a silent crash in the Save handler (e.g. iter-88's IrLinkageError on Clock.System).`,
+            };
         },
     },
 ];
