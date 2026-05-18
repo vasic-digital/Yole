@@ -791,6 +791,23 @@ private data class HtmlBlock(
  */
 private fun parseHtmlBlocks(html: String): List<HtmlBlock> {
     val blocks = mutableListOf<HtmlBlock>()
+
+    // iter-85: strip <style>, <script>, <link>, <meta>, and HTML comments
+    // BEFORE block-level extraction. Without this, the CSS body inside
+    // <style>...</style> (emitted by StyleSheets.MARKDOWN_STYLES and the
+    // other per-format stylesheets) was being treated as "text between
+    // blocks" — `replace(Regex("<[^>]*>"), "")` stripped the <style> tags
+    // and left the raw CSS as visible text in the preview pane. User
+    // symptom: the Markdown preview rendered the literal stylesheet
+    // (`.markdown { font-family: ... }`) instead of the rendered HTML.
+    // Caught by the iter-85 full-UI accessibility-tree suite.
+    val cleanedHtml = html
+        .replace(Regex("<style\\b[^>]*>.*?</style>", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE)), "")
+        .replace(Regex("<script\\b[^>]*>.*?</script>", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE)), "")
+        .replace(Regex("<link\\b[^>]*/?>", RegexOption.IGNORE_CASE), "")
+        .replace(Regex("<meta\\b[^>]*/?>", RegexOption.IGNORE_CASE), "")
+        .replace(Regex("<!--.*?-->", RegexOption.DOT_MATCHES_ALL), "")
+
     // Match block-level elements: h1-h6, p, li, pre, code, hr, blockquote, div, ul, ol
     val blockPattern = Regex(
         """<(h[1-6]|p|li|pre|code|hr|blockquote|div|ul|ol)(?:\s[^>]*)?>(.+?)</\1>|<(hr)\s*/?>""",
@@ -798,9 +815,9 @@ private fun parseHtmlBlocks(html: String): List<HtmlBlock> {
     )
 
     var lastEnd = 0
-    for (match in blockPattern.findAll(html)) {
+    for (match in blockPattern.findAll(cleanedHtml)) {
         // Add any text between blocks
-        val betweenText = html.substring(lastEnd, match.range.first)
+        val betweenText = cleanedHtml.substring(lastEnd, match.range.first)
             .replace(Regex("<[^>]*>"), "").trim()
         if (betweenText.isNotEmpty()) {
             blocks.add(HtmlBlock("text", betweenText))
@@ -826,7 +843,7 @@ private fun parseHtmlBlocks(html: String): List<HtmlBlock> {
     }
 
     // Add any trailing text
-    val trailing = html.substring(lastEnd)
+    val trailing = cleanedHtml.substring(lastEnd)
         .replace(Regex("<[^>]*>"), "").trim()
     if (trailing.isNotEmpty()) {
         blocks.add(HtmlBlock("text", trailing))
@@ -834,7 +851,7 @@ private fun parseHtmlBlocks(html: String): List<HtmlBlock> {
 
     // If no blocks were parsed, treat the whole thing as stripped text
     if (blocks.isEmpty()) {
-        val stripped = html.replace(Regex("<[^>]*>"), "").trim()
+        val stripped = cleanedHtml.replace(Regex("<[^>]*>"), "").trim()
         if (stripped.isNotEmpty()) {
             stripped.lines().filter { it.isNotBlank() }.forEach { line ->
                 blocks.add(HtmlBlock("text", line.trim()))

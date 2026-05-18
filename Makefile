@@ -408,7 +408,7 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates qa-iter-82-gates qa-iter-84-gates
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates qa-iter-82-gates qa-iter-84-gates qa-iter-85-gates
 	bash automation/run-qa-all.sh --skip-unit --skip-build
 	@echo "-----------------------------------------------------------------------------------"
 
@@ -421,6 +421,41 @@ qa-iter-84-gates:
 	@echo "=== iter-84 gates: Web Wasm render validation (static + runtime) ==="
 	bash yole-challenges/scripts/webapp_render_validation_challenge.sh
 	@echo "-----------------------------------------------------------------------------------"
+
+# iter-85 gates: Web Wasm full-UI accessibility-tree suite (CONST-039 anti-bluff).
+# Closes the iter-85 forensic gaps the iter-84 gate alone could not catch:
+#   (a) #yoleCanvas CSS selector mismatch — Compose rendered into a 154px strip;
+#   (b) Markdown preview pane leaked the literal CSS stylesheet as text.
+# Default target: deployed https://yole-app.web.app. Override with
+# YOLE_WEB_URL=http://localhost:18080 to test against a local container.
+# Container helper: `make web-container-up` brings up nginx + Yole bundle on :18080.
+qa-iter-85-gates:
+	@echo "=== iter-85 gates: Web Wasm full-UI accessibility-tree suite ==="
+	bash yole-challenges/scripts/web_full_ui_suite_challenge.sh
+	@echo "-----------------------------------------------------------------------------------"
+
+# Web testing container lifecycle (iter-85 phase 2).
+# Brings up rootless podman serving the built Wasm bundle on :18080 so the
+# render-gate and full-UI suite can run against a real HTTP server without
+# round-tripping through Firebase. Per CONST-038 (no sudo / rootless only).
+web-container-up:
+	@if [ ! -d webApp/build/dist/wasmJs/productionExecutable ]; then \
+		echo "FAIL: build the wasm bundle first: ./gradlew :webApp:wasmJsBrowserDistribution"; \
+		exit 1; \
+	fi
+	@podman stop yole-web-test 2>/dev/null || true
+	@podman rm yole-web-test 2>/dev/null || true
+	podman run -d --name yole-web-test -p 18080:80 \
+		-v "$(PWD)/webApp/build/dist/wasmJs/productionExecutable:/usr/share/nginx/html:ro,Z" \
+		docker.io/library/nginx:alpine
+	@sleep 2
+	@echo "Yole web testing container live at http://localhost:18080"
+	@echo "Run gates against it with: YOLE_WEB_URL=http://localhost:18080 make qa-iter-84-gates qa-iter-85-gates"
+
+web-container-down:
+	@podman stop yole-web-test 2>/dev/null || true
+	@podman rm yole-web-test 2>/dev/null || true
+	@echo "Yole web testing container stopped"
 
 # iter-82 gates: Wasm production bundle existence + size check (CONST-039 installable-asset evidence).
 # Verifies that binaries.executable() produced a non-degenerate .wasm binary in
