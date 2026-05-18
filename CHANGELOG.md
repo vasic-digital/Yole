@@ -3,6 +3,58 @@
 - New Updates also visible here: <https://github.com/vasic-digital/Yole/releases>
 
 
+## v2.0.2 — iter-85/86 cumulative: preview render fix + autocomplete unstubbed + anti-bluff coverage expansion (2026-05-18)
+
+**Version:** 2.0.2 (versionCode 202 → dotted `0.0.0.2.2`)
+**Type:** Cumulative bug-fix + anti-bluff coverage release covering iter-85 (web Wasm render correctness) and iter-86 (autocomplete restoration + interactive-flow gate).
+
+### Bugs fixed for end users
+
+- Web: `#yoleCanvas` CSS selector mismatch (canvas was 154px on 800px viewport)
+- Web: Markdown preview pane was dumping raw CSS stylesheet as plain text
+- Web: Markdown preview block-collapse — all h1/p/h2/li rendered as one concatenated blob
+- All platforms: autocomplete worked nowhere — `CompletionEngineFlow` returned `emptyFlow()` because of two K2 FIR compiler crashes. Reimplemented as anonymous `object : Flow<CompletionList>` that bypasses both crashes. 5 of 6 CompletionEngineTest tests went RED→GREEN.
+
+### Anti-bluff coverage expansion
+
+The iter-84 render gate used a PNG-byte-count heuristic that was itself bluff. iter-85/86 closes that meta-bluff:
+
+- `render-gate.js`: 1 bluff metric replaced with 3 hard assertions (canvas dimensions ≥ 80% viewport, 9-point viewport probe, decoded-pixel bottom-half color count via inline PNG decoder)
+- `full-ui-suite.js` (new): 19 positive UI-element + 4 forbidden-text + 8 preview-pane standalone-node assertions
+- `interactive-flow-suite.js` (new): 6 dialog + 2 state flows — clicks each button + asserts UI delta
+- `anti_bluff_cascade_audit_challenge.sh` (new): 44-file × 7-pattern cascade audit across parent + 10 owned submodules — currently 44/44 PASS
+- Container'd web testing via rootless podman (`make web-container-up`)
+
+qa-all chain is now 17 iter-gates (was 15 at v2.0.1).
+
+### Anti-bluff verification (per §11.4 gate-MUST-FAIL-before-fix discipline)
+
+| Forensic case | Gate before fix | Gate after fix |
+|---|---|---|
+| 154px canvas on 800px viewport | render-gate FAIL: `canvas coverage too small: 19.3%` | PASS: `100% × 100%` |
+| CSS leak into preview pane | full-ui-suite FAIL: `LEAK DETECTED` | PASS: `absent` |
+| Preview block-collapse | full-ui-suite FAIL: `0/8 standalone nodes` | PASS: `8/8 standalone` |
+| Autocomplete returns nothing | 5 CompletionEngineTest RED | All 6 GREEN |
+
+### Distribution
+
+| Platform | Artifact | Channel |
+|---|---|---|
+| Android Release | `Yole-Android-2.0.2-Release-0.0.0.2.2.apk` | Firebase App Distribution (Release) |
+| Android Debug | `Yole-Android-2.0.2-Debug-0.0.0.2.2.apk` | Firebase App Distribution (Debug) |
+| Desktop macOS arm64 | `Yole-Desktop-macos-arm64-2.0.2-Release-0.0.0.2.2.dmg` | `releases/` |
+| Web Wasm | bundle at `webApp/build/dist/wasmJs/productionExecutable` | Firebase Hosting → https://yole-app.web.app |
+| iOS | simulator build verified; device .ipa blocked per `#iter-78-ios-paid-dev-program-needed-for-firebase` | n/a |
+
+### Pre-distribute verification (§6.Z)
+
+```
+make qa-all  →  17 / 17 iter-gates PASS  (sweep completed before distribute)
+anti-bluff cascade audit  →  44 / 44 governance files PASS
+node tools/node-render-gate/{render-gate,full-ui-suite,interactive-flow-suite}.js https://yole-app.web.app  →  ALL PASS
+```
+
+
 ## v2.0.1 — iter-84 EMERGENCY: Web Wasm blank-screen fix + browser-render anti-bluff gate (2026-05-18)
 
 **Version:** 2.0.1 (versionCode 201 → dotted `0.0.0.2.1`)

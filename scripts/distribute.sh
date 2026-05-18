@@ -50,7 +50,18 @@ fi
 # Allow FIREBASE_CLI_TOKEN OR FIREBASE_TOKEN (firebase CLI's own canonical name).
 FIREBASE_TOKEN="${FIREBASE_CLI_TOKEN:-${FIREBASE_TOKEN:-}}"
 PROJECT_ID="${FIREBASE_PROJECT_ID:-yole-app}"
-ANDROID_APP_ID="${FIREBASE_ANDROID_APP_ID:-1:578988389676:android:d61715a0a84a42c65d2889}"
+# Per-variant Firebase app IDs. The DEV variant has applicationIdSuffix ".dev"
+# in androidApp/build.gradle.kts, which makes its package name
+# `digital.vasic.yole.android.dev` — a DIFFERENT Firebase Android app from
+# the production package `digital.vasic.yole.android`. Distributing the
+# wrong APK to the wrong app fails with "APK package name does not match"
+# (iter-87 forensic case, 2026-05-18).
+#
+# Defaults are the prod IDs in this project. Override via env vars.
+ANDROID_APP_ID_RELEASE="${FIREBASE_ANDROID_APP_ID_RELEASE:-${FIREBASE_ANDROID_APP_ID:-1:578988389676:android:d61715a0a84a42c65d2889}}"
+ANDROID_APP_ID_DEBUG="${FIREBASE_ANDROID_APP_ID_DEBUG:-1:578988389676:android:5a3d47a9fb23b6465d2889}"
+# Backwards-compat: scripts that still read $ANDROID_APP_ID get the release one.
+ANDROID_APP_ID="$ANDROID_APP_ID_RELEASE"
 TESTER_GROUP="${FIREBASE_TESTER_GROUP:-}"
 BUILD_TYPE="release"
 BUILD_BOTH=false
@@ -179,9 +190,17 @@ EOF
     echo "  Notes: $(head -1 "$NOTES_FILE")"
 
     # ---- Distribute -----------------------------------------------------
-    echo "[3/3] Distributing via Firebase App Distribution..."
+    # Pick the right Firebase app ID per variant — DEV variant has its own
+    # Firebase app because its applicationIdSuffix ".dev" makes its package
+    # name distinct from the release package.
+    case "$variant" in
+        release) APP_ID="$ANDROID_APP_ID_RELEASE" ;;
+        debug)   APP_ID="$ANDROID_APP_ID_DEBUG" ;;
+        *)       APP_ID="$ANDROID_APP_ID_RELEASE" ;;
+    esac
+    echo "[3/3] Distributing via Firebase App Distribution (app: $APP_ID)..."
     firebase appdistribution:distribute "$APK_FILE" \
-        --app "$ANDROID_APP_ID" \
+        --app "$APP_ID" \
         --project "$PROJECT_ID" \
         --token "$FIREBASE_TOKEN" \
         --release-notes-file "$NOTES_FILE" \
