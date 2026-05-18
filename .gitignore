@@ -167,3 +167,18 @@ shared/build/XCFrameworks/
 
 # Firebase local deployment cache
 .firebase/
+
+# Local-only working backups (iter-N migrations, T7 migration, ad-hoc snapshots).
+# Convention: anything ending with -bak or with .bak-* suffix is a hand-made
+# rollback artifact created by an agent before a risky edit. Never committed.
+*.bak-*
+*-bak
+
+# Legacy GsAndroidBaseTemplate scaffold output that conflicts with Yole's
+# Kotlin Multiplatform layout. Yole uses <module>/src/, NOT <module>/app/src/.
+# Some legacy Gradle tasks still create these stray app/ directories under
+# androidApp/, commons/, and shared/; they are never part of the build and
+# never to be committed. Surfaced iter-82.
+/androidApp/app/
+/commons/app/
+/shared/app/
