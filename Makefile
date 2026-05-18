@@ -408,7 +408,7 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates qa-iter-82-gates qa-iter-84-gates qa-iter-85-gates
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates qa-iter-82-gates qa-iter-84-gates qa-iter-85-gates qa-iter-86-gates
 	bash automation/run-qa-all.sh --skip-unit --skip-build
 	@echo "-----------------------------------------------------------------------------------"
 
@@ -434,6 +434,17 @@ qa-iter-85-gates:
 	bash yole-challenges/scripts/web_full_ui_suite_challenge.sh
 	@echo "=== iter-85 gates: Anti-bluff covenant cascade audit (governance integrity) ==="
 	bash yole-challenges/scripts/anti_bluff_cascade_audit_challenge.sh
+	@echo "-----------------------------------------------------------------------------------"
+
+# iter-86 gates: Web Wasm interactive-flow suite (CONST-039 anti-bluff).
+# Clicks each toolbar button + verifies expected dialog/panel/state delta
+# appears. Catches dead buttons that render in the a11y tree but whose
+# onClick handlers are no-op. Pairs with iter-85's static inventory.
+# Default target: https://yole-app.web.app. Override with
+# YOLE_WEB_URL=http://localhost:18080 to test against local container.
+qa-iter-86-gates:
+	@echo "=== iter-86 gates: Web Wasm interactive-flow suite ==="
+	bash yole-challenges/scripts/web_interactive_flow_challenge.sh
 	@echo "-----------------------------------------------------------------------------------"
 
 # Web testing container lifecycle (iter-85 phase 2).
