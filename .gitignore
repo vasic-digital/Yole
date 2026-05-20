@@ -182,3 +182,6 @@ shared/build/XCFrameworks/
 /androidApp/app/
 /commons/app/
 /shared/app/
+
+# Pitest service-loader metadata leaks to repo root during mutation runs
+/META-INF/

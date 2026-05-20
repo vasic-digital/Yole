@@ -77,14 +77,23 @@ RUN_DIR="${REPORT_DIR}/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "${RUN_DIR}"
 
 set +e
+# Pitest's --classPath takes a COMMA-separated list (its --help: "coma
+# separated list of additional classpath elements"). DEP_CP is a normal
+# colon-separated Java classpath, so translate ':' -> ',' for this arg
+# only. The `java -cp` launch classpath above stays colon-separated.
+# --skipFailingTests: ~21 timing/environment-sensitive tests pass under
+# Gradle's JVM but fail in Pitest's forked minion JVM; skipping them
+# (rather than aborting the whole run) yields an honest kill-rate floor
+# from the Pitest-runnable subset. Skipped tests are listed in the run log.
 java -cp "${PITEST_CP}" org.pitest.mutationtest.commandline.MutationCoverageReport \
   --reportDir "${RUN_DIR}" \
   --targetClasses "${TARGET_CLASSES}" \
   --targetTests "${TARGET_TESTS}" \
   --sourceDirs "shared/src/commonMain/kotlin,shared/src/desktopMain/kotlin" \
-  --classPath "${CLASSES_MAIN}:${CLASSES_TEST}:${DEP_CP}" \
+  --classPath "${CLASSES_MAIN},${CLASSES_TEST},${DEP_CP//:/,}" \
   --outputFormats XML,HTML \
   --testPlugin junit \
+  --skipFailingTests true \
   --timeoutConst 12000 \
   --threads 4 \
   --verbose false
