@@ -408,9 +408,28 @@ update-baseline:
 	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
-qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates qa-iter-82-gates qa-iter-84-gates qa-iter-85-gates qa-iter-86-gates qa-iter-89-gates qa-iter-90-gates
+qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates qa-iter-82-gates qa-iter-84-gates qa-iter-85-gates qa-iter-86-gates qa-iter-89-gates qa-iter-90-gates codegraph-verify
 	bash automation/run-qa-all.sh --skip-unit --skip-build
 	@echo "-----------------------------------------------------------------------------------"
+
+# CodeGraph — local semantic code-knowledge-graph + MCP server for AI agents.
+# See docs/CODEGRAPH.md. Indexing runs on Node 18-22 (Node 23+ OOMs the
+# tree-sitter WASM parser) via scripts/codegraph-index.sh.
+codegraph-index:
+	bash scripts/codegraph-index.sh index --force
+
+codegraph-sync:
+	bash scripts/codegraph-index.sh sync
+
+codegraph-status:
+	codegraph status
+
+codegraph-query:
+	codegraph query "$(Q)"
+
+# Anti-bluff verification of the CodeGraph integration (CONST-039).
+codegraph-verify:
+	bash yole-challenges/scripts/codegraph_integration_challenge.sh
 
 # iter-84 gates: Web Wasm render validation — static + runtime (CONST-039 anti-bluff).
 # Static layer: checks viewportContainerId + script tag consistency in index.html.
