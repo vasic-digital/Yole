@@ -933,3 +933,43 @@ tasks.named("desktopTestProcessResources") {
 tasks.named("desktopTest") {
     dependsOn("repackageTreeSitterJarForAndroid", "repackageTreeSitterMarkdownJarForAndroid")
 }
+
+// === Phase 5A — Pitest mutation-testing wiring ===
+// Pitest is a JVM tool; it runs against the compiled `desktop` KMP JVM target.
+// We do not use the info.solidsoft.pitest Gradle plugin: it auto-wires to the
+// `java` plugin's source sets, which a KMP module does not have. Instead we
+// dump two classpaths to files and drive the pitest-command-line jar from
+// scripts/anti-bluff/run-pitest.sh.
+val pitestTool: Configuration by configurations.creating
+
+dependencies {
+    pitestTool(libs.pitest.command.line)
+}
+
+tasks.register("pitestToolClasspath") {
+    description = "Writes the resolved Pitest tool classpath to a file."
+    group = "verification"
+    val outFile = layout.buildDirectory.file("pitest-tool-classpath.txt")
+    // Capture as FileCollection (configuration-cache serializable) rather than
+    // referencing the Configuration object directly inside doLast.
+    val toolFiles: FileCollection = configurations["pitestTool"]
+    inputs.files(toolFiles)
+    outputs.file(outFile)
+    doLast {
+        outFile.get().asFile.writeText(toolFiles.files.joinToString(":") { it.absolutePath })
+    }
+}
+
+tasks.register("pitestClasspath") {
+    description = "Writes the :shared desktop test runtime classpath to a file."
+    group = "verification"
+    val outFile = layout.buildDirectory.file("pitest-classpath.txt")
+    val testCompilation = kotlin.targets.getByName("desktop")
+        .compilations.getByName("test")
+    val runtimeFiles: FileCollection = testCompilation.runtimeDependencyFiles ?: files()
+    inputs.files(runtimeFiles)
+    outputs.file(outFile)
+    doLast {
+        outFile.get().asFile.writeText(runtimeFiles.files.joinToString(":") { it.absolutePath })
+    }
+}
