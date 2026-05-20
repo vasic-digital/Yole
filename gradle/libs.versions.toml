@@ -206,6 +206,9 @@ color-picker = "3.1.0"
 dokka = "2.0.0"
 gradle-versions = "0.51.0"
 
+# Mutation Testing (Phase 5A — anti-bluff hardening)
+pitest = "1.15.0"
+
 [libraries]
 # Kotlin Standard Library
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
@@ -400,6 +403,9 @@ mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockk" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+
+# Mutation Testing (Phase 5A — anti-bluff hardening)
+pitest-command-line = { module = "org.pitest:pitest-command-line", version.ref = "pitest" }
 
 # Firebase
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
