@@ -9,6 +9,13 @@
 # Output: shared/build/reports/pitest/<timestamp>/mutations.xml  (+ HTML).
 set -euo pipefail
 
+# Uses `mapfile`, a bash 4+ builtin. macOS default is bash 3.2 — install
+# bash 4+ (e.g., `brew install bash`) and invoke via `/opt/homebrew/bin/bash`.
+if (( BASH_VERSINFO[0] < 4 )); then
+  echo "FAIL: run-pitest.sh requires bash 4+; current shell is ${BASH_VERSION}." >&2
+  exit 1
+fi
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT_DIR}"
 
@@ -26,6 +33,7 @@ REPORT_DIR="shared/build/reports/pitest"
 
 DEP_CP="$(cat shared/build/pitest-classpath.txt)"
 PITEST_CP="$(cat shared/build/pitest-tool-classpath.txt)"
+[[ -n "${DEP_CP}" ]]   || { echo "FAIL: empty Pitest dependency classpath." >&2; exit 1; }
 [[ -n "${PITEST_CP}" ]] || { echo "FAIL: empty Pitest tool classpath." >&2; exit 1; }
 
 # 2. Resolve target classes.
