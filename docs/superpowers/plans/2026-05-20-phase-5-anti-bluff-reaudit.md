@@ -263,17 +263,18 @@ RUN_DIR="${REPORT_DIR}/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "${RUN_DIR}"
 
 set +e
-# --classPath takes a COMMA-separated list (Pitest --help); translate
-# the colon-separated Java classpath for this arg only. --skipFailingTests
-# tolerates the ~21 timing-sensitive tests that fail in Pitest's forked
-# minion JVM but pass under Gradle — yields an honest floor from the
-# Pitest-runnable subset.
+# --classPath takes a COMMA-separated list (Pitest --help). --skipFailingTests
+# tolerates ~21 tests that fail only in Pitest's forked JVM. --mutableCodePaths
+# restricts mutation to the production main classes dir — without it Pitest
+# also mutates test classes (they share the digital.vasic.yole.* namespace),
+# producing meaningless self-killing data.
 java -cp "${PITEST_CP}" org.pitest.mutationtest.commandline.MutationCoverageReport \
   --reportDir "${RUN_DIR}" \
   --targetClasses "${TARGET_CLASSES}" \
   --targetTests "${TARGET_TESTS}" \
   --sourceDirs "shared/src/commonMain/kotlin,shared/src/desktopMain/kotlin" \
   --classPath "${CLASSES_MAIN},${CLASSES_TEST},${DEP_CP//:/,}" \
+  --mutableCodePaths "${CLASSES_MAIN}" \
   --outputFormats XML,HTML \
   --testPlugin junit \
   --skipFailingTests true \

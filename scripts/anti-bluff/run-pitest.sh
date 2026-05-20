@@ -85,12 +85,20 @@ set +e
 # Gradle's JVM but fail in Pitest's forked minion JVM; skipping them
 # (rather than aborting the whole run) yields an honest kill-rate floor
 # from the Pitest-runnable subset. Skipped tests are listed in the run log.
+# --mutableCodePaths: production and test classes share the
+# digital.vasic.yole.* namespace, so --targetClasses alone would also
+# mutate test classes — and a test mutating its own body trivially
+# "kills" itself, producing meaningless inflated data. Restricting
+# mutable code to the production main classes dir mutates ONLY
+# production code; the test classes dir stays on --classPath so tests
+# can still run.
 java -cp "${PITEST_CP}" org.pitest.mutationtest.commandline.MutationCoverageReport \
   --reportDir "${RUN_DIR}" \
   --targetClasses "${TARGET_CLASSES}" \
   --targetTests "${TARGET_TESTS}" \
   --sourceDirs "shared/src/commonMain/kotlin,shared/src/desktopMain/kotlin" \
   --classPath "${CLASSES_MAIN},${CLASSES_TEST},${DEP_CP//:/,}" \
+  --mutableCodePaths "${CLASSES_MAIN}" \
   --outputFormats XML,HTML \
   --testPlugin junit \
   --skipFailingTests true \
