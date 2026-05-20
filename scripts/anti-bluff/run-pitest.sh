@@ -21,8 +21,11 @@ cd "${ROOT_DIR}"
 
 MODE="${1:-full}"
 GRADLE="./gradlew"
-CLASSES_MAIN="shared/build/classes/kotlin/desktop/main"
-CLASSES_TEST="shared/build/classes/kotlin/desktop/test"
+# Absolute paths: Pitest matches --mutableCodePaths entries against
+# --classPath entries; mixing relative and absolute forms makes the
+# filter match nothing (0 mutation units). Keep both absolute.
+CLASSES_MAIN="${ROOT_DIR}/shared/build/classes/kotlin/desktop/main"
+CLASSES_TEST="${ROOT_DIR}/shared/build/classes/kotlin/desktop/test"
 REPORT_DIR="shared/build/reports/pitest"
 
 # 1. Compile desktop main + test classes and dump the two classpaths.
