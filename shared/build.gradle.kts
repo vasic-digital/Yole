@@ -940,7 +940,11 @@ tasks.named("desktopTest") {
 // `java` plugin's source sets, which a KMP module does not have. Instead we
 // dump two classpaths to files and drive the pitest-command-line jar from
 // scripts/anti-bluff/run-pitest.sh.
-val pitestTool: Configuration by configurations.creating
+val pitestTool: Configuration by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    description = "Pitest command-line tool classpath (Phase 5A)"
+}
 
 dependencies {
     pitestTool(libs.pitest.command.line)
@@ -952,10 +956,13 @@ tasks.register("pitestToolClasspath") {
     val outFile = layout.buildDirectory.file("pitest-tool-classpath.txt")
     // Capture as FileCollection (configuration-cache serializable) rather than
     // referencing the Configuration object directly inside doLast.
-    val toolFiles: FileCollection = configurations["pitestTool"]
+    val toolFiles: FileCollection = pitestTool
     inputs.files(toolFiles)
     outputs.file(outFile)
     doLast {
+        require(toolFiles.files.isNotEmpty()) {
+            "pitestToolClasspath: pitestTool configuration resolved to empty."
+        }
         outFile.get().asFile.writeText(toolFiles.files.joinToString(":") { it.absolutePath })
     }
 }
@@ -966,10 +973,14 @@ tasks.register("pitestClasspath") {
     val outFile = layout.buildDirectory.file("pitest-classpath.txt")
     val testCompilation = kotlin.targets.getByName("desktop")
         .compilations.getByName("test")
-    val runtimeFiles: FileCollection = testCompilation.runtimeDependencyFiles ?: files()
+    val runtimeFiles: FileCollection = testCompilation.runtimeDependencyFiles
+        ?: error("pitestClasspath: desktop test runtimeDependencyFiles is null — KGP API may have changed.")
     inputs.files(runtimeFiles)
     outputs.file(outFile)
     doLast {
+        require(runtimeFiles.files.isNotEmpty()) {
+            "pitestClasspath: desktop test runtimeDependencyFiles resolved to empty — KGP API may have changed."
+        }
         outFile.get().asFile.writeText(runtimeFiles.files.joinToString(":") { it.absolutePath })
     }
 }
