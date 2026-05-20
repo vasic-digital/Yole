@@ -10,11 +10,11 @@ exact file list per batch is in `batch-manifest.txt`.
 
 | Batch | Scope | Files | Findings file | Status |
 |-------|-------|------:|---------------|--------|
-| B01 | `shared/commonTest` format/ — part 1 (asciidoc → coverage) | 32 | `B01-format-1.md` | pending |
-| B02 | `shared/commonTest` format/ — part 2 (creole → performance) | 32 | `B02-format-2.md` | pending |
-| B03 | `shared/commonTest` format/ — part 3 (plaintext → wikitext) | 32 | `B03-format-3.md` | pending |
-| B04 | `shared/commonTest` network/ — part 1 (auth, common) | 32 | `B04-network-1.md` | pending |
-| B05 | `shared/commonTest` network/ — part 2 (common, platform, protocol) | 32 | `B05-network-2.md` | pending |
+| B01 | `shared/commonTest` format/ — part 1 (asciidoc → coverage) | 32 | `B01-format-1.md` | audited — 4 bluff / 7 suspect |
+| B02 | `shared/commonTest` format/ — part 2 (creole → performance) | 32 | `B02-format-2.md` | audited — 2 bluff / 13 suspect |
+| B03 | `shared/commonTest` format/ — part 3 (plaintext → wikitext) | 32 | `B03-format-3.md` | audited — 1 bluff / 9 suspect |
+| B04 | `shared/commonTest` network/ — part 1 (auth, common) | 32 | `B04-network-1.md` | audited — 1 bluff / 4 suspect |
+| B05 | `shared/commonTest` network/ — part 2 (common, platform, protocol) | 32 | `B05-network-2.md` | audited — 3 bluff / 19 suspect |
 | B06 | `shared/commonTest` network/ — part 3 (protocols, stress) | 32 | `B06-network-3.md` | pending |
 | B07 | `shared/commonTest` — completion, concurrency, api, challenges | 28 | `B07-common-1.md` | pending |
 | B08 | `shared/commonTest` — import_, integration, language, lsp, model | 28 | `B08-common-2.md` | pending |
