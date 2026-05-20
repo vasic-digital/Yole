@@ -832,7 +832,28 @@ Cross-platform impact:
 
 # Phase 5E — Fix sweep (tasks appended after Task 12)
 
-This section is intentionally not pre-enumerated: the fixes are audit-discovered. After Task 12, **append one fix task per `P5-FIX-*` cluster** to this plan, each following strict TDD:
+> **Operator decision (2026-05-20, Phase 5D checkpoint):** scope = **all 158
+> `P5-FIX` items** (55 BLUFF + 103 SUSPECT). Nothing deferred. Full anti-bluff
+> covenant compliance. Backlog + 12 systemic patterns: `docs/superpowers/audits/phase-5/CONSOLIDATED.md`.
+> Estimated 4–5 engineer-weeks — Phase 5E spans many sessions; progress tracked
+> incrementally in `docs/CONTINUATION.md` per CONST-036.
+
+**Execution structure — pattern campaigns, not 158 ad-hoc tasks.** The fixes
+are organised as campaigns, run in CONSOLIDATED.md Section 5 priority order:
+
+1. **CRITICAL items first** (the 10 in CONSOLIDATED.md Section 4) — each may hide
+   a genuinely broken feature. Every CRITICAL fix task MUST first *verify the
+   real feature works*; if it does not, fixing the **product** is the task.
+2. **Mechanical pattern sweeps** (PAT-01, 02, 03, 09, 10, 11, 12) — one uniform
+   technique applied across all occurrences of a pattern; one campaign per pattern.
+3. **Independent-investigation patterns** (PAT-04, 05, 06, 08) — per-entry work.
+
+**Concurrency rule:** fix subagents EDIT code — unlike the report-only audit
+subagents they may NOT run in parallel unless partitioned to provably disjoint
+file sets. Default to sequential implementer → spec review → quality review.
+
+This section is intentionally not pre-enumerated as code: the fixes are
+audit-discovered. **Append one fix task per `P5-FIX-*` cluster / pattern campaign**, each following strict TDD:
 
 1. **Write/strengthen the test first** so it FAILs against the current (bluff-permitting) code — i.e. it now genuinely kills the mutant the auditor named.
 2. **Run it, confirm it FAILs** for the stated reason.
