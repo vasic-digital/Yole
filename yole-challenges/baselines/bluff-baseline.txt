@@ -10,7 +10,20 @@
 # (empty — all BLUFF-K-011 sites resolved 2026-05-08: getOrNull + null check
 #  + FAILED emission added to all 6 uploadFile sites across all 5 protocols)
 # === SECTION 2: PER-FILE MUTATION KILL RATES ===
-# (deferred to sub-project 4 — Pitest full-tree pass too slow for sub-project 1)
+# format <package>:<killed>/<total>:<floor-percent>. The mutation_ratchet
+# gate ratchets: a package's kill rate may not drop below the recorded
+# floor. Captured 2026-05-21 by a per-package Pitest pass
+# (--mutableCodePaths restricts mutation to production code; verified
+# 0 test classes mutated). killed = KILLED + TIMED_OUT + MEMORY_ERROR
+# + RUN_ERROR; denominator = total mutations.
+database:0/40:0
+monitoring:89/114:78
+ui:49/251:19
+util:6/11:54
+# Packages not yet baselined — the Pitest run exceeded the 40-min
+# per-package budget in the coverage phase under host load and was
+# skipped; record incrementally as host headroom permits:
+# completion, format, import_, language, lsp, model, network, syntax.
 # === SECTION 3: ANCHOR-MANIFEST GAPS ===
 # (empty — CAP-002 upgraded from pending-anchor to active in iter 23
 #  by reusing the existing `test binary format registration` test in
