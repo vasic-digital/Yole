@@ -48,19 +48,24 @@ case "${MODE}" in
   changed)
     DEFAULT_BRANCH="master"
     git rev-parse --verify main >/dev/null 2>&1 && DEFAULT_BRANCH="main"
-    # Map changed shared commonMain/desktopMain .kt files to package globs.
+    # Map changed .kt files to production package globs. BOTH production
+    # source sets (commonMain/desktopMain) AND test source sets
+    # (commonTest/desktopTest) are included: a weakened test is the
+    # primary bluff vector, and a test package mirrors its production
+    # package, so a changed test file points at the production package
+    # whose kill rate must be re-checked.
     mapfile -t CHANGED < <(
       { git diff --name-only "${DEFAULT_BRANCH}"...HEAD; git diff --name-only --cached; } \
-      | grep -E '^shared/src/(commonMain|desktopMain)/kotlin/.*\.kt$' || true
+      | grep -E '^shared/src/(commonMain|desktopMain|commonTest|desktopTest)/kotlin/.*\.kt$' || true
     )
     if [[ ${#CHANGED[@]} -eq 0 ]]; then
-      echo "OK: no changed shared production .kt files vs ${DEFAULT_BRANCH} — nothing to mutate."
+      echo "OK: no changed shared production/test .kt files vs ${DEFAULT_BRANCH} — nothing to mutate."
       exit 0
     fi
     PKGS=()
     for f in "${CHANGED[@]}"; do
       pkg="$(dirname "${f}" \
-        | sed -E 's#^shared/src/(commonMain|desktopMain)/kotlin/##; s#/#.#g')"
+        | sed -E 's#^shared/src/(commonMain|desktopMain|commonTest|desktopTest)/kotlin/##; s#/#.#g')"
       PKGS+=("${pkg}.*")
     done
     TARGET_CLASSES="$(printf '%s\n' "${PKGS[@]}" | sort -u | paste -sd',' -)"

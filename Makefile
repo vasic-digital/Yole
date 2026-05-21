@@ -385,7 +385,7 @@ helixqa-validate:
 	@echo "-----------------------------------------------------------------------------------"
 
 # === CONST-035 anti-bluff gates ===
-.PHONY: anti-bluff anti-bluff-scan anti-bluff-anchors anti-bluff-mutation anti-bluff-mutation-changed update-baseline
+.PHONY: anti-bluff anti-bluff-scan anti-bluff-anchors anti-bluff-mutation mutation-full mutation-baseline update-baseline
 
 anti-bluff-scan:
 	@bash scripts/anti-bluff/bluff-scanner.sh --mode all
@@ -393,19 +393,31 @@ anti-bluff-scan:
 anti-bluff-anchors:
 	@bash yole-challenges/scripts/anchor_manifest_challenge.sh
 
+# Routine gate (chained into qa-all): real Pitest, changed-mode — mutates
+# only the packages whose production or test code changed vs the default
+# branch, then ratchets per-package kill rates against bluff-baseline.txt
+# Section 2. Fast on small changes; trivial pass when nothing changed.
 anti-bluff-mutation:
-	@bash yole-challenges/scripts/mutation_ratchet_challenge.sh
+	@MUTATION_MODE=changed bash yole-challenges/scripts/mutation_ratchet_challenge.sh
 
-anti-bluff-mutation-changed:
-	@bash yole-challenges/scripts/mutation_ratchet_challenge.sh
+# Full gate check: mutate every production package and ratchet vs the
+# recorded floors. Slow (hours) — run before a release, not per-commit.
+mutation-full:
+	@MUTATION_MODE=full bash yole-challenges/scripts/mutation_ratchet_challenge.sh
+
+# Refresh the baseline: re-measure every package and REWRITE Section 2
+# floors. Run after an intentional, reviewed test-quality change.
+mutation-baseline:
+	@bash scripts/anti-bluff/run-pitest-baseline.sh
 
 anti-bluff: anti-bluff-scan anti-bluff-anchors anti-bluff-mutation
 
 update-baseline:
 	@echo "Manual baseline update — see docs/ANTI_BLUFF.md"
 	@echo "1. Run scanner: bash scripts/anti-bluff/bluff-scanner.sh --mode all"
-	@echo "2. Run mutation: bash yole-challenges/scripts/mutation_ratchet_challenge.sh"
-	@echo "3. Edit yole-challenges/baselines/bluff-baseline.txt to reflect new state."
+	@echo "2. Refresh mutation floors: make mutation-baseline"
+	@echo "   (runs scripts/anti-bluff/run-pitest-baseline.sh — hours; rewrites Section 2)"
+	@echo "3. Review the bluff-baseline.txt diff before committing."
 
 # Run full QA pipeline: unit tests + Go tests + automation + evidence validation + anti-bluff gates
 qa-all: test-shared challenge helixqa-test anti-bluff qa-iter-55-gates qa-iter-57-gates qa-iter-58-gates qa-iter-60-gates qa-iter-61-gates qa-iter-62-gates qa-iter-63-gates qa-iter-64-gates qa-iter-71-gates qa-iter-73-gates qa-iter-74-gates qa-iter-76-gates qa-iter-81-gates qa-iter-82-gates qa-iter-84-gates qa-iter-85-gates qa-iter-86-gates qa-iter-89-gates qa-iter-90-gates codegraph-verify
