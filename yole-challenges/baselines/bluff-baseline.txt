@@ -11,19 +11,63 @@
 #  + FAILED emission added to all 6 uploadFile sites across all 5 protocols)
 # === SECTION 2: PER-FILE MUTATION KILL RATES ===
 # format <package>:<killed>/<total>:<floor-percent>. The mutation_ratchet
-# gate ratchets: a package's kill rate may not drop below the recorded
-# floor. Captured 2026-05-21 by a per-package Pitest pass
-# (--mutableCodePaths restricts mutation to production code; verified
-# 0 test classes mutated). killed = KILLED + TIMED_OUT + MEMORY_ERROR
-# + RUN_ERROR; denominator = total mutations.
-database:0/40:0
-monitoring:89/114:78
-ui:49/251:19
-util:6/11:54
-# Packages not yet baselined — the Pitest run exceeded the 40-min
-# per-package budget in the coverage phase under host load and was
-# skipped; record incrementally as host headroom permits:
-# completion, format, import_, language, lsp, model, network, syntax.
+# gate ratchets: a package kill rate may not drop below the recorded floor.
+# Captured 2026-05-21 by a full per-package Pitest pass (--mutableCodePaths
+# restricts mutation to production code; verified 0 test classes mutated).
+# killed = KILLED + TIMED_OUT + MEMORY_ERROR + RUN_ERROR; denom = total.
+digital.vasic.yole.completion:41/59:69
+digital.vasic.yole.completion.providers:29/75:38
+digital.vasic.yole.completion.snippet:78/116:67
+digital.vasic.yole.completion.trigger:22/88:25
+digital.vasic.yole.database:0/40:0
+digital.vasic.yole.format:276/355:77
+digital.vasic.yole.format.asciidoc:66/94:70
+digital.vasic.yole.format.binary:68/86:79
+digital.vasic.yole.format.creole:79/114:69
+digital.vasic.yole.format.csv:55/62:88
+digital.vasic.yole.format.json:87/124:70
+digital.vasic.yole.format.jupyter:91/118:77
+digital.vasic.yole.format.keyvalue:71/97:73
+digital.vasic.yole.format.latex:72/82:87
+digital.vasic.yole.format.markdown:123/204:60
+digital.vasic.yole.format.orgmode:64/101:63
+digital.vasic.yole.format.plaintext:59/80:73
+digital.vasic.yole.format.restructuredtext:79/87:90
+digital.vasic.yole.format.rmarkdown:46/71:64
+digital.vasic.yole.format.taskpaper:130/165:78
+digital.vasic.yole.format.textile:64/94:68
+digital.vasic.yole.format.tiddlywiki:113/152:74
+digital.vasic.yole.format.todotxt:53/104:50
+digital.vasic.yole.format.wikitext:96/152:63
+digital.vasic.yole.import_:154/282:54
+digital.vasic.yole.import_.conversion:27/46:58
+digital.vasic.yole.language:23/37:62
+digital.vasic.yole.language.affordance:51/73:69
+digital.vasic.yole.language.special:45/108:41
+digital.vasic.yole.lsp:258/653:39
+digital.vasic.yole.model:48/70:68
+digital.vasic.yole.monitoring:89/114:78
+digital.vasic.yole.network:106/242:43
+digital.vasic.yole.network.auth:105/217:48
+digital.vasic.yole.network.common:561/901:62
+digital.vasic.yole.network.config:65/226:28
+digital.vasic.yole.network.platform:104/211:49
+digital.vasic.yole.network.protocol:0/7:0
+digital.vasic.yole.network.protocols:13/14:92
+digital.vasic.yole.network.protocols.dropbox:425/1170:36
+digital.vasic.yole.network.protocols.ftp:202/1030:19
+digital.vasic.yole.network.protocols.git:302/1219:24
+digital.vasic.yole.network.protocols.googledrive:333/1156:28
+digital.vasic.yole.network.protocols.onedrive:359/1204:29
+digital.vasic.yole.network.protocols.sftp:281/747:37
+digital.vasic.yole.network.protocols.smb:321/761:42
+digital.vasic.yole.network.protocols.webdav:334/899:37
+digital.vasic.yole.syntax:67/85:78
+digital.vasic.yole.syntax.grammar:13/15:86
+digital.vasic.yole.syntax.render:26/51:50
+digital.vasic.yole.syntax.theme:52/127:40
+digital.vasic.yole.ui:49/251:19
+digital.vasic.yole.util:6/11:54
 # === SECTION 3: ANCHOR-MANIFEST GAPS ===
 # (empty — CAP-002 upgraded from pending-anchor to active in iter 23
 #  by reusing the existing `test binary format registration` test in
