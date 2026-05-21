@@ -7,6 +7,35 @@ blocker. Anyone closing a ticket here must also remove the corresponding
 SKIP-OK exemption(s) from the affected test(s) so the regression guard is
 re-armed.
 
+## #phase5-jupyter-html-sanitizer — NEW Phase 5E (2026-05-21)
+
+**Status:** OPEN — tracked, not yet fixed (functional regression, not a security hole).
+
+**Symptom**
+`JupyterParser` renders an executed cell's `text/html` MIME output by passing
+it through `escapeHtml()`. This is safe (no XSS), but it entity-escapes
+*legitimate* rich output: pandas DataFrame tables, matplotlib/plotly HTML
+snippets, and other rich representations are turned into literal
+angle-bracket text instead of being rendered. End users opening a notebook
+see escaped HTML source where a formatted table should appear — a real
+feature regression versus the notebook's intended display.
+
+**Proper fix**
+Replace the blanket `escapeHtml()` on `text/html` output with a real
+allowlist-based HTML sanitizer: permit a safe subset of structural/table
+tags and attributes (`table`, `tr`, `td`, `th`, `thead`, `tbody`, `span`,
+`div`, `style` on whitelisted properties, ...) while stripping `<script>`,
+event-handler attributes, and dangerous URI schemes. The escaping must NOT
+simply be removed — that would reintroduce stored-XSS via crafted notebook
+output cells.
+
+**Blocker**
+No HTML-sanitizer dependency is currently available in `commonMain` (must be
+KMP-compatible across Android / Desktop / iOS / Web). Selecting or building
+one is out of scope for the Phase 5E security pass; the safe-default
+escaping stays in place until then. Reference: `JupyterParser.kt` `text/html`
+output branch.
+
 ## #iter-71-launcher-icon-missing-postmortem — FIXED 2026-05-17
 
 **Status:** FIXED in v1.9.1 (iter-71 emergency patch).

@@ -259,6 +259,7 @@ class JupyterParser : TextParser {
                         }
                         else -> ""
                     }
+                    // TODO(#phase5-jupyter-html-sanitizer): text/html cell output is entity-escaped (safe but degrades rich output) — needs a real allowlist HTML sanitizer
                     if (content.isNotEmpty()) "<div class=\"output-text\">${escapeHtml(content)}</div>" else ""
                 }
             }</div>"

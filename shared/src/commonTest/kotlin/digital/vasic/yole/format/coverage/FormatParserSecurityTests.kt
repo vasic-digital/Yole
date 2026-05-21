@@ -360,6 +360,87 @@ class FormatParserSecurityTests {
     fun testNullByteBinary() = verifyNullByteHandling(parsers[16])
 
     // ====================================================================
+    // 6. OrgMode-specific XSS — property-drawer / block-header / link paths
+    //
+    // C1/C2 (Phase 5E security review): the generic verifyXssPrevention helper
+    // appends payloads after `* Heading`, so for OrgMode they ONLY ever route
+    // through formatInlineOrg (the heading/paragraph branch). The property
+    // drawer, block-header and link-URI branches of generateOrgHtml() had ZERO
+    // coverage — which is exactly why the original fix's gap slipped through.
+    // These tests drive payloads through those uncovered branches.
+    // ====================================================================
+
+    /**
+     * C1: a `#+BEGIN_SRC` block header containing a `<script>` payload must not
+     * emit an executable tag. The block header line is interpolated raw into
+     * `<div class="org-block-header">...</div>` — before the fix this is a live
+     * stored-XSS vector triggered simply by opening the .org file.
+     */
+    @Test
+    fun testOrgModeBlockHeaderXssEscaped() {
+        val parser = OrgModeParser()
+        val content = "#+BEGIN_SRC <script>alert(document.cookie)</script>\n" +
+            "code line\n" +
+            "#+END_SRC"
+        val html = parser.parse(content).toHtml(lightMode = true)
+        assertNoExecutableScript(html, "OrgMode-block-header", content)
+        assertNoLiveEventHandler(html, "OrgMode-block-header", content)
+    }
+
+    /**
+     * C1: a `:PROPERTIES:` drawer whose property value carries an
+     * `onerror=` payload must not emit a live event handler. The drawer
+     * property key/value are interpolated raw into the `org-property-key` /
+     * `org-property-value` spans.
+     */
+    @Test
+    fun testOrgModePropertyDrawerXssEscaped() {
+        val parser = OrgModeParser()
+        val content = ":PROPERTIES:\n" +
+            ":X: <img src=x onerror=alert(1)>\n" +
+            ":END:"
+        val html = parser.parse(content).toHtml(lightMode = true)
+        assertNoExecutableScript(html, "OrgMode-property-drawer", content)
+        assertNoLiveEventHandler(html, "OrgMode-property-drawer", content)
+    }
+
+    /**
+     * C1: a standalone single-line property reference whose value carries a
+     * `<script>` payload must not emit an executable tag. This drives the
+     * `line.startsWith(":") && line.endsWith(":")` branch of generateOrgHtml().
+     */
+    @Test
+    fun testOrgModeStandalonePropertyXssEscaped() {
+        val parser = OrgModeParser()
+        val content = ":x: <script>alert(1)</script>:"
+        val html = parser.parse(content).toHtml(lightMode = true)
+        assertNoExecutableScript(html, "OrgMode-standalone-property", content)
+        assertNoLiveEventHandler(html, "OrgMode-standalone-property", content)
+    }
+
+    /**
+     * C2: a `javascript:` URI smuggled through an Org link using interior
+     * whitespace (a literal TAB inside the scheme) must not survive into a live
+     * `href`. `trim()` strips only leading/trailing whitespace, so the old
+     * denylist let `java<TAB>script:` through — browsers strip the tab and
+     * execute it. The allowlist fix must reject the link entirely.
+     */
+    @Test
+    fun testOrgModeJavascriptUriInteriorWhitespaceNeutralized() {
+        val parser = OrgModeParser()
+        val content = "[[java\tscript:alert(1)][click]]"
+        val html = parser.parse(content).toHtml(lightMode = true)
+        assertNoLiveJavascriptUri(html, "OrgMode-tab-uri", content)
+        // The tab-evasion form must not survive into the href either.
+        val collapsed = html.replace("\t", "").replace(" ", "").lowercase()
+        assertFalse(
+            collapsed.contains("href=\"javascript:"),
+            "OrgMode-tab-uri: toHtml() emitted a live javascript: href after " +
+                "whitespace collapse\n--- rendered HTML ---\n$html"
+        )
+    }
+
+    // ====================================================================
     // Helper functions
     // ====================================================================
 
@@ -454,23 +535,23 @@ class FormatParserSecurityTests {
     }
 
     /**
-     * Fail if [html] contains a live inline event-handler attribute such as
-     * `onerror=`, `onload=`, `onfocus=`, `onmouseover=` that is NOT escaped
-     * away. An event handler is only dangerous when it sits inside a real tag,
-     * so this also requires an unescaped `<` to be present before it.
+     * Fail if [html] contains ANY live inline event-handler attribute that is
+     * NOT escaped away. The detection is a regex `\bon[a-z]+\s*=` rather than a
+     * fixed list, so modern vectors (`ontoggle`, `onanimationstart`,
+     * `onpointerover`, ...) are caught — not just the handful that were once
+     * hardcoded. An event handler is only dangerous when it sits inside a real
+     * tag, so each match is additionally guarded by the "inside an open tag"
+     * check before it is treated as live.
      */
     private fun assertNoLiveEventHandler(html: String, parserName: String, payload: String) {
-        val eventHandlers = listOf("onerror", "onload", "onfocus", "onmouseover", "onclick")
-        for (handler in eventHandlers) {
-            // A handler is only executable inside a real (unescaped) HTML tag.
-            // If the tag's angle brackets are escaped, the handler is inert text.
-            if (htmlHasLiveEventHandler(html, handler)) {
-                fail(
-                    "$parserName: toHtml() output contains a live $handler= event handler " +
-                        "inside an unescaped HTML tag for payload: $payload\n" +
-                        "--- rendered HTML ---\n$html"
-                )
-            }
+        // A handler is only executable inside a real (unescaped) HTML tag.
+        // If the tag's angle brackets are escaped, the handler is inert text.
+        if (htmlHasLiveEventHandler(html)) {
+            fail(
+                "$parserName: toHtml() output contains a live on*= event handler " +
+                    "inside an unescaped HTML tag for payload: $payload\n" +
+                    "--- rendered HTML ---\n$html"
+            )
         }
     }
 
@@ -564,23 +645,21 @@ class FormatParserSecurityTests {
     }
 
     /**
-     * Return true if [html] contains [handler] (e.g. `onerror`) as a live
-     * attribute inside an unescaped HTML tag. The handler is considered live
-     * when, scanning back from its position, the nearest unescaped angle
-     * bracket is an opening `<` rather than a closing `>` — i.e. it sits inside
-     * a tag the browser would actually parse.
+     * Return true if [html] contains ANY inline event-handler attribute that is
+     * live inside an unescaped HTML tag. Detection is the regex `\bon[a-z]+\s*=`
+     * — a word boundary, the `on` prefix, one or more letters, optional
+     * whitespace, then `=`. This catches the full event-handler surface
+     * (`ontoggle`, `onanimationstart`, `onpointerover`, ...) rather than a
+     * hardcoded shortlist. Each candidate is then confirmed live only when,
+     * scanning back from its position, the nearest unescaped angle bracket is
+     * an opening `<` — i.e. it sits inside a tag the browser would parse.
      */
-    private fun htmlHasLiveEventHandler(html: String, handler: String): Boolean {
-        val lower = html.lowercase()
-        var idx = lower.indexOf(handler)
-        while (idx >= 0) {
-            // Must look like an attribute: handler followed by '=' (allow spaces).
-            var after = idx + handler.length
-            while (after < html.length && html[after] == ' ') after++
-            if (after < html.length && html[after] == '=' && precededByOpenTag(html, idx)) {
+    private fun htmlHasLiveEventHandler(html: String): Boolean {
+        val handlerRegex = "\\bon[a-z]+\\s*=".toRegex(RegexOption.IGNORE_CASE)
+        for (match in handlerRegex.findAll(html)) {
+            if (precededByOpenTag(html, match.range.first)) {
                 return true
             }
-            idx = lower.indexOf(handler, idx + 1)
         }
         return false
     }

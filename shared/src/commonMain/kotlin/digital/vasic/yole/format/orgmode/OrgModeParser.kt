@@ -162,7 +162,10 @@ class OrgModeParser : TextParser {
                     currentBlockType = line.substringAfter("#+BEGIN_").trim()
                     blockContent.clear()
                     htmlLines.add("<div class=\"org-block\">")
-                    htmlLines.add("<div class=\"org-block-header\">$line</div>")
+                    // `line` is raw, attacker-controlled document text (e.g.
+                    // `#+BEGIN_SRC <script>...`). Escape before interpolating
+                    // into live HTML. See P5-FIX-001 / CONST-039 (C1).
+                    htmlLines.add("<div class=\"org-block-header\">${escapeHtml(line)}</div>")
                 }
                 line.startsWith("#+END_") -> {
                     inBlock = false
@@ -187,9 +190,13 @@ class OrgModeParser : TextParser {
                     // Property lines inside drawer
                     val propertyMatch = "^:([^:]+):\\s+(.*)$".toRegex().find(line.trim())
                     if (propertyMatch != null) {
+                        // `key`/`value` are raw, attacker-controlled drawer
+                        // content. propertyRowHtml escapes both before they are
+                        // interpolated into live HTML. See P5-FIX-001 /
+                        // CONST-039 (C1).
                         val key = propertyMatch.groupValues[1].trim()
                         val value = propertyMatch.groupValues[2].trim()
-                        htmlLines.add("<div class=\"org-property\"><span class=\"org-property-key\">$key:</span> <span class=\"org-property-value\">$value</span></div>")
+                        htmlLines.add(propertyRowHtml(key, value))
                     } else {
                         htmlLines.add("<p>${escapeHtml(line)}</p>")
                     }
@@ -211,7 +218,11 @@ class OrgModeParser : TextParser {
                     htmlLines.add("<div class=\"org-properties\">")
                     val properties = extractProperties(line)
                     properties.forEach { (key, value) ->
-                        htmlLines.add("<div class=\"org-property\"><span class=\"org-property-key\">$key:</span> <span class=\"org-property-value\">$value</span></div>")
+                        // `key`/`value` are raw, attacker-controlled property
+                        // content. propertyRowHtml escapes both before they are
+                        // interpolated into live HTML. See P5-FIX-001 /
+                        // CONST-039 (C1).
+                        htmlLines.add(propertyRowHtml(key, value))
                     }
                     htmlLines.add("</div>")
                 }
@@ -228,7 +239,20 @@ class OrgModeParser : TextParser {
 
         return htmlLines.joinToString("\n")
     }
-    
+
+    /**
+     * Build the HTML for one Org property row, HTML-entity-escaping the raw,
+     * attacker-controlled [key] and [value] before they reach live HTML.
+     * See P5-FIX-001 / CONST-039 (C1).
+     */
+    private fun propertyRowHtml(key: String, value: String): String {
+        val safeKey = escapeHtml(key)
+        val safeValue = escapeHtml(value)
+        return "<div class=\"org-property\">" +
+            "<span class=\"org-property-key\">$safeKey:</span> " +
+            "<span class=\"org-property-value\">$safeValue</span></div>"
+    }
+
     private fun formatInlineOrg(text: String): String {
         // Escape HTML entities BEFORE applying inline Org markup. The input is
         // attacker-controlled document text; without this a heading or paragraph
@@ -270,17 +294,40 @@ class OrgModeParser : TextParser {
     }
 
     /**
-     * Neutralize dangerous URI schemes in link targets. A `javascript:` (or
-     * `data:` / `vbscript:`) href executes attacker code on click, so such
-     * targets are replaced with an inert anchor. The input here has already
-     * been HTML-entity-escaped by [formatInlineOrg]. See P5-FIX-001 / CONST-039.
+     * Neutralize dangerous URI schemes in link targets using an ALLOWLIST.
+     *
+     * A denylist (`startsWith("javascript:")`) is bypass-prone: `trim()` strips
+     * only leading/trailing whitespace, so an interior TAB — `java\tscript:` —
+     * survives, and browsers strip the tab and execute it. Here every internal
+     * whitespace and ASCII control character is removed BEFORE the scheme is
+     * evaluated, then the URL is accepted only when it matches a known-safe
+     * shape: an `http`/`https`/`mailto` scheme, an in-page anchor (`#...`), or a
+     * relative / scheme-less path. Anything else (including `javascript:`,
+     * `vbscript:`, `data:`) is rejected and replaced with an inert anchor.
+     * The input here has already been HTML-entity-escaped by [formatInlineOrg].
+     * See P5-FIX-001 / CONST-039 (C2).
      */
     private fun sanitizeUri(url: String): String {
-        val scheme = url.trim().lowercase()
-        val dangerous = scheme.startsWith("javascript:") ||
-            scheme.startsWith("vbscript:") ||
-            scheme.startsWith("data:")
-        return if (dangerous) "#" else url
+        val collapsed = url.filterNot { it.isWhitespace() || it.isISOControl() }
+        if (collapsed.isEmpty()) return "#"
+        val lower = collapsed.lowercase()
+
+        // In-page anchor — always safe.
+        if (lower.startsWith("#")) return collapsed
+
+        // Explicit scheme present: accept only the safe allowlist.
+        val colonIdx = lower.indexOf(':')
+        val slashIdx = lower.indexOf('/')
+        val hasScheme = colonIdx >= 0 && (slashIdx < 0 || colonIdx < slashIdx)
+        if (hasScheme) {
+            val safeScheme = lower.startsWith("http:") ||
+                lower.startsWith("https:") ||
+                lower.startsWith("mailto:")
+            return if (safeScheme) collapsed else "#"
+        }
+
+        // No scheme — a relative or scheme-less path. Safe.
+        return collapsed
     }
 
     private fun escapeHtml(text: String): String {
