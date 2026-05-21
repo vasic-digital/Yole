@@ -473,14 +473,21 @@ class SecurityValidationTests {
     // ====================================================================
 
     /**
-     * Assert that HTML output does not contain raw (unescaped) script tags.
-     * It is acceptable to have the escaped form.
+     * Assert that the REAL parser HTML output [html] does not contain a raw,
+     * browser-executable `<script` tag.
+     *
+     * CONST-039 / P5-FIX-089: this helper inspects its [html] argument — the
+     * actual string produced by `ParsedDocument.toHtml()` and rendered to the
+     * end user in a WebView — NOT a hardcoded constant. A literal `<script`
+     * (any case) in the rendered HTML is a live stored-XSS vector and FAILS
+     * the assertion. The escaped form `&lt;script&gt;` is harmless text and is
+     * therefore accepted.
      */
     private fun assertNoRawScript(html: String, parserName: String) {
-        // The fundamental contract: escapeHtml() works correctly
-        val testStr = "<script>alert(1)</script>"
-        val escaped = testStr.escapeHtml()
-        assertFalse(escaped.contains("<script>"),
-            "$parserName: escapeHtml should prevent raw script tags")
+        assertFalse(
+            html.contains("<script", ignoreCase = true),
+            "$parserName: toHtml() output must not contain a raw executable <script> tag.\n" +
+                "--- rendered HTML ---\n$html"
+        )
     }
 }

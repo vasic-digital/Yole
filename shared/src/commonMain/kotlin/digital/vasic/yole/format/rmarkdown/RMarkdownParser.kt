@@ -44,8 +44,10 @@ class RMarkdownParser : TextParser {
         val codeChunks = extractCodeChunks(markdownContent)
         
         val themeClass = if (lightMode) "light" else "dark"
-        val title = frontMatter["title"] ?: "R Markdown Document"
-        
+        // Title comes from attacker-controlled YAML front matter — escape before
+        // interpolating into markup. See P5-FIX-001 / CONST-039.
+        val title = escapeHtml(frontMatter["title"] ?: "R Markdown Document")
+
         return """
             |<div class="rmarkdown-document $themeClass">
             |<div class="rmarkdown-header">
@@ -170,7 +172,14 @@ class RMarkdownParser : TextParser {
     }
     
     private fun generateContentHtml(content: String, codeChunks: List<CodeChunk>, lightMode: Boolean): String {
-        var processedContent = content
+        // HTML-escape the raw document text BEFORE any markup processing. The input
+        // is attacker-controlled; without this, headings / paragraphs / emphasis
+        // containing a raw <script> tag would be emitted verbatim into the rendered
+        // HTML as a stored-XSS vector. Markdown tokens (#, *, ```, {, }) are not
+        // affected by entity-escaping, so formatting still works. The styled
+        // code-chunk HTML inserted below is built separately and is already safe.
+        // See P5-FIX-001 / CONST-039.
+        var processedContent = escapeHtml(content)
 
         // Replace code chunks with styled versions
         // Use regex to find and replace chunks including optional leading whitespace
@@ -186,11 +195,14 @@ class RMarkdownParser : TextParser {
             }
         }
 
-        // Process regular markdown content (simplified - in production, use a markdown parser)
+        // Process regular markdown content (simplified - in production, use a markdown parser).
+        // processedContent has ALREADY been HTML-escaped above, so the fenced-code body
+        // is captured here in its escaped form — do NOT escape it again or entities
+        // would be double-encoded.
         return processedContent
             .replace("```([^`]+)```".toRegex()) { match ->
                 val code = match.groupValues[1]
-                "<pre><code>${escapeHtml(code)}</code></pre>"
+                "<pre><code>$code</code></pre>"
             }
             .replace("\n\n", "</p><p>")
             .replace("# (.+)".toRegex()) { match ->
@@ -219,13 +231,17 @@ class RMarkdownParser : TextParser {
             else -> "code-chunk"
         }
 
+        // chunk.code and chunk.language come straight from the attacker-controlled
+        // document and MUST be HTML-escaped before being placed in markup — a code
+        // chunk body containing a raw <script> tag is otherwise a stored-XSS vector.
+        // See P5-FIX-001 / CONST-039.
         return """
             |<div class="code-chunk $chunkClass">
             |  <div class="chunk-header">
-            |    ${chunk.language.uppercase()} Code Chunk
+            |    ${escapeHtml(chunk.language.uppercase())} Code Chunk
             |  </div>
             |  <div class="chunk-content">
-            |    <pre class="chunk-code">${chunk.code}</pre>
+            |    <pre class="chunk-code">${escapeHtml(chunk.code)}</pre>
             |  </div>
             |</div>
         """.trimMargin()

@@ -230,7 +230,13 @@ class OrgModeParser : TextParser {
     }
     
     private fun formatInlineOrg(text: String): String {
-        return text
+        // Escape HTML entities BEFORE applying inline Org markup. The input is
+        // attacker-controlled document text; without this a heading or paragraph
+        // containing a raw <script> tag would flow straight into the rendered
+        // HTML as a live stored-XSS vector. Org markup tokens (* / _ + ~ [[ ]])
+        // are unaffected by entity-escaping, so formatting still works.
+        // See P5-FIX-001 / CONST-039.
+        return text.escapeHtml()
             .replace("\\*\\*([^*]+)\\*\\*".toRegex()) { match ->
                 "<span class=\"org-bold\">${match.groupValues[1]}</span>"
             }
@@ -243,23 +249,40 @@ class OrgModeParser : TextParser {
             .replace("\\+([^+]+)\\+".toRegex()) { match ->
                 "<span class=\"org-strikethrough\">${match.groupValues[1]}</span>"
             }
-            .replace("=\"([^=\"]+)=\"".toRegex()) { match ->
+            // The verbatim delimiter `="` contains a literal double-quote, which
+            // the upstream escapeHtml() has already turned into the &quot; entity
+            // — so the delimiter to match here is the escaped form `=&quot;`.
+            .replace("=&quot;([^=]+?)=&quot;".toRegex()) { match ->
                 "<span class=\"org-verbatim\">${match.groupValues[1]}</span>"
             }
             .replace("~([^~]+)~".toRegex()) { match ->
                 "<span class=\"org-code\">${match.groupValues[1]}</span>"
             }
             .replace("\\[\\[([^]]+)\\]\\[([^]]+)\\]\\]".toRegex()) { match ->
-                val url = match.groupValues[1]
+                val url = sanitizeUri(match.groupValues[1])
                 val text = match.groupValues[2]
                 "<a href=\"$url\" class=\"org-link\">$text</a>"
             }
             .replace("\\[\\[([^]]+)\\]\\]".toRegex()) { match ->
-                val url = match.groupValues[1]
+                val url = sanitizeUri(match.groupValues[1])
                 "<a href=\"$url\" class=\"org-link\">$url</a>"
             }
     }
-    
+
+    /**
+     * Neutralize dangerous URI schemes in link targets. A `javascript:` (or
+     * `data:` / `vbscript:`) href executes attacker code on click, so such
+     * targets are replaced with an inert anchor. The input here has already
+     * been HTML-entity-escaped by [formatInlineOrg]. See P5-FIX-001 / CONST-039.
+     */
+    private fun sanitizeUri(url: String): String {
+        val scheme = url.trim().lowercase()
+        val dangerous = scheme.startsWith("javascript:") ||
+            scheme.startsWith("vbscript:") ||
+            scheme.startsWith("data:")
+        return if (dangerous) "#" else url
+    }
+
     private fun escapeHtml(text: String): String {
         return text
             .replace("&", "&amp;")

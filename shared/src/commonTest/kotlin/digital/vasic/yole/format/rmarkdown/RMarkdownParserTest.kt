@@ -256,10 +256,13 @@ class RMarkdownParserTest {
         assertEquals("1", result.metadata["code_chunks"])
         assertEquals("1", result.metadata["r_chunks"])
 
-        // Verify HTML contains the code
+        // Verify HTML contains the code. The R `<-` assignment operator MUST be
+        // HTML-entity-escaped in the rendered output (P5-FIX-001 / CONST-039):
+        // an unescaped `<` in document content is an XSS vector, so the code
+        // chunk body legitimately appears as `&lt;-` in the HTML.
         val html = result.parsedContent
         assertTrue(html.contains("library(dplyr)"))
-        assertTrue(html.contains("summary_stats <- df"))
+        assertTrue(html.contains("summary_stats &lt;- df"))
         assertTrue(html.contains("group_by(group)"))
     }
 

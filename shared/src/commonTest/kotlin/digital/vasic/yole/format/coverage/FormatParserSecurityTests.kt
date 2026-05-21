@@ -395,9 +395,14 @@ class FormatParserSecurityTests {
     )
 
     /**
-     * Verify that XSS payloads do not produce executable script tags in HTML output.
-     * The escapeHtml() function is the fundamental contract: it converts < to &lt;
-     * and > to &gt;, preventing raw script execution.
+     * Verify that XSS payloads do not produce an executable <script> tag in the
+     * REAL HTML output of the parser under test.
+     *
+     * CONST-039 / P5-FIX-001: this helper inspects [ParsedDocument.toHtml] — the
+     * exact string a WebView would render for the end user — NOT a standalone
+     * utility function. If a parser emits a raw `<script>` element derived from
+     * attacker-controlled document content, this assertion FAILS, because that
+     * is a live stored-XSS vector when a user opens the document.
      */
     private fun verifyXssPrevention(entry: ParserEntry) {
         for (payload in xssPayloads) {
@@ -407,21 +412,19 @@ class FormatParserSecurityTests {
             val html = doc.toHtml(lightMode = true)
             assertNotNull(html, "${entry.name}: toHtml returned null for XSS payload")
 
-            // The fundamental security contract: escapeHtml works correctly
-            val escaped = payload.escapeHtml()
-            assertFalse(
-                escaped.contains("<script", ignoreCase = true),
-                "${entry.name}: escapeHtml() must prevent raw <script> tags"
-            )
+            assertNoExecutableScript(html, entry.name, payload)
+            assertNoLiveJavascriptUri(html, entry.name, payload)
         }
     }
 
     /**
-     * Verify that HTML injection payloads with event handlers are neutralized.
-     * The escapeHtml() function converts < to &lt; and > to &gt;, which prevents
-     * the browser from interpreting the injected tags as real HTML elements.
-     * The event handler text may still appear as escaped text content, but it
-     * is harmless because the surrounding angle brackets are escaped.
+     * Verify that HTML-injection payloads carrying inline event handlers are
+     * neutralized in the parser's REAL HTML output.
+     *
+     * CONST-039 / P5-FIX-001: inspects [ParsedDocument.toHtml] directly. A live
+     * event-handler attribute (e.g. `<img ... onerror=...>`) inside the rendered
+     * HTML executes attacker JavaScript when a user opens the document, so its
+     * presence is a test FAILURE.
      */
     private fun verifyHtmlInjection(entry: ParserEntry) {
         for (payload in htmlInjectionPayloads) {
@@ -431,18 +434,64 @@ class FormatParserSecurityTests {
             val html = doc.toHtml(lightMode = true)
             assertNotNull(html, "${entry.name}: toHtml returned null for HTML injection payload")
 
-            // The fundamental security contract: escapeHtml converts angle brackets
-            // so that <img onerror=...> becomes &lt;img onerror=...&gt; which is
-            // rendered as visible text, not as an HTML element.
-            val escaped = payload.escapeHtml()
-            assertFalse(
-                escaped.contains("<img", ignoreCase = true) ||
-                    escaped.contains("<svg", ignoreCase = true) ||
-                    escaped.contains("<body", ignoreCase = true) ||
-                    escaped.contains("<input", ignoreCase = true) ||
-                    escaped.contains("<div", ignoreCase = true),
-                "${entry.name}: escapeHtml() must prevent raw HTML tag injection"
-            )
+            assertNoExecutableScript(html, entry.name, payload)
+            assertNoLiveEventHandler(html, entry.name, payload)
+        }
+    }
+
+    /**
+     * Fail if [html] contains a raw, browser-executable `<script ...>` opening
+     * tag. The escaped form (`&lt;script&gt;`) is acceptable — it renders as
+     * visible text. The check is byte-accurate: it scans for a literal `<`
+     * followed by `script` (any case), which a browser would parse as a tag.
+     */
+    private fun assertNoExecutableScript(html: String, parserName: String, payload: String) {
+        assertFalse(
+            containsRawTag(html, "script"),
+            "$parserName: toHtml() output contains an executable <script> tag for payload: $payload\n" +
+                "--- rendered HTML ---\n$html"
+        )
+    }
+
+    /**
+     * Fail if [html] contains a live inline event-handler attribute such as
+     * `onerror=`, `onload=`, `onfocus=`, `onmouseover=` that is NOT escaped
+     * away. An event handler is only dangerous when it sits inside a real tag,
+     * so this also requires an unescaped `<` to be present before it.
+     */
+    private fun assertNoLiveEventHandler(html: String, parserName: String, payload: String) {
+        val eventHandlers = listOf("onerror", "onload", "onfocus", "onmouseover", "onclick")
+        for (handler in eventHandlers) {
+            // A handler is only executable inside a real (unescaped) HTML tag.
+            // If the tag's angle brackets are escaped, the handler is inert text.
+            if (htmlHasLiveEventHandler(html, handler)) {
+                fail(
+                    "$parserName: toHtml() output contains a live $handler= event handler " +
+                        "inside an unescaped HTML tag for payload: $payload\n" +
+                        "--- rendered HTML ---\n$html"
+                )
+            }
+        }
+    }
+
+    /**
+     * Fail if [html] contains a live `javascript:` URI inside an unescaped
+     * `href`/`src` attribute. The escaped form is harmless.
+     */
+    private fun assertNoLiveJavascriptUri(html: String, parserName: String, payload: String) {
+        val lower = html.lowercase()
+        var idx = lower.indexOf("javascript:")
+        while (idx >= 0) {
+            // A javascript: URI is dangerous only inside a real tag attribute.
+            // Require an unescaped '<' to open a tag somewhere before it with no
+            // intervening '>' that closes the tag as text.
+            if (precededByOpenTag(html, idx)) {
+                fail(
+                    "$parserName: toHtml() output contains a live javascript: URI inside a tag " +
+                        "for payload: $payload\n--- rendered HTML ---\n$html"
+                )
+            }
+            idx = lower.indexOf("javascript:", idx + 1)
         }
     }
 
@@ -497,5 +546,61 @@ class FormatParserSecurityTests {
             val html = doc.toHtml(lightMode = true)
             assertNotNull(html, "${entry.name}: toHtml returned null for null byte content")
         }
+    }
+
+    // ====================================================================
+    // Low-level HTML inspection primitives (shared by XSS / injection checks)
+    // ====================================================================
+
+    /**
+     * Return true if [html] contains a raw, browser-executable opening tag for
+     * [tagName] (e.g. `<script`, `<script src=...`). A literal `<` immediately
+     * followed by the tag name is what a browser parses as a tag; the escaped
+     * `&lt;script` form is text and is therefore NOT matched.
+     */
+    private fun containsRawTag(html: String, tagName: String): Boolean {
+        val needle = "<$tagName"
+        return html.contains(needle, ignoreCase = true)
+    }
+
+    /**
+     * Return true if [html] contains [handler] (e.g. `onerror`) as a live
+     * attribute inside an unescaped HTML tag. The handler is considered live
+     * when, scanning back from its position, the nearest unescaped angle
+     * bracket is an opening `<` rather than a closing `>` — i.e. it sits inside
+     * a tag the browser would actually parse.
+     */
+    private fun htmlHasLiveEventHandler(html: String, handler: String): Boolean {
+        val lower = html.lowercase()
+        var idx = lower.indexOf(handler)
+        while (idx >= 0) {
+            // Must look like an attribute: handler followed by '=' (allow spaces).
+            var after = idx + handler.length
+            while (after < html.length && html[after] == ' ') after++
+            if (after < html.length && html[after] == '=' && precededByOpenTag(html, idx)) {
+                return true
+            }
+            idx = lower.indexOf(handler, idx + 1)
+        }
+        return false
+    }
+
+    /**
+     * Return true if position [pos] in [html] sits inside an unescaped HTML
+     * tag: scanning backwards, the nearest literal `<` appears before the
+     * nearest literal `>`.
+     *
+     * A literal `<` / `>` character always opens / closes a real tag — the
+     * escaped forms `&lt;` and `&gt;` contain no `<` or `>` character at all,
+     * so they can never be confused for tag delimiters here.
+     */
+    private fun precededByOpenTag(html: String, pos: Int): Boolean {
+        for (i in pos - 1 downTo 0) {
+            when (html[i]) {
+                '>' -> return false
+                '<' -> return true
+            }
+        }
+        return false
     }
 }

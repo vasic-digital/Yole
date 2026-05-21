@@ -57,10 +57,13 @@ class JupyterParser : TextParser {
             val notebook = parseNotebook(json)
             generateNotebookHtml(notebook, lightMode)
         } catch (e: Exception) {
-            // Fallback to plain text display
+            // Fallback to plain text display. The raw content is attacker-controlled
+            // (an .ipynb that failed JSON parsing), so it MUST be HTML-escaped before
+            // being placed in the document body — otherwise a malformed notebook is a
+            // stored-XSS vector. See P5-FIX-001 / CONST-039.
             """<div class="jupyter-notebook">
-               |<div class="error">Failed to parse Jupyter notebook: ${e.message}</div>
-               |<pre>${document.rawContent}</pre>
+               |<div class="error">Failed to parse Jupyter notebook: ${escapeHtml(e.message ?: "")}</div>
+               |<pre>${escapeHtml(document.rawContent)}</pre>
                |</div>
             """.trimMargin()
         }
@@ -164,13 +167,16 @@ class JupyterParser : TextParser {
     private fun generateNotebookHtml(notebook: JupyterNotebook, lightMode: Boolean): String {
         val themeClass = if (lightMode) "light" else "dark"
         
+        // Notebook metadata strings (title / kernel / language) originate from the
+        // attacker-controlled .ipynb JSON and MUST be HTML-escaped before being
+        // interpolated into markup. See P5-FIX-001 / CONST-039.
         return """
             |<div class="jupyter-notebook $themeClass">
             |<div class="notebook-header">
-            |  <h1>${notebook.title ?: "Jupyter Notebook"}</h1>
+            |  <h1>${escapeHtml(notebook.title ?: "Jupyter Notebook")}</h1>
             |  <div class="notebook-info">
-            |    <span class="kernel">Kernel: ${notebook.kernel}</span>
-            |    <span class="language">Language: ${notebook.language}</span>
+            |    <span class="kernel">Kernel: ${escapeHtml(notebook.kernel)}</span>
+            |    <span class="language">Language: ${escapeHtml(notebook.language)}</span>
             |    <span class="cells">Cells: ${notebook.cells.size}</span>
             |  </div>
             |</div>
@@ -220,8 +226,11 @@ class JupyterParser : TextParser {
             else -> "Raw"
         }
         
+        // Cell source is attacker-controlled .ipynb content. It MUST be HTML-escaped
+        // for every cell type — a markdown cell containing a raw <script> tag is a
+        // stored-XSS vector when the notebook is opened. See P5-FIX-001 / CONST-039.
         val sourceHtml = when (cell.cellType) {
-            "markdown" -> cell.source // Markdown will be rendered by the markdown parser
+            "markdown" -> "<div class=\"markdown-source\">${escapeHtml(cell.source)}</div>"
             else -> "<div class=\"code-source\">${escapeHtml(cell.source)}</div>"
         }
         
