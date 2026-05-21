@@ -69,7 +69,7 @@ Counts by batch:
 
 | P5-FIX | Batch | File | Method(s) | Verdict | Pattern | Severity | Recommended Fix |
 |--------|-------|------|-----------|---------|---------|----------|-----------------|
-| P5-FIX-001 | B01 | `FormatParserSecurityTests.kt` | `testXssInMarkdown`, `testXssInHtml`, `testXssInAsciidoc` (and 14 others, all 17 parsers) | BLUFF | PAT-04 | CRITICAL | Each test must call the real parser's `parse(input).toHtml()` and assert the output does not contain raw `<script>` tags. The current test calls `escapeHtml()` utility on a hardcoded string — no parser is ever exercised. |
+| P5-FIX-001 ✅FIXED 8a1da082 | B01 | `FormatParserSecurityTests.kt` | `testXssInMarkdown`, `testXssInHtml`, `testXssInAsciidoc` (and 14 others, all 17 parsers) | BLUFF | PAT-04 | CRITICAL | Each test must call the real parser's `parse(input).toHtml()` and assert the output does not contain raw `<script>` tags. The current test calls `escapeHtml()` utility on a hardcoded string — no parser is ever exercised. |
 | P5-FIX-002 | B01 | `FormatCoverageTest.kt` | `testAllFormatsRegistered`, `testEachFormatHasParser` | BLUFF | PAT-03 | HIGH | Add a round-trip parse assertion: call `parse("<minimal valid document for format>")` and assert `toHtml()` is non-empty and contains expected markers. |
 | P5-FIX-003 | B01 | `FormatDetectionPriorityTest.kt` | `testExtensionDetectionOrder`, `testContentDetectionFallback` | BLUFF | PAT-06 | HIGH | Assert the detected `TextFormat.id` equals the expected string constant; do not stop at `assertNotNull(detected)`. |
 | P5-FIX-004 | B01 | `StyleSheetCacheTest.kt` | `testCacheHitOnSecondCall`, `testCacheMissAfterClear` | BLUFF | PAT-02 | MEDIUM | Assert CSS string content, not only timing. A stub that returns `""` in 0 ms passes both existing assertions. |
@@ -197,7 +197,7 @@ Counts by batch:
 
 | P5-FIX | Batch | File | Method(s) | Verdict | Pattern | Severity | Recommended Fix |
 |--------|-------|------|-----------|---------|---------|----------|-----------------|
-| P5-FIX-089 | B09 | `SecurityValidationTests.kt` | `assertNoRawScript()` helper + all 13 methods using it | BLUFF | PAT-11 | CRITICAL | `assertNoRawScript(html)` runs `input.escapeHtml()` on a hardcoded string and never inspects the `html` argument. Fix: assert `assertFalse(html.contains("<script"), "raw script tag found in parser output")`. |
+| P5-FIX-089 ✅FIXED 8a1da082 | B09 | `SecurityValidationTests.kt` | `assertNoRawScript()` helper + all 13 methods using it | BLUFF | PAT-11 | CRITICAL | `assertNoRawScript(html)` runs `input.escapeHtml()` on a hardcoded string and never inspects the `html` argument. Fix: assert `assertFalse(html.contains("<script"), "raw script tag found in parser output")`. |
 | P5-FIX-090 | B09 | `AccessibilityTest.kt` | `testScreenReaderSupport`, `testFocusTraversal` | BLUFF | PAT-09 | HIGH | `assertTrue(isActive || !isActive)` is always true. Assert `assertTrue(isActive)` and that expected accessibility nodes exist. |
 | P5-FIX-091 | B09 | `AnimationConstantsTest.kt` | `testEnterTransitionNotNull` and 11 similar | BLUFF | PAT-03 | MEDIUM | Assert that `transition != EnterTransition.None` (a stub returns `None`, which is non-null). |
 | P5-FIX-092 | B09 | `AnimationTests.kt` | `testTransitionDuration_*` (14 methods) | BLUFF | PAT-03 | MEDIUM | Assert duration value > 0 ms; `assertNotNull(transition)` passes for `EnterTransition.None` stub. |

@@ -36,6 +36,46 @@ one is out of scope for the Phase 5E security pass; the safe-default
 escaping stays in place until then. Reference: `JupyterParser.kt` `text/html`
 output branch.
 
+## #phase5-orgmode-protocol-relative-uri — NEW Phase 5E (2026-05-21)
+
+**Status:** OPEN — tracked (open-redirect affordance, not stored-XSS).
+
+**Symptom**
+`OrgModeParser.sanitizeUri()` accepts protocol-relative URLs. An Org link
+`[[//evil.com][click]]` renders as `href="//evil.com"`, which navigates
+off-origin. The allowlist's stated intent is "relative / scheme-less path",
+but `//host` is a protocol-relative URL, not a relative path. No script
+executes (not XSS) — this is an open-redirect / phishing affordance.
+
+**Proper fix**
+In `sanitizeUri()`, reject a URL whose whitespace-stripped form starts with
+`//` (return `"#"`), or explicitly document protocol-relative links as
+intentionally allowed. Add a test with `[[//evil.com][x]]`.
+
+**Blocker**
+None — small fix. Surfaced by the Phase 5E Campaign 1 security re-review;
+deferred only to keep that commit scoped to the Critical stored-XSS fix.
+
+## #phase5-orgmode-inline-markup-link-ordering — NEW Phase 5E (2026-05-21)
+
+**Status:** OPEN — tracked (functional defect, pre-existing, not security).
+
+**Symptom**
+In `OrgModeParser.formatInlineOrg()`, the single-char italic regex
+(`/.../`) runs before the `[[...]]` link regex, so a legitimate path link
+`[[./relative/path][click]]` renders with a `<span class="org-italic">`
+injected mid-`href`, and `[[http://x.com][...]]` descriptions can produce
+malformed `<a>` markup. Not a security hole — `escapeHtml()` runs first so
+any payload is already inert — but link rendering is corrupted. Present
+identically in commit `19d73dad`; pre-dates the Phase 5E work.
+
+**Proper fix**
+Apply the `[[...]]` link substitution before the single-char
+italic/strikethrough/underline passes, or exclude `[[...]]` spans from them.
+
+**Blocker**
+None. Surfaced by the Phase 5E Campaign 1 security re-review.
+
 ## #iter-71-launcher-icon-missing-postmortem — FIXED 2026-05-17
 
 **Status:** FIXED in v1.9.1 (iter-71 emergency patch).
