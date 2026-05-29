@@ -761,11 +761,14 @@ class SmbService(
             val document = if (existingNode != null) {
                 existingNode.document
             } else {
-                // Returns a synthesized document since no real SMB connection exists.
+                // Synthesize a document for a path not present in the in-memory tree.
+                // Use normalizedPath (root-resolved, traversal-checked) — never the
+                // raw remotePath — so the returned document reflects the actual
+                // in-root location and cannot echo an un-normalized path.
                 NetworkDocument(
-                    id = remotePath,
-                    name = remotePath.substringAfterLast("/"),
-                    path = remotePath,
+                    id = normalizedPath,
+                    name = normalizedPath.substringAfterLast("/"),
+                    path = normalizedPath,
                     isFolder = false,
                     size = 0L,
                     lastModified = Clock.System.now(),
@@ -1093,6 +1096,16 @@ class SmbService(
         val normalizedPath = normalizePath(remotePath)
         val found = fileTreeMutex.withLock { fileTree.containsKey(normalizedPath) }
         Result.success(found)
+    } catch (e: IllegalArgumentException) {
+        // A path-traversal escape is a security rejection, not a "not found".
+        // Surface it as a FileOperationException so it cannot be mistaken for a
+        // benign absent-file result. Mirrors getFileInfo's failure typing.
+        Result.failure(
+            NetworkStorageException.FileOperationException.InfoFailed(
+                path = remotePath,
+                cause = e
+            )
+        )
     } catch (e: Exception) {
         if (e is kotlin.coroutines.cancellation.CancellationException) throw e
         Result.failure(NetworkStorageException.fromThrowable(e, "exists"))

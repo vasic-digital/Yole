@@ -1296,7 +1296,22 @@ class SftpService(
 
     /** Checks whether a file or directory exists at [remotePath] via SSH_FXP_STAT. */
     override suspend fun exists(remotePath: String): Result<Boolean> {
-        return getFileInfo(remotePath).map { true }.recover { false }
+        val info = getFileInfo(remotePath)
+        return info.fold(
+            onSuccess = { Result.success(true) },
+            onFailure = { error ->
+                // A path-traversal escape (IllegalArgumentException from the
+                // PathUtils guard, surfaced as the cause of the wrapping
+                // exception) is a security rejection and MUST NOT be masked as
+                // a benign "does not exist" result. Propagate it as a failure;
+                // any other error still means the file simply is not present.
+                if (error.cause is IllegalArgumentException) {
+                    Result.failure(error)
+                } else {
+                    Result.success(false)
+                }
+            }
+        )
     }
 
     /** Returns the parent directory of [remotePath], or null if it is the root. */
